@@ -1,0 +1,1254 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
+import PlayingCard from './components/PlayingCard';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse } from 'lucide-react';
+
+// --- UTILS & FX ---
+
+const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => {
+  if (!navigator.vibrate) return;
+  switch(type) {
+    case 'light': navigator.vibrate(10); break;
+    case 'medium': navigator.vibrate(40); break;
+    case 'heavy': navigator.vibrate(80); break;
+    case 'success': navigator.vibrate([30, 50, 30]); break;
+    case 'warning': navigator.vibrate([50, 30, 50]); break;
+    case 'error': navigator.vibrate([50, 50, 100, 50, 100]); break;
+  }
+};
+
+const createDeck = (): Card[] => {
+  const suits = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
+  const ranks = [Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE];
+  const deck: Card[] = [];
+  suits.forEach(suit => {
+    ranks.forEach(rank => {
+      deck.push({ suit, rank, id: `${suit}-${rank}-${Math.random()}` });
+    });
+  });
+  return deck;
+};
+
+const shuffleDeck = (deck: Card[]): Card[] => {
+  const newDeck = [...deck];
+  for (let i = newDeck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
+  }
+  return newDeck;
+};
+
+const getSipsText = (count: number) => `${count} ${count === 1 ? 'slok' : 'slokken'}`;
+
+// --- COMPONENTS ---
+
+const Confetti: React.FC = () => {
+  const [particles, setParticles] = useState<{id: number, left: string, color: string, delay: string, duration: string}[]>([]);
+
+  useEffect(() => {
+    const colors = ['#ef4444', '#3b82f6', '#eab308', '#10b981', '#a855f7', '#ec4899'];
+    const newParticles = Array.from({ length: 75 }).map((_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      delay: `${Math.random() * 0.5}s`,
+      duration: `${2 + Math.random() * 2}s`
+    }));
+    setParticles(newParticles);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+      {particles.map(p => (
+        <div 
+          key={p.id}
+          className="absolute top-0 w-3 h-3 rounded-sm shadow-lg"
+          style={{
+            left: p.left,
+            backgroundColor: p.color,
+            animation: `confetti-fall ${p.duration} linear forwards`,
+            animationDelay: p.delay
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const FloatingParticles: React.FC<{type: 'success' | 'error', x: number, y: number}> = ({ type, x, y }) => {
+    // Simple temporary particles at click location
+    return (
+        <div className="fixed pointer-events-none z-50" style={{ left: x, top: y }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} 
+                     className={`absolute w-4 h-4 rounded-full ${type === 'success' ? 'bg-green-400' : 'bg-red-500'}`}
+                     style={{
+                         animation: `float 1s ease-out forwards`,
+                         transform: `translate(${(Math.random() - 0.5) * 100}px, ${(Math.random() - 0.5) * 100}px)`,
+                         opacity: 0
+                     }}
+                />
+            ))}
+        </div>
+    );
+}
+
+// --- ROOT CONTAINER ---
+
+interface RootContainerProps {
+  children: React.ReactNode;
+  className?: string;
+  shake?: boolean;
+  variant?: 'default' | 'bus' | 'pyramid';
+}
+
+const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default'}) => {
+    let bgClass = 'bg-animated-gradient';
+    if (variant === 'bus') bgClass = 'bg-animated-bus';
+    if (variant === 'pyramid') bgClass = 'bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black';
+
+    return (
+        <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`}>
+            {/* Scanlines / Overlay effect */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+            {children}
+        </div>
+    );
+};
+
+// --- APP COMPONENT ---
+
+const App: React.FC = () => {
+  // --- STATE ---
+  const [settings, setSettings] = useState<GameSettings>({
+    mode: GameMode.DIGITAL,
+    pyramidRows: 5,
+    sharedBus: false,
+    busLength: 5,
+  });
+
+  const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [deck, setDeck] = useState<Card[]>([]);
+  const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
+  
+  // Setup State
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerImage, setNewPlayerImage] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Visuals State
+  const [screenShake, setScreenShake] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Round 1-4 State
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
+  const [roundStep, setRoundStep] = useState<RoundStep>(RoundStep.RED_BLACK);
+  const [feedback, setFeedback] = useState<{text: string, type: 'success' | 'error' | 'neutral' | 'info'} | null>(null);
+  const [lastDrawnCard, setLastDrawnCard] = useState<Card | null>(null);
+  const [isWaitingForNextPlayer, setIsWaitingForNextPlayer] = useState(false);
+  
+  // Pyramid State
+  const [pyramid, setPyramid] = useState<(Card | null)[][]>([]);
+  const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
+  const [pendingMatches, setPendingMatches] = useState<{card: Card, sips: number, matches: {player: Player, cardIndex: number}[]} | null>(null);
+  const [loserReveal, setLoserReveal] = useState<Player | null>(null);
+  
+  // Bus State
+  const [busDriver, setBusDriver] = useState<Player | null>(null);
+  const [busPassengers, setBusPassengers] = useState<Player[]>([]);
+  const [busCards, setBusCards] = useState<Card[]>([]); 
+  const [currentBusIndex, setCurrentBusIndex] = useState(1); 
+  const [busWrongCardIndex, setBusWrongCardIndex] = useState<number | null>(null); 
+  const [isBusEntrance, setIsBusEntrance] = useState(false);
+  const [isBusWon, setIsBusWon] = useState(false);
+  const busScrollRef = useRef<HTMLDivElement>(null);
+
+  // --- HELPERS ---
+
+  const triggerShake = () => {
+      setScreenShake(true);
+      setTimeout(() => setScreenShake(false), 500);
+  };
+
+  const drawCard = () => {
+    if (deck.length === 0) {
+      const newD = shuffleDeck(createDeck());
+      const [card, ...remaining] = newD;
+      setDeck(remaining);
+      return card;
+    }
+    const [card, ...remaining] = deck;
+    setDeck(remaining);
+    return card;
+  };
+
+  const getActivePlayer = () => players[activePlayerIndex];
+
+  // --- SCROLL HELPERS ---
+  useEffect(() => {
+    if (phase === GamePhase.THE_BUS && busScrollRef.current) {
+      const container = busScrollRef.current;
+      const cardWidth = 120; 
+      const targetScroll = (currentBusIndex * cardWidth) - (container.clientWidth / 2) + (cardWidth / 2);
+      container.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
+    }
+  }, [currentBusIndex, phase]);
+
+  // --- PHASE HANDLERS ---
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setNewPlayerImage(reader.result as string);
+            triggerHaptic('light');
+            setTimeout(() => inputRef.current?.focus(), 10);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const addPlayer = () => {
+    if (newPlayerName.trim() && players.length < 12) {
+      triggerHaptic('success');
+      setPlayers([...players, {
+        id: Date.now().toString(),
+        name: newPlayerName.trim(),
+        hand: [],
+        drinksTaken: 0,
+        drinksDistributed: 0,
+        adtjes: 0,
+        isDealer: false,
+        isImmune: false,
+        image: newPlayerImage || undefined
+      }]);
+      setNewPlayerName('');
+      setNewPlayerImage(null);
+      setTimeout(() => inputRef.current?.focus(), 10);
+    }
+  };
+
+  const removePlayer = (id: string) => {
+    triggerHaptic('light');
+    setPlayers(players.filter(p => p.id !== id));
+  };
+
+  const handleStartPress = () => {
+    if (players.length < 2) return;
+    triggerHaptic('medium');
+    setPhase(GamePhase.MODE_SELECTION);
+  };
+
+  const confirmStart = (mode: GameMode) => {
+    triggerHaptic('heavy');
+    setSettings(prev => ({ ...prev, mode }));
+    setDeck(shuffleDeck(createDeck()));
+    
+    const dealerIndex = Math.floor(Math.random() * players.length);
+    const updatedPlayers = players.map((p, i) => ({
+      ...p,
+      hand: [],
+      drinksTaken: 0,
+      drinksDistributed: 0,
+      adtjes: 0,
+      isDealer: i === dealerIndex,
+      isImmune: p.id === immunePlayerId
+    }));
+    
+    setPlayers(updatedPlayers);
+    setActivePlayerIndex((dealerIndex + 1) % players.length);
+    
+    setPhase(GamePhase.ROUNDS_1_4);
+    setRoundStep(RoundStep.RED_BLACK);
+    setFeedback(null);
+    setIsWaitingForNextPlayer(true);
+  };
+
+  // --- ROUNDS 1-4 LOGIC ---
+
+  const nextPlayerTurn = () => {
+    triggerHaptic('light');
+    setFeedback(null);
+    setLastDrawnCard(null);
+    setShowConfetti(false);
+    
+    const dealerIndex = players.findIndex(p => p.isDealer);
+    if (activePlayerIndex === dealerIndex) {
+      if (roundStep === RoundStep.SUIT) {
+           initializePyramid();
+      } else {
+           setRoundStep(prev => prev + 1);
+           const next = (dealerIndex + 1) % players.length;
+           setActivePlayerIndex(next);
+           setIsWaitingForNextPlayer(true);
+      }
+    } else {
+        const next = (activePlayerIndex + 1) % players.length;
+        setActivePlayerIndex(next);
+        setIsWaitingForNextPlayer(true);
+    }
+  };
+
+  const handlePhysicalGuess = (correct: boolean) => {
+      const sips = roundStep;
+      const newPlayers = [...players];
+      const currentPlayer = newPlayers[activePlayerIndex];
+      
+      const placeholderCard: Card = { suit: Suit.SPADES, rank: Rank.ACE, id: `physical-${Date.now()}` };
+      currentPlayer.hand.push(placeholderCard);
+
+      if (correct) {
+          triggerHaptic('success');
+          setFeedback({ text: `GOED! Deel ${getSipsText(sips)} uit.`, type: 'success' });
+          currentPlayer.drinksDistributed += sips;
+          setShowConfetti(true);
+      } else {
+          triggerHaptic('error');
+          triggerShake();
+          setFeedback({ text: `FOUT! Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+          currentPlayer.drinksTaken += sips;
+      }
+      setPlayers(newPlayers);
+  };
+
+  const handleDigitalGuess = (guess: string) => {
+    const card = drawCard();
+    if (!card) return; 
+    setLastDrawnCard(card);
+    
+    const player = getActivePlayer();
+    let correct = false;
+    const sips = roundStep; 
+
+    if (roundStep === RoundStep.RED_BLACK) {
+      const isRed = card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS;
+      correct = (guess === 'RED' && isRed) || (guess === 'BLACK' && !isRed);
+    }
+    else if (roundStep === RoundStep.HIGH_LOW) {
+      const baseCard = player.hand[0];
+      correct = (guess === 'HIGHER' && card.rank > baseCard.rank) ||
+                (guess === 'LOWER' && card.rank < baseCard.rank) ||
+                (guess === 'EQUAL' && card.rank === baseCard.rank);
+    }
+    else if (roundStep === RoundStep.IN_OUT) {
+      const c1 = player.hand[0].rank;
+      const c2 = player.hand[1].rank;
+      const low = Math.min(c1, c2);
+      const high = Math.max(c1, c2);
+      if (guess === 'BETWEEN') correct = card.rank > low && card.rank < high;
+      else correct = card.rank < low || card.rank > high || card.rank === low || card.rank === high;
+    }
+    else if (roundStep === RoundStep.SUIT) {
+      const hasSuit = player.hand.some(h => h.suit === card.suit);
+      correct = (guess === 'MATCH' && hasSuit) || (guess === 'NO_MATCH' && !hasSuit);
+    }
+
+    const newPlayers = [...players];
+    const currentPlayer = newPlayers[activePlayerIndex];
+    
+    if (correct) {
+      triggerHaptic('success');
+      setFeedback({ text: `GOED! Deel ${getSipsText(sips)} uit.`, type: 'success' });
+      currentPlayer.drinksDistributed += sips;
+      setShowConfetti(true);
+    } else {
+      triggerHaptic('error');
+      triggerShake();
+      setFeedback({ text: `FOUT! Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+      currentPlayer.drinksTaken += sips;
+    }
+
+    currentPlayer.hand.push(card);
+    setPlayers(newPlayers);
+  };
+
+  // --- PYRAMID LOGIC ---
+
+  const initializePyramid = () => {
+    triggerHaptic('medium');
+    setPhase(GamePhase.PYRAMID);
+    setFeedback(null);
+    setRevealedPyramidCards(new Set());
+    setLoserReveal(null);
+    
+    if (settings.mode === GameMode.DIGITAL) {
+        let currentDeck = deck;
+        const required = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+        if (currentDeck.length < required) currentDeck = shuffleDeck(createDeck());
+
+        const newPyramid: Card[][] = [];
+        for (let i = 1; i <= settings.pyramidRows; i++) {
+            const rowCards: Card[] = [];
+            for (let j = 0; j < i; j++) {
+                rowCards.push(currentDeck.pop()!);
+            }
+            newPyramid.push(rowCards);
+        }
+        setDeck(currentDeck);
+        setPyramid(newPyramid);
+    }
+    if (settings.mode === GameMode.PHYSICAL) {
+        const newPyramid: Card[][] = [];
+        for (let i = 1; i <= settings.pyramidRows; i++) {
+             const rowCards = Array(i).fill(null).map((_, idx) => ({
+                 suit: Suit.SPADES, rank: Rank.ACE, id: `phys-${i}-${idx}`
+             }));
+             newPyramid.push(rowCards);
+        }
+        setPyramid(newPyramid);
+    }
+  };
+
+  const revealPyramidCard = (rowIndex: number, cardIndex: number) => {
+    const card = pyramid[rowIndex][cardIndex];
+    if (!card || revealedPyramidCards.has(card.id)) return;
+
+    triggerHaptic('medium');
+    const newRevealed = new Set(revealedPyramidCards);
+    newRevealed.add(card.id);
+    setRevealedPyramidCards(newRevealed);
+    
+    const sips = settings.pyramidRows - rowIndex;
+    const isTop = rowIndex === 0;
+
+    if (settings.mode === GameMode.PHYSICAL) {
+         setFeedback({
+            text: isTop ? "ADTJE VOOR DE ZAAL!" : `Wie heeft deze kaart? ${getSipsText(sips)}!`,
+            type: 'info'
+         });
+         const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+         if (newRevealed.size === totalCards) setTimeout(determineLoserAndAnimate, 1000);
+         return;
+    }
+    
+    const matches: {player: Player, cardIndex: number}[] = [];
+    players.forEach(p => {
+        const matchIndex = p.hand.findIndex(h => h.rank === card.rank);
+        if (matchIndex !== -1) {
+            matches.push({ player: p, cardIndex: matchIndex });
+        }
+    });
+
+    if (matches.length > 0) {
+        triggerHaptic('success');
+        setPendingMatches({
+            card: card,
+            sips: isTop ? 5 : sips,
+            matches: matches
+        });
+    } else {
+        const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+        if (newRevealed.size === totalCards) {
+            setTimeout(determineLoserAndAnimate, 1500);
+        }
+    }
+  };
+
+  const resolveMatch = (playerId: string) => {
+      if (!pendingMatches) return;
+      triggerHaptic('light');
+      const newPlayers = [...players];
+      const pIndex = newPlayers.findIndex(p => p.id === playerId);
+      if (pIndex === -1) return;
+
+      const player = newPlayers[pIndex];
+      const handIndex = player.hand.findIndex(c => c.rank === pendingMatches.card.rank);
+      
+      if (handIndex !== -1) {
+          player.hand.splice(handIndex, 1);
+          player.drinksDistributed += pendingMatches.sips;
+      }
+
+      setPlayers(newPlayers);
+      const remainingMatches = pendingMatches.matches.filter(m => m.player.id !== playerId);
+      
+      if (remainingMatches.length === 0) {
+          setPendingMatches(null);
+          const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+          if (revealedPyramidCards.size === totalCards) {
+              setTimeout(determineLoserAndAnimate, 1500);
+          }
+      } else {
+          setPendingMatches({ ...pendingMatches, matches: remainingMatches });
+      }
+  };
+
+  const determineLoserAndAnimate = () => {
+      triggerHaptic('heavy');
+      const eligiblePlayers = players.filter(p => !p.isImmune);
+      const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
+
+      const playerStats = candidates.map(p => {
+          let totalValue = 0;
+          if (settings.mode === GameMode.DIGITAL) {
+             p.hand.forEach(c => { totalValue += c.rank; });
+             return { id: p.id, count: p.hand.length, val: totalValue };
+          } else {
+             return { id: p.id, count: p.drinksTaken, val: 0 }; 
+          }
+      });
+
+      playerStats.sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count; 
+          return b.val - a.val;
+      });
+      
+      const victimId = playerStats[0].id;
+      const victim = players.find(p => p.id === victimId)!;
+      const driver = players.find(p => p.isDealer) || players[0];
+      
+      setBusDriver(driver);
+      setBusPassengers([victim]);
+      setLoserReveal(victim);
+
+      setTimeout(() => {
+          if (settings.sharedBus) setPhase(GamePhase.BUS_TEAM_SELECTION);
+          else startBus([victim]);
+      }, 5000);
+  };
+
+  const handleSharedBusSelection = (partner: Player | null) => {
+      triggerHaptic('medium');
+      if (partner) {
+          setBusPassengers(prev => [...prev, partner]);
+          startBus([...busPassengers, partner]);
+      } else {
+          startBus(busPassengers);
+      }
+  };
+
+  // --- BUS LOGIC ---
+
+  const startBus = (passengers: Player[]) => {
+      setIsBusEntrance(true);
+      setIsBusWon(false);
+      setTimeout(() => setIsBusEntrance(false), 3000);
+
+      let currentDeck = deck;
+      const needed = settings.busLength + 1;
+      if (currentDeck.length < needed) currentDeck = shuffleDeck(createDeck());
+      
+      const newBusCards = [];
+      for(let i=0; i < needed; i++) newBusCards.push(currentDeck.pop()!);
+
+      setBusCards(newBusCards);
+      setDeck(currentDeck);
+      setCurrentBusIndex(1); 
+      setBusWrongCardIndex(null);
+      setPhase(GamePhase.THE_BUS);
+      setFeedback({ text: `Hoger of Lager?`, type: 'info' });
+  };
+
+  const restartBus = () => {
+      setBusWrongCardIndex(null);
+      let currentDeck = deck;
+      const needed = settings.busLength + 1;
+      if (currentDeck.length < needed) currentDeck = shuffleDeck(createDeck());
+
+      const newBusCards = [];
+      for(let i=0; i < needed; i++) newBusCards.push(currentDeck.pop()!);
+      setBusCards(newBusCards);
+      setDeck(currentDeck);
+      setCurrentBusIndex(1);
+      setFeedback({ text: "Opnieuw! Hoger of Lager?", type: 'info' });
+  };
+
+  const handleBusGuess = (guess: 'HIGHER' | 'LOWER') => {
+      const prevCard = busCards[currentBusIndex - 1];
+      const targetCard = busCards[currentBusIndex];
+      const isHigher = targetCard.rank > prevCard.rank;
+      const isLower = targetCard.rank < prevCard.rank;
+      
+      let correct = false;
+      if (guess === 'HIGHER' && isHigher) correct = true;
+      if (guess === 'LOWER' && isLower) correct = true;
+
+      if (correct) {
+          triggerHaptic('success');
+          if (currentBusIndex === busCards.length - 1) {
+              setIsBusWon(true); 
+              setFeedback({ text: "UIT DE BUS! GEWONNEN!", type: 'success' });
+              setImmunePlayerId(busPassengers[0].id);
+              setTimeout(() => setPhase(GamePhase.GAME_OVER), 6000);
+          } else {
+              setFeedback({ text: "Goed! Volgende...", type: 'success' });
+              setCurrentBusIndex(prev => prev + 1);
+          }
+      } else {
+          triggerHaptic('error');
+          triggerShake();
+          const sips = currentBusIndex;
+          setFeedback({ text: `FOUT! ${getSipsText(sips)} & Opnieuw!`, type: 'error' });
+          setBusWrongCardIndex(currentBusIndex);
+
+          const newPlayers = [...players];
+          busPassengers.forEach(bp => {
+              const p = newPlayers.find(p => p.id === bp.id);
+              if(p) p.drinksTaken += sips;
+          });
+          setPlayers(newPlayers);
+          setTimeout(restartBus, 2500);
+      }
+  };
+
+  // --- RENDERING ---
+
+  // 1. SETUP
+  if (phase === GamePhase.SETUP) {
+      return (
+          <RootContainer className="p-4">
+              <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
+                  <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)]">
+                      Bussen
+                  </h1>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text">Ultimate Companion</p>
+              </div>
+
+              <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
+                  <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
+                      <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500"/> Spelers</h2>
+                      <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
+                      {players.map(p => (
+                          <div key={p.id} className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center border-2 border-slate-600/50 font-bold text-white shadow-md overflow-hidden">
+                                      {p.image ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" /> : p.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="font-bold text-white text-sm tracking-tight">{p.name}</span>
+                                  {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md" />}
+                              </div>
+                              <button onClick={() => removePlayer(p.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18}/></button>
+                          </div>
+                      ))}
+                      {players.length === 0 && (
+                          <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
+                              <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center animate-bounce">
+                                  <Users size={24} />
+                              </div>
+                              <span className="font-bold text-sm uppercase tracking-widest">Start met toevoegen</span>
+                          </div>
+                      )}
+                  </div>
+              </div>
+              
+              <div className="flex-none space-y-3">
+                  <div className="flex gap-2">
+                      <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
+                      <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`flex-none w-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
+                      >
+                          {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <Camera size={22} className="text-slate-300" />}
+                      </button>
+
+                      <input 
+                        ref={inputRef}
+                        type="text" 
+                        placeholder="Naam..." 
+                        className="flex-1 bg-slate-900/80 border border-slate-700 rounded-2xl px-4 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
+                        value={newPlayerName}
+                        onChange={e => setNewPlayerName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addPlayer()}
+                      />
+                      <button onClick={addPlayer} className="bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 px-5 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center">
+                          <Check size={28} strokeWidth={3} />
+                      </button>
+                  </div>
+
+                  <button 
+                      onClick={handleStartPress}
+                      disabled={players.length < 2}
+                      className="w-full bg-gradient-to-r from-red-600 to-red-800 disabled:opacity-50 disabled:grayscale text-white font-black text-xl py-5 rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110 border-t border-red-400"
+                  >
+                      <Play fill="currentColor" size={24} /> START SPEL
+                  </button>
+
+                  <div className="glass-panel rounded-2xl border-slate-800 overflow-hidden transition-all duration-300">
+                      <button 
+                          onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                          className="w-full flex items-center justify-between p-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      >
+                          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+                              <Settings size={14} /> Instellingen
+                          </div>
+                          {isSettingsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                      
+                      {isSettingsOpen && (
+                          <div className="p-4 space-y-4 bg-black/20 animate-in slide-in-from-top-2">
+                              <div>
+                                  <div className="flex justify-between mb-2">
+                                      <label className="text-[10px] text-slate-400 font-bold uppercase">Piramide Hoogte</label>
+                                      <span className="text-red-500 font-bold text-sm">{settings.pyramidRows}</span>
+                                  </div>
+                                  <input type="range" min="3" max="7" step="1" value={settings.pyramidRows} onChange={(e) => setSettings({...settings, pyramidRows: parseInt(e.target.value)})} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                              </div>
+                              <div>
+                                  <div className="flex justify-between mb-2">
+                                      <label className="text-[10px] text-slate-400 font-bold uppercase">Bus Kaarten</label>
+                                      <span className="text-red-500 font-bold text-sm">{settings.busLength}</span>
+                                  </div>
+                                  <input type="range" min="3" max="7" step="1" value={settings.busLength} onChange={(e) => setSettings({...settings, busLength: parseInt(e.target.value)})} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                              </div>
+                              <div className="flex items-center justify-between pt-2">
+                                   <label className="text-[10px] text-slate-400 font-bold uppercase">Gedeelde Bus</label>
+                                   <button onClick={() => setSettings({...settings, sharedBus: !settings.sharedBus})} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
+                                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.sharedBus ? 'left-7' : 'left-1'}`}></div>
+                                   </button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </RootContainer>
+      );
+  }
+
+  // 2. MODE SELECTION
+  if (phase === GamePhase.MODE_SELECTION) {
+      return (
+          <RootContainer className="items-center justify-center p-6">
+              <h2 className="text-3xl font-black text-white mb-8 animate-in zoom-in text-center">Kies je strijd</h2>
+              <div className="grid gap-4 w-full max-w-sm">
+                  <button onClick={() => confirmStart(GameMode.DIGITAL)} className="group bg-gradient-to-br from-slate-900 to-slate-950 border border-red-500/30 p-8 rounded-3xl text-left hover:border-red-500 transition-all shadow-2xl active:scale-95 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="flex justify-between mb-2 relative z-10">
+                          <span className="text-2xl font-black text-white uppercase italic">Digitaal</span>
+                          <Zap size={24} className="text-yellow-400 animate-pulse" />
+                      </div>
+                      <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">Automatisch & Snel</p>
+                  </button>
+                  
+                  <button onClick={() => confirmStart(GameMode.PHYSICAL)} className="group bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 p-8 rounded-3xl text-left hover:border-white transition-all shadow-2xl active:scale-95 relative overflow-hidden">
+                      <div className="flex justify-between mb-2 relative z-10">
+                          <span className="text-2xl font-black text-white uppercase italic">Fysiek</span>
+                          <Users size={24} className="text-slate-300" />
+                      </div>
+                      <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">Met echte kaarten</p>
+                  </button>
+              </div>
+              <button onClick={() => setPhase(GamePhase.SETUP)} className="mt-12 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">Terug</button>
+          </RootContainer>
+      );
+  }
+
+  // HEADER COMPONENT
+  const GameHeader = () => {
+      const activePlayer = getActivePlayer();
+      return (
+      <div className="flex-none flex items-center justify-between p-2.5 bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1">
+          <div className="flex items-center gap-3">
+             <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-red-600 to-red-800 flex items-center justify-center font-black text-lg text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] ring-2 ring-red-500/20 overflow-hidden">
+                 {activePlayer?.image ? <img src={activePlayer.image} className="w-full h-full object-cover" /> : activePlayer?.name.charAt(0).toUpperCase()}
+             </div>
+             <div className="overflow-hidden">
+                 <p className="text-[10px] text-red-400 font-black uppercase tracking-widest mb-0.5">Aan de beurt</p>
+                 <div className="flex items-center gap-1.5">
+                     <p className="font-bold text-white text-lg leading-none truncate max-w-[120px] drop-shadow-md">{activePlayer?.name}</p>
+                     {activePlayer?.isImmune && <Shield size={14} className="text-yellow-400 shrink-0 animate-pulse" />}
+                 </div>
+             </div>
+          </div>
+          <div className="flex gap-3">
+             <div className="flex flex-col items-end px-3 border-r border-white/10">
+                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Op</span>
+                 <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5"/>{activePlayer?.drinksTaken}</span>
+             </div>
+             <div className="flex flex-col items-end pl-1">
+                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Uit</span>
+                 <span className="text-emerald-400 font-black font-mono text-lg leading-none drop-shadow-sm"><ArrowRight size={12} className="inline mr-1 mb-0.5"/>{activePlayer?.drinksDistributed}</span>
+             </div>
+          </div>
+      </div>
+  )};
+
+  // 3. ROUNDS 1-4
+  if (phase === GamePhase.ROUNDS_1_4) {
+      if (isWaitingForNextPlayer) {
+          return (
+            <RootContainer className="items-center justify-center p-6">
+                 <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
+                     <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">Speler Wissel</p>
+                     <div className="w-32 h-32 rounded-full mb-6 bg-gradient-to-b from-slate-800 to-black border-4 border-red-500 flex items-center justify-center overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.4)] relative">
+                        {getActivePlayer().image ? (
+                             <img src={getActivePlayer().image} className="w-full h-full object-cover" />
+                        ) : (
+                             <span className="text-5xl font-black text-white">{getActivePlayer().name.charAt(0).toUpperCase()}</span>
+                        )}
+                        <div className="absolute inset-0 rounded-full ring-4 ring-red-500/20 animate-pulse"></div>
+                     </div>
+                     <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{getActivePlayer().name}</h1>
+                     <button 
+                        onClick={() => setIsWaitingForNextPlayer(false)}
+                        className="bg-white text-black text-xl font-black px-10 py-4 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.3)] flex items-center gap-3 mx-auto hover:scale-105 transition-transform active:scale-95"
+                     >
+                        Start <ArrowRight size={24} strokeWidth={3} />
+                     </button>
+                 </div>
+            </RootContainer>
+          );
+      }
+
+      return (
+          <RootContainer className="p-2 pb-safe" shake={screenShake}>
+              {showConfetti && <Confetti />}
+              <GameHeader />
+
+              <div className="flex-1 flex flex-col min-h-0">
+                  {/* HAND */}
+                  <div className="flex-none bg-black/20 rounded-2xl p-3 mb-4 border border-white/5 backdrop-blur-sm">
+                      <p className="text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">Huidige Hand</p>
+                      <div className="flex justify-center items-center gap-3 flex-wrap min-h-[80px]">
+                          {getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).length > 0 ? (
+                              getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).map((c) => (
+                                  <PlayingCard key={c.id} card={c} size="sm" className="shadow-lg" />
+                              ))
+                          ) : (
+                              settings.mode === GameMode.DIGITAL && <div className="text-slate-600 italic text-xs font-medium">Nog geen kaarten</div>
+                          )}
+                          {settings.mode === GameMode.PHYSICAL && (
+                              <div className="text-slate-500 font-mono text-xs border border-dashed border-slate-700 rounded px-3 py-1">{getActivePlayer().hand.length} kaarten</div>
+                          )}
+                      </div>
+                  </div>
+
+                  {/* STAGE */}
+                  <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative">
+                       <div className="text-center mb-6 relative z-10">
+                           <span className="px-3 py-1 rounded-full bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 text-[10px] text-slate-300 font-bold uppercase tracking-widest shadow-lg">
+                               Ronde {roundStep} / 4
+                           </span>
+                           <h2 className="text-3xl font-black text-white mt-3 drop-shadow-xl neon-text">
+                              {roundStep === 1 && "Rood of Zwart?"}
+                              {roundStep === 2 && "Hoger of Lager?"}
+                              {roundStep === 3 && "Binnen of Buiten?"}
+                              {roundStep === 4 && "Hetzelfde Teken?"}
+                           </h2>
+                       </div>
+
+                       <div className="relative h-48 w-full flex items-center justify-center perspective-1000">
+                          {lastDrawnCard ? (
+                               <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_0_50px_rgba(255,255,255,0.1)]" />
+                          ) : (
+                               settings.mode === GameMode.DIGITAL ? (
+                                   <div className="w-40 h-56 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30 animate-pulse">
+                                       <span className="text-slate-700 font-black text-4xl opacity-50">?</span>
+                                   </div>
+                               ) : (
+                                   <div className="w-48 p-6 text-center text-slate-400 text-sm font-medium border-2 border-slate-800 rounded-2xl bg-slate-900/50">
+                                       Pak een kaart van de stapel...
+                                   </div>
+                               )
+                          )}
+                       </div>
+                  </div>
+              </div>
+
+              {/* CONTROLS */}
+              <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2">
+                  {feedback ? (
+                      <div className="space-y-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
+                          <div className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-xl backdrop-blur-md ${feedback.type === 'success' ? 'bg-emerald-900/80 border-emerald-500 text-emerald-100' : 'bg-red-900/80 border-red-500 text-white animate-shake'}`}>
+                              {feedback.text}
+                          </div>
+                          <button onClick={nextPlayerTurn} className="w-full bg-white hover:bg-slate-200 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                              Volgende <ArrowRight size={20} strokeWidth={3} />
+                          </button>
+                      </div>
+                  ) : (
+                      settings.mode === GameMode.PHYSICAL ? (
+                         <div className="grid grid-cols-2 gap-4">
+                             <button onClick={() => handlePhysicalGuess(true)} className="bg-gradient-to-b from-emerald-600 to-emerald-800 border-t border-emerald-400 active:scale-95 transition-transform py-4 rounded-2xl font-black text-white text-lg flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(16,185,129,0.3)]">
+                                <ThumbsUp size={20} strokeWidth={3}/> GOED
+                             </button>
+                             <button onClick={() => handlePhysicalGuess(false)} className="bg-gradient-to-b from-red-600 to-red-800 border-t border-red-400 active:scale-95 transition-transform py-4 rounded-2xl font-black text-white text-lg flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(220,38,38,0.3)]">
+                                <ThumbsDown size={20} strokeWidth={3}/> FOUT
+                             </button>
+                         </div>
+                      ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                         {roundStep === 1 && (
+                             <>
+                                 <button onClick={() => handleDigitalGuess('RED')} className="bg-gradient-to-br from-red-600 to-red-800 border-t border-red-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ROOD</button>
+                                 <button onClick={() => handleDigitalGuess('BLACK')} className="bg-gradient-to-br from-slate-800 to-black border-t border-slate-600 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ZWART</button>
+                             </>
+                         )}
+                         {roundStep === 2 && (
+                             <>
+                                 <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">HOGER</button>
+                                 <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">LAGER</button>
+                                 <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">Of Gelijk (Drinken)</button>
+                             </>
+                         )}
+                         {roundStep === 3 && (
+                             <>
+                                 <button onClick={() => handleDigitalGuess('BETWEEN')} className="bg-gradient-to-br from-emerald-600 to-emerald-800 border-t border-emerald-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ER TUSSEN</button>
+                                 <button onClick={() => handleDigitalGuess('OUTSIDE')} className="bg-gradient-to-br from-orange-600 to-orange-800 border-t border-orange-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ER BUITEN</button>
+                             </>
+                         )}
+                         {roundStep === 4 && (
+                             <>
+                                 <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">MATCH</button>
+                                 <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">GEEN MATCH</button>
+                             </>
+                         )}
+                      </div>
+                      )
+                  )}
+              </div>
+          </RootContainer>
+      );
+  }
+
+  // 4. PYRAMID
+  if (phase === GamePhase.PYRAMID) {
+      return (
+          <RootContainer className="p-0" variant="pyramid" shake={screenShake}>
+              {/* Match Modal */}
+              {pendingMatches && (
+                  <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in zoom-in duration-300">
+                      <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 animate-pulse"></div>
+                          <button onClick={() => setPendingMatches(null)} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
+                          
+                          <div className="p-6 text-center border-b border-white/5">
+                              <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">MATCH!</h3>
+                              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Wie legt op?</p>
+                          </div>
+                          
+                          <div className="p-5 grid grid-cols-2 gap-3">
+                              {pendingMatches.matches.map((m) => (
+                                  <button 
+                                      key={m.player.id}
+                                      onClick={() => resolveMatch(m.player.id)}
+                                      className="group relative flex flex-col items-center gap-2 bg-black/40 p-4 rounded-2xl hover:bg-emerald-900/30 border border-white/5 hover:border-emerald-500 transition-all active:scale-95"
+                                  >
+                                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ring-2 ring-white/10 group-hover:ring-emerald-500 transition-all">
+                                          {m.player.image ? <img src={m.player.image} className="w-full h-full object-cover" /> : m.player.name.charAt(0)}
+                                      </div>
+                                      <span className="text-white font-bold text-sm truncate w-full text-center group-hover:text-emerald-400">{m.player.name}</span>
+                                  </button>
+                              ))}
+                          </div>
+                          <div className="bg-black/50 p-3 text-center">
+                             <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                <ArrowRight size={12}/> Uitdelen: {getSipsText(pendingMatches.sips)}
+                             </p>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
+              {/* Loser Reveal - DRAMATIC */}
+              {loserReveal && (
+                  <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
+                      
+                      {/* Strobe effect overlay */}
+                      <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
+
+                      <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)]">De Sjaak</h2>
+                      
+                      <div className="relative z-10 w-48 h-48 mb-8">
+                          <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
+                          <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
+                          <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
+                               {loserReveal.image ? (
+                                    <img src={loserReveal.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{animationIterationCount: 1}} />
+                               ) : (
+                                    <span className="text-7xl font-black text-white">{loserReveal.name.charAt(0)}</span>
+                               )}
+                          </div>
+                      </div>
+                      
+                      <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.name}</h1>
+                      <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
+                          Naar de Bus!
+                      </div>
+                  </div>
+              )}
+
+              <div className="flex-none flex justify-between items-center px-5 py-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl">
+                  <div>
+                     <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">Piramide</h2>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Draai kaarten om</p>
+                  </div>
+              </div>
+
+              {feedback && !pendingMatches && (
+                  <div className="absolute top-24 left-0 right-0 z-50 flex justify-center pointer-events-none">
+                      <div className={`mx-4 px-6 py-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl border-2 text-base font-black text-center animate-in zoom-in duration-200 ${feedback.type.includes('success') ? 'bg-green-900/90 border-green-400 text-green-100' : feedback.type === 'error' ? 'bg-red-900/90 border-red-500 text-white' : 'bg-slate-800/90 border-slate-500 text-white'}`}>
+                          {feedback.text}
+                      </div>
+                  </div>
+              )}
+
+              {/* Pyramid Grid */}
+              <div className="flex-1 flex items-center justify-center overflow-hidden p-2 relative">
+                   <div className="flex flex-col items-center gap-2 md:gap-3 scale-[0.85] origin-center transition-transform duration-500">
+                      {pyramid.map((row, rowIndex) => (
+                          <div key={rowIndex} className="flex gap-3 justify-center">
+                              {row.map((card, cardIndex) => {
+                                  const isRevealed = card && revealedPyramidCards.has(card.id);
+                                  return (
+                                      <div key={card ? card.id : `${rowIndex}-${cardIndex}`} className="relative group">
+                                          <PlayingCard 
+                                              card={isRevealed ? card : null}
+                                              isFaceDown={!isRevealed}
+                                              size="md" 
+                                              onClick={() => revealPyramidCard(rowIndex, cardIndex)}
+                                              className={`transition-all duration-500 ${!isRevealed ? 'hover:-translate-y-4 hover:scale-110 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] z-10 cursor-pointer' : 'brightness-75 opacity-90 z-0'}`}
+                                          />
+                                          {cardIndex === 0 && (
+                                              <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
+                                                  {rowIndex === 0 ? <Skull size={16} className="ml-auto"/> : `${settings.pyramidRows - rowIndex}x`}
+                                              </div>
+                                          )}
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      ))}
+                   </div>
+              </div>
+          </RootContainer>
+      );
+  }
+
+  // 5. BUS TEAM SELECT
+  if (phase === GamePhase.BUS_TEAM_SELECTION) {
+       const victim = busPassengers[0];
+       return (
+           <RootContainer className="items-center justify-center p-6 text-center" variant="bus">
+               <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
+                   {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
+               </div>
+               <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Smart</h2>
+               <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
+                   <span className="text-white border-b-2 border-red-500">{victim.name}</span>, sleep iemand mee de afgrond in:
+               </p>
+
+               <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
+                   <button 
+                        onClick={() => handleSharedBusSelection(null)}
+                        className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
+                   >
+                       NIEMAND (Ik sterf alleen)
+                   </button>
+                   {players.filter(p => p.id !== victim.id).map(p => (
+                       <button 
+                           key={p.id} 
+                           onClick={() => handleSharedBusSelection(p)}
+                           className="w-full bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between text-white font-bold text-sm hover:bg-red-900/50 border border-white/5 hover:border-red-500 transition-all shadow-lg active:scale-95"
+                       >
+                           <div className="flex items-center gap-4">
+                               <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
+                                   {p.image ? <img src={p.image} className="w-full h-full object-cover"/> : null}
+                               </div>
+                               <span className="text-lg">{p.name}</span>
+                           </div>
+                           <HeartPulse size={20} className="text-red-500" />
+                       </button>
+                   ))}
+               </div>
+           </RootContainer>
+       );
+  }
+
+  // 6. THE BUS
+  if (phase === GamePhase.THE_BUS) {
+      if (isBusEntrance) {
+          return (
+              <RootContainer className="bg-black items-center justify-center" variant="bus">
+                  <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">BUS</h1>
+                  <div className="flex flex-col gap-8 items-center z-10">
+                      {busPassengers.map(p => (
+                          <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
+                              <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
+                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-4xl font-black">{p.name.charAt(0)}</div>}
+                              </div>
+                              <div className="text-4xl font-black text-white uppercase tracking-widest">{p.name}</div>
+                          </div>
+                      ))}
+                  </div>
+              </RootContainer>
+          );
+      }
+
+      const passengerNames = busPassengers.map(p => p.name).join(' & ');
+
+      return (
+          <RootContainer className="p-0 relative" variant="bus" shake={screenShake}>
+              {isBusWon && <Confetti />}
+
+              {/* Header */}
+              <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl">
+                  <div>
+                      <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">De Bus</h2>
+                      <p className="text-xs text-red-200 font-bold uppercase tracking-widest max-w-[200px] truncate opacity-80">
+                          Passagiers: <span className="text-white">{passengerNames}</span>
+                      </p>
+                  </div>
+                  <div className="text-right">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold block">Chauffeur</span>
+                      <span className="text-white text-sm font-black">{busDriver?.name}</span>
+                  </div>
+              </div>
+
+              {/* Bus Cards */}
+              <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
+                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 to-transparent animate-pulse pointer-events-none"></div>
+                   <div 
+                        ref={busScrollRef}
+                        className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x no-scrollbar h-full py-10"
+                   >
+                       {busCards.map((card, index) => {
+                           const isBase = index === 0;
+                           const isHistory = index < currentBusIndex;
+                           const isTarget = index === currentBusIndex;
+                           const shouldReveal = isBase || isHistory || (index === busWrongCardIndex) || isBusWon;
+                           const isActive = isTarget || (index === busWrongCardIndex);
+                           
+                           return (
+                               <div key={`${card.id}-${index}`} className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 ${isActive ? 'scale-110 z-10' : 'opacity-40 scale-90 grayscale'}`}>
+                                   {isBase && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
+                                   
+                                   {isTarget && !isBusWon && !busWrongCardIndex && (
+                                        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-max">
+                                            <span className="block bg-red-600 text-white text-xs px-3 py-1 rounded-full font-black uppercase tracking-wider animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.8)]">Kies Nu</span>
+                                            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-600 mx-auto mt-1"></div>
+                                        </div>
+                                   )}
+                                   
+                                   <PlayingCard 
+                                       card={card} 
+                                       isFaceDown={!shouldReveal}
+                                       size="md"
+                                       highlight={isTarget}
+                                       className={`${isHistory ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_50px_rgba(220,38,38,0.8)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.8)]' : ''}`}
+                                   />
+                                   
+                                   {/* Icons */}
+                                   {isHistory && index > 0 && (
+                                        <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
+                                            <Check size={16} className="text-white" strokeWidth={4} />
+                                        </div>
+                                   )}
+                                   {index === busWrongCardIndex && (
+                                        <div className="absolute -bottom-4 bg-red-600 rounded-full p-1.5 shadow-lg animate-ping z-20 border-2 border-black">
+                                            <X size={16} className="text-white" strokeWidth={4} />
+                                        </div>
+                                   )}
+                                   {isBusWon && (
+                                       <div className="absolute -top-16 z-50 animate-[bounce_0.5s_infinite]">
+                                            <Sparkles className="text-yellow-400 w-12 h-12 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" fill="currentColor" />
+                                       </div>
+                                   )}
+                               </div>
+                           );
+                       })}
+                   </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex-none bg-black border-t border-white/10 p-4 pb-8 z-20">
+                    {feedback && (
+                        <div className="mb-6 flex justify-center pointer-events-none">
+                            <div className={`px-8 py-3 rounded-2xl font-black text-lg shadow-2xl border-2 transition-all animate-pop ${feedback.type === 'error' ? 'bg-red-600 text-white border-red-400' : feedback.type === 'success' ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-800 text-white border-slate-600'}`}>
+                                {feedback.text}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-center gap-4">
+                        {busWrongCardIndex === null && !isBusWon ? (
+                            <>
+                                <button onClick={() => handleBusGuess('HIGHER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500">
+                                     <ChevronUp size={32} className="text-green-400 mb-1 group-hover:scale-125 transition-transform" /> 
+                                     <span className="text-sm uppercase tracking-[0.2em]">Hoger</span>
+                                </button>
+                                <button onClick={() => handleBusGuess('LOWER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500">
+                                     <ChevronDown size={32} className="text-red-400 mb-1 group-hover:scale-125 transition-transform" /> 
+                                     <span className="text-sm uppercase tracking-[0.2em]">Lager</span>
+                                </button>
+                            </>
+                        ) : isBusWon ? (
+                             <div className="text-center w-full text-yellow-400 font-black text-4xl tracking-widest animate-[pulse_0.2s_infinite] drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">
+                                 BUS GEWONNEN!
+                             </div>
+                        ) : (
+                            <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
+                                Oeps! Drinken!
+                            </div>
+                        )}
+                    </div>
+              </div>
+          </RootContainer>
+      );
+  }
+
+  // 7. GAME OVER
+  if (phase === GamePhase.GAME_OVER) {
+      const sortedPlayers = [...players].sort((a, b) => (b.drinksTaken + b.adtjes * 5) - (a.drinksTaken + a.adtjes * 5));
+      
+      return (
+          <RootContainer className="p-0">
+              <Confetti />
+              <div className="flex-1 overflow-y-auto p-6 relative z-10">
+                  <div className="text-center mb-10 mt-8">
+                      <Trophy size={64} className="text-yellow-400 mx-auto mb-4 animate-bounce drop-shadow-[0_0_30px_rgba(250,204,21,0.6)]" />
+                      <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">Uitslag</h1>
+                      {immunePlayerId && (
+                          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4 animate-pulse">
+                              <Shield size={20} className="text-yellow-400" />
+                              <div>
+                                <p className="text-yellow-400 text-[10px] font-black uppercase leading-none tracking-widest mb-1">Immuniteit</p>
+                                <p className="text-white font-bold text-lg leading-none">{players.find(p => p.id === immunePlayerId)?.name}</p>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+
+                  <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden mb-8 shadow-2xl">
+                      <div className="grid grid-cols-12 bg-black/40 p-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                          <div className="col-span-1 text-center">#</div>
+                          <div className="col-span-7">Speler</div>
+                          <div className="col-span-4 text-right">Slokken</div>
+                      </div>
+                      {sortedPlayers.map((p, i) => (
+                          <div key={p.id} className={`grid grid-cols-12 p-4 items-center border-b border-white/5 ${i===0 ? 'bg-yellow-500/10 relative overflow-hidden' : ''}`}>
+                              {i===0 && <div className="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>}
+                              <div className="col-span-1 text-center font-black text-slate-500 text-lg">{i + 1}</div>
+                              <div className="col-span-7 font-bold text-white text-base truncate flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden shrink-0 border border-white/10">
+                                      {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : null}
+                                  </div>
+                                  {p.name}
+                                  {i===0 && <Trophy size={14} className="text-yellow-400" />}
+                              </div>
+                              <div className="col-span-4 text-right font-mono text-red-400 font-black text-lg drop-shadow-md">
+                                  {p.drinksTaken}
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+
+                  <button onClick={() => setPhase(GamePhase.SETUP)} className="w-full bg-white text-black py-5 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.3)] text-lg uppercase tracking-widest hover:scale-105 transition-transform active:scale-95">
+                      Terug naar Menu
+                  </button>
+              </div>
+          </RootContainer>
+      );
+  }
+
+  return null;
+};
+
+export default App;
