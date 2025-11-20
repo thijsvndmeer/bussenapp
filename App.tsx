@@ -1,7 +1,33 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse, BusFront } from 'lucide-react';
+
+// --- CONSTANTS & PHRASES ---
+
+const SUCCESS_PHRASES = [
+  "Lekker pik!", "Vo!", "Hoppa!", "Klasse!", "Strijder!", 
+  "Easy game!", "Netjes!", "Gewoon goed!", "Biem!", "Jaja!", 
+  "Prima!", "Heerlijk!", "Gas erop!", "Winnaarsmentaliteit!", 
+  "Lekker gewerkt!", "Bingo!", "Raak!", "Zonder twijfel!",
+  "Masterclass!", "Ongekend!"
+];
+
+const FAILURE_PHRASES = [
+  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii pijnlijk!", 
+  "Naar de getver!", "Jammer joh!", "Bakken vouwen!", "Niet best!", 
+  "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje bedankt!", 
+  "Gezelligheid!", "Pak 'm maar!", "Slokken!", "Bodemdrift!",
+  "Huilie huilie!", "Schande!", "Niet te geloven!", "Koekoek!"
+];
+
+const LOSER_TITLES = [
+  "De Sjaak", "Lul de Behanger", "Het Haasje", "De Klos", 
+  "Buschauffeur", "Succes Vriend", "Arme Ziel", "Gecondoleerd", 
+  "De Pineut", "Slachtoffer", "De Uitverkorene", "Kansloos",
+  "De Martelaar"
+];
 
 // --- UTILS & FX ---
 
@@ -75,24 +101,6 @@ const Confetti: React.FC = () => {
   );
 };
 
-const FloatingParticles: React.FC<{type: 'success' | 'error', x: number, y: number}> = ({ type, x, y }) => {
-    // Simple temporary particles at click location
-    return (
-        <div className="fixed pointer-events-none z-50" style={{ left: x, top: y }}>
-            {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} 
-                     className={`absolute w-4 h-4 rounded-full ${type === 'success' ? 'bg-green-400' : 'bg-red-500'}`}
-                     style={{
-                         animation: `float 1s ease-out forwards`,
-                         transform: `translate(${(Math.random() - 0.5) * 100}px, ${(Math.random() - 0.5) * 100}px)`,
-                         opacity: 0
-                     }}
-                />
-            ))}
-        </div>
-    );
-}
-
 // --- ROOT CONTAINER ---
 
 interface RootContainerProps {
@@ -143,6 +151,9 @@ const App: React.FC = () => {
   const [screenShake, setScreenShake] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   
+  // Phrase Randomization State
+  const [usedPhrases, setUsedPhrases] = useState<Set<string>>(new Set());
+
   // Round 1-4 State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [roundStep, setRoundStep] = useState<RoundStep>(RoundStep.RED_BLACK);
@@ -154,7 +165,8 @@ const App: React.FC = () => {
   const [pyramid, setPyramid] = useState<(Card | null)[][]>([]);
   const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
   const [pendingMatches, setPendingMatches] = useState<{card: Card, sips: number, matches: {player: Player, cardIndex: number}[]} | null>(null);
-  const [loserReveal, setLoserReveal] = useState<Player | null>(null);
+  const [loserReveal, setLoserReveal] = useState<{player: Player, title: string} | null>(null);
+  const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
@@ -171,6 +183,24 @@ const App: React.FC = () => {
   const triggerShake = () => {
       setScreenShake(true);
       setTimeout(() => setScreenShake(false), 500);
+  };
+
+  const getUniquePhrase = (pool: string[]) => {
+    let available = pool.filter(p => !usedPhrases.has(p));
+    if (available.length === 0) {
+        // Reset if all used
+        available = pool;
+        setUsedPhrases(new Set());
+    }
+    const phrase = available[Math.floor(Math.random() * available.length)];
+    
+    setUsedPhrases(prev => {
+        const newSet = new Set(prev);
+        if (newSet.size >= pool.length * 2) newSet.clear(); // Safety clear
+        newSet.add(phrase);
+        return newSet;
+    });
+    return phrase;
   };
 
   const drawCard = () => {
@@ -191,11 +221,21 @@ const App: React.FC = () => {
   useEffect(() => {
     if (phase === GamePhase.THE_BUS && busScrollRef.current) {
       const container = busScrollRef.current;
-      const cardWidth = 120; 
-      const targetScroll = (currentBusIndex * cardWidth) - (container.clientWidth / 2) + (cardWidth / 2);
+      // MD card width is w-32 (128px) + gap-6 (24px) = 152px stride
+      const cardStride = 128 + 24; 
+      
+      // Default: Center the view between the Reference Card (index - 1) and the Target Card (index)
+      let centerIndex = currentBusIndex - 0.5;
+      
+      // If a wrong card is revealed, focus exactly on that wrong card
+      if (busWrongCardIndex !== null) {
+        centerIndex = busWrongCardIndex;
+      }
+      
+      const targetScroll = (centerIndex * cardStride) - (container.clientWidth / 2) + (128 / 2);
       container.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
     }
-  }, [currentBusIndex, phase]);
+  }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
 
   // --- PHASE HANDLERS ---
 
@@ -261,6 +301,7 @@ const App: React.FC = () => {
     
     setPlayers(updatedPlayers);
     setActivePlayerIndex((dealerIndex + 1) % players.length);
+    setUsedPhrases(new Set()); // Reset phrases for new game
     
     setPhase(GamePhase.ROUNDS_1_4);
     setRoundStep(RoundStep.RED_BLACK);
@@ -303,13 +344,15 @@ const App: React.FC = () => {
 
       if (correct) {
           triggerHaptic('success');
-          setFeedback({ text: `GOED! Deel ${getSipsText(sips)} uit.`, type: 'success' });
+          const phrase = getUniquePhrase(SUCCESS_PHRASES);
+          setFeedback({ text: `${phrase} Deel ${getSipsText(sips)} uit.`, type: 'success' });
           currentPlayer.drinksDistributed += sips;
           setShowConfetti(true);
       } else {
           triggerHaptic('error');
           triggerShake();
-          setFeedback({ text: `FOUT! Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+          const phrase = getUniquePhrase(FAILURE_PHRASES);
+          setFeedback({ text: `${phrase} Drink zelf ${getSipsText(sips)}.`, type: 'error' });
           currentPlayer.drinksTaken += sips;
       }
       setPlayers(newPlayers);
@@ -352,13 +395,15 @@ const App: React.FC = () => {
     
     if (correct) {
       triggerHaptic('success');
-      setFeedback({ text: `GOED! Deel ${getSipsText(sips)} uit.`, type: 'success' });
+      const phrase = getUniquePhrase(SUCCESS_PHRASES);
+      setFeedback({ text: `${phrase} Deel ${getSipsText(sips)} uit.`, type: 'success' });
       currentPlayer.drinksDistributed += sips;
       setShowConfetti(true);
     } else {
       triggerHaptic('error');
       triggerShake();
-      setFeedback({ text: `FOUT! Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+      const phrase = getUniquePhrase(FAILURE_PHRASES);
+      setFeedback({ text: `${phrase} Drink zelf ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
 
@@ -374,6 +419,7 @@ const App: React.FC = () => {
     setFeedback(null);
     setRevealedPyramidCards(new Set());
     setLoserReveal(null);
+    setIsPyramidComplete(false);
     
     if (settings.mode === GameMode.DIGITAL) {
         let currentDeck = deck;
@@ -415,13 +461,15 @@ const App: React.FC = () => {
     const sips = settings.pyramidRows - rowIndex;
     const isTop = rowIndex === 0;
 
+    const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+    const isFinished = newRevealed.size === totalCards;
+
     if (settings.mode === GameMode.PHYSICAL) {
          setFeedback({
             text: isTop ? "ADTJE VOOR DE ZAAL!" : `Wie heeft deze kaart? ${getSipsText(sips)}!`,
             type: 'info'
          });
-         const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
-         if (newRevealed.size === totalCards) setTimeout(determineLoserAndAnimate, 1000);
+         if (isFinished) setIsPyramidComplete(true);
          return;
     }
     
@@ -441,9 +489,8 @@ const App: React.FC = () => {
             matches: matches
         });
     } else {
-        const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
-        if (newRevealed.size === totalCards) {
-            setTimeout(determineLoserAndAnimate, 1500);
+        if (isFinished) {
+            setIsPyramidComplete(true);
         }
     }
   };
@@ -470,7 +517,7 @@ const App: React.FC = () => {
           setPendingMatches(null);
           const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
           if (revealedPyramidCards.size === totalCards) {
-              setTimeout(determineLoserAndAnimate, 1500);
+              setIsPyramidComplete(true);
           }
       } else {
           setPendingMatches({ ...pendingMatches, matches: remainingMatches });
@@ -500,10 +547,11 @@ const App: React.FC = () => {
       const victimId = playerStats[0].id;
       const victim = players.find(p => p.id === victimId)!;
       const driver = players.find(p => p.isDealer) || players[0];
+      const title = getUniquePhrase(LOSER_TITLES);
       
       setBusDriver(driver);
       setBusPassengers([victim]);
-      setLoserReveal(victim);
+      setLoserReveal({ player: victim, title: title });
 
       setTimeout(() => {
           if (settings.sharedBus) setPhase(GamePhase.BUS_TEAM_SELECTION);
@@ -540,7 +588,7 @@ const App: React.FC = () => {
       setCurrentBusIndex(1); 
       setBusWrongCardIndex(null);
       setPhase(GamePhase.THE_BUS);
-      setFeedback({ text: `Hoger of Lager?`, type: 'info' });
+      setFeedback(null);
   };
 
   const restartBus = () => {
@@ -554,7 +602,7 @@ const App: React.FC = () => {
       setBusCards(newBusCards);
       setDeck(currentDeck);
       setCurrentBusIndex(1);
-      setFeedback({ text: "Opnieuw! Hoger of Lager?", type: 'info' });
+      setFeedback(null);
   };
 
   const handleBusGuess = (guess: 'HIGHER' | 'LOWER') => {
@@ -575,14 +623,15 @@ const App: React.FC = () => {
               setImmunePlayerId(busPassengers[0].id);
               setTimeout(() => setPhase(GamePhase.GAME_OVER), 6000);
           } else {
-              setFeedback({ text: "Goed! Volgende...", type: 'success' });
+              setFeedback(null);
               setCurrentBusIndex(prev => prev + 1);
           }
       } else {
           triggerHaptic('error');
           triggerShake();
           const sips = currentBusIndex;
-          setFeedback({ text: `FOUT! ${getSipsText(sips)} & Opnieuw!`, type: 'error' });
+          const phrase = getUniquePhrase(FAILURE_PHRASES);
+          setFeedback({ text: `${phrase} ${getSipsText(sips)} & Opnieuw!`, type: 'error' });
           setBusWrongCardIndex(currentBusIndex);
 
           const newPlayers = [...players];
@@ -657,8 +706,8 @@ const App: React.FC = () => {
                         onChange={e => setNewPlayerName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && addPlayer()}
                       />
-                      <button onClick={addPlayer} className="bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 px-5 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center">
-                          <Check size={28} strokeWidth={3} />
+                      <button onClick={addPlayer} className="w-14 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
+                          <Check size={24} strokeWidth={4} className="text-green-100" />
                       </button>
                   </div>
 
@@ -802,13 +851,20 @@ const App: React.FC = () => {
               <GameHeader />
 
               <div className="flex-1 flex flex-col min-h-0">
-                  {/* HAND */}
-                  <div className="flex-none bg-black/20 rounded-2xl p-3 mb-4 border border-white/5 backdrop-blur-sm">
-                      <p className="text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">Huidige Hand</p>
-                      <div className="flex justify-center items-center gap-3 flex-wrap min-h-[80px]">
+                  {/* HAND - Compact Size */}
+                  <div className="flex-none bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[100px]">
+                      {/* Table Felt Texture */}
+                      <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>
+                      
+                      <p className="relative text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">Huidige Hand</p>
+                      
+                      {/* Scrollable Hand Container - Reduced Height & Card Size */}
+                      <div className="relative flex justify-center items-center overflow-x-auto py-1 gap-2 px-4 snap-x">
                           {getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).length > 0 ? (
-                              getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).map((c) => (
-                                  <PlayingCard key={c.id} card={c} size="sm" className="shadow-lg" />
+                              getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).map((c, idx) => (
+                                  <div key={c.id} className="snap-center flex-none transition-transform hover:scale-110 duration-300 origin-bottom" style={{zIndex: idx}}>
+                                     <PlayingCard card={c} size="sm" className="shadow-lg" />
+                                  </div>
                               ))
                           ) : (
                               settings.mode === GameMode.DIGITAL && <div className="text-slate-600 italic text-xs font-medium">Nog geen kaarten</div>
@@ -833,13 +889,13 @@ const App: React.FC = () => {
                            </h2>
                        </div>
 
-                       <div className="relative h-48 w-full flex items-center justify-center perspective-1000">
+                       <div className="relative h-64 w-full flex items-center justify-center perspective-1000">
                           {lastDrawnCard ? (
-                               <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_0_50px_rgba(255,255,255,0.1)]" />
+                               <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" />
                           ) : (
                                settings.mode === GameMode.DIGITAL ? (
-                                   <div className="w-40 h-56 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30 animate-pulse">
-                                       <span className="text-slate-700 font-black text-4xl opacity-50">?</span>
+                                   <div className="w-48 h-64 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30 animate-pulse">
+                                       <span className="text-slate-700 font-serif font-black text-6xl opacity-30">?</span>
                                    </div>
                                ) : (
                                    <div className="w-48 p-6 text-center text-slate-400 text-sm font-medium border-2 border-slate-800 rounded-2xl bg-slate-900/50">
@@ -913,7 +969,12 @@ const App: React.FC = () => {
           <RootContainer className="p-0" variant="pyramid" shake={screenShake}>
               {/* Match Modal */}
               {pendingMatches && (
-                  <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in zoom-in duration-300">
+                  <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300">
+                      {/* Card Reveal for Match */}
+                      <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] animate-pop">
+                          <PlayingCard card={pendingMatches.card} size="md" />
+                      </div>
+
                       <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
                           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 animate-pulse"></div>
                           <button onClick={() => setPendingMatches(null)} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
@@ -954,21 +1015,21 @@ const App: React.FC = () => {
                       {/* Strobe effect overlay */}
                       <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
 
-                      <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)]">De Sjaak</h2>
+                      <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center">{loserReveal.title}</h2>
                       
                       <div className="relative z-10 w-48 h-48 mb-8">
                           <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
                           <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
                           <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
-                               {loserReveal.image ? (
-                                    <img src={loserReveal.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{animationIterationCount: 1}} />
+                               {loserReveal.player.image ? (
+                                    <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{animationIterationCount: 1}} />
                                ) : (
-                                    <span className="text-7xl font-black text-white">{loserReveal.name.charAt(0)}</span>
+                                    <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
                                )}
                           </div>
                       </div>
                       
-                      <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.name}</h1>
+                      <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
                       <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
                           Naar de Bus!
                       </div>
@@ -990,9 +1051,21 @@ const App: React.FC = () => {
                   </div>
               )}
 
-              {/* Pyramid Grid */}
+              {/* Manual Proceed Button */}
+              {isPyramidComplete && !pendingMatches && (
+                   <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
+                       <button 
+                          onClick={determineLoserAndAnimate}
+                          className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-pulse"
+                       >
+                          <BusFront size={28} /> NAAR DE BUS <ArrowRight size={28} strokeWidth={3} />
+                       </button>
+                   </div>
+              )}
+
+              {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
               <div className="flex-1 flex items-center justify-center overflow-hidden p-2 relative">
-                   <div className="flex flex-col items-center gap-2 md:gap-3 scale-[0.85] origin-center transition-transform duration-500">
+                   <div className="flex flex-col items-center gap-2 md:gap-3 scale-[0.55] origin-center transition-transform duration-500">
                       {pyramid.map((row, rowIndex) => (
                           <div key={rowIndex} className="flex gap-3 justify-center">
                               {row.map((card, cardIndex) => {
@@ -1004,7 +1077,7 @@ const App: React.FC = () => {
                                               isFaceDown={!isRevealed}
                                               size="md" 
                                               onClick={() => revealPyramidCard(rowIndex, cardIndex)}
-                                              className={`transition-all duration-500 ${!isRevealed ? 'hover:-translate-y-4 hover:scale-110 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] z-10 cursor-pointer' : 'brightness-75 opacity-90 z-0'}`}
+                                              className={`transition-transform duration-300 [&>div]:hover:translate-y-0 ${!isRevealed ? 'hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] z-10' : 'brightness-75 opacity-90 z-0'}`}
                                           />
                                           {cardIndex === 0 && (
                                               <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
@@ -1088,17 +1161,16 @@ const App: React.FC = () => {
           <RootContainer className="p-0 relative" variant="bus" shake={screenShake}>
               {isBusWon && <Confetti />}
 
-              {/* Header */}
+              {/* Header - Redesigned */}
               <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl">
                   <div>
                       <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">De Bus</h2>
-                      <p className="text-xs text-red-200 font-bold uppercase tracking-widest max-w-[200px] truncate opacity-80">
-                          Passagiers: <span className="text-white">{passengerNames}</span>
-                      </p>
                   </div>
                   <div className="text-right">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold block">Chauffeur</span>
-                      <span className="text-white text-sm font-black">{busDriver?.name}</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                          {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
+                      </span>
+                      <span className="text-white text-sm font-black">{passengerNames}</span>
                   </div>
               </div>
 
@@ -1110,33 +1182,47 @@ const App: React.FC = () => {
                         className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x no-scrollbar h-full py-10"
                    >
                        {busCards.map((card, index) => {
-                           const isBase = index === 0;
+                           // Logic for revealing cards
+                           const isBase = index === 0; // Always revealed
+                           // isHistory means it was a previous successful guess
                            const isHistory = index < currentBusIndex;
-                           const isTarget = index === currentBusIndex;
-                           const shouldReveal = isBase || isHistory || (index === busWrongCardIndex) || isBusWon;
-                           const isActive = isTarget || (index === busWrongCardIndex);
+                           // currentBusIndex IS the target. It should NOT be revealed yet unless we won.
+                           // busWrongCardIndex is set when we make a WRONG guess on the target.
                            
+                           const isRevealed = isBase || (isHistory && index < currentBusIndex) || (index === busWrongCardIndex) || isBusWon;
+                           
+                           // Prioritize the reference card (the one we compare against)
+                           const isReference = index === currentBusIndex - 1;
+                           const isTarget = index === currentBusIndex;
+                           
+                           // Styles
+                           // By default, dim cards in the past or future
+                           let containerClass = "opacity-40 scale-90 grayscale";
+                           
+                           if (isReference) {
+                               // Highlight the reference card! This is the info the user needs.
+                               containerClass = "opacity-100 scale-110 z-20";
+                           } else if (isTarget) {
+                               // The target (face down) should be visible but not exaggerated.
+                               containerClass = "opacity-100 scale-100 z-10";
+                           } else if (index === busWrongCardIndex) {
+                               containerClass = "opacity-100 scale-110 z-20";
+                           }
+
                            return (
-                               <div key={`${card.id}-${index}`} className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 ${isActive ? 'scale-110 z-10' : 'opacity-40 scale-90 grayscale'}`}>
+                               <div key={`${card.id}-${index}`} className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 ${containerClass}`}>
                                    {isBase && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
-                                   
-                                   {isTarget && !isBusWon && !busWrongCardIndex && (
-                                        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-max">
-                                            <span className="block bg-red-600 text-white text-xs px-3 py-1 rounded-full font-black uppercase tracking-wider animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.8)]">Kies Nu</span>
-                                            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-600 mx-auto mt-1"></div>
-                                        </div>
-                                   )}
                                    
                                    <PlayingCard 
                                        card={card} 
-                                       isFaceDown={!shouldReveal}
+                                       isFaceDown={!isRevealed}
                                        size="md"
-                                       highlight={isTarget}
-                                       className={`${isHistory ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_50px_rgba(220,38,38,0.8)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.8)]' : ''}`}
+                                       highlight={isReference || index === busWrongCardIndex} // Highlight the known card
+                                       className={`${isHistory && !isReference ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_50px_rgba(220,38,38,0.8)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.8)]' : ''}`}
                                    />
                                    
                                    {/* Icons */}
-                                   {isHistory && index > 0 && (
+                                   {isHistory && index > 0 && !isReference && (
                                         <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
                                             <Check size={16} className="text-white" strokeWidth={4} />
                                         </div>
@@ -1203,7 +1289,6 @@ const App: React.FC = () => {
               <Confetti />
               <div className="flex-1 overflow-y-auto p-6 relative z-10">
                   <div className="text-center mb-10 mt-8">
-                      <Trophy size={64} className="text-yellow-400 mx-auto mb-4 animate-bounce drop-shadow-[0_0_30px_rgba(250,204,21,0.6)]" />
                       <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">Uitslag</h1>
                       {immunePlayerId && (
                           <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4 animate-pulse">
@@ -1223,15 +1308,14 @@ const App: React.FC = () => {
                           <div className="col-span-4 text-right">Slokken</div>
                       </div>
                       {sortedPlayers.map((p, i) => (
-                          <div key={p.id} className={`grid grid-cols-12 p-4 items-center border-b border-white/5 ${i===0 ? 'bg-yellow-500/10 relative overflow-hidden' : ''}`}>
-                              {i===0 && <div className="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>}
+                          <div key={p.id} className={`grid grid-cols-12 p-4 items-center border-b border-white/5 ${p.id === immunePlayerId ? 'bg-yellow-500/10' : ''}`}>
                               <div className="col-span-1 text-center font-black text-slate-500 text-lg">{i + 1}</div>
                               <div className="col-span-7 font-bold text-white text-base truncate flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden shrink-0 border border-white/10">
                                       {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : null}
                                   </div>
                                   {p.name}
-                                  {i===0 && <Trophy size={14} className="text-yellow-400" />}
+                                  {p.id === immunePlayerId && <Shield size={14} className="text-yellow-400" />}
                               </div>
                               <div className="col-span-4 text-right font-mono text-red-400 font-black text-lg drop-shadow-md">
                                   {p.drinksTaken}

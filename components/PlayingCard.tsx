@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Suit, Rank } from '../types';
-import { Heart, Diamond, Club, Spade } from 'lucide-react';
+import { Heart, Diamond, Club, Spade, Crown } from 'lucide-react';
 
 interface PlayingCardProps {
   card: Card | null;
@@ -23,13 +23,22 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   disabled = false,
   showRankOnly = false
 }) => {
-  const getSuitIcon = (suit: Suit, iconSize: number) => {
-    const props = { size: iconSize, fill: "currentColor" };
+  
+  // --- Helpers ---
+  
+  const getSuitIcon = (suit: Suit, iconSize: number | string, fill: boolean = true) => {
+    const props = { 
+        size: typeof iconSize === 'number' ? iconSize : undefined, 
+        className: typeof iconSize === 'string' ? iconSize : undefined,
+        fill: fill ? "currentColor" : "none",
+        strokeWidth: fill ? 0 : 2
+    };
+    
     switch (suit) {
-      case Suit.HEARTS: return <Heart {...props} className="text-red-600 drop-shadow-sm" />;
-      case Suit.DIAMONDS: return <Diamond {...props} className="text-red-600 drop-shadow-sm" />;
-      case Suit.CLUBS: return <Club {...props} className="text-slate-900 drop-shadow-sm" />;
-      case Suit.SPADES: return <Spade {...props} className="text-slate-900 drop-shadow-sm" />;
+      case Suit.HEARTS: return <Heart {...props} className={`${props.className || ''} text-[#e11d48]`} />;
+      case Suit.DIAMONDS: return <Diamond {...props} className={`${props.className || ''} text-[#e11d48]`} />;
+      case Suit.CLUBS: return <Club {...props} className={`${props.className || ''} text-[#1e293b]`} />;
+      case Suit.SPADES: return <Spade {...props} className={`${props.className || ''} text-[#1e293b]`} />;
     }
   };
 
@@ -44,84 +53,203 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   };
 
   const isRed = card && (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS);
-  
+  const isFaceCard = card && (card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING);
+  const isAce = card && card.rank === Rank.ACE;
+
+  // --- Size Config ---
+  // Adjusted sizes to be slightly more realistic proportions (Poker size is roughly 2.5 x 3.5)
   const sizes = {
-    sm: { width: 'w-12', height: 'h-16', text: 'text-sm', icon: 10, mainIcon: 14, radius: 'rounded-lg', p: 'p-1' },
-    md: { width: 'w-28', height: 'h-40', text: 'text-2xl', icon: 16, mainIcon: 40, radius: 'rounded-xl', p: 'p-2' },
-    lg: { width: 'w-40', height: 'h-56', text: 'text-3xl', icon: 20, mainIcon: 56, radius: 'rounded-2xl', p: 'p-3' },
-    xl: { width: 'w-64', height: 'h-96', text: 'text-6xl', icon: 32, mainIcon: 96, radius: 'rounded-3xl', p: 'p-6' },
+    sm: { width: 'w-14', height: 'h-20', text: 'text-base', cornerIcon: 10, radius: 'rounded-[6px]', p: 'p-1' },
+    md: { width: 'w-32', height: 'h-44', text: 'text-2xl', cornerIcon: 14, radius: 'rounded-[10px]', p: 'p-2.5' },
+    lg: { width: 'w-48', height: 'h-64', text: 'text-4xl', cornerIcon: 20, radius: 'rounded-[14px]', p: 'p-4' },
+    xl: { width: 'w-72', height: 'h-96', text: 'text-6xl', cornerIcon: 32, radius: 'rounded-[20px]', p: 'p-6' },
   };
 
   const s = sizes[size];
 
-  // Determine visual state
+  // --- Pip Generation (The dots on the card) ---
+  const renderPips = () => {
+      if (!card || isFaceCard || isAce) return null;
+      
+      // This is a simplified grid approach to mimic real cards
+      const pips = [];
+      const rankVal = card.rank;
+      
+      // Column layouts based on standard card designs
+      const colClass = "flex flex-col justify-between items-center h-full py-4";
+      const pipSize = size === 'sm' ? 10 : size === 'md' ? 18 : size === 'lg' ? 24 : 40;
+      
+      const Pip = () => getSuitIcon(card.suit, pipSize);
+      const InvertedPip = () => <div className="rotate-180">{getSuitIcon(card.suit, pipSize)}</div>;
+
+      // Logic for 2 columns (Left/Right)
+      const col1 = [];
+      const col2 = []; // Middle
+      const col3 = [];
+
+      if (rankVal >= 2) { col1.push(<Pip key="c1-1"/>); col3.push(<Pip key="c3-1"/>); }
+      if (rankVal >= 4) { col1.push(<InvertedPip key="c1-2"/>); col3.push(<InvertedPip key="c3-2"/>); }
+      if (rankVal >= 6) { 
+          // For 6, 7, 8 we need middle side pips
+          // Resetting for cleaner logic:
+      }
+
+      // Hardcoded layouts for perfection
+      if (rankVal === 2) {
+          return <div className="flex justify-center flex-col items-center gap-10 h-full py-4"><Pip /><InvertedPip /></div>;
+      }
+      if (rankVal === 3) {
+          return <div className="flex justify-center flex-col items-center gap-2 h-full py-4"><Pip /><Pip /><InvertedPip /></div>;
+      }
+      
+      // General Grid for 4-10
+      return (
+          <div className="absolute inset-8 grid grid-cols-3 gap-1">
+              {/* Left Col */}
+              <div className="flex flex-col justify-between items-center">
+                  <Pip />
+                  {(rankVal >= 6) && <Pip />}
+                  {(rankVal >= 9) && <InvertedPip />}
+                  <InvertedPip />
+              </div>
+              
+              {/* Center Col */}
+              <div className="flex flex-col justify-around items-center py-2">
+                  {(rankVal === 5 || rankVal === 9) && <Pip />}
+                  {(rankVal === 7 || rankVal === 8 || rankVal === 10) && <Pip />}
+                  {(rankVal === 8 || rankVal === 10) && <InvertedPip />}
+                  {(rankVal === 7 && <div className="h-4"></div>)} {/* Spacer */}
+              </div>
+
+              {/* Right Col */}
+              <div className="flex flex-col justify-between items-center">
+                  <Pip />
+                  {(rankVal >= 6) && <Pip />}
+                  {(rankVal >= 9) && <InvertedPip />}
+                  <InvertedPip />
+              </div>
+          </div>
+      );
+  };
+
   const isFlipped = isFaceDown;
 
   return (
     <div 
-      className={`perspective-1000 ${s.width} ${s.height} ${className} relative select-none`}
+      className={`perspective-1000 ${s.width} ${s.height} ${className} relative select-none group`}
       onClick={!disabled ? onClick : undefined}
     >
       <div className={`
-        w-full h-full relative preserve-3d transition-transform duration-500 ease-out
+        w-full h-full relative preserve-3d transition-transform duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275)
         ${isFlipped ? 'rotate-y-180' : ''}
-        ${onClick && !disabled ? 'cursor-pointer hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)]' : ''}
-        ${highlight ? 'shadow-[0_0_30px_rgba(250,204,21,0.6)] scale-105' : 'shadow-2xl'}
+        ${onClick && !disabled ? 'cursor-pointer hover:-translate-y-4' : ''}
+        ${highlight ? 'shadow-[0_0_30px_rgba(250,204,21,0.8)] scale-105' : 'shadow-[0_2px_15px_-3px_rgba(0,0,0,0.5)]'}
       `}>
         
-        {/* FRONT OF CARD */}
+        {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
-          bg-gradient-to-br from-white to-slate-100 
-          ${s.radius} border border-slate-300
-          flex flex-col justify-between ${s.p}
+          bg-[#fdfdfd] /* Paper White */
+          ${s.radius} 
           overflow-hidden
         `}>
-           {/* Glossy Shine effect */}
-           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent opacity-50 pointer-events-none" />
+           {/* Texture Overlay */}
+           <div className="absolute inset-0 opacity-10 pointer-events-none" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`}}></div>
+           
+           {/* Safe Area / Border Helper */}
+           <div className="absolute inset-0 rounded-[inherit] border border-slate-200/50 pointer-events-none"></div>
 
           {card && (
             <>
-              {/* Top Left */}
-              <div className={`flex flex-col items-center leading-none ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
-                <span className={`${s.text} font-black tracking-tighter font-serif`}>{getRankString(card.rank)}</span>
-                <div className="mt-0.5 drop-shadow-sm">{getSuitIcon(card.suit, s.icon)}</div>
+              {/* --- Top Left Corner --- */}
+              <div className={`absolute top-1 left-1.5 flex flex-col items-center leading-none ${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>
+                <span className={`${s.text} font-serif font-bold tracking-tighter`}>{getRankString(card.rank)}</span>
+                <div className="mt-0">{getSuitIcon(card.suit, s.cornerIcon)}</div>
               </div>
 
-              {/* Center */}
-              {!showRankOnly && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-90">
-                  {getSuitIcon(card.suit, s.mainIcon)}
-                </div>
-              )}
+              {/* --- Bottom Right Corner (Inverted) --- */}
+              <div className={`absolute bottom-1 right-1.5 flex flex-col items-center leading-none transform rotate-180 ${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>
+                <span className={`${s.text} font-serif font-bold tracking-tighter`}>{getRankString(card.rank)}</span>
+                <div className="mt-0">{getSuitIcon(card.suit, s.cornerIcon)}</div>
+              </div>
 
-              {/* Bottom Right */}
-              <div className={`flex flex-col items-center leading-none transform rotate-180 ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
-                <span className={`${s.text} font-black tracking-tighter font-serif`}>{getRankString(card.rank)}</span>
-                <div className="mt-0.5 drop-shadow-sm">{getSuitIcon(card.suit, s.icon)}</div>
+              {/* --- Center Content --- */}
+              <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+                  
+                  {/* ACE */}
+                  {isAce && (
+                      <div className="transform scale-150 drop-shadow-sm">
+                          {getSuitIcon(card.suit, size === 'sm' ? 24 : size === 'md' ? 60 : 100)}
+                      </div>
+                  )}
+
+                  {/* FACE CARDS (J, Q, K) */}
+                  {isFaceCard && (
+                      <div className={`w-full h-3/4 border-2 ${isRed ? 'border-[#e11d48]/30' : 'border-slate-800/30'} rounded-lg flex flex-col justify-between p-2 relative overflow-hidden bg-gradient-to-b from-transparent via-yellow-500/5 to-transparent`}>
+                           {/* Decorative inner lines */}
+                           <div className="absolute inset-0.5 border border-yellow-600/20 rounded opacity-50"></div>
+                           
+                           {/* Top Icon */}
+                           <div className="flex justify-start">
+                               <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'} opacity-80`}>
+                                    <Crown size={size === 'sm' ? 16 : 32} strokeWidth={1.5} fill="currentColor" className="text-yellow-600" />
+                                    <div className="-mt-1 ml-2">{getSuitIcon(card.suit, size === 'sm' ? 12 : 24)}</div>
+                               </div>
+                           </div>
+
+                           {/* Large Letter Background */}
+                           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif font-black ${size === 'sm' ? 'text-4xl' : 'text-8xl'} opacity-10 ${isRed ? 'text-red-900' : 'text-slate-900'}`}>
+                               {getRankString(card.rank)}
+                           </div>
+
+                           {/* Bottom Icon (Inverted) */}
+                           <div className="flex justify-end transform rotate-180">
+                               <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'} opacity-80`}>
+                                    <Crown size={size === 'sm' ? 16 : 32} strokeWidth={1.5} fill="currentColor" className="text-yellow-600" />
+                                    <div className="-mt-1 ml-2">{getSuitIcon(card.suit, size === 'sm' ? 12 : 24)}</div>
+                               </div>
+                           </div>
+                      </div>
+                  )}
+
+                  {/* NUMBER CARDS (Pips) */}
+                  {!isAce && !isFaceCard && size !== 'sm' && renderPips()}
+                  
+                  {/* Fallback for small number cards */}
+                  {!isAce && !isFaceCard && size === 'sm' && (
+                      <div className="font-serif font-bold text-2xl opacity-20 tracking-tighter">{getRankString(card.rank)}</div>
+                  )}
               </div>
             </>
           )}
         </div>
 
-        {/* BACK OF CARD */}
+        {/* --- BACK --- */}
         <div className={`
           absolute inset-0 backface-hidden rotate-y-180
-          bg-gradient-to-br from-blue-900 to-indigo-950
-          ${s.radius} border-2 border-white/20
-          flex items-center justify-center
+          bg-[#1e40af] /* Classic Blue Deck */
+          ${s.radius}
+          border-[6px] border-white
           shadow-inner
+          overflow-hidden
         `}>
-           {/* Pattern */}
-           <div className="absolute inset-1 border border-yellow-500/30 opacity-50 rounded-sm"></div>
-           <div className="w-full h-full opacity-10" style={{
-               backgroundImage: `repeating-linear-gradient(45deg, #ffffff 0px, #ffffff 2px, transparent 2px, transparent 12px)`,
-           }}></div>
-           
-           <div className="relative z-10 transform rotate-45 border-4 border-white/20 w-16 h-16 flex items-center justify-center bg-blue-950 shadow-lg">
-               <span className="font-serif font-bold italic text-white/30 text-xl -rotate-45">Bus</span>
-           </div>
+            {/* Realistic Back Pattern (CSS Pattern) */}
+            <div className="w-full h-full opacity-60" style={{
+                backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
+                backgroundSize: '8px 8px',
+                backgroundPosition: '0 0, 4px 4px'
+            }}></div>
+            
+            {/* Center Logo/Graphic */}
+            <div className="absolute inset-0 flex items-center justify-center">
+                 <div className="w-1/2 h-1/3 border-2 border-white/30 rounded-full flex items-center justify-center backdrop-blur-[1px]">
+                     <div className="text-white/50 font-serif font-bold italic tracking-widest transform -rotate-12 text-sm">
+                         BUSSEN
+                     </div>
+                 </div>
+            </div>
         </div>
+
       </div>
     </div>
   );
