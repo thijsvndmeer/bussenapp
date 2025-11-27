@@ -31,15 +31,30 @@ const LOSER_TITLES = [
 
 // --- UTILS & FX ---
 
-const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => {
-  if (!navigator.vibrate) return;
-  switch(type) {
-    case 'light': navigator.vibrate(10); break;
-    case 'medium': navigator.vibrate(40); break;
-    case 'heavy': navigator.vibrate(80); break;
-    case 'success': navigator.vibrate([30, 50, 30]); break;
-    case 'warning': navigator.vibrate([50, 30, 50]); break;
-    case 'error': navigator.vibrate([50, 50, 100, 50, 100]); break;
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+
+const triggerHaptic = async (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => {
+  try {
+    switch(type) {
+      case 'light': await Haptics.impact({ style: ImpactStyle.Light }); break;
+      case 'medium': await Haptics.impact({ style: ImpactStyle.Medium }); break;
+      case 'heavy': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
+      case 'success': await Haptics.notification({ type: NotificationType.Success }); break;
+      case 'warning': await Haptics.notification({ type: NotificationType.Warning }); break;
+      case 'error': await Haptics.notification({ type: NotificationType.Error }); break;
+    }
+  } catch (e) {
+    // Fallback to web API if native fails or is unavailable
+    if (navigator.vibrate) {
+        switch(type) {
+            case 'light': navigator.vibrate(10); break;
+            case 'medium': navigator.vibrate(40); break;
+            case 'heavy': navigator.vibrate(80); break;
+            case 'success': navigator.vibrate([30, 50, 30]); break;
+            case 'warning': navigator.vibrate([50, 30, 50]); break;
+            case 'error': navigator.vibrate([50, 50, 100, 50, 100]); break;
+        }
+    }
   }
 };
 
