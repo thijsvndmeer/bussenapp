@@ -192,8 +192,6 @@ interface PersistedState {
   busWrongCardIndex: number | null;
   isBusEntrance: boolean;
   isBusWon: boolean;
-  busDeck: Card[];
-  isBusDeckExhausted: boolean;
   usedPhrases: string[];
 }
 
@@ -293,8 +291,6 @@ const App: React.FC = () => {
       busWrongCardIndex,
       isBusEntrance,
       isBusWon,
-      busDeck,
-      isBusDeckExhausted,
       usedPhrases: Array.from(usedPhrases),
     };
 
@@ -328,8 +324,6 @@ const App: React.FC = () => {
     busWrongCardIndex,
     isBusEntrance,
     isBusWon,
-    busDeck,
-    isBusDeckExhausted,
     usedPhrases,
   ]);
 
@@ -363,8 +357,6 @@ const App: React.FC = () => {
       if (parsed.busWrongCardIndex !== undefined) setBusWrongCardIndex(parsed.busWrongCardIndex);
       if (parsed.isBusEntrance !== undefined) setIsBusEntrance(parsed.isBusEntrance);
       if (parsed.isBusWon !== undefined) setIsBusWon(parsed.isBusWon);
-      if (parsed.busDeck) setBusDeck(parsed.busDeck);
-      if (parsed.isBusDeckExhausted !== undefined) setIsBusDeckExhausted(parsed.isBusDeckExhausted);
       if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
     } catch (error) {
       console.error('Opslaan spelstaat herstellen mislukt', error);
