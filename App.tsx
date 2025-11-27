@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse, BusFront } from 'lucide-react';
@@ -33,7 +33,16 @@ const LOSER_TITLES = [
 
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
-const triggerHaptic = async (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => {
+const triggerHaptic = async (
+  type:
+    | 'light'
+    | 'medium'
+    | 'heavy'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'majorLoss'
+) => {
   try {
     switch(type) {
       case 'light': await Haptics.impact({ style: ImpactStyle.Light }); break;
@@ -41,7 +50,8 @@ const triggerHaptic = async (type: 'light' | 'medium' | 'heavy' | 'success' | 'w
       case 'heavy': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
       case 'success': await Haptics.notification({ type: NotificationType.Success }); break;
       case 'warning': await Haptics.notification({ type: NotificationType.Warning }); break;
-      case 'error': await Haptics.notification({ type: NotificationType.Error }); break;
+      case 'error': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
+      case 'majorLoss': await Haptics.vibrate({ duration: 650 }); break;
     }
   } catch (e) {
     // Fallback to web API if native fails or is unavailable
@@ -50,12 +60,44 @@ const triggerHaptic = async (type: 'light' | 'medium' | 'heavy' | 'success' | 'w
             case 'light': navigator.vibrate(10); break;
             case 'medium': navigator.vibrate(40); break;
             case 'heavy': navigator.vibrate(80); break;
-            case 'success': navigator.vibrate([30, 50, 30]); break;
+            case 'success': navigator.vibrate([25, 30, 25]); break;
             case 'warning': navigator.vibrate([50, 30, 50]); break;
-            case 'error': navigator.vibrate([50, 50, 100, 50, 100]); break;
+            case 'error': navigator.vibrate([90, 40, 90]); break;
+            case 'majorLoss': navigator.vibrate([200, 150, 200, 150, 300]); break;
         }
     }
   }
+};
+
+const STORAGE_KEY = 'bus-app-state-v1';
+
+const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Kon afbeelding niet lezen'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas context ontbreekt'));
+
+        const scale = Math.min(maxDimension / img.width, maxDimension / img.height, 1);
+        const width = img.width * scale;
+        const height = img.height * scale;
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Kon afbeelding niet laden'));
+      img.src = reader.result as string;
+    };
+
+    reader.readAsDataURL(file);
+  });
 };
 
 const createDeck = (): Card[] => {
@@ -125,6 +167,36 @@ interface RootContainerProps {
   variant?: 'default' | 'bus' | 'pyramid';
 }
 
+interface PersistedState {
+  settings: GameSettings;
+  phase: GamePhase;
+  players: Player[];
+  deck: Card[];
+  immunePlayerId: string | null;
+  newPlayerName: string;
+  newPlayerImage: string | null;
+  activePlayerIndex: number;
+  roundStep: RoundStep;
+  feedback: { text: string; type: 'success' | 'error' | 'neutral' | 'info' } | null;
+  lastDrawnCard: Card | null;
+  isWaitingForNextPlayer: boolean;
+  pyramid: (Card | null)[][];
+  revealedPyramidCards: string[];
+  pendingMatches: { card: Card; sips: number; matches: { player: Player; cardIndex: number }[] } | null;
+  loserReveal: { player: Player; title: string } | null;
+  isPyramidComplete: boolean;
+  busDriver: Player | null;
+  busPassengers: Player[];
+  busCards: Card[];
+  currentBusIndex: number;
+  busWrongCardIndex: number | null;
+  isBusEntrance: boolean;
+  isBusWon: boolean;
+  busDeck: Card[];
+  isBusDeckExhausted: boolean;
+  usedPhrases: string[];
+}
+
 const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default'}) => {
     let bgClass = 'bg-animated-gradient';
     if (variant === 'bus') bgClass = 'bg-animated-bus';
@@ -186,12 +258,140 @@ const App: React.FC = () => {
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
   const [busPassengers, setBusPassengers] = useState<Player[]>([]);
-  const [busCards, setBusCards] = useState<Card[]>([]); 
-  const [currentBusIndex, setCurrentBusIndex] = useState(1); 
-  const [busWrongCardIndex, setBusWrongCardIndex] = useState<number | null>(null); 
+  const [busCards, setBusCards] = useState<Card[]>([]);
+  const [currentBusIndex, setCurrentBusIndex] = useState(1);
+  const [busWrongCardIndex, setBusWrongCardIndex] = useState<number | null>(null);
   const [isBusEntrance, setIsBusEntrance] = useState(false);
   const [isBusWon, setIsBusWon] = useState(false);
+  const [busDeck, setBusDeck] = useState<Card[]>([]);
+  const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
   const busScrollRef = useRef<HTMLDivElement>(null);
+
+  const persistState = useCallback(() => {
+    const payload: PersistedState = {
+      settings,
+      phase,
+      players,
+      deck,
+      immunePlayerId,
+      newPlayerName,
+      newPlayerImage,
+      activePlayerIndex,
+      roundStep,
+      feedback,
+      lastDrawnCard,
+      isWaitingForNextPlayer,
+      pyramid,
+      revealedPyramidCards: Array.from(revealedPyramidCards),
+      pendingMatches,
+      loserReveal,
+      isPyramidComplete,
+      busDriver,
+      busPassengers,
+      busCards,
+      currentBusIndex,
+      busWrongCardIndex,
+      isBusEntrance,
+      isBusWon,
+      busDeck,
+      isBusDeckExhausted,
+      usedPhrases: Array.from(usedPhrases),
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.warn('Kon spelstaat niet opslaan', error);
+    }
+  }, [
+    settings,
+    phase,
+    players,
+    deck,
+    immunePlayerId,
+    newPlayerName,
+    newPlayerImage,
+    activePlayerIndex,
+    roundStep,
+    feedback,
+    lastDrawnCard,
+    isWaitingForNextPlayer,
+    pyramid,
+    revealedPyramidCards,
+    pendingMatches,
+    loserReveal,
+    isPyramidComplete,
+    busDriver,
+    busPassengers,
+    busCards,
+    currentBusIndex,
+    busWrongCardIndex,
+    isBusEntrance,
+    isBusWon,
+    busDeck,
+    isBusDeckExhausted,
+    usedPhrases,
+  ]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+
+      const parsed = JSON.parse(saved) as Partial<PersistedState>;
+      if (parsed.settings) setSettings(parsed.settings);
+      if (parsed.phase) setPhase(parsed.phase);
+      if (parsed.players) setPlayers(parsed.players);
+      if (parsed.deck) setDeck(parsed.deck);
+      if (parsed.immunePlayerId !== undefined) setImmunePlayerId(parsed.immunePlayerId);
+      if (parsed.newPlayerName !== undefined) setNewPlayerName(parsed.newPlayerName);
+      if (parsed.newPlayerImage !== undefined) setNewPlayerImage(parsed.newPlayerImage);
+      if (parsed.activePlayerIndex !== undefined) setActivePlayerIndex(parsed.activePlayerIndex);
+      if (parsed.roundStep) setRoundStep(parsed.roundStep);
+      if (parsed.feedback !== undefined) setFeedback(parsed.feedback);
+      if (parsed.lastDrawnCard !== undefined) setLastDrawnCard(parsed.lastDrawnCard);
+      if (parsed.isWaitingForNextPlayer !== undefined) setIsWaitingForNextPlayer(parsed.isWaitingForNextPlayer);
+      if (parsed.pyramid) setPyramid(parsed.pyramid);
+      if (parsed.revealedPyramidCards) setRevealedPyramidCards(new Set(parsed.revealedPyramidCards));
+      if (parsed.pendingMatches !== undefined) setPendingMatches(parsed.pendingMatches);
+      if (parsed.loserReveal !== undefined) setLoserReveal(parsed.loserReveal);
+      if (parsed.isPyramidComplete !== undefined) setIsPyramidComplete(parsed.isPyramidComplete);
+      if (parsed.busDriver !== undefined) setBusDriver(parsed.busDriver);
+      if (parsed.busPassengers) setBusPassengers(parsed.busPassengers);
+      if (parsed.busCards) setBusCards(parsed.busCards);
+      if (parsed.currentBusIndex !== undefined) setCurrentBusIndex(parsed.currentBusIndex);
+      if (parsed.busWrongCardIndex !== undefined) setBusWrongCardIndex(parsed.busWrongCardIndex);
+      if (parsed.isBusEntrance !== undefined) setIsBusEntrance(parsed.isBusEntrance);
+      if (parsed.isBusWon !== undefined) setIsBusWon(parsed.isBusWon);
+      if (parsed.busDeck) setBusDeck(parsed.busDeck);
+      if (parsed.isBusDeckExhausted !== undefined) setIsBusDeckExhausted(parsed.isBusDeckExhausted);
+      if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
+    } catch (error) {
+      console.error('Opslaan spelstaat herstellen mislukt', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    persistState();
+  }, [persistState]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        persistState();
+      }
+    };
+
+    const handleBeforeUnload = () => persistState();
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [persistState]);
 
   // --- HELPERS ---
 
@@ -254,16 +454,23 @@ const App: React.FC = () => {
 
   // --- PHASE HANDLERS ---
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setNewPlayerImage(reader.result as string);
-            triggerHaptic('light');
-            setTimeout(() => inputRef.current?.focus(), 10);
-        };
-        reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        setFeedback({ text: 'Kies een afbeelding om te gebruiken als profielfoto.', type: 'error' });
+        return;
+    }
+
+    try {
+        const resized = await resizeImage(file);
+        setNewPlayerImage(resized);
+        triggerHaptic('light');
+        setTimeout(() => inputRef.current?.focus(), 10);
+    } catch (error) {
+        console.error('Afbeelding verwerken mislukt', error);
+        setFeedback({ text: 'Kon de foto niet laden. Controleer de rechten of probeer een kleinere afbeelding.', type: 'error' });
     }
   };
 
@@ -302,6 +509,8 @@ const App: React.FC = () => {
     triggerHaptic('heavy');
     setSettings(prev => ({ ...prev, mode }));
     setDeck(shuffleDeck(createDeck()));
+    setBusDeck([]);
+    setIsBusDeckExhausted(false);
     
     const dealerIndex = Math.floor(Math.random() * players.length);
     const updatedPlayers = players.map((p, i) => ({
@@ -540,7 +749,7 @@ const App: React.FC = () => {
   };
 
   const determineLoserAndAnimate = () => {
-      triggerHaptic('heavy');
+      triggerHaptic('majorLoss');
       const eligiblePlayers = players.filter(p => !p.isImmune);
       const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
 
@@ -589,18 +798,15 @@ const App: React.FC = () => {
   const startBus = (passengers: Player[]) => {
       setIsBusEntrance(true);
       setIsBusWon(false);
+      setIsBusDeckExhausted(false);
       setTimeout(() => setIsBusEntrance(false), 3000);
 
-      let currentDeck = deck;
       const needed = settings.busLength + 1;
-      if (currentDeck.length < needed) currentDeck = shuffleDeck(createDeck());
-      
-      const newBusCards = [];
-      for(let i=0; i < needed; i++) newBusCards.push(currentDeck.pop()!);
-
+      const freshBusDeck = shuffleDeck(createDeck());
+      const newBusCards = freshBusDeck.slice(0, needed);
+      setBusDeck(freshBusDeck.slice(needed));
       setBusCards(newBusCards);
-      setDeck(currentDeck);
-      setCurrentBusIndex(1); 
+      setCurrentBusIndex(1);
       setBusWrongCardIndex(null);
       setPhase(GamePhase.THE_BUS);
       setFeedback(null);
@@ -608,19 +814,25 @@ const App: React.FC = () => {
 
   const restartBus = () => {
       setBusWrongCardIndex(null);
-      let currentDeck = deck;
       const needed = settings.busLength + 1;
-      if (currentDeck.length < needed) currentDeck = shuffleDeck(createDeck());
+      if (busDeck.length < needed) {
+          setIsBusDeckExhausted(true);
+          setFeedback({ text: 'Het bus-pakje is leeg. Pak een nieuw deck om door te gaan.', type: 'info' });
+          return;
+      }
 
-      const newBusCards = [];
-      for(let i=0; i < needed; i++) newBusCards.push(currentDeck.pop()!);
+      const newBusCards = busDeck.slice(0, needed);
+      setBusDeck(prev => prev.slice(needed));
       setBusCards(newBusCards);
-      setDeck(currentDeck);
       setCurrentBusIndex(1);
       setFeedback(null);
   };
 
   const handleBusGuess = (guess: 'HIGHER' | 'LOWER') => {
+      if (isBusDeckExhausted || busCards.length === 0) {
+          setFeedback({ text: 'Geen kaarten meer in de bus. Start een nieuw pakje om verder te spelen.', type: 'info' });
+          return;
+      }
       const prevCard = busCards[currentBusIndex - 1];
       const targetCard = busCards[currentBusIndex];
       const isHigher = targetCard.rank > prevCard.rank;
@@ -1171,6 +1383,7 @@ const App: React.FC = () => {
       }
 
       const passengerNames = busPassengers.map(p => p.name).join(' & ');
+      const remainingBusCards = busDeck.length;
 
       return (
           <RootContainer className="p-0 relative" variant="bus" shake={screenShake}>
@@ -1181,11 +1394,17 @@ const App: React.FC = () => {
                   <div>
                       <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">De Bus</h2>
                   </div>
-                  <div className="text-right">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                          {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
-                      </span>
-                      <span className="text-white text-sm font-black">{passengerNames}</span>
+                  <div className="flex items-center gap-4">
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${isBusDeckExhausted ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
+                          <BusFront size={14} className={isBusDeckExhausted ? 'text-red-400' : 'text-red-500'} />
+                          <span>{remainingBusCards} over</span>
+                      </div>
+                      <div className="text-right">
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                              {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
+                          </span>
+                          <span className="text-white text-sm font-black">{passengerNames}</span>
+                      </div>
                   </div>
               </div>
 
@@ -1269,10 +1488,14 @@ const App: React.FC = () => {
                     )}
 
                     <div className="flex items-center justify-center gap-4">
-                        {busWrongCardIndex === null && !isBusWon ? (
+                        {isBusDeckExhausted ? (
+                            <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
+                                Pakje leeg – pak een nieuw deck om verder te gaan
+                            </div>
+                        ) : busWrongCardIndex === null && !isBusWon ? (
                             <>
                                 <button onClick={() => handleBusGuess('HIGHER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500">
-                                     <ChevronUp size={32} className="text-green-400 mb-1 group-hover:scale-125 transition-transform" /> 
+                                     <ChevronUp size={32} className="text-green-400 mb-1 group-hover:scale-125 transition-transform" />
                                      <span className="text-sm uppercase tracking-[0.2em]">Hoger</span>
                                 </button>
                                 <button onClick={() => handleBusGuess('LOWER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500">
