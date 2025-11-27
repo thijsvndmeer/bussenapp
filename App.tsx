@@ -815,21 +815,24 @@ const App: React.FC = () => {
   const restartBus = () => {
       setBusWrongCardIndex(null);
       const needed = settings.busLength + 1;
-      if (busDeck.length < needed) {
-          setIsBusDeckExhausted(true);
-          setFeedback({ text: 'Het bus-pakje is leeg. Pak een nieuw deck om door te gaan.', type: 'info' });
-          return;
+      let availableDeck = busDeck;
+      let infoFeedback: Feedback | null = null;
+
+      if (availableDeck.length < needed) {
+          availableDeck = shuffleDeck(createDeck());
+          infoFeedback = { text: 'Nieuw bus-pakje geschud. Hoger of lager?', type: 'info' };
       }
 
-      const newBusCards = busDeck.slice(0, needed);
-      setBusDeck(prev => prev.slice(needed));
+      const newBusCards = availableDeck.slice(0, needed);
+      setBusDeck(availableDeck.slice(needed));
       setBusCards(newBusCards);
       setCurrentBusIndex(1);
-      setFeedback(null);
+      setFeedback(infoFeedback);
+      setIsBusDeckExhausted(false);
   };
 
   const handleBusGuess = (guess: 'HIGHER' | 'LOWER') => {
-      if (isBusDeckExhausted || busCards.length === 0) {
+      if (busCards.length === 0) {
           setFeedback({ text: 'Geen kaarten meer in de bus. Start een nieuw pakje om verder te spelen.', type: 'info' });
           return;
       }
