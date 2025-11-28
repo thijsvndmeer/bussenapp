@@ -135,8 +135,8 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   const isFlipped = isFaceDown;
 
   return (
-    <div 
-      className={`perspective-1000 ${s.width} ${s.height} ${className} relative select-none group`}
+    <div
+      className={`perspective-1000 ${s.width} ${s.height} ${s.radius} ${className} relative select-none group overflow-visible`}
       onClick={!disabled ? onClick : undefined}
     >
       <div className={`
