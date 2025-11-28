@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse, BusFront } from 'lucide-react';
@@ -267,7 +267,7 @@ const App: React.FC = () => {
   // --- STATE ---
   const [settings, setSettings] = useState<GameSettings>({
     mode: GameMode.DIGITAL,
-    pyramidRows: 5,
+    pyramidRows: 4,
     sharedBus: false,
     busLength: 6,
     busDecks: 1,
@@ -845,6 +845,12 @@ const App: React.FC = () => {
         setPyramid(newPyramid);
     }
   };
+
+  const pyramidScale = useMemo(() => {
+    const rows = settings.pyramidRows;
+    const scale = 1 - (rows - 3) * 0.12;
+    return Math.min(1, Math.max(0.55, scale));
+  }, [settings.pyramidRows]);
 
   const revealPyramidCard = (rowIndex: number, cardIndex: number) => {
     const card = pyramid[rowIndex][cardIndex];
@@ -1489,7 +1495,10 @@ const App: React.FC = () => {
 
               {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
               <div className="flex-1 flex items-center justify-center overflow-hidden p-2 relative">
-                   <div className="flex flex-col items-center gap-2 md:gap-3 scale-[0.55] origin-center transition-transform duration-500">
+                   <div
+                      className="flex flex-col items-center gap-2 md:gap-3 origin-center transition-transform duration-500"
+                      style={{ transform: `scale(${pyramidScale})` }}
+                   >
                       {pyramid.map((row, rowIndex) => (
                           <div key={rowIndex} className="flex gap-3 justify-center">
                               {row.map((card, cardIndex) => {
