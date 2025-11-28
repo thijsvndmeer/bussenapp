@@ -4,7 +4,6 @@ import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings 
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 // --- CONSTANTS & PHRASES ---
 
@@ -139,7 +138,8 @@ const createOscillatorSound = (
   osc.stop(start + duration + decay + 0.05);
 };
 
-const STORAGE_KEY = 'bus-app-state-v1';
+const PLAYER_DATA_KEY = 'bus-app-player-data-v1';
+const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
@@ -244,14 +244,17 @@ interface RootContainerProps {
   isDiscoActive?: boolean; // Add this
 }
 
-interface PersistedState {
-  settings: GameSettings;
-  phase: GamePhase;
+interface PersistedPlayerState {
   players: Player[];
-  deck: Card[];
-  immunePlayerId: string | null;
   newPlayerName: string;
   newPlayerImage: string | null;
+}
+
+interface PersistedGameState {
+  settings: GameSettings;
+  phase: GamePhase;
+  deck: Card[];
+  immunePlayerId: string | null;
   activePlayerIndex: number;
   roundStep: RoundStep;
   feedback: { text: string; type: 'success' | 'error' | 'neutral' | 'info' } | null;
@@ -273,7 +276,7 @@ interface PersistedState {
   usedPhrases: string[];
 }
 
-type Feedback = NonNullable<PersistedState['feedback']>;
+type Feedback = NonNullable<PersistedGameState['feedback']>;
 
 
 
@@ -669,17 +672,30 @@ const App: React.FC = () => {
     [playTone]
   );
 
-  const persistState = useCallback(() => {
+  const persistPlayers = useCallback(() => {
     if (!storageAvailable) return;
 
-    const payload: PersistedState = {
-      settings,
-      phase,
+    const payload: PersistedPlayerState = {
       players,
-      deck,
-      immunePlayerId,
       newPlayerName,
       newPlayerImage,
+    };
+
+    try {
+      localStorage.setItem(PLAYER_DATA_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.warn('Kon spelersdata niet opslaan', error);
+    }
+  }, [storageAvailable, players, newPlayerName, newPlayerImage]);
+
+  const persistGameState = useCallback(() => {
+    if (!storageAvailable) return;
+
+    const payload: PersistedGameState = {
+      settings,
+      phase,
+      deck,
+      immunePlayerId,
       activePlayerIndex,
       roundStep,
       feedback,
@@ -702,7 +718,7 @@ const App: React.FC = () => {
     };
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      localStorage.setItem(GAME_STATE_KEY, JSON.stringify(payload));
     } catch (error) {
       console.warn('Kon spelstaat niet opslaan', error);
     }
@@ -710,11 +726,8 @@ const App: React.FC = () => {
     storageAvailable,
     settings,
     phase,
-    players,
     deck,
     immunePlayerId,
-    newPlayerName,
-    newPlayerImage,
     activePlayerIndex,
     roundStep,
     feedback,
@@ -736,21 +749,33 @@ const App: React.FC = () => {
     usedPhrases,
   ]);
 
-  useEffect(() => {
+  // Hydrate players only
+  const hydratePlayers = useCallback(() => {
     if (!storageAvailable) return;
-
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(PLAYER_DATA_KEY);
       if (!saved) return;
-
-      const parsed = JSON.parse(saved) as Partial<PersistedState>;
-      if (parsed.settings) setSettings(parsed.settings);
-      if (parsed.phase) setPhase(parsed.phase);
+      const parsed = JSON.parse(saved) as Partial<PersistedPlayerState>;
       if (parsed.players) setPlayers(parsed.players);
-      if (parsed.deck) setDeck(parsed.deck);
-      if (parsed.immunePlayerId !== undefined) setImmunePlayerId(parsed.immunePlayerId);
       if (parsed.newPlayerName !== undefined) setNewPlayerName(parsed.newPlayerName);
       if (parsed.newPlayerImage !== undefined) setNewPlayerImage(parsed.newPlayerImage);
+    } catch (error) {
+      console.error('Herstellen spelersdata mislukt', error);
+      localStorage.removeItem(PLAYER_DATA_KEY);
+    }
+  }, [storageAvailable, setPlayers, setNewPlayerName, setNewPlayerImage]);
+
+  // Hydrate game state conditionally
+  const hydrateGameState = useCallback(() => {
+    if (!storageAvailable) return;
+    try {
+      const saved = localStorage.getItem(GAME_STATE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as Partial<PersistedGameState>;
+      if (parsed.settings) setSettings(parsed.settings);
+      if (parsed.phase) setPhase(parsed.phase);
+      if (parsed.deck) setDeck(parsed.deck);
+      if (parsed.immunePlayerId !== undefined) setImmunePlayerId(parsed.immunePlayerId);
       if (parsed.activePlayerIndex !== undefined) setActivePlayerIndex(parsed.activePlayerIndex);
       if (parsed.roundStep) setRoundStep(parsed.roundStep);
       if (parsed.feedback !== undefined) setFeedback(parsed.feedback);
@@ -771,25 +796,37 @@ const App: React.FC = () => {
       if (parsed.busDecksUsed !== undefined) setBusDecksUsed(parsed.busDecksUsed);
       if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
     } catch (error) {
-      console.error('Opslaan spelstaat herstellen mislukt', error);
-      localStorage.removeItem(STORAGE_KEY);
+      console.error('Herstellen spelstaat mislukt', error);
+      localStorage.removeItem(GAME_STATE_KEY);
     }
-  }, []);
+  }, [
+    storageAvailable, setSettings, setPhase, setDeck, setImmunePlayerId, setActivePlayerIndex, setRoundStep,
+    setFeedback, setLastDrawnCard, setIsWaitingForNextPlayer, setPyramid, setRevealedPyramidCards,
+    setPendingMatches, setLoserReveal, setIsPyramidComplete, setBusDriver, setBusPassengers,
+    setBusCards, setCurrentBusIndex, setBusWrongCardIndex, setIsBusEntrance, setIsBusWon,
+    setBusDecksUsed, setUsedPhrases
+  ]);
 
+  // Main hydration effect on component mount
   useEffect(() => {
-    persistState();
-  }, [persistState]);
+    hydratePlayers(); // Always hydrate players
+    if (localStorage.getItem(GAME_STATE_KEY)) { // Only hydrate game state if it exists (implies app was paused, not terminated)
+      hydrateGameState();
+    }
+  }, [hydratePlayers, hydrateGameState]);
+
+
 
   useEffect(() => {
     if (!storageAvailable) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        persistState();
+        persistPlayers(); // Only persist players on web visibility change
       }
     };
 
-    const handleBeforeUnload = () => persistState();
+    const handleBeforeUnload = () => persistPlayers(); // Only persist players on web beforeunload
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -798,7 +835,7 @@ const App: React.FC = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [persistState]);
+  }, [persistPlayers]); // Dependency array changes to persistPlayers
 
   useEffect(() => {
     if (!storageAvailable) return;
@@ -806,16 +843,20 @@ const App: React.FC = () => {
     const isNativeApp = Capacitor.getPlatform() !== 'web';
     if (!isNativeApp) return;
 
-    const handleAppPause = () => persistState();
+    const handleAppPause = () => {
+      persistPlayers();
+      persistGameState(); // Persist both players and game state on native pause
+    }
 
     document.addEventListener('pause', handleAppPause);
-    document.addEventListener('resume', handleAppPause);
+    document.addEventListener('resume', handleAppPause); // Resume does not need to save state
 
     return () => {
       document.removeEventListener('pause', handleAppPause);
       document.removeEventListener('resume', handleAppPause);
     };
-  }, [persistState]);
+  }, [persistPlayers, persistGameState]); // Dependency array changes
+
 
   useEffect(() => {
     const unlock = () => ensureAudioContext();
@@ -924,6 +965,15 @@ const App: React.FC = () => {
   const handleTakePhoto = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
     try {
+      // Dynamically import Camera plugin
+      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+
+      if (!Capacitor.isPluginAvailable('Camera')) {
+        setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
+        fileInputRef.current?.click(); // Fallback to file input
+        return;
+      }
+
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: true,
@@ -937,15 +987,30 @@ const App: React.FC = () => {
         setNewPlayerImage(photo.dataUrl);
         triggerHaptic('light');
       }
-    } catch (error) {
-      console.error('Foto maken mislukt', error);
-      setFeedback({ text: 'Kon geen foto maken. Controleer cameratoestemmingen.', type: 'error' });
+    } catch (error: any) { // Type 'any' for error to access properties
+      console.error('Operation failed:', error);
+      // Check for user cancellation error messages from Capacitor
+      if (error.message === 'User cancelled photos app' || error.message === 'User cancelled camera' || error.message === 'No image selected') {
+          // Do nothing, modal already closed by setIsPhotoOptionsModalOpen(false)
+          // or prevent the file input from opening
+      } else {
+          setFeedback({ text: 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.', type: 'error' });
+          fileInputRef.current?.click(); // Fallback on genuine error
+      }
     }
   };
 
   const handleSelectFromGallery = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
     try {
+      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+
+      if (!Capacitor.isPluginAvailable('Camera')) {
+        setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
+        fileInputRef.current?.click(); // Fallback to file input
+        return;
+      }
+
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: true,
@@ -959,9 +1024,16 @@ const App: React.FC = () => {
         setNewPlayerImage(photo.dataUrl);
         triggerHaptic('light');
       }
-    } catch (error) {
-      console.error('Selectie uit galerij mislukt', error);
-      setFeedback({ text: 'Kon geen foto selecteren. Controleer galerijtoestemmingen.', type: 'error' });
+    } catch (error: any) { // Type 'any' for error to access properties
+      console.error('Operation failed:', error);
+      // Check for user cancellation error messages from Capacitor
+      if (error.message === 'User cancelled photos app' || error.message === 'User cancelled camera' || error.message === 'No image selected') {
+          // Do nothing, modal already closed by setIsPhotoOptionsModalOpen(false)
+          // or prevent the file input from opening
+      } else {
+          setFeedback({ text: 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.', type: 'error' });
+          fileInputRef.current?.click(); // Fallback on genuine error
+      }
     }
   };
 
