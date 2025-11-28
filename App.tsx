@@ -5,6 +5,37 @@ import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
+const ADMOB_APP_ID = 'Bussenca-app-pub-7627297114391750~5463450367';
+const ADMOB_INTERSTITIAL_UNIT_ID = 'rondeklaarca-app-pub-7627297114391750/7299276212';
+const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
+
+type CameraPlugin = {
+  getPhoto: (options: {
+    quality?: number;
+    allowEditing?: boolean;
+    resultType: 'uri' | 'base64' | 'dataUrl';
+    source: 'camera' | 'photos' | 'prompt';
+    width?: number;
+    height?: number;
+  }) => Promise<{ dataUrl?: string }>;
+};
+
+type AdMobPlugin = {
+  initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
+  prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
+  showInterstitial?: () => Promise<void>;
+};
+
+const getCameraPlugin = (): CameraPlugin | null => {
+  const plugin = (Capacitor as any).Plugins?.Camera as CameraPlugin | undefined;
+  return plugin ?? null;
+};
+
+const getAdMobPlugin = (): AdMobPlugin | null => {
+  const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
+  return plugin ?? null;
+};
+
 // --- CONSTANTS & PHRASES ---
 
 const SUCCESS_PHRASES = [
@@ -554,6 +585,7 @@ const App: React.FC = () => {
   const [isPhotoOptionsModalOpen, setIsPhotoOptionsModalOpen] = useState(false); // New state for photo options modal
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const adMobReadyRef = useRef(false);
 
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
@@ -671,6 +703,21 @@ const App: React.FC = () => {
     },
     [playTone]
   );
+
+  const initializeAdMob = useCallback(async () => {
+    const adMob = getAdMobPlugin();
+    if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
+
+    try {
+      await adMob.initialize({
+        appId: ADMOB_APP_ID,
+        requestTrackingAuthorization: true,
+      });
+      adMobReadyRef.current = true;
+    } catch (error) {
+      console.warn('AdMob initialisatie mislukt', error);
+    }
+  }, []);
 
   const persistPlayers = useCallback(() => {
     if (!storageAvailable) return;
@@ -864,11 +911,22 @@ const App: React.FC = () => {
     return () => window.removeEventListener('pointerdown', unlock);
   }, [ensureAudioContext]);
 
+  useEffect(() => {
+    initializeAdMob();
+  }, [initializeAdMob]);
+
   // --- HELPERS ---
 
   const triggerShake = () => {
       setScreenShake(true);
       setTimeout(() => setScreenShake(false), 500);
+  };
+
+  const triggerFileCapture = () => {
+    const input = fileInputRef.current;
+    if (!input) return;
+    input.setAttribute('capture', 'environment');
+    input.click();
   };
 
   const getUniquePhrase = (pool: string[]) => {
@@ -964,58 +1022,58 @@ const App: React.FC = () => {
 
   const handleTakePhoto = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
+    const camera = getCameraPlugin();
+
+    if (!camera) {
+      setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
+      triggerFileCapture();
+      return;
+    }
+
     try {
-      // Dynamically import Camera plugin
-      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
-
-      if (!Capacitor.isPluginAvailable('Camera')) {
-        setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
-        fileInputRef.current?.click(); // Fallback to file input
-        return;
-      }
-
-      const photo = await Camera.getPhoto({
+      const photo = await camera.getPhoto({
         quality: 90,
         allowEditing: true,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
+        resultType: 'dataUrl',
+        source: 'camera',
         width: 640,
         height: 640,
       });
 
-      if (photo.dataUrl) {
+      if (photo?.dataUrl) {
         setNewPlayerImage(photo.dataUrl);
         triggerHaptic('light');
+      } else {
+        triggerFileCapture();
       }
     } catch (error: any) { // Type 'any' for error to access properties
       console.error('Operation failed:', error);
       // Check for user cancellation error messages from Capacitor
-      if (error.message === 'User cancelled photos app' || error.message === 'User cancelled camera' || error.message === 'No image selected') {
+      if (error?.message === 'User cancelled photos app' || error?.message === 'User cancelled camera' || error?.message === 'No image selected') {
           // Do nothing, modal already closed by setIsPhotoOptionsModalOpen(false)
-          // or prevent the file input from opening
       } else {
           setFeedback({ text: 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.', type: 'error' });
-          fileInputRef.current?.click(); // Fallback on genuine error
+          triggerFileCapture(); // Fallback on genuine error
       }
     }
   };
 
   const handleSelectFromGallery = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
+    const camera = getCameraPlugin();
+
+    if (!camera) {
+      setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
+      triggerFileCapture();
+      return;
+    }
+
     try {
-      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
-
-      if (!Capacitor.isPluginAvailable('Camera')) {
-        setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
-        fileInputRef.current?.click(); // Fallback to file input
-        return;
-      }
-
-      const photo = await Camera.getPhoto({
+      const photo = await camera.getPhoto({
         quality: 90,
         allowEditing: true,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Photos,
+        resultType: 'dataUrl',
+        source: 'photos',
         width: 640,
         height: 640,
       });
@@ -1027,15 +1085,35 @@ const App: React.FC = () => {
     } catch (error: any) { // Type 'any' for error to access properties
       console.error('Operation failed:', error);
       // Check for user cancellation error messages from Capacitor
-      if (error.message === 'User cancelled photos app' || error.message === 'User cancelled camera' || error.message === 'No image selected') {
+      if (error?.message === 'User cancelled photos app' || error?.message === 'User cancelled camera' || error?.message === 'No image selected') {
           // Do nothing, modal already closed by setIsPhotoOptionsModalOpen(false)
-          // or prevent the file input from opening
       } else {
           setFeedback({ text: 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.', type: 'error' });
-          fileInputRef.current?.click(); // Fallback on genuine error
+          triggerFileCapture(); // Fallback on genuine error
       }
     }
   };
+
+  // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
+  const showLeaderboardInterstitial = useCallback(async () => {
+    const adMob = getAdMobPlugin();
+    if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') return;
+
+    try {
+      if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
+        await adMob.initialize({
+          appId: ADMOB_APP_ID,
+          requestTrackingAuthorization: true,
+        });
+        adMobReadyRef.current = true;
+      }
+
+      await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
+      await adMob.showInterstitial();
+    } catch (error) {
+      console.warn('Interstitial tonen mislukt', error);
+    }
+  }, []);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1082,6 +1160,11 @@ const App: React.FC = () => {
     triggerHaptic('light');
     playSound('playerRemove');
     setPlayers(players.filter(p => p.id !== id));
+  };
+
+  const handleGameOverContinue = async () => {
+    await showLeaderboardInterstitial();
+    setPhase(GamePhase.SETUP);
   };
 
   const handleStartPress = () => {
@@ -1596,17 +1679,17 @@ const App: React.FC = () => {
               
               <div className="flex-none space-y-3">
                   <div className="flex gap-2">
-                      <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
-                      <button 
+                      <input type="file" ref={fileInputRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
+                      <button
                           onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
                           className={`flex-none w-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
                       >
                           {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
                       </button>
 
-                      <input 
+                      <input
                         ref={inputRef}
-                        type="text" 
+                        type="text"
                         placeholder="Naam..." 
                         className="flex-1 min-w-0 bg-slate-900/80 border border-slate-700 rounded-2xl px-4 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
                         value={newPlayerName}
@@ -1614,6 +1697,13 @@ const App: React.FC = () => {
                         onKeyDown={e => e.key === 'Enter' && addPlayer()}
                         maxLength={12}
                       />
+                      <div className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-700 bg-slate-900/60 shadow-inner overflow-hidden">
+                          {newPlayerImage ? (
+                              <img src={newPlayerImage} className="w-full h-full object-cover" />
+                          ) : (
+                              <span className="text-[10px] text-slate-400 font-bold uppercase text-center leading-tight px-1">Foto naast naam</span>
+                          )}
+                      </div>
                       <button onClick={addPlayer} className="w-14 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
                           <Check size={24} strokeWidth={4} className="text-green-100" />
                       </button>
@@ -2323,7 +2413,7 @@ const App: React.FC = () => {
                       ))}
                   </div>
 
-                  <button onClick={() => setPhase(GamePhase.SETUP)} className="w-full bg-white text-black py-5 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.3)] text-lg uppercase tracking-widest hover:scale-105 transition-transform active:scale-95">
+                  <button onClick={handleGameOverContinue} className="w-full bg-white text-black py-5 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.3)] text-lg uppercase tracking-widest hover:scale-105 transition-transform active:scale-95">
                       Terug naar Menu
                   </button>
               </div>
