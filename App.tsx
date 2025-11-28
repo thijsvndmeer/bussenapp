@@ -1996,7 +1996,7 @@ const App: React.FC = () => {
                </div>
                <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Smart</h2>
                <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
-                   <span className="text-white border-b-2 border-red-500">{victim.name}</span>, sleep iemand mee de afgrond in:
+                   <span className="text-white border-b-2 border-red-500">{victim.name}</span>, Wie neem je mee de bus in?
                </p>
 
                <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
@@ -2004,7 +2004,7 @@ const App: React.FC = () => {
                         onClick={() => handleSharedBusSelection(null)}
                         className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
                    >
-                       NIEMAND (Ik sterf alleen)
+                       NIEMAND
                    </button>
                    {players.filter(p => p.id !== victim.id).map(p => (
                        <button 
