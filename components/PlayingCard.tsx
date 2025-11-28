@@ -149,8 +149,11 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
-          bg-[#fdfdfd] /* Paper White */
-          ${s.radius} 
+          bg-gradient-to-b from-[#fdfdfd] to-[#f3f4f6] /* Paper White */
+          ${s.radius}
+          border border-white/80
+          ring-1 ring-black/5
+          shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
           overflow-hidden
         `}>
            {/* Texture Overlay */}
@@ -230,7 +233,8 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           bg-[#1e40af] /* Classic Blue Deck */
           ${s.radius}
           border-[6px] border-white
-          shadow-inner
+          ring-1 ring-black/10
+          shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
           overflow-hidden
         `}>
             {/* Realistic Back Pattern (CSS Pattern) */}
