@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const ADMOB_APP_ID = 'Bussenca-app-pub-7627297114391750~5463450367';
@@ -175,7 +175,7 @@ const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<str
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Kon afbeelding niet lezen'));
     reader.onload = () => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -1773,7 +1773,7 @@ const App: React.FC = () => {
                               onClick={handleSelectFromGallery}
                               className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
                           >
-                              <Image size={20} /> Kies uit galerij
+                              <ImageIcon size={20} /> Kies uit galerij
                           </button>
                           <button 
                               onClick={() => setIsPhotoOptionsModalOpen(false)}
