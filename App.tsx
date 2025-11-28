@@ -70,6 +70,53 @@ const triggerHaptic = async (
   }
 };
 
+type SoundEffect =
+  | 'draw'
+  | 'success'
+  | 'fail'
+  | 'playerAdd'
+  | 'playerRemove'
+  | 'celebrate'
+  | 'busEnter'
+  | 'busStep'
+  | 'busFail'
+  | 'reshuffle';
+
+const createOscillatorSound = (
+  ctx: AudioContext,
+  {
+    frequency,
+    duration = 0.15,
+    type = 'sine',
+    volume = 0.12,
+    attack = 0.01,
+    decay = 0.12,
+  }: {
+    frequency: number;
+    duration?: number;
+    type?: OscillatorType;
+    volume?: number;
+    attack?: number;
+    decay?: number;
+  }
+) => {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+
+  const now = ctx.currentTime;
+  const start = now + 0.001;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration + decay);
+
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + decay + 0.05);
+};
+
 const STORAGE_KEY = 'bus-app-state-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
@@ -272,6 +319,79 @@ const App: React.FC = () => {
   const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
   const busScrollRef = useRef<HTMLDivElement>(null);
 
+  // Audio FX
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const ensureAudioContext = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    if (!audioCtxRef.current) {
+      const AudioCtor = (window as typeof window & { webkitAudioContext?: typeof AudioContext }).AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtor) return null;
+      audioCtxRef.current = new AudioCtor();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const playTone = useCallback(
+    (opts: Parameters<typeof createOscillatorSound>[1]) => {
+      const ctx = ensureAudioContext();
+      if (!ctx) return;
+      createOscillatorSound(ctx, opts);
+    },
+    [ensureAudioContext]
+  );
+
+  const playSound = useCallback(
+    (sound: SoundEffect) => {
+      switch (sound) {
+        case 'draw':
+          playTone({ frequency: 180, duration: 0.08, type: 'triangle', volume: 0.08 });
+          playTone({ frequency: 260, duration: 0.08, type: 'triangle', volume: 0.08, attack: 0.02 });
+          break;
+        case 'success':
+          playTone({ frequency: 540, duration: 0.12, type: 'sine', volume: 0.12 });
+          setTimeout(() => playTone({ frequency: 720, duration: 0.14, type: 'triangle', volume: 0.1 }), 60);
+          break;
+        case 'fail':
+          playTone({ frequency: 220, duration: 0.16, type: 'sawtooth', volume: 0.12 });
+          setTimeout(() => playTone({ frequency: 140, duration: 0.2, type: 'sine', volume: 0.08 }), 70);
+          break;
+        case 'playerAdd':
+          playTone({ frequency: 420, duration: 0.12, type: 'square', volume: 0.1 });
+          setTimeout(() => playTone({ frequency: 620, duration: 0.1, type: 'triangle', volume: 0.08 }), 50);
+          break;
+        case 'playerRemove':
+          playTone({ frequency: 160, duration: 0.14, type: 'square', volume: 0.09 });
+          break;
+        case 'celebrate':
+          playTone({ frequency: 620, duration: 0.12, type: 'triangle', volume: 0.12 });
+          setTimeout(() => playTone({ frequency: 780, duration: 0.16, type: 'sine', volume: 0.1 }), 70);
+          setTimeout(() => playTone({ frequency: 980, duration: 0.18, type: 'sine', volume: 0.08 }), 140);
+          break;
+        case 'busEnter':
+          playTone({ frequency: 110, duration: 0.18, type: 'sawtooth', volume: 0.12 });
+          setTimeout(() => playTone({ frequency: 220, duration: 0.22, type: 'triangle', volume: 0.09 }), 90);
+          break;
+        case 'busStep':
+          playTone({ frequency: 320 + Math.random() * 80, duration: 0.1, type: 'triangle', volume: 0.1 });
+          break;
+        case 'busFail':
+          playTone({ frequency: 200, duration: 0.14, type: 'sine', volume: 0.12 });
+          setTimeout(() => playTone({ frequency: 120, duration: 0.16, type: 'sawtooth', volume: 0.1 }), 80);
+          break;
+        case 'reshuffle':
+          playTone({ frequency: 260, duration: 0.08, type: 'triangle', volume: 0.08 });
+          setTimeout(() => playTone({ frequency: 310, duration: 0.08, type: 'triangle', volume: 0.08 }), 40);
+          setTimeout(() => playTone({ frequency: 360, duration: 0.08, type: 'triangle', volume: 0.08 }), 80);
+          break;
+      }
+    },
+    [playTone]
+  );
+
   const persistState = useCallback(() => {
     if (!storageAvailable) return;
 
@@ -420,6 +540,12 @@ const App: React.FC = () => {
     };
   }, [persistState]);
 
+  useEffect(() => {
+    const unlock = () => ensureAudioContext();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, [ensureAudioContext]);
+
   // --- HELPERS ---
 
   const triggerShake = () => {
@@ -504,6 +630,7 @@ const App: React.FC = () => {
   const addPlayer = () => {
     if (newPlayerName.trim() && players.length < 12) {
       triggerHaptic('success');
+      playSound('playerAdd');
       setPlayers([...players, {
         id: Date.now().toString(),
         name: newPlayerName.trim(),
@@ -523,6 +650,7 @@ const App: React.FC = () => {
 
   const removePlayer = (id: string) => {
     triggerHaptic('light');
+    playSound('playerRemove');
     setPlayers(players.filter(p => p.id !== id));
   };
 
@@ -596,13 +724,16 @@ const App: React.FC = () => {
 
       if (correct) {
           triggerHaptic('success');
+          playSound('success');
           const phrase = getUniquePhrase(SUCCESS_PHRASES);
           setFeedback({ text: `${phrase} deel ${getSipsText(sips)} uit.`, type: 'success' });
           currentPlayer.drinksDistributed += sips;
           setShowConfetti(true);
+          playSound('celebrate');
       } else {
           triggerHaptic('error');
           triggerShake();
+          playSound('fail');
           const phrase = getUniquePhrase(FAILURE_PHRASES);
           setFeedback({ text: `${phrase} drink zelf ${getSipsText(sips)}.`, type: 'error' });
           currentPlayer.drinksTaken += sips;
@@ -612,7 +743,8 @@ const App: React.FC = () => {
 
   const handleDigitalGuess = (guess: string) => {
     const card = drawCard();
-    if (!card) return; 
+    if (!card) return;
+    playSound('draw');
     setLastDrawnCard(card);
     
     const player = getActivePlayer();
@@ -647,13 +779,16 @@ const App: React.FC = () => {
     
     if (correct) {
       triggerHaptic('success');
+      playSound('success');
       const phrase = getUniquePhrase(SUCCESS_PHRASES);
       setFeedback({ text: `${phrase} Deel ${getSipsText(sips)} uit.`, type: 'success' });
       currentPlayer.drinksDistributed += sips;
       setShowConfetti(true);
+      playSound('celebrate');
     } else {
       triggerHaptic('error');
       triggerShake();
+      playSound('fail');
       const phrase = getUniquePhrase(FAILURE_PHRASES);
       setFeedback({ text: `${phrase} Drink zelf ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
@@ -735,6 +870,7 @@ const App: React.FC = () => {
 
     if (matches.length > 0) {
         triggerHaptic('success');
+        playSound('success');
         setPendingMatches({
             card: card,
             sips: isTop ? 5 : sips,
@@ -829,6 +965,7 @@ const App: React.FC = () => {
           setIsBusEntrance(true);
           setTimeout(() => setIsBusEntrance(false), 3000);
         }
+        playSound('busEnter');
         setIsBusWon(false);
         setIsBusDeckExhausted(false);
         
@@ -851,13 +988,15 @@ const App: React.FC = () => {
       if (currentAvailableDeck.length < needed) {
           if (busDecksUsed >= settings.busDecks) {
               setIsBusWon(true);
+              playSound('celebrate');
               setImmunePlayerId(busPassengers[0].id); // Player in bus becomes immune
               setFeedback({ text: 'Geen kaarten meer! Je bent vrij!', type: 'success' });
               setTimeout(() => setPhase(GamePhase.GAME_OVER), 3000);
-              return; 
+              return;
           } else {
               currentAvailableDeck = shuffleDeck(createDeck());
               setBusDecksUsed(prev => prev + 1);
+              playSound('reshuffle');
               infoFeedback = { text: `Pakje ${busDecksUsed + 1} / ${settings.busDecks}. Hoger of lager?`, type: 'info' };
           }
       }
@@ -882,8 +1021,10 @@ const App: React.FC = () => {
 
       if (correct) {
           triggerHaptic('success');
+          playSound('busStep');
           if (currentBusIndex === busCards.length - 1) {
-              setIsBusWon(true); 
+              setIsBusWon(true);
+              playSound('celebrate');
               setImmunePlayerId(busPassengers[0].id);
               setTimeout(() => setPhase(GamePhase.GAME_OVER), 6000);
           } else {
@@ -893,6 +1034,7 @@ const App: React.FC = () => {
       } else {
           triggerHaptic('error');
           triggerShake();
+          playSound('busFail');
           const sips = currentBusIndex;
           const phrase = getUniquePhrase(FAILURE_PHRASES);
           setFeedback({ text: `${phrase} ${getSipsText(sips)} & Opnieuw!`, type: 'error' });
@@ -1433,6 +1575,13 @@ const App: React.FC = () => {
       return (
           <RootContainer className="p-0 relative" variant="bus" shake={screenShake}>
               {isBusWon && <Confetti />}
+              {isBusWon && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="px-6 py-4 bg-gradient-to-r from-yellow-500/20 via-amber-300/30 to-yellow-500/20 border-2 border-yellow-300/60 rounded-3xl shadow-[0_0_50px_rgba(250,204,21,0.6)] animate-[pulse_1.2s_ease-in-out_infinite] backdrop-blur-sm">
+                    <span className="text-5xl font-black uppercase tracking-[0.4em] text-yellow-100 drop-shadow-[0_6px_22px_rgba(0,0,0,0.7)]">UIT DE BUS!</span>
+                  </div>
+                </div>
+              )}
 
               {/* Header - Redesigned */}
               <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl">
@@ -1461,9 +1610,9 @@ const App: React.FC = () => {
               {/* Bus Cards */}
               <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 to-transparent animate-pulse pointer-events-none"></div>
-                   <div 
+                   <div
                         ref={busScrollRef}
-                        className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x no-scrollbar h-full py-10"
+                        className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
                    >
                        {busCards.map((card, index) => {
                            // Logic for revealing cards
@@ -1481,7 +1630,7 @@ const App: React.FC = () => {
                            
                            // Styles
                            // By default, dim cards in the past or future
-                           let containerClass = "opacity-40 scale-90 grayscale";
+                           let containerClass = "opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]";
                            
                            if (isReference) {
                                // Highlight the reference card! This is the info the user needs.
@@ -1494,7 +1643,7 @@ const App: React.FC = () => {
                            }
 
                            return (
-                               <div key={`${card.id}-${index}`} className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 ${containerClass}`}>
+                               <div key={`${card.id}-${index}`} className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}>
                                    {isBase && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
                                    
                                    <PlayingCard 
@@ -1502,7 +1651,7 @@ const App: React.FC = () => {
                                        isFaceDown={!isRevealed}
                                        size="md"
                                        highlight={isReference || index === busWrongCardIndex} // Highlight the known card
-                                       className={`${isHistory && !isReference ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_50px_rgba(220,38,38,0.8)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.8)]' : ''}`}
+                                       className={`${isHistory && !isReference ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-300 shadow-[0_0_55px_rgba(250,204,21,0.75)]' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
                                    />
                                    
                                    {/* Icons */}
