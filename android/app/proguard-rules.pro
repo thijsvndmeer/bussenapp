@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep Capacitor core and plugin entry points to avoid stripping bridge code
+-keep class com.getcapacitor.** { *; }
+-keep class com.capacitorjs.plugins.haptics.** { *; }
+
