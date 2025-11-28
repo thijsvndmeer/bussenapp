@@ -9,25 +9,25 @@ import { Capacitor } from '@capacitor/core';
 
 const SUCCESS_PHRASES = [
   "Lekker pik!", "Vo!", "Hoppa!", "Klasse!", "Strijder!", 
-  "Easy game!", "Netjes!", "Gewoon goed!", "Biem!", "Jaja!", 
-  "Prima!", "Heerlijk!", "Gas erop!", "Winnaarsmentaliteit!", 
+  "ez W", "Netjes!", "Gewoon goed!", "Biem!", "Jaja!", 
+  "Prima!", "Heerlijk!", "!", "Winnaarsmentaliteit!", 
   "Lekker gewerkt!", "Bingo!", "Raak!", "Zonder twijfel!",
   "Masterclass!", "Ongekend!"
 ];
 
 const FAILURE_PHRASES = [
-  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii pijnlijk!", 
-  "Naar de getver!", "Jammer joh!", "Bakken vouwen!", "Niet best!", 
-  "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje bedankt!", 
-  "Gezelligheid!", "Pak 'm maar!", "Slokken!", "Bodemdrift!",
-  "Huilie huilie!", "Schande!", "Niet te geloven!", "Koekoek!"
+  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii", 
+  "zuipen kut", "jezus alweer??", "waarom ben je zo slecht", "skill issue", 
+  "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje", 
+  "trek gwn een bak pussy", "lol", "ha bier", "maat..",
+  "Huilie huilie!", "Schande!", "Niet te geloven!", "Koekoek!", "Incapabele ziel.."
 ];
 
 const LOSER_TITLES = [
-  "De Sjaak", "Lul de Behanger", "Het Haasje", "De Klos", 
-  "Buschauffeur", "Succes Vriend", "Arme Ziel", "Gecondoleerd", 
-  "De Pineut", "Slachtoffer", "De Uitverkorene", "Kansloos",
-  "De Martelaar"
+  "De Sjaak", "De Lul", "L gepakt", "hahaha", 
+  "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je", 
+  "💀💀", "🤡🤡", "zo slecht", "Kansloos",
+  "Coma zuipen!!"
 ];
 
 // --- UTILS & FX ---
@@ -588,14 +588,14 @@ const App: React.FC = () => {
       if (correct) {
           triggerHaptic('success');
           const phrase = getUniquePhrase(SUCCESS_PHRASES);
-          setFeedback({ text: `${phrase} Deel ${getSipsText(sips)} uit.`, type: 'success' });
+          setFeedback({ text: `${phrase} deel ${getSipsText(sips)} uit.`, type: 'success' });
           currentPlayer.drinksDistributed += sips;
           setShowConfetti(true);
       } else {
           triggerHaptic('error');
           triggerShake();
           const phrase = getUniquePhrase(FAILURE_PHRASES);
-          setFeedback({ text: `${phrase} Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+          setFeedback({ text: `${phrase} drink zelf ${getSipsText(sips)}.`, type: 'error' });
           currentPlayer.drinksTaken += sips;
       }
       setPlayers(newPlayers);
