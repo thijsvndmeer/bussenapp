@@ -34,3 +34,15 @@ The project is configured for a Capacitor wrapper so you can ship the web UI as 
    `npx cap open android`
 
 > Tip: if you are behind a proxy, disable the proxy-related npm environment variables before installing (`unset npm_config_http_proxy npm_config_https_proxy`).
+
+## Deploy to GitHub Pages
+
+The Vite build now supports relative asset paths so it can be served from GitHub Pages without broken links.
+
+1. Optionally set the base path for a project page:
+   * Bash: `export VITE_BASE_PATH=/REPO_NAME/`
+   * PowerShell: `$env:VITE_BASE_PATH="/REPO_NAME/"`
+   If you publish to a user/organization page you can skip this step because the default `./` base works there.
+2. Build the site: `npm run build`
+3. Publish the generated `dist` folder to your `gh-pages` branch (for example with [`gh-pages`](https://github.com/tschaub/gh-pages) or a GitHub Actions workflow).
+

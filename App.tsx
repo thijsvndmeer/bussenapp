@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse, BusFront } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 // --- CONSTANTS & PHRASES ---
 
@@ -70,6 +71,7 @@ const triggerHaptic = async (
 };
 
 const STORAGE_KEY = 'bus-app-state-v1';
+const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -266,6 +268,8 @@ const App: React.FC = () => {
   const busScrollRef = useRef<HTMLDivElement>(null);
 
   const persistState = useCallback(() => {
+    if (!storageAvailable) return;
+
     const payload: PersistedState = {
       settings,
       phase,
@@ -300,6 +304,7 @@ const App: React.FC = () => {
       console.warn('Kon spelstaat niet opslaan', error);
     }
   }, [
+    storageAvailable,
     settings,
     phase,
     players,
@@ -328,6 +333,8 @@ const App: React.FC = () => {
   ]);
 
   useEffect(() => {
+    if (!storageAvailable) return;
+
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return;
@@ -360,6 +367,7 @@ const App: React.FC = () => {
       if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
     } catch (error) {
       console.error('Opslaan spelstaat herstellen mislukt', error);
+      localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 
@@ -368,6 +376,8 @@ const App: React.FC = () => {
   }, [persistState]);
 
   useEffect(() => {
+    if (!storageAvailable) return;
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         persistState();
@@ -382,6 +392,23 @@ const App: React.FC = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [persistState]);
+
+  useEffect(() => {
+    if (!storageAvailable) return;
+
+    const isNativeApp = Capacitor.getPlatform() !== 'web';
+    if (!isNativeApp) return;
+
+    const handleAppPause = () => persistState();
+
+    document.addEventListener('pause', handleAppPause);
+    document.addEventListener('resume', handleAppPause);
+
+    return () => {
+      document.removeEventListener('pause', handleAppPause);
+      document.removeEventListener('resume', handleAppPause);
     };
   }, [persistState]);
 
