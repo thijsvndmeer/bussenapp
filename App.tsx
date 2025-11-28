@@ -925,7 +925,6 @@ const App: React.FC = () => {
   const triggerFileCapture = () => {
     const input = fileInputRef.current;
     if (!input) return;
-    input.value = '';
     input.setAttribute('capture', 'environment');
     input.click();
   };
@@ -1691,13 +1690,20 @@ const App: React.FC = () => {
                       <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Naam..."
+                        placeholder="Naam..." 
                         className="flex-1 min-w-0 bg-slate-900/80 border border-slate-700 rounded-2xl px-4 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
                         value={newPlayerName}
                         onChange={e => setNewPlayerName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && addPlayer()}
                         maxLength={12}
                       />
+                      <div className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-700 bg-slate-900/60 shadow-inner overflow-hidden">
+                          {newPlayerImage ? (
+                              <img src={newPlayerImage} className="w-full h-full object-cover" />
+                          ) : (
+                              <span className="text-[10px] text-slate-400 font-bold uppercase text-center leading-tight px-1">Foto naast naam</span>
+                          )}
+                      </div>
                       <button onClick={addPlayer} className="w-14 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
                           <Check size={24} strokeWidth={4} className="text-green-100" />
                       </button>
