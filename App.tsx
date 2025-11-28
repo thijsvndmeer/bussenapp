@@ -317,7 +317,10 @@ const App: React.FC = () => {
   const [busDecksUsed, setBusDecksUsed] = useState(1);
   const [busDeck, setBusDeck] = useState<Card[]>([]);
   const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
+  const [busFocusIndex, setBusFocusIndex] = useState<number | null>(null);
+  const [busWinBurst, setBusWinBurst] = useState(false);
   const busScrollRef = useRef<HTMLDivElement>(null);
+  const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Audio FX
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -587,23 +590,30 @@ const App: React.FC = () => {
 
   // --- SCROLL HELPERS ---
   useEffect(() => {
-    if (phase === GamePhase.THE_BUS && busScrollRef.current) {
-      const container = busScrollRef.current;
-      // MD card width is w-32 (128px) + gap-6 (24px) = 152px stride
-      const cardStride = 128 + 24; 
-      
-      // Default: Center the view between the Reference Card (index - 1) and the Target Card (index)
-      let centerIndex = currentBusIndex - 0.5;
-      
-      // If a wrong card is revealed, focus exactly on that wrong card
-      if (busWrongCardIndex !== null) {
-        centerIndex = busWrongCardIndex;
-      }
-      
-      const targetScroll = (centerIndex * cardStride) - (container.clientWidth / 2) + (128 / 2);
-      container.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
+    // Keep refs array in sync with cards
+    busCardRefs.current = busCardRefs.current.slice(0, busCards.length);
+  }, [busCards.length]);
+
+  useEffect(() => {
+    if (phase !== GamePhase.THE_BUS || busCards.length === 0) return;
+    const focusIndex = Math.max(0, Math.min(busCards.length - 1, busWrongCardIndex ?? currentBusIndex));
+    setBusFocusIndex(focusIndex);
+
+    const cardEl = busCardRefs.current[focusIndex];
+    const container = busScrollRef.current;
+
+    if (cardEl && container) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
+
+  useEffect(() => {
+    if (isBusWon) {
+      setBusWinBurst(true);
+      const t = setTimeout(() => setBusWinBurst(false), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [isBusWon]);
 
   // --- PHASE HANDLERS ---
 
@@ -1609,7 +1619,12 @@ const App: React.FC = () => {
 
               {/* Bus Cards */}
               <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
-                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 to-transparent animate-pulse pointer-events-none"></div>
+                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/40 to-transparent animate-pulse pointer-events-none"></div>
+                   <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black via-black/40 to-transparent pointer-events-none" />
+                   <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black via-black/40 to-transparent pointer-events-none" />
+                   {busWinBurst && (
+                      <div className="absolute inset-4 rounded-[32px] border border-yellow-500/40 bg-gradient-to-r from-yellow-400/10 via-amber-300/15 to-yellow-500/10 blur-sm animate-[ping_1.3s_ease-out] pointer-events-none" />
+                   )}
                    <div
                         ref={busScrollRef}
                         className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
@@ -1621,17 +1636,18 @@ const App: React.FC = () => {
                            const isHistory = index < currentBusIndex;
                            // currentBusIndex IS the target. It should NOT be revealed yet unless we won.
                            // busWrongCardIndex is set when we make a WRONG guess on the target.
-                           
+
                            const isRevealed = isBase || (isHistory && index < currentBusIndex) || (index === busWrongCardIndex) || isBusWon;
-                           
+
                            // Prioritize the reference card (the one we compare against)
                            const isReference = index === currentBusIndex - 1;
                            const isTarget = index === currentBusIndex;
-                           
+                           const isFocused = busFocusIndex === index;
+
                            // Styles
                            // By default, dim cards in the past or future
                            let containerClass = "opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]";
-                           
+
                            if (isReference) {
                                // Highlight the reference card! This is the info the user needs.
                                containerClass = "opacity-100 scale-110 z-20";
@@ -1642,18 +1658,26 @@ const App: React.FC = () => {
                                containerClass = "opacity-100 scale-110 z-20";
                            }
 
+                           if (isFocused) {
+                               containerClass += " saturate-150 drop-shadow-[0_0_50px_rgba(248,113,113,0.45)]";
+                           }
+
                            return (
-                               <div key={`${card.id}-${index}`} className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}>
+                               <div
+                                 key={`${card.id}-${index}`}
+                                 ref={el => busCardRefs.current[index] = el}
+                                 className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}
+                               >
                                    {isBase && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
-                                   
-                                   <PlayingCard 
-                                       card={card} 
+
+                                   <PlayingCard
+                                       card={card}
                                        isFaceDown={!isRevealed}
                                        size="md"
-                                       highlight={isReference || index === busWrongCardIndex} // Highlight the known card
-                                       className={`${isHistory && !isReference ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-300 shadow-[0_0_55px_rgba(250,204,21,0.75)]' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
+                                       highlight={isReference || index === busWrongCardIndex || isFocused} // Highlight the known card
+                                       className={`${isHistory && !isReference ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-300 shadow-[0_0_55px_rgba(250,204,21,0.75)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
                                    />
-                                   
+
                                    {/* Icons */}
                                    {isHistory && index > 0 && !isReference && (
                                         <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
@@ -1703,8 +1727,13 @@ const App: React.FC = () => {
                                 </button>
                             </>
                         ) : isBusWon ? (
-                             <div className="text-center w-full text-yellow-400 font-black text-4xl tracking-widest animate-[pulse_0.2s_infinite] drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">
-                                 UIT DE BUS!
+                             <div className="w-full text-center bg-gradient-to-r from-yellow-500/20 via-amber-300/30 to-yellow-500/20 border border-yellow-400/60 rounded-2xl px-6 py-5 shadow-[0_0_45px_rgba(250,204,21,0.45)] animate-[pulse_0.8s_ease-in-out_infinite]">
+                                 <div className="text-xs uppercase tracking-[0.35em] text-yellow-200 mb-1">Vrije vogels</div>
+                                 <div className="text-yellow-100 font-black text-4xl drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] flex items-center justify-center gap-3">
+                                     <Sparkles className="text-yellow-200" />
+                                     UIT DE BUS!
+                                     <Sparkles className="text-yellow-200" />
+                                 </div>
                              </div>
                         ) : (
                             <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
