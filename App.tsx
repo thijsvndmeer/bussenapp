@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
@@ -1393,11 +1393,48 @@ const App: React.FC = () => {
     }
   };
 
-  const pyramidScale = useMemo(() => {
+  const pyramidContainerRef = useRef<HTMLDivElement>(null);
+  const pyramidContentRef = useRef<HTMLDivElement>(null);
+  const [pyramidScale, setPyramidScale] = useState(1);
+
+  const calculatePyramidScale = useCallback(() => {
     const rows = settings.pyramidRows;
-    const scale = 1 - (rows - 3) * 0.12;
-    return Math.min(1, Math.max(0.55, scale));
+    const baseScale = Math.min(1, Math.max(0.55, 1 - (rows - 3) * 0.12));
+
+    const container = pyramidContainerRef.current;
+    const content = pyramidContentRef.current;
+
+    if (container && content) {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const contentWidth = content.scrollWidth;
+      const contentHeight = content.scrollHeight;
+
+      const widthScale = containerWidth / contentWidth;
+      const heightScale = containerHeight / contentHeight;
+      const fitScale = Math.min(widthScale, heightScale);
+
+      const finalScale = Math.max(0.45, Math.min(baseScale, fitScale));
+      setPyramidScale(finalScale);
+      return;
+    }
+
+    setPyramidScale(baseScale);
   }, [settings.pyramidRows]);
+
+  useEffect(() => {
+    calculatePyramidScale();
+  }, [calculatePyramidScale, pyramid, revealedPyramidCards]);
+
+  useEffect(() => {
+    const handleResize = () => calculatePyramidScale();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [calculatePyramidScale]);
 
   const revealPyramidCard = (rowIndex: number, cardIndex: number) => {
     const card = pyramid[rowIndex][cardIndex];
@@ -2110,8 +2147,9 @@ const App: React.FC = () => {
               )}
 
               {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
-              <div className="flex-1 flex items-center justify-center overflow-hidden p-2 relative">
+              <div ref={pyramidContainerRef} className="flex-1 flex items-center justify-center overflow-hidden p-2 relative">
                    <div
+                      ref={pyramidContentRef}
                       className="flex flex-col items-center gap-2 md:gap-3 origin-center transition-transform duration-500"
                       style={{ transform: `scale(${pyramidScale})` }}
                    >
