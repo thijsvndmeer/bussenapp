@@ -2,8 +2,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera, Zap, Skull, HeartPulse, BusFront } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 // --- CONSTANTS & PHRASES ---
 
@@ -547,6 +548,7 @@ const App: React.FC = () => {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerImage, setNewPlayerImage] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPhotoOptionsModalOpen, setIsPhotoOptionsModalOpen] = useState(false); // New state for photo options modal
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -918,6 +920,50 @@ const App: React.FC = () => {
   }, [isDiscoActive]);
 
   // --- PHASE HANDLERS ---
+
+  const handleTakePhoto = async () => {
+    setIsPhotoOptionsModalOpen(false); // Close modal
+    try {
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        width: 640,
+        height: 640,
+      });
+
+      if (photo.dataUrl) {
+        setNewPlayerImage(photo.dataUrl);
+        triggerHaptic('light');
+      }
+    } catch (error) {
+      console.error('Foto maken mislukt', error);
+      setFeedback({ text: 'Kon geen foto maken. Controleer cameratoestemmingen.', type: 'error' });
+    }
+  };
+
+  const handleSelectFromGallery = async () => {
+    setIsPhotoOptionsModalOpen(false); // Close modal
+    try {
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Photos,
+        width: 640,
+        height: 640,
+      });
+
+      if (photo.dataUrl) {
+        setNewPlayerImage(photo.dataUrl);
+        triggerHaptic('light');
+      }
+    } catch (error) {
+      console.error('Selectie uit galerij mislukt', error);
+      setFeedback({ text: 'Kon geen foto selecteren. Controleer galerijtoestemmingen.', type: 'error' });
+    }
+  };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1480,17 +1526,17 @@ const App: React.FC = () => {
                   <div className="flex gap-2">
                       <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
                       <button 
-                          onClick={() => fileInputRef.current?.click()}
+                          onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
                           className={`flex-none w-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
                       >
-                          {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <Camera size={22} className="text-slate-300" />}
+                          {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
                       </button>
 
                       <input 
                         ref={inputRef}
                         type="text" 
                         placeholder="Naam..." 
-                        className="flex-1 bg-slate-900/80 border border-slate-700 rounded-2xl px-4 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
+                        className="flex-1 min-w-0 bg-slate-900/80 border border-slate-700 rounded-2xl px-4 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
                         value={newPlayerName}
                         onChange={e => setNewPlayerName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && addPlayer()}
@@ -1553,6 +1599,33 @@ const App: React.FC = () => {
                       )}
                   </div>
               </div>
+              
+              {/* Photo Options Modal */}
+              {isPhotoOptionsModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in">
+                      <div className="bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
+                          <h3 className="text-xl font-bold text-white text-center mb-4">Profielfoto kiezen</h3>
+                          <button 
+                              onClick={handleTakePhoto}
+                              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+                          >
+                              <CameraIcon size={20} /> Maak foto
+                          </button>
+                          <button 
+                              onClick={handleSelectFromGallery}
+                              className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+                          >
+                              <Image size={20} /> Kies uit galerij
+                          </button>
+                          <button 
+                              onClick={() => setIsPhotoOptionsModalOpen(false)}
+                              className="w-full bg-slate-700/50 text-white font-bold py-3 rounded-xl hover:bg-slate-600/50 active:scale-95 transition-transform"
+                          >
+                              Annuleren
+                          </button>
+                      </div>
+                  </div>
+              )}
           </RootContainer>
       );
   }
