@@ -928,12 +928,12 @@ const App: React.FC = () => {
                   <div className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
                       {players.map(p => (
                           <div key={p.id} className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
-                              <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center border-2 border-slate-600/50 font-bold text-white shadow-md overflow-hidden">
+                              <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center border-2 border-slate-600/50 font-bold text-white shadow-md overflow-hidden shrink-0">
                                       {p.image ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" /> : p.name.charAt(0).toUpperCase()}
                                   </div>
-                                  <span className="font-bold text-white text-sm tracking-tight">{p.name}</span>
-                                  {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md" />}
+                                  <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{p.name}</span>
+                                  {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
                               </div>
                               <button onClick={() => removePlayer(p.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18}/></button>
                           </div>
@@ -967,6 +967,7 @@ const App: React.FC = () => {
                         value={newPlayerName}
                         onChange={e => setNewPlayerName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && addPlayer()}
+                        maxLength={12}
                       />
                       <button onClick={addPlayer} className="w-14 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
                           <Check size={24} strokeWidth={4} className="text-green-100" />
