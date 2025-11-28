@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    const base = '/bussen-companion/';
+    const base = '/bussenapp/';
     return {
       base,
       server: {
