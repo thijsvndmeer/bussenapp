@@ -149,8 +149,10 @@ const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<str
   });
 };
 
+const ALL_SUITS: Suit[] = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
+
 const createDeck = (): Card[] => {
-  const suits = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
+  const suits = ALL_SUITS;
   const ranks = [Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE];
   const deck: Card[] = [];
   suits.forEach(suit => {
@@ -207,6 +209,31 @@ const Confetti: React.FC = () => {
   );
 };
 
+const DiscoOverlay: React.FC<{ active: boolean }> = ({ active }) => {
+  if (!active) return null;
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[95] overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-70 mix-blend-screen"
+        style={{
+          background: 'linear-gradient(120deg, #ff3a7f, #ffb347, #5ac8fa, #7c3aed, #0ea5e9, #22d3ee, #f472b6)',
+          backgroundSize: '400% 400%',
+          animation: 'disco-gradient 3s ease infinite'
+        }}
+      />
+      <div
+        className="absolute inset-[-20%] blur-3xl opacity-60"
+        style={{
+          background: 'conic-gradient(from 0deg, rgba(255,255,255,0.35), rgba(255,255,255,0.05), rgba(255,255,255,0.35))',
+          animation: 'disco-beams 4s linear infinite'
+        }}
+      />
+      <div className="absolute inset-0 bg-black/30" />
+    </div>
+  );
+};
+
 // --- ROOT CONTAINER ---
 
 interface RootContainerProps {
@@ -247,6 +274,21 @@ interface PersistedState {
 
 type Feedback = NonNullable<PersistedState['feedback']>;
 
+const DiscoStyles = () => (
+  <style>{`
+    @keyframes disco-gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes disco-beams {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `}</style>
+);
+
 const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default'}) => {
     let bgClass = 'bg-animated-gradient';
     if (variant === 'bus') bgClass = 'bg-animated-bus';
@@ -254,6 +296,7 @@ const RootContainer: React.FC<RootContainerProps> = ({children, className='', sh
 
     return (
         <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`}>
+            <DiscoStyles />
             {/* Scanlines / Overlay effect */}
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
             {children}
@@ -288,6 +331,7 @@ const App: React.FC = () => {
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isDiscoActive, setIsDiscoActive] = useState(false);
   
   // Phrase Randomization State
   const [usedPhrases, setUsedPhrases] = useState<Set<string>>(new Set());
@@ -639,6 +683,12 @@ const App: React.FC = () => {
     }
   }, [isBusWon]);
 
+  useEffect(() => {
+    if (!isDiscoActive) return;
+    const t = setTimeout(() => setIsDiscoActive(false), 2600);
+    return () => clearTimeout(t);
+  }, [isDiscoActive]);
+
   // --- PHASE HANDLERS ---
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -825,6 +875,46 @@ const App: React.FC = () => {
       playSound('fail');
       const phrase = getUniquePhrase(FAILURE_PHRASES);
       setFeedback({ text: `${phrase} Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+      currentPlayer.drinksTaken += sips;
+    }
+
+    currentPlayer.hand.push(card);
+    setPlayers(newPlayers);
+  };
+
+  const handleDiscoAttempt = () => {
+    const player = getActivePlayer();
+    const uniqueSuits = new Set(player.hand.map(h => h.suit));
+    if (uniqueSuits.size !== 3) return;
+
+    const missingSuit = ALL_SUITS.find(s => !uniqueSuits.has(s));
+    const card = drawCard();
+    if (!card) return;
+
+    playSound('draw');
+    setLastDrawnCard(card);
+
+    const newPlayers = [...players];
+    const currentPlayer = newPlayers[activePlayerIndex];
+
+    if (missingSuit && card.suit === missingSuit) {
+      triggerHaptic('success');
+      playSound('celebrate');
+      setShowConfetti(true);
+      setIsDiscoActive(true);
+      setFeedback({ text: `DISCO! Iedereen behalve ${currentPlayer.name} drinkt 1 slok.`, type: 'success' });
+
+      newPlayers.forEach((p, idx) => {
+        if (idx !== activePlayerIndex) p.drinksTaken += 1;
+      });
+      currentPlayer.drinksDistributed += Math.max(0, newPlayers.length - 1);
+    } else {
+      triggerHaptic('error');
+      triggerShake();
+      playSound('fail');
+      const sips = roundStep;
+      const phrase = getUniquePhrase(FAILURE_PHRASES);
+      setFeedback({ text: `${phrase} Geen disco! Drink zelf ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
 
@@ -1274,20 +1364,25 @@ const App: React.FC = () => {
 
   // 3. ROUNDS 1-4
   if (phase === GamePhase.ROUNDS_1_4) {
+      const activePlayer = getActivePlayer();
+      const activePlayerSuits = new Set(activePlayer.hand.map(c => c.suit));
+      const missingSuit = ALL_SUITS.find(s => !activePlayerSuits.has(s));
+      const canAttemptDisco = roundStep === RoundStep.SUIT && activePlayerSuits.size === 3 && !!missingSuit;
+
       if (isWaitingForNextPlayer) {
           return (
             <RootContainer className="items-center justify-center p-6">
                  <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
                      <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">Speler Wissel</p>
                      <div className="w-32 h-32 rounded-full mb-6 bg-gradient-to-b from-slate-800 to-black border-4 border-red-500 flex items-center justify-center overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.4)] relative">
-                        {getActivePlayer().image ? (
-                             <img src={getActivePlayer().image} className="w-full h-full object-cover" />
+                        {activePlayer.image ? (
+                             <img src={activePlayer.image} className="w-full h-full object-cover" />
                         ) : (
-                             <span className="text-5xl font-black text-white">{getActivePlayer().name.charAt(0).toUpperCase()}</span>
+                             <span className="text-5xl font-black text-white">{activePlayer.name.charAt(0).toUpperCase()}</span>
                         )}
                         <div className="absolute inset-0 rounded-full ring-4 ring-red-500/20 animate-pulse"></div>
                      </div>
-                     <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{getActivePlayer().name}</h1>
+                     <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{activePlayer.name}</h1>
                      <button 
                         onClick={() => setIsWaitingForNextPlayer(false)}
                         className="bg-white text-black text-xl font-black px-10 py-4 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.3)] flex items-center gap-3 mx-auto hover:scale-105 transition-transform active:scale-95"
@@ -1302,10 +1397,11 @@ const App: React.FC = () => {
       return (
           <RootContainer className="p-2 pb-safe" shake={screenShake}>
               {showConfetti && <Confetti />}
+              <DiscoOverlay active={isDiscoActive} />
               <GameHeader />
 
               <div className="flex-1 flex flex-col min-h-0">
-                  {/* HAND - Compact Size */}
+                      {/* HAND - Compact Size */}
                   <div className="flex-none bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[100px]">
                       {/* Table Felt Texture */}
                       <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>
@@ -1314,8 +1410,8 @@ const App: React.FC = () => {
                       
                       {/* Scrollable Hand Container - Reduced Height & Card Size */}
                       <div className="relative flex justify-center items-center overflow-x-auto py-1 gap-2 px-4 snap-x">
-                          {getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).length > 0 ? (
-                              getActivePlayer().hand.filter(c => !c.id.startsWith('physical')).map((c, idx) => (
+                          {activePlayer.hand.filter(c => !c.id.startsWith('physical')).length > 0 ? (
+                              activePlayer.hand.filter(c => !c.id.startsWith('physical')).map((c, idx) => (
                                   <div key={c.id} className="snap-center flex-none transition-transform hover:scale-110 duration-300 origin-bottom" style={{zIndex: idx}}>
                                      <PlayingCard card={c} size="sm" className="shadow-lg" />
                                   </div>
@@ -1324,7 +1420,7 @@ const App: React.FC = () => {
                               settings.mode === GameMode.DIGITAL && <div className="text-slate-600 italic text-xs font-medium">Nog geen kaarten</div>
                           )}
                           {settings.mode === GameMode.PHYSICAL && (
-                              <div className="text-slate-500 font-mono text-xs border border-dashed border-slate-700 rounded px-3 py-1">{getActivePlayer().hand.length} kaarten</div>
+                              <div className="text-slate-500 font-mono text-xs border border-dashed border-slate-700 rounded px-3 py-1">{activePlayer.hand.length} kaarten</div>
                           )}
                       </div>
                   </div>
@@ -1362,7 +1458,7 @@ const App: React.FC = () => {
               </div>
 
               {/* CONTROLS */}
-              <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2">
+                  <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2">
                   {feedback ? (
                       <div className="space-y-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
                           <div className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-xl backdrop-blur-md ${feedback.type === 'success' ? 'bg-emerald-900/80 border-emerald-500 text-emerald-100' : 'bg-red-900/80 border-red-500 text-white animate-shake'}`}>
@@ -1407,6 +1503,19 @@ const App: React.FC = () => {
                              <>
                                  <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">MATCH</button>
                                  <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">GEEN MATCH</button>
+                                 {canAttemptDisco && (
+                                    <button
+                                      onClick={handleDiscoAttempt}
+                                      className="col-span-2 relative overflow-hidden border-2 border-white/20 rounded-2xl font-black text-white text-lg shadow-[0_10px_30px_rgba(236,72,153,0.35)] active:scale-95 transition-transform"
+                                      style={{
+                                        background: 'linear-gradient(90deg, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6)',
+                                        backgroundSize: '300% 300%',
+                                        animation: 'disco-gradient 2.2s linear infinite'
+                                      }}
+                                    >
+                                      DISCO! (+1 voor iedereen)
+                                    </button>
+                                 )}
                              </>
                          )}
                       </div>
