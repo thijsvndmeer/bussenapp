@@ -8,23 +8,23 @@ import { Capacitor } from '@capacitor/core';
 // --- CONSTANTS & PHRASES ---
 
 const SUCCESS_PHRASES = [
-  "Lekker pik!", "Vo!", "Hoppa!", "Klasse!", "Strijder!", 
-  "ez W", "Netjes!", "Gewoon goed!", "Biem!", "Jaja!", 
-  "Prima!", "Heerlijk!", "!", "Winnaarsmentaliteit!", 
-  "Lekker gewerkt!", "Bingo!", "Raak!", "Zonder twijfel!",
-  "Masterclass!", "Ongekend!"
+  "Lekker pik!", "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!", 
+  "ez W,", "Netjes!", "dat is m!", "Biem!", "Jaja!", 
+  "locked in,", "Heerlijk!", "top!", "insane!", 
+  "keurig,", "Bingo!", "clean.", "bam!",
+  "big brain,", "slayy,"
 ];
 
 const FAILURE_PHRASES = [
-  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii", 
-  "zuipen kut", "jezus alweer??", "waarom ben je zo slecht", "skill issue", 
-  "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje", 
-  "trek gwn een bak pussy", "lol", "ha bier", "maat..",
-  "Huilie huilie!", "Schande!", "Niet te geloven!", "Koekoek!", "Incapabele ziel.."
+  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii,", 
+  "zuipen kut,", "jezus alweer??", "waarom ben je zo slecht,", "skill issue,", 
+  "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje,", 
+  "trek gwn een bak pussy.", "lol,", "ha bier,", "maat..",
+  "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Koekoek!", "Incapabele ziel.."
 ];
 
 const LOSER_TITLES = [
-  "De Sjaak", "De Lul", "L gepakt", "hahaha", 
+  "🍺🍺🍺", "De Lul", "L gepakt", "hahaha", 
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je", 
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
   "Coma zuipen!!"
@@ -194,6 +194,7 @@ interface PersistedState {
   busWrongCardIndex: number | null;
   isBusEntrance: boolean;
   isBusWon: boolean;
+  busDecksUsed: number;
   usedPhrases: string[];
 }
 
@@ -219,7 +220,8 @@ const App: React.FC = () => {
     mode: GameMode.DIGITAL,
     pyramidRows: 5,
     sharedBus: false,
-    busLength: 5,
+    busLength: 6,
+    busDecks: 1,
   });
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
@@ -263,6 +265,7 @@ const App: React.FC = () => {
   const [busWrongCardIndex, setBusWrongCardIndex] = useState<number | null>(null);
   const [isBusEntrance, setIsBusEntrance] = useState(false);
   const [isBusWon, setIsBusWon] = useState(false);
+  const [busDecksUsed, setBusDecksUsed] = useState(1);
   const [busDeck, setBusDeck] = useState<Card[]>([]);
   const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
   const busScrollRef = useRef<HTMLDivElement>(null);
@@ -295,6 +298,7 @@ const App: React.FC = () => {
       busWrongCardIndex,
       isBusEntrance,
       isBusWon,
+      busDecksUsed,
       usedPhrases: Array.from(usedPhrases),
     };
 
@@ -329,6 +333,7 @@ const App: React.FC = () => {
     busWrongCardIndex,
     isBusEntrance,
     isBusWon,
+    busDecksUsed,
     usedPhrases,
   ]);
 
@@ -364,6 +369,7 @@ const App: React.FC = () => {
       if (parsed.busWrongCardIndex !== undefined) setBusWrongCardIndex(parsed.busWrongCardIndex);
       if (parsed.isBusEntrance !== undefined) setIsBusEntrance(parsed.isBusEntrance);
       if (parsed.isBusWon !== undefined) setIsBusWon(parsed.isBusWon);
+      if (parsed.busDecksUsed !== undefined) setBusDecksUsed(parsed.busDecksUsed);
       if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
     } catch (error) {
       console.error('Opslaan spelstaat herstellen mislukt', error);
@@ -529,6 +535,7 @@ const App: React.FC = () => {
     setSettings(prev => ({ ...prev, mode }));
     setDeck(shuffleDeck(createDeck()));
     setBusDeck([]);
+    setBusDecksUsed(1); // Reset bus decks used
     setIsBusDeckExhausted(false);
     
     const dealerIndex = Math.floor(Math.random() * players.length);
@@ -814,14 +821,16 @@ const App: React.FC = () => {
 
   // --- BUS LOGIC ---
 
-  const startBus = (passengers: Player[]) => {
-      setIsBusEntrance(true);
-      setIsBusWon(false);
-      setIsBusDeckExhausted(false);
-      setTimeout(() => setIsBusEntrance(false), 3000);
-
-      const needed = settings.busLength + 1;
-      const freshBusDeck = shuffleDeck(createDeck());
+    const startBus = (passengers: Player[]) => {
+        setBusDecksUsed(1); // Reset bus decks used at the start of bus phase
+        if (settings.sharedBus) {
+          setIsBusEntrance(true);
+          setTimeout(() => setIsBusEntrance(false), 3000);
+        }
+        setIsBusWon(false);
+        setIsBusDeckExhausted(false);
+        
+        const needed = settings.busLength;      const freshBusDeck = shuffleDeck(createDeck());
       const newBusCards = freshBusDeck.slice(0, needed);
       setBusDeck(freshBusDeck.slice(needed));
       setBusCards(newBusCards);
@@ -833,17 +842,26 @@ const App: React.FC = () => {
 
   const restartBus = () => {
       setBusWrongCardIndex(null);
-      const needed = settings.busLength + 1;
-      let availableDeck = busDeck;
+      const needed = settings.busLength;
+      let currentAvailableDeck = busDeck;
       let infoFeedback: Feedback | null = null;
 
-      if (availableDeck.length < needed) {
-          availableDeck = shuffleDeck(createDeck());
-          infoFeedback = { text: 'Nieuw bus-pakje geschud. Hoger of lager?', type: 'info' };
+      if (currentAvailableDeck.length < needed) {
+          if (busDecksUsed >= settings.busDecks) {
+              setIsBusWon(true);
+              setImmunePlayerId(busPassengers[0].id); // Player in bus becomes immune
+              setFeedback({ text: 'Geen kaarten meer! Je bent vrij!', type: 'success' });
+              setTimeout(() => setPhase(GamePhase.GAME_OVER), 3000);
+              return; 
+          } else {
+              currentAvailableDeck = shuffleDeck(createDeck());
+              setBusDecksUsed(prev => prev + 1);
+              infoFeedback = { text: `Pakje ${busDecksUsed + 1} / ${settings.busDecks}. Hoger of lager?`, type: 'info' };
+          }
       }
 
-      const newBusCards = availableDeck.slice(0, needed);
-      setBusDeck(availableDeck.slice(needed));
+      const newBusCards = currentAvailableDeck.slice(0, needed);
+      setBusDeck(currentAvailableDeck.slice(needed));
       setBusCards(newBusCards);
       setCurrentBusIndex(1);
       setFeedback(infoFeedback);
@@ -851,10 +869,6 @@ const App: React.FC = () => {
   };
 
   const handleBusGuess = (guess: 'HIGHER' | 'LOWER') => {
-      if (busCards.length === 0) {
-          setFeedback({ text: 'Geen kaarten meer in de bus. Start een nieuw pakje om verder te spelen.', type: 'info' });
-          return;
-      }
       const prevCard = busCards[currentBusIndex - 1];
       const targetCard = busCards[currentBusIndex];
       const isHigher = targetCard.rank > prevCard.rank;
@@ -868,7 +882,6 @@ const App: React.FC = () => {
           triggerHaptic('success');
           if (currentBusIndex === busCards.length - 1) {
               setIsBusWon(true); 
-              setFeedback({ text: "UIT DE BUS! GEWONNEN!", type: 'success' });
               setImmunePlayerId(busPassengers[0].id);
               setTimeout(() => setPhase(GamePhase.GAME_OVER), 6000);
           } else {
@@ -903,7 +916,7 @@ const App: React.FC = () => {
                   <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)]">
                       Bussen
                   </h1>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text">Ultimate Companion</p>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
               </div>
 
               <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
@@ -994,6 +1007,13 @@ const App: React.FC = () => {
                                       <span className="text-red-500 font-bold text-sm">{settings.busLength}</span>
                                   </div>
                                   <input type="range" min="3" max="7" step="1" value={settings.busLength} onChange={(e) => setSettings({...settings, busLength: parseInt(e.target.value)})} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                              </div>
+                              <div>
+                                  <div className="flex justify-between mb-2">
+                                      <label className="text-[10px] text-slate-400 font-bold uppercase">Bus Pakjes</label>
+                                      <span className="text-red-500 font-bold text-sm">{settings.busDecks}</span>
+                                  </div>
+                                  <input type="range" min="1" max="5" step="1" value={settings.busDecks} onChange={(e) => setSettings({...settings, busDecks: parseInt(e.target.value)})} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                               </div>
                               <div className="flex items-center justify-between pt-2">
                                    <label className="text-[10px] text-slate-400 font-bold uppercase">Gedeelde Bus</label>
@@ -1416,19 +1436,24 @@ const App: React.FC = () => {
                   <div>
                       <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">De Bus</h2>
                   </div>
-                  <div className="flex items-center gap-4">
-                      <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${isBusDeckExhausted ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-                          <BusFront size={14} className={isBusDeckExhausted ? 'text-red-400' : 'text-red-500'} />
-                          <span>{remainingBusCards} over</span>
-                      </div>
-                      <div className="text-right">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                              {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
-                          </span>
-                          <span className="text-white text-sm font-black">{passengerNames}</span>
-                      </div>
-                  </div>
-              </div>
+                                <div className="flex items-center gap-4">
+                                    <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
+                                        <BusFront size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
+                                        <span>{remainingBusCards} over</span>
+                                    </div>
+                                    {settings.busDecks > 1 && (
+                                      <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
+                                        <span>Pakje</span>
+                                        <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
+                                      </div>
+                                    )}
+                                    <div className="text-right">
+                                        <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                                            {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
+                                        </span>
+                                        <span className="text-white text-sm font-black">{passengerNames}</span>
+                                    </div>
+                                </div>              </div>
 
               {/* Bus Cards */}
               <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
@@ -1527,11 +1552,10 @@ const App: React.FC = () => {
                             </>
                         ) : isBusWon ? (
                              <div className="text-center w-full text-yellow-400 font-black text-4xl tracking-widest animate-[pulse_0.2s_infinite] drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]">
-                                 BUS GEWONNEN!
+                                 UIT DE BUS!
                              </div>
                         ) : (
                             <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
-                                Oeps! Drinken!
                             </div>
                         )}
                     </div>

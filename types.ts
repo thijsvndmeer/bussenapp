@@ -67,4 +67,5 @@ export interface GameSettings {
   pyramidRows: number; // 3 to 7
   sharedBus: boolean; // Allow selecting a partner for the bus
   busLength: number; // Number of cards to guess (usually 5)
+  busDecks: number; // Max number of decks for the bus ride
 }
