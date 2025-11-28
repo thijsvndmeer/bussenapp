@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redirecting…</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .card {
+        padding: 24px 28px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        text-align: center;
+      }
+      .card h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      .card p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.85;
+      }
+    </style>
+    <script>
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      const repositorySegment = pathSegments.length > 0 ? pathSegments[0] : '';
+      const basePath = repositorySegment ? `/${repositorySegment}/` : '/';
+
+      // Preserve any hash navigation or query parameters when redirecting.
+      const target = `${basePath}${window.location.search || ''}${window.location.hash || ''}`;
+      window.location.replace(target);
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Sending you to the app…</h1>
+      <p>If you are not redirected automatically, <a id="fallback-link" href="/">click here</a>.</p>
+    </div>
+    <script>
+      const fallbackLink = document.getElementById('fallback-link');
+      if (fallbackLink) {
+        fallbackLink.href = basePath;
+      }
+    </script>
+  </body>
+</html>
