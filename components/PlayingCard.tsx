@@ -136,14 +136,15 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
   return (
     <div
-      className={`perspective-1000 ${s.width} ${s.height} ${s.radius} ${className} relative select-none group overflow-visible`}
+      className={`perspective-1000 ${s.width} ${s.height} ${s.radius} ${className} relative select-none group overflow-hidden
+        ${highlight ? 'shadow-[0_0_30px_rgba(250,204,21,0.8)] scale-105' : 'shadow-[0_2px_15px_-3px_rgba(0,0,0,0.5)]'}
+      `}
       onClick={!disabled ? onClick : undefined}
     >
       <div className={`
         w-full h-full relative preserve-3d transition-transform duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275)
         ${isFlipped ? 'rotate-y-180' : ''}
-        ${onClick && !disabled ? 'cursor-pointer hover:-translate-y-4' : ''}
-        ${highlight ? 'shadow-[0_0_30px_rgba(250,204,21,0.8)] scale-105' : 'shadow-[0_2px_15px_-3px_rgba(0,0,0,0.5)]'}
+        ${onClick && !disabled ? 'cursor-pointer' : ''}
       `}>
         
         {/* --- FRONT --- */}

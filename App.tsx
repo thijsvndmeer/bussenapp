@@ -27,7 +27,27 @@ const LOSER_TITLES = [
   "🍺🍺🍺", "De Lul", "L gepakt", "hahaha", 
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je", 
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
-  "Coma zuipen!!"
+  "Coma zuipen!!", "Proost!"
+];
+
+const PYRAMID_WARNING_PHRASES = [
+  "Hoho! Begin onderaan, stiekemerds!",
+  "Niet zo valsspelen he...",
+  "Dat is een no-go zone, vriend!",
+  "Eerst de basis, dan de top!",
+  "Geduld is een schone zaak (onderaan)",
+  "Piramide-etiquette, waar is die?",
+  "Niet smokkelen, hè?",
+  "Onderste kaart eerst!",
+  "wat doe je debiel...",
+  "Je bent betrapt!",
+  "Zo werkt het niet!",
+  "Begin onderaan!",
+  "Niet vals spelen!",
+  "Eerst de onderste rij!",
+  "Kom op joh...",
+  "Niet zo oneerlijk!",
+  "Hou je aan de regels!",
 ];
 
 // --- UTILS & FX ---
@@ -80,7 +100,8 @@ type SoundEffect =
   | 'busEnter'
   | 'busStep'
   | 'busFail'
-  | 'reshuffle';
+  | 'reshuffle'
+  | 'disco'; // Add this
 
 const createOscillatorSound = (
   ctx: AudioContext,
@@ -209,30 +230,7 @@ const Confetti: React.FC = () => {
   );
 };
 
-const DiscoOverlay: React.FC<{ active: boolean }> = ({ active }) => {
-  if (!active) return null;
 
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[95] overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-70 mix-blend-screen"
-        style={{
-          background: 'linear-gradient(120deg, #ff3a7f, #ffb347, #5ac8fa, #7c3aed, #0ea5e9, #22d3ee, #f472b6)',
-          backgroundSize: '400% 400%',
-          animation: 'disco-gradient 3s ease infinite'
-        }}
-      />
-      <div
-        className="absolute inset-[-20%] blur-3xl opacity-60"
-        style={{
-          background: 'conic-gradient(from 0deg, rgba(255,255,255,0.35), rgba(255,255,255,0.05), rgba(255,255,255,0.35))',
-          animation: 'disco-beams 4s linear infinite'
-        }}
-      />
-      <div className="absolute inset-0 bg-black/30" />
-    </div>
-  );
-};
 
 // --- ROOT CONTAINER ---
 
@@ -241,6 +239,7 @@ interface RootContainerProps {
   className?: string;
   shake?: boolean;
   variant?: 'default' | 'bus' | 'pyramid';
+  isDiscoActive?: boolean; // Add this
 }
 
 interface PersistedState {
@@ -274,34 +273,240 @@ interface PersistedState {
 
 type Feedback = NonNullable<PersistedState['feedback']>;
 
+
+
 const DiscoStyles = () => (
+
+
+
   <style>{`
+
+
+
     @keyframes disco-gradient {
+
+
+
       0% { background-position: 0% 50%; }
+
+
+
       50% { background-position: 100% 50%; }
+
+
+
       100% { background-position: 0% 50%; }
+
+
+
     }
 
-    @keyframes disco-beams {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+
+
   `}</style>
+
+
+
 );
 
-const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default'}) => {
+
+
+
+
+
+
+const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default', isDiscoActive = false}) => {
+
+
+
+
+
+
+
     let bgClass = 'bg-animated-gradient';
+
+
+
+
+
+
+
+    let additionalStyles: React.CSSProperties = {};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     if (variant === 'bus') bgClass = 'bg-animated-bus';
+
+
+
+
+
+
+
     if (variant === 'pyramid') bgClass = 'bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black';
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    if (isDiscoActive) {
+
+
+
+
+
+
+
+        bgClass = ''; // Clear default bgClass
+
+
+
+
+
+
+
+        additionalStyles = {
+
+
+
+
+
+
+
+            background: 'linear-gradient(120deg, #ff3a7f, #ffb347, #5ac8fa, #7c3aed, #0ea5e9, #22d3ee, #f472b6)',
+
+
+
+
+
+
+
+            backgroundSize: '400% 400%',
+
+
+
+
+
+
+
+            animation: 'disco-gradient 3s ease infinite',
+
+
+
+
+
+
+
+        };
+
+
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     return (
-        <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`}>
+
+
+
+
+
+
+
+        <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={additionalStyles}>
+
+
+
+
+
+
+
             <DiscoStyles />
+
+
+
+
+
+
+
             {/* Scanlines / Overlay effect */}
+
+
+
+
+
+
+
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
+
+
+
+
+
+
             {children}
+
+
+
+
+
+
+
         </div>
+
+
+
+
+
+
+
     );
+
+
+
+
+
+
+
 };
 
 // --- APP COMPONENT ---
@@ -434,6 +639,12 @@ const App: React.FC = () => {
           setTimeout(() => playTone({ frequency: 310, duration: 0.08, type: 'triangle', volume: 0.08 }), 40);
           setTimeout(() => playTone({ frequency: 360, duration: 0.08, type: 'triangle', volume: 0.08 }), 80);
           break;
+        case 'disco':
+            playTone({ frequency: 440, duration: 0.1, type: 'triangle', volume: 0.08 });
+            setTimeout(() => playTone({ frequency: 554, duration: 0.1, type: 'triangle', volume: 0.08 }), 50);
+            setTimeout(() => playTone({ frequency: 660, duration: 0.1, type: 'triangle', volume: 0.08 }), 100);
+            setTimeout(() => playTone({ frequency: 880, duration: 0.1, type: 'triangle', volume: 0.08 }), 150);
+            break;
       }
     },
     [playTone]
@@ -685,7 +896,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!isDiscoActive) return;
-    const t = setTimeout(() => setIsDiscoActive(false), 2600);
+    const t = setTimeout(() => setIsDiscoActive(false), 500000); // Fallback timeout for 5 seconds
     return () => clearTimeout(t);
   }, [isDiscoActive]);
 
@@ -780,6 +991,7 @@ const App: React.FC = () => {
     setFeedback(null);
     setLastDrawnCard(null);
     setShowConfetti(false);
+    setIsDiscoActive(false); // <--- Add this line
     
     const dealerIndex = players.findIndex(p => p.isDealer);
     if (activePlayerIndex === dealerIndex) {
@@ -899,7 +1111,7 @@ const App: React.FC = () => {
 
     if (missingSuit && card.suit === missingSuit) {
       triggerHaptic('success');
-      playSound('celebrate');
+      playSound('disco');
       setShowConfetti(true);
       setIsDiscoActive(true);
       setFeedback({ text: `DISCO! Iedereen behalve ${currentPlayer.name} drinkt 1 slok.`, type: 'success' });
@@ -969,6 +1181,24 @@ const App: React.FC = () => {
   const revealPyramidCard = (rowIndex: number, cardIndex: number) => {
     const card = pyramid[rowIndex][cardIndex];
     if (!card || revealedPyramidCards.has(card.id)) return;
+
+    // Find the highest rowIndex (bottom-most row) that still has an unrevealed card
+    let lowestAvailableRowIndex = -1;
+    for (let i = pyramid.length - 1; i >= 0; i--) {
+        if (pyramid[i].some(c => c && !revealedPyramidCards.has(c.id))) {
+            lowestAvailableRowIndex = i;
+            break;
+        }
+    }
+
+    if (rowIndex !== lowestAvailableRowIndex) {
+        // Display playful message
+        triggerHaptic('warning');
+        const phrase = getUniquePhrase(PYRAMID_WARNING_PHRASES);
+        setFeedback({ text: phrase, type: 'warning' });
+        setTimeout(() => setFeedback(null), 2500); // Clear message after 2.5 seconds
+        return;
+    }
 
     triggerHaptic('medium');
     const newRevealed = new Set(revealedPyramidCards);
@@ -1111,28 +1341,35 @@ const App: React.FC = () => {
 
   const restartBus = () => {
       setBusWrongCardIndex(null);
-      const needed = settings.busLength;
-      let currentAvailableDeck = busDeck;
+      const configuredBusLength = settings.busLength;
+      let tempAvailableDeck = busDeck; // Use temp variable to manage current deck
       let infoFeedback: Feedback | null = null;
 
-      if (currentAvailableDeck.length < needed) {
+      let actualBusDecksUsed = busDecksUsed; // Use temp variable for current count
+
+      // If the current deck is exhausted or has less than configuredBusLength cards left
+      if (tempAvailableDeck.length < configuredBusLength) { // This condition determines if a new deck is needed
           if (busDecksUsed >= settings.busDecks) {
               setIsBusWon(true);
               playSound('celebrate');
-              setImmunePlayerId(busPassengers[0].id); // Player in bus becomes immune
+              setImmunePlayerId(busPassengers[0].id);
               setFeedback({ text: 'Geen kaarten meer! Je bent vrij!', type: 'success' });
-              setTimeout(() => setPhase(GamePhase.GAME_OVER), 3000);
               return;
           } else {
-              currentAvailableDeck = shuffleDeck(createDeck());
-              setBusDecksUsed(prev => prev + 1);
+              tempAvailableDeck = shuffleDeck(createDeck()); // Shuffle new deck
+              actualBusDecksUsed = busDecksUsed + 1; // Increment counter
+              setBusDecksUsed(actualBusDecksUsed);
               playSound('reshuffle');
-              infoFeedback = { text: `Pakje ${busDecksUsed + 1} / ${settings.busDecks}. Hoger of lager?`, type: 'info' };
+              infoFeedback = { text: `Pakje ${actualBusDecksUsed} / ${settings.busDecks}. Hoger of lager?`, type: 'info' };
           }
       }
 
-      const newBusCards = currentAvailableDeck.slice(0, needed);
-      setBusDeck(currentAvailableDeck.slice(needed));
+      // Determine how many cards to draw for this round of the bus
+      // This ensures we draw all remaining cards if less than configuredBusLength
+      const cardsToDraw = Math.min(configuredBusLength, tempAvailableDeck.length);
+
+      const newBusCards = tempAvailableDeck.slice(0, cardsToDraw);
+      setBusDeck(tempAvailableDeck.slice(cardsToDraw));
       setBusCards(newBusCards);
       setCurrentBusIndex(1);
       setFeedback(infoFeedback);
@@ -1156,7 +1393,6 @@ const App: React.FC = () => {
               setIsBusWon(true);
               playSound('celebrate');
               setImmunePlayerId(busPassengers[0].id);
-              setTimeout(() => setPhase(GamePhase.GAME_OVER), 6000);
           } else {
               setFeedback(null);
               setCurrentBusIndex(prev => prev + 1);
@@ -1345,7 +1581,7 @@ const App: React.FC = () => {
                  <p className="text-[10px] text-red-400 font-black uppercase tracking-widest mb-0.5">Aan de beurt</p>
                  <div className="flex items-center gap-1.5">
                      <p className="font-bold text-white text-lg leading-none truncate max-w-[120px] drop-shadow-md">{activePlayer?.name}</p>
-                     {activePlayer?.isImmune && <Shield size={14} className="text-yellow-400 shrink-0 animate-pulse" />}
+                     {activePlayer?.isImmune && <Shield size={14} className="text-yellow-400 shrink-0" />}
                  </div>
              </div>
           </div>
@@ -1395,9 +1631,8 @@ const App: React.FC = () => {
       }
 
       return (
-          <RootContainer className="p-2 pb-safe" shake={screenShake}>
+          <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive}>
               {showConfetti && <Confetti />}
-              <DiscoOverlay active={isDiscoActive} />
               <GameHeader />
 
               <div className="flex-1 flex flex-col min-h-0">
@@ -1643,11 +1878,11 @@ const App: React.FC = () => {
                                               isFaceDown={!isRevealed}
                                               size="md" 
                                               onClick={() => revealPyramidCard(rowIndex, cardIndex)}
-                                              className={`transition-transform duration-300 [&>div]:hover:translate-y-0 ${!isRevealed ? 'hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] z-10' : 'brightness-75 opacity-90 z-0'}`}
+                                              className={`transition-transform duration-300 ${!isRevealed ? 'z-10' : 'z-0'}`}
                                           />
                                           {cardIndex === 0 && (
                                               <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
-                                                  {rowIndex === 0 ? <Skull size={16} className="ml-auto"/> : `${settings.pyramidRows - rowIndex}x`}
+                                                  {`${settings.pyramidRows - rowIndex}x`}
                                               </div>
                                           )}
                                       </div>
@@ -1727,13 +1962,6 @@ const App: React.FC = () => {
       return (
           <RootContainer className="p-0 relative" variant="bus" shake={screenShake}>
               {isBusWon && <Confetti />}
-              {isBusWon && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="px-6 py-4 bg-gradient-to-r from-yellow-500/20 via-amber-300/30 to-yellow-500/20 border-2 border-yellow-300/60 rounded-3xl shadow-[0_0_50px_rgba(250,204,21,0.6)] animate-[pulse_1.2s_ease-in-out_infinite] backdrop-blur-sm">
-                    <span className="text-5xl font-black uppercase tracking-[0.4em] text-yellow-100 drop-shadow-[0_6px_22px_rgba(0,0,0,0.7)]">UIT DE BUS!</span>
-                  </div>
-                </div>
-              )}
 
               {/* Header - Redesigned */}
               <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl">
@@ -1764,9 +1992,6 @@ const App: React.FC = () => {
                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/40 to-transparent animate-pulse pointer-events-none"></div>
                    <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black via-black/40 to-transparent pointer-events-none" />
                    <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black via-black/40 to-transparent pointer-events-none" />
-                   {busWinBurst && (
-                      <div className="absolute inset-4 rounded-[32px] border border-yellow-500/40 bg-gradient-to-r from-yellow-400/10 via-amber-300/15 to-yellow-500/10 blur-sm animate-[ping_1.3s_ease-out] pointer-events-none" />
-                   )}
                    <div
                         ref={busScrollRef}
                         className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
@@ -1788,20 +2013,24 @@ const App: React.FC = () => {
 
                            // Styles
                            // By default, dim cards in the past or future
-                           let containerClass = "opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]";
-
-                           if (isReference) {
-                               // Highlight the reference card! This is the info the user needs.
-                               containerClass = "opacity-100 scale-110 z-20";
-                           } else if (isTarget) {
-                               // The target (face down) should be visible but not exaggerated.
-                               containerClass = "opacity-100 scale-100 z-10";
-                           } else if (index === busWrongCardIndex) {
-                               containerClass = "opacity-100 scale-110 z-20";
-                           }
-
-                           if (isFocused) {
-                               containerClass += " saturate-150 drop-shadow-[0_0_50px_rgba(248,113,113,0.45)]";
+                           let containerClass = "";
+                           if (isBusWon) {
+                               containerClass = "opacity-100 scale-100 z-10"; // Default winning state style for all cards
+                           } else {
+                               // Normal state logic
+                               containerClass = "opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]"; // Grayscale by default if not isBusWon
+    
+                               if (isReference) {
+                                   containerClass = "opacity-100 scale-110 z-20"; // Override if reference
+                               } else if (isTarget) {
+                                   containerClass = "opacity-100 scale-100 z-10"; // Override if target
+                               } else if (index === busWrongCardIndex) {
+                                   containerClass = "opacity-100 scale-110 z-20"; // Override if wrong card
+                               }
+    
+                               if (isFocused) {
+                                   containerClass += " saturate-150 drop-shadow-[0_0_50px_rgba(248,113,113,0.45)]"; // Add on top if focused
+                               }
                            }
 
                            return (
@@ -1810,23 +2039,26 @@ const App: React.FC = () => {
                                  ref={el => busCardRefs.current[index] = el}
                                  className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}
                                >
-                                   {isBase && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
+                                   {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
 
                                    <PlayingCard
                                        card={card}
                                        isFaceDown={!isRevealed}
                                        size="md"
-                                       highlight={isReference || index === busWrongCardIndex || isFocused} // Highlight the known card
-                                       className={`${isHistory && !isReference ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isBusWon ? 'ring-4 ring-yellow-300 shadow-[0_0_55px_rgba(250,204,21,0.75)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
+                                       highlight={!isBusWon && (isReference || index === busWrongCardIndex || isFocused)} // Highlight the known card
+                                       className={
+                                            isBusWon
+                                                ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
+                                                : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
                                    />
 
                                    {/* Icons */}
-                                   {isHistory && index > 0 && !isReference && (
+                                   {isHistory && index > 0 && !isReference && !isBusWon && (
                                         <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
                                             <Check size={16} className="text-white" strokeWidth={4} />
                                         </div>
                                    )}
-                                   {index === busWrongCardIndex && (
+                                   {index === busWrongCardIndex && !isBusWon && (
                                         <div className="absolute -bottom-4 bg-red-600 rounded-full p-1.5 shadow-lg animate-ping z-20 border-2 border-black">
                                             <X size={16} className="text-white" strokeWidth={4} />
                                         </div>
@@ -1869,14 +2101,12 @@ const App: React.FC = () => {
                                 </button>
                             </>
                         ) : isBusWon ? (
-                             <div className="w-full text-center bg-gradient-to-r from-yellow-500/20 via-amber-300/30 to-yellow-500/20 border border-yellow-400/60 rounded-2xl px-6 py-5 shadow-[0_0_45px_rgba(250,204,21,0.45)] animate-[pulse_0.8s_ease-in-out_infinite]">
-                                 <div className="text-xs uppercase tracking-[0.35em] text-yellow-200 mb-1">Vrije vogels</div>
-                                 <div className="text-yellow-100 font-black text-4xl drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] flex items-center justify-center gap-3">
-                                     <Sparkles className="text-yellow-200" />
-                                     UIT DE BUS!
-                                     <Sparkles className="text-yellow-200" />
-                                 </div>
-                             </div>
+                             <button
+                                onClick={() => setPhase(GamePhase.GAME_OVER)}
+                                className="w-full bg-gradient-to-r from-yellow-600 to-amber-800 text-white text-xl font-black py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 border-t border-yellow-400"
+                             >
+                                 Verder <ArrowRight size={24} strokeWidth={3} />
+                             </button>
                         ) : (
                             <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
                             </div>
@@ -1898,7 +2128,7 @@ const App: React.FC = () => {
                   <div className="text-center mb-10 mt-8">
                       <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">Uitslag</h1>
                       {immunePlayerId && (
-                          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4 animate-pulse">
+                          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4">
                               <Shield size={20} className="text-yellow-400" />
                               <div>
                                 <p className="text-yellow-400 text-[10px] font-black uppercase leading-none tracking-widest mb-1">Immuniteit</p>
