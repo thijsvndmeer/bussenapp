@@ -217,8 +217,9 @@ const Confetti: React.FC = () => {
       {particles.map(p => (
         <div 
           key={p.id}
-          className="absolute top-0 w-3 h-3 rounded-sm shadow-lg"
+          className="absolute w-3 h-3 rounded-sm shadow-lg" // Remove top-0
           style={{
+            top: `${-10 - Math.random() * 10}%`, // Start slightly above (e.g., -10% to -20%)
             left: p.left,
             backgroundColor: p.color,
             animation: `confetti-fall ${p.duration} linear forwards`,
@@ -275,7 +276,7 @@ type Feedback = NonNullable<PersistedState['feedback']>;
 
 
 
-const DiscoStyles = () => (
+const GlobalAnimations = () => (
 
 
 
@@ -296,6 +297,22 @@ const DiscoStyles = () => (
 
 
       100% { background-position: 0% 50%; }
+
+
+
+    }
+
+
+
+    @keyframes bounce-subtle {
+
+
+
+      0%, 100% { transform: translateY(0); }
+
+
+
+      50% { transform: translateY(-5px); }
 
 
 
@@ -459,7 +476,7 @@ const RootContainer: React.FC<RootContainerProps> = ({children, className='', sh
 
 
 
-            <DiscoStyles />
+            <GlobalAnimations />
 
 
 
@@ -1725,7 +1742,7 @@ const App: React.FC = () => {
                              <>
                                  <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">HOGER</button>
                                  <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">LAGER</button>
-                                 <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">Of Gelijk (Drinken)</button>
+                                 <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">Of Gelijk</button>
                              </>
                          )}
                          {roundStep === 3 && (
@@ -1854,7 +1871,7 @@ const App: React.FC = () => {
                    <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
                        <button 
                           onClick={determineLoserAndAnimate}
-                          className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-pulse"
+                          className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
                        >
                           <BusFront size={28} /> NAAR DE BUS <ArrowRight size={28} strokeWidth={3} />
                        </button>
