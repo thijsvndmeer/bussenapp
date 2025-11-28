@@ -198,6 +198,8 @@ interface PersistedState {
   usedPhrases: string[];
 }
 
+type Feedback = NonNullable<PersistedState['feedback']>;
+
 const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default'}) => {
     let bgClass = 'bg-animated-gradient';
     if (variant === 'bus') bgClass = 'bg-animated-bus';
