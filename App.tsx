@@ -596,14 +596,38 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (phase !== GamePhase.THE_BUS || busCards.length === 0) return;
-    const focusIndex = Math.max(0, Math.min(busCards.length - 1, busWrongCardIndex ?? currentBusIndex));
-    setBusFocusIndex(focusIndex);
 
-    const cardEl = busCardRefs.current[focusIndex];
     const container = busScrollRef.current;
+    if (!container) return;
 
-    if (cardEl && container) {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (busWrongCardIndex !== null) {
+      const focusIndex = Math.max(0, Math.min(busCards.length - 1, busWrongCardIndex));
+      setBusFocusIndex(focusIndex);
+
+      const wrongCardEl = busCardRefs.current[focusIndex];
+      wrongCardEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      return;
+    }
+
+    const previousIndex = Math.max(0, currentBusIndex - 1);
+    const targetIndex = Math.max(0, Math.min(busCards.length - 1, currentBusIndex));
+    setBusFocusIndex(targetIndex);
+
+    const previousEl = busCardRefs.current[previousIndex];
+    const targetEl = busCardRefs.current[targetIndex];
+
+    if (previousEl && targetEl) {
+      const containerRect = container.getBoundingClientRect();
+      const previousRect = previousEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      const left = Math.min(previousRect.left, targetRect.left) - containerRect.left + container.scrollLeft;
+      const right = Math.max(previousRect.right, targetRect.right) - containerRect.left + container.scrollLeft;
+
+      const desiredCenter = (left + right) / 2;
+      const newScrollLeft = desiredCenter - containerRect.width / 2;
+
+      container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
     }
   }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
 
@@ -1646,7 +1670,7 @@ const App: React.FC = () => {
                            // currentBusIndex IS the target. It should NOT be revealed yet unless we won.
                            // busWrongCardIndex is set when we make a WRONG guess on the target.
 
-                           const isRevealed = isBase || (isHistory && index < currentBusIndex) || (index === busWrongCardIndex) || isBusWon;
+                           const isRevealed = isBase || isHistory || index === busWrongCardIndex || isBusWon;
 
                            // Prioritize the reference card (the one we compare against)
                            const isReference = index === currentBusIndex - 1;
