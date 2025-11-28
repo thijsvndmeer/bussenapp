@@ -1775,7 +1775,7 @@ const App: React.FC = () => {
                                       <label className="text-[10px] text-slate-400 font-bold uppercase">Bus Kaarten</label>
                                       <span className="text-red-500 font-bold text-sm">{settings.busLength}</span>
                                   </div>
-                                  <input type="range" min="3" max="7" step="1" value={settings.busLength} onChange={(e) => setSettings({...settings, busLength: parseInt(e.target.value)})} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                                  <input type="range" min="3" max="12" step="1" value={settings.busLength} onChange={(e) => setSettings({...settings, busLength: parseInt(e.target.value)})} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                               </div>
                               <div>
                                   <div className="flex justify-between mb-2">
