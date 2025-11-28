@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const ADMOB_APP_ID = 'Bussenca-app-pub-7627297114391750~5463450367';
 const ADMOB_INTERSTITIAL_UNIT_ID = 'rondeklaarca-app-pub-7627297114391750/7299276212';
@@ -26,10 +26,7 @@ type AdMobPlugin = {
   showInterstitial?: () => Promise<void>;
 };
 
-const getCameraPlugin = (): CameraPlugin | null => {
-  const plugin = (Capacitor as any).Plugins?.Camera as CameraPlugin | undefined;
-  return plugin ?? null;
-};
+const Camera = registerPlugin<CameraPlugin>('Camera');
 
 const getAdMobPlugin = (): AdMobPlugin | null => {
   const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
@@ -922,11 +919,47 @@ const App: React.FC = () => {
       setTimeout(() => setScreenShake(false), 500);
   };
 
-  const triggerFileCapture = () => {
+  const triggerFileCapture = (mode: 'camera' | 'gallery' = 'camera') => {
     const input = fileInputRef.current;
     if (!input) return;
-    input.setAttribute('capture', 'environment');
+
+    if (mode === 'camera') {
+      input.setAttribute('capture', 'environment');
+    } else {
+      input.removeAttribute('capture');
+    }
+
     input.click();
+  };
+
+  const tryNativePhoto = async (
+    source: 'camera' | 'photos'
+  ): Promise<{ dataUrl: string | null; cancelled: boolean; available: boolean }> => {
+    if (!Capacitor.isPluginAvailable('Camera')) {
+      return { dataUrl: null, cancelled: false, available: false };
+    }
+
+    try {
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: 'dataUrl',
+        source,
+        width: 640,
+        height: 640,
+      });
+
+      return { dataUrl: photo?.dataUrl ?? null, cancelled: false, available: true };
+    } catch (error: any) {
+      const message = (error?.message ?? '').toLowerCase();
+      const cancelled = message.includes('cancel') || message.includes('no image selected');
+
+      if (!cancelled) {
+        console.error('Camera capture failed', error);
+      }
+
+      return { dataUrl: null, cancelled, available: true };
+    }
   };
 
   const getUniquePhrase = (pool: string[]) => {
@@ -1022,76 +1055,46 @@ const App: React.FC = () => {
 
   const handleTakePhoto = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
-    const camera = getCameraPlugin();
+    const { dataUrl, cancelled, available } = await tryNativePhoto('camera');
 
-    if (!camera) {
-      setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
-      triggerFileCapture();
+    if (dataUrl) {
+      setNewPlayerImage(dataUrl);
+      triggerHaptic('light');
       return;
     }
 
-    try {
-      const photo = await camera.getPhoto({
-        quality: 90,
-        allowEditing: true,
-        resultType: 'dataUrl',
-        source: 'camera',
-        width: 640,
-        height: 640,
-      });
+    if (cancelled) return;
 
-      if (photo?.dataUrl) {
-        setNewPlayerImage(photo.dataUrl);
-        triggerHaptic('light');
-      } else {
-        triggerFileCapture();
-      }
-    } catch (error: any) { // Type 'any' for error to access properties
-      console.error('Operation failed:', error);
-      // Check for user cancellation error messages from Capacitor
-      if (error?.message === 'User cancelled photos app' || error?.message === 'User cancelled camera' || error?.message === 'No image selected') {
-          // Do nothing, modal already closed by setIsPhotoOptionsModalOpen(false)
-      } else {
-          setFeedback({ text: 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.', type: 'error' });
-          triggerFileCapture(); // Fallback on genuine error
-      }
-    }
+    setFeedback({
+      text: available
+        ? 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.'
+        : 'Camera niet beschikbaar. Kies lokaal bestand.',
+      type: available ? 'error' : 'info'
+    });
+
+    triggerFileCapture('camera');
   };
 
   const handleSelectFromGallery = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
-    const camera = getCameraPlugin();
+    const { dataUrl, cancelled, available } = await tryNativePhoto('photos');
 
-    if (!camera) {
-      setFeedback({ text: 'Camera niet beschikbaar. Kies lokaal bestand.', type: 'info' });
-      triggerFileCapture();
+    if (dataUrl) {
+      setNewPlayerImage(dataUrl);
+      triggerHaptic('light');
       return;
     }
 
-    try {
-      const photo = await camera.getPhoto({
-        quality: 90,
-        allowEditing: true,
-        resultType: 'dataUrl',
-        source: 'photos',
-        width: 640,
-        height: 640,
-      });
+    if (cancelled) return;
 
-      if (photo.dataUrl) {
-        setNewPlayerImage(photo.dataUrl);
-        triggerHaptic('light');
-      }
-    } catch (error: any) { // Type 'any' for error to access properties
-      console.error('Operation failed:', error);
-      // Check for user cancellation error messages from Capacitor
-      if (error?.message === 'User cancelled photos app' || error?.message === 'User cancelled camera' || error?.message === 'No image selected') {
-          // Do nothing, modal already closed by setIsPhotoOptionsModalOpen(false)
-      } else {
-          setFeedback({ text: 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.', type: 'error' });
-          triggerFileCapture(); // Fallback on genuine error
-      }
-    }
+    setFeedback({
+      text: available
+        ? 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.'
+        : 'Galerij niet beschikbaar. Kies lokaal bestand.',
+      type: available ? 'error' : 'info'
+    });
+
+    triggerFileCapture('gallery');
   };
 
   // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
@@ -1679,7 +1682,7 @@ const App: React.FC = () => {
               
               <div className="flex-none space-y-3">
                   <div className="flex gap-2">
-                      <input type="file" ref={fileInputRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
+                      <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
                       <button
                           onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
                           className={`flex-none w-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
@@ -1697,13 +1700,6 @@ const App: React.FC = () => {
                         onKeyDown={e => e.key === 'Enter' && addPlayer()}
                         maxLength={12}
                       />
-                      <div className="flex items-center justify-center w-14 h-14 rounded-2xl border border-slate-700 bg-slate-900/60 shadow-inner overflow-hidden">
-                          {newPlayerImage ? (
-                              <img src={newPlayerImage} className="w-full h-full object-cover" />
-                          ) : (
-                              <span className="text-[10px] text-slate-400 font-bold uppercase text-center leading-tight px-1">Foto naast naam</span>
-                          )}
-                      </div>
                       <button onClick={addPlayer} className="w-14 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
                           <Check size={24} strokeWidth={4} className="text-green-100" />
                       </button>
