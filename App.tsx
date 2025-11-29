@@ -293,7 +293,6 @@ interface PersistedGameState {
   pendingMatches: { card: Card; sips: number; matches: { player: Player; cardIndex: number }[] } | null;
   loserReveal: { player: Player; title: string } | null;
   isPyramidComplete: boolean;
-  showPyramidInstructions: boolean;
   busDriver: Player | null;
   busPassengers: Player[];
   busCards: Card[];
@@ -613,7 +612,6 @@ const App: React.FC = () => {
   const [pendingMatches, setPendingMatches] = useState<{card: Card, sips: number, matches: {player: Player, cardIndex: number}[]} | null>(null);
   const [loserReveal, setLoserReveal] = useState<{player: Player, title: string} | null>(null);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
-  const [showPyramidInstructions, setShowPyramidInstructions] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
 
   // Bus State
@@ -1295,7 +1293,6 @@ const App: React.FC = () => {
     setRevealedPyramidCards(new Set());
     setLoserReveal(null);
     setIsPyramidComplete(false);
-    setShowPyramidInstructions(settings.mode === GameMode.PHYSICAL);
 
     if (settings.mode === GameMode.DIGITAL) {
         let currentDeck = deck;
@@ -2109,20 +2106,70 @@ const App: React.FC = () => {
 
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
-      if (settings.mode === GameMode.PHYSICAL && showPyramidInstructions) {
+      if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
           return (
-              <RootContainer className="p-6 items-center justify-center text-center space-y-6" variant="pyramid">
-                  <div className="space-y-3">
-                      <p className="text-sm uppercase font-black tracking-[0.3em] text-amber-300">Fysieke modus</p>
-                      <h2 className="text-4xl font-black text-white leading-tight">Bouw de piramide</h2>
-                      <p className="text-slate-300 text-base max-w-xl mx-auto">Pak een fysiek deck en bouw een piramide met {settings.pyramidRows} rijen op tafel. Begin met de onderste laag en werk naar boven.</p>
+              <RootContainer className="p-6 items-center justify-center" variant="pyramid">
+                  {isSelectingBusPlayer && (
+                      <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
+                          <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
+                              <div className="text-center space-y-2">
+                                  <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">Kies passagier</p>
+                                  <h3 className="text-3xl font-black text-white leading-tight">Wie verloor de piramide?</h3>
+                                  <p className="text-slate-300 text-sm">Selecteer handmatig wie de bus in moet.</p>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto">
+                                  {players.map((p) => (
+                                      <button
+                                          key={p.id}
+                                          onClick={() => {
+                                              startBus([p]);
+                                              setIsSelectingBusPlayer(false);
+                                          }}
+                                          className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-2xl p-3 text-left hover:border-amber-400 hover:bg-amber-500/10 transition-all active:scale-95"
+                                      >
+                                          <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
+                                              {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
+                                                  <span className="w-full h-full flex items-center justify-center text-white font-black text-lg">{p.name.charAt(0)}</span>
+                                              )}
+                                          </div>
+                                          <span className="text-white font-bold truncate">{p.name}</span>
+                                      </button>
+                                  ))}
+                              </div>
+
+                              <button
+                                  onClick={() => setIsSelectingBusPlayer(false)}
+                                  className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
+                              >
+                                  Annuleren
+                              </button>
+                          </div>
+                      </div>
+                  )}
+
+                  <div className="w-full max-w-2xl bg-black/60 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-6 text-center">
+                      <div className="space-y-3">
+                          <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">Fysieke piramide</p>
+                          <h2 className="text-4xl font-black text-white leading-tight">Bouw de piramide op tafel</h2>
+                          <p className="text-slate-200 text-base">Gebruik je eigen deck en bouw een piramide met {settings.pyramidRows} rijen. Begin onderaan, draai per stap een kaart om en noteer wie welke kaart heeft.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <button
+                              onClick={() => setPyramidMode('digital')}
+                              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
+                          >
+                              Build digital pyramid instead
+                          </button>
+                          <button
+                              onClick={() => setIsSelectingBusPlayer(true)}
+                              className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all"
+                          >
+                              To the Bus
+                          </button>
+                      </div>
                   </div>
-                  <button
-                      onClick={() => setShowPyramidInstructions(false)}
-                      className="bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-lg px-6 py-4 rounded-2xl shadow-2xl border border-white/10 active:scale-95 transition-all"
-                  >
-                      Piramide ligt klaar, start!
-                  </button>
               </RootContainer>
           );
       }
@@ -2197,45 +2244,6 @@ const App: React.FC = () => {
                   </div>
               )}
 
-              {isSelectingBusPlayer && (
-                  <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
-                      <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
-                          <div className="text-center space-y-2">
-                              <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">Kies passagier</p>
-                              <h3 className="text-3xl font-black text-white leading-tight">Wie verloor de piramide?</h3>
-                              <p className="text-slate-300 text-sm">Selecteer handmatig wie de bus in moet.</p>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto">
-                              {players.map((p) => (
-                                  <button
-                                      key={p.id}
-                                      onClick={() => {
-                                          startBus([p]);
-                                          setIsSelectingBusPlayer(false);
-                                      }}
-                                      className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-2xl p-3 text-left hover:border-amber-400 hover:bg-amber-500/10 transition-all active:scale-95"
-                                  >
-                                      <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
-                                          {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
-                                              <span className="w-full h-full flex items-center justify-center text-white font-black text-lg">{p.name.charAt(0)}</span>
-                                          )}
-                                      </div>
-                                      <span className="text-white font-bold truncate">{p.name}</span>
-                                  </button>
-                              ))}
-                          </div>
-
-                          <button
-                              onClick={() => setIsSelectingBusPlayer(false)}
-                              className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
-                          >
-                              Annuleren
-                          </button>
-                      </div>
-                  </div>
-              )}
-
               <div className="flex-none flex justify-between items-center px-5 py-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl">
                   <div>
                      <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">Piramide</h2>
@@ -2263,26 +2271,6 @@ const App: React.FC = () => {
                               Digitale kaarten
                           </button>
                       </div>
-
-                      {pyramidMode === 'physical' && (
-                          <div className="mt-4 space-y-3 bg-slate-900/60 border border-white/5 rounded-2xl p-4">
-                              <p className="text-slate-200 text-sm font-semibold">Bouw een fysieke piramide met jouw eigen deck. Begin onderaan, draai om per stap en noteer wie welke kaart heeft.</p>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <button
-                                      onClick={() => setPyramidMode('digital')}
-                                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
-                                  >
-                                      Build digital pyramid instead
-                                  </button>
-                                  <button
-                                      onClick={() => setIsSelectingBusPlayer(true)}
-                                      className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all"
-                                  >
-                                      To the Bus
-                                  </button>
-                              </div>
-                          </div>
-                      )}
                   </div>
               )}
 
@@ -2448,61 +2436,15 @@ const App: React.FC = () => {
       if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
           const passengerNames = busPassengers.map(p => p.name).join(' & ');
           return (
-              <RootContainer className="p-6 space-y-6" variant="bus" shake={screenShake}>
-                  {isBusWon && <Confetti />}
-
-                  <div className="bg-black/60 border border-red-900/40 rounded-3xl p-5 shadow-xl">
-                      <div className="flex items-center justify-between mb-3">
-                          <div>
-                              <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke Bus</p>
-                              <h2 className="text-3xl font-black text-white leading-tight">Gebruik je eigen kaarten</h2>
-                          </div>
-                          <BusFront className="text-red-400" size={28} />
-                      </div>
-                      <p className="text-slate-300 text-sm">Leg {settings.busLength} kaarten gesloten neer. Raak je fout? Drink het aantal slokken van je huidige kaart en begin opnieuw.</p>
-                      <p className="text-slate-200 text-sm font-semibold mt-2">Gebruik het fysieke deck om de bus te leggen, draai telkens één kaart om en volg hier de voortgang.</p>
-                      <p className="text-slate-400 text-sm mt-2">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames}</span></p>
+              <RootContainer className="items-center justify-center p-6 text-center space-y-6" variant="bus">
+                  <div className="w-full max-w-2xl bg-black/60 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-3">
+                      <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
+                      <h2 className="text-4xl font-black text-white leading-tight">Speel de bus met fysieke kaarten</h2>
+                      <p className="text-slate-200 text-base">Leg {settings.busLength} kaarten gesloten neer met je eigen deck. Draai elke kaart om, speel de bus zoals normaal en houd de slokken bij.</p>
+                      <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                   </div>
 
-                  <div className="bg-black/60 border border-red-900/40 rounded-3xl p-5 shadow-xl space-y-3">
-                      <div className="flex items-center justify-between">
-                          <span className="text-slate-300 text-sm font-semibold">Voortgang</span>
-                          <span className="text-white font-black text-lg">Kaart {Math.min(physicalBusPosition, settings.busLength)} / {settings.busLength}</span>
-                      </div>
-                      <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-red-900/40">
-                          <div
-                              className="h-full bg-gradient-to-r from-red-500 to-red-700 transition-all duration-500"
-                              style={{ width: `${Math.min(physicalBusPosition, settings.busLength) / settings.busLength * 100}%` }}
-                          />
-                      </div>
-                      {isBusWon ? (
-                          <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                              <Sparkles size={16} />
-                              <span>Bus gehaald! De vrijstelling is voor {busPassengers[0]?.name}.</span>
-                          </div>
-                      ) : (
-                          <p className="text-slate-400 text-xs uppercase font-black tracking-[0.2em]">Geef je gok door en noteer het resultaat.</p>
-                      )}
-                  </div>
-
-                  {!isBusWon && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                          <button
-                              onClick={() => handlePhysicalBusGuess('correct')}
-                              className="w-full bg-gradient-to-br from-emerald-600 to-emerald-800 border border-emerald-400/60 rounded-2xl py-4 text-white font-black text-lg shadow-lg active:scale-95 transition-all"
-                          >
-                              Correcte gok
-                          </button>
-                          <button
-                              onClick={() => handlePhysicalBusGuess('incorrect')}
-                              className="w-full bg-gradient-to-br from-red-600 to-red-800 border border-red-400/60 rounded-2xl py-4 text-white font-black text-lg shadow-lg active:scale-95 transition-all"
-                          >
-                              Foute gok
-                          </button>
-                      </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
                       <button
                           onClick={() => startDigitalBus(busPassengers)}
                           className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
