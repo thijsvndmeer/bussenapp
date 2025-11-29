@@ -2410,7 +2410,7 @@ const App: React.FC = () => {
               {/* Header - Redesigned */}
               <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap">
                   <div>
-                      <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">De Bus</h2>
+                      <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">De Bus</h2>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap justify-end">
                       <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
@@ -2440,20 +2440,9 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-2 px-5 pb-5">
-                    {Array.from({ length: settings.busLength }).map((_, idx) => (
-                        <div
-                            key={idx}
-                            className="w-14 h-20 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white/10 shadow-[0_8px_25px_rgba(0,0,0,0.35)] flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-[0.25em] animate-pulse"
-                        >
-                            BUS
-                        </div>
-                    ))}
-                </div>
-
                 {/* Bus Cards */}
                 <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
-                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/40 to-transparent animate-pulse pointer-events-none"></div>
+                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/40 to-transparent pointer-events-none"></div>
                    <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black via-black/40 to-transparent pointer-events-none" />
                    <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black via-black/40 to-transparent pointer-events-none" />
                    <div
