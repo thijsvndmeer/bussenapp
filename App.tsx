@@ -603,6 +603,9 @@ const App: React.FC = () => {
   const [feedback, setFeedback] = useState<{text: string, type: 'success' | 'error' | 'neutral' | 'info'} | null>(null);
   const [lastDrawnCard, setLastDrawnCard] = useState<Card | null>(null);
   const [isWaitingForNextPlayer, setIsWaitingForNextPlayer] = useState(false);
+  const [pyramidMode, setPyramidMode] = useState<'physical' | 'digital'>(
+    settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital'
+  );
   
   // Pyramid State
   const [pyramid, setPyramid] = useState<(Card | null)[][]>([]);
@@ -860,6 +863,7 @@ const App: React.FC = () => {
       if (parsed.physicalBusPosition !== undefined) setPhysicalBusPosition(parsed.physicalBusPosition);
       if (parsed.busDecksUsed !== undefined) setBusDecksUsed(parsed.busDecksUsed);
       if (parsed.busSelectionCandidateId !== undefined) setBusSelectionCandidateId(parsed.busSelectionCandidateId);
+      if (parsed.pyramidMode) setPyramidMode(parsed.pyramidMode);
       if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
     } catch (error) {
       console.error('Herstellen spelstaat mislukt', error);
@@ -880,6 +884,12 @@ const App: React.FC = () => {
       hydrateGameState();
     }
   }, [hydratePlayers, hydrateGameState]);
+
+  useEffect(() => {
+    if (settings.mode === GameMode.DIGITAL) {
+      setPyramidMode('digital');
+    }
+  }, [settings.mode]);
 
 
 
@@ -1201,6 +1211,7 @@ const App: React.FC = () => {
   const confirmStart = (mode: GameMode) => {
     triggerHaptic('heavy');
     setSettings(prev => ({ ...prev, mode }));
+    setPyramidMode(mode === GameMode.PHYSICAL ? 'physical' : 'digital');
     setDeck(shuffleDeck(createDeck()));
     setBusDeck([]);
     setBusDecksUsed(1); // Reset bus decks used
@@ -1492,7 +1503,7 @@ const App: React.FC = () => {
     const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
     const isFinished = newRevealed.size === totalCards;
 
-    if (settings.mode === GameMode.PHYSICAL) {
+    if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
          setFeedback({
             text: isTop ? "ADTJE VOOR DE ZAAL!" : `Wie heeft deze kaart? ${getSipsText(sips)}!`,
             type: 'info'
@@ -2252,6 +2263,29 @@ const App: React.FC = () => {
                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Draai kaarten om</p>
                   </div>
               </div>
+
+              {settings.mode === GameMode.PHYSICAL && (
+                  <div className="px-5 py-4 bg-black/40 backdrop-blur border-b border-white/5">
+                      <div className="flex items-center justify-between mb-3">
+                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.25em]">Kaartenmodus</p>
+                          <span className="text-xs font-semibold text-slate-300">{pyramidMode === 'physical' ? 'Eigen deck' : 'In-app kaarten'}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                          <button
+                              onClick={() => setPyramidMode('physical')}
+                              className={`py-3 rounded-2xl font-black text-sm border transition-all active:scale-95 ${pyramidMode === 'physical' ? 'bg-red-700 text-white border-red-400 shadow-[0_10px_25px_rgba(220,38,38,0.25)]' : 'bg-slate-900/70 text-slate-200 border-white/10 hover:border-red-500/50'}`}
+                          >
+                              Fysieke kaarten
+                          </button>
+                          <button
+                              onClick={() => setPyramidMode('digital')}
+                              className={`py-3 rounded-2xl font-black text-sm border transition-all active:scale-95 ${pyramidMode === 'digital' ? 'bg-emerald-700 text-white border-emerald-400 shadow-[0_10px_25px_rgba(16,185,129,0.25)]' : 'bg-slate-900/70 text-slate-200 border-white/10 hover:border-emerald-400/50'}`}
+                          >
+                              Digitale kaarten
+                          </button>
+                      </div>
+                  </div>
+              )}
 
               {feedback && !pendingMatches && (
                   <div className="absolute top-24 left-0 right-0 z-50 flex justify-center pointer-events-none">
