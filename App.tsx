@@ -171,6 +171,7 @@ const PLAYER_DATA_KEY = 'bus-app-player-data-v1';
 const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
+const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
@@ -413,12 +414,29 @@ const RootContainer: React.FC<RootContainerProps> = ({children, className='', sh
 
 const App: React.FC = () => {
   // --- STATE ---
-  const [settings, setSettings] = useState<GameSettings>({
-    mode: GameMode.DIGITAL,
-    pyramidRows: 4,
-    sharedBus: false,
-    busLength: 6,
-    busDecks: 1,
+  const [settings, setSettings] = useState<GameSettings>(() => {
+    const defaultSettings: GameSettings = {
+      mode: GameMode.DIGITAL,
+      pyramidRows: 4,
+      sharedBus: false,
+      busLength: 6,
+      busDecks: 1,
+    };
+
+    if (!storageAvailable) return defaultSettings;
+
+    try {
+      const saved = localStorage.getItem(GAME_SETTINGS_KEY);
+      if (saved) {
+        // Merge to ensure new settings get defaults
+        return { ...defaultSettings, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.warn("Kon instellingen niet laden, gebruik standaardinstellingen", e);
+      localStorage.removeItem(GAME_SETTINGS_KEY);
+    }
+
+    return defaultSettings;
   });
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
@@ -673,6 +691,15 @@ const App: React.FC = () => {
       console.warn('Kon bus-instructies niet opslaan', error);
     }
   }, [isBusInstructionsCollapsed, storageAvailable]);
+
+  useEffect(() => {
+    if (!storageAvailable) return;
+    try {
+      localStorage.setItem(GAME_SETTINGS_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.warn('Kon instellingen niet opslaan', error);
+    }
+  }, [settings, storageAvailable]);
 
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
@@ -1520,7 +1547,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
       if (shouldShowEntrance) {
           setIsBusEntrance(true);
           setPhase(GamePhase.THE_BUS);
-          setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 900);
+          setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 1800);
           return;
       }
 
@@ -1564,7 +1591,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
       if (shouldShowEntrance) {
           setIsBusEntrance(true);
           setPhase(GamePhase.THE_BUS);
-          setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 900);
+          setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 1800);
           return;
       }
 
@@ -2457,8 +2484,8 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
       if (isBusEntrance) {
           return (
               <RootContainer className="items-center justify-center" disableBaseBg showTexture={false}>
-                  <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-1000 ease-out" style={busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
-                      <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">samen in de bus!</h1>
+                  <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out" style={busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
+                      <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">samen in de bus!</h1>
                       <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
                           {busPassengers.map(p => (
                               <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
