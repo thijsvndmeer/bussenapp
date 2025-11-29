@@ -611,7 +611,6 @@ const App: React.FC = () => {
   const [loserReveal, setLoserReveal] = useState<{player: Player, title: string} | null>(null);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [showPyramidInstructions, setShowPyramidInstructions] = useState(false);
-  const [pyramidMode, setPyramidMode] = useState<'physical' | 'digital'>(settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
 
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
@@ -628,7 +627,6 @@ const App: React.FC = () => {
   const [busWinBurst, setBusWinBurst] = useState(false);
   const [busMode, setBusMode] = useState<'physical' | 'digital' | null>(null);
   const [physicalBusPosition, setPhysicalBusPosition] = useState(1);
-  const [busSelectionCandidateId, setBusSelectionCandidateId] = useState<string | null>(null);
   const busScrollRef = useRef<HTMLDivElement>(null);
   const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -851,7 +849,6 @@ const App: React.FC = () => {
       if (parsed.loserReveal !== undefined) setLoserReveal(parsed.loserReveal);
       if (parsed.isPyramidComplete !== undefined) setIsPyramidComplete(parsed.isPyramidComplete);
       if (parsed.showPyramidInstructions !== undefined) setShowPyramidInstructions(parsed.showPyramidInstructions);
-      if (parsed.pyramidMode !== undefined) setPyramidMode(parsed.pyramidMode);
       if (parsed.busDriver !== undefined) setBusDriver(parsed.busDriver);
       if (parsed.busPassengers) setBusPassengers(parsed.busPassengers);
       if (parsed.busCards) setBusCards(parsed.busCards);
@@ -1390,8 +1387,6 @@ const App: React.FC = () => {
     setLoserReveal(null);
     setIsPyramidComplete(false);
     setShowPyramidInstructions(settings.mode === GameMode.PHYSICAL);
-    setPyramidMode(settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
-    setBusSelectionCandidateId(null);
 
     if (settings.mode === GameMode.DIGITAL) {
         let currentDeck = deck;
@@ -1610,7 +1605,6 @@ const App: React.FC = () => {
   // --- BUS LOGIC ---
 
   const startDigitalBus = (passengers: Player[]) => {
-      setBusPassengers(passengers);
       setBusMode('digital');
       setBusDecksUsed(1); // Reset bus decks used at the start of bus phase
       setIsBusDeckExhausted(false);
@@ -1634,10 +1628,9 @@ const App: React.FC = () => {
       setFeedback(null);
   };
 
-  const startPhysicalBus = (passengers?: Player[]) => {
+  const startPhysicalBus = () => {
       triggerHaptic('medium');
       playSound('busEnter');
-      if (passengers) setBusPassengers(passengers);
       setBusMode('physical');
       setIsBusEntrance(false);
       setIsBusWon(false);
@@ -1665,46 +1658,14 @@ const App: React.FC = () => {
       setBusDecksUsed(1);
       setCurrentBusIndex(1);
       setFeedback(null);
-      setBusSelectionCandidateId(passengers[0]?.id ?? null);
 
       if (settings.mode === GameMode.PHYSICAL) {
         setBusMode(null);
-        setPhase(GamePhase.BUS_PLAYER_SELECTION);
+        setPhase(GamePhase.BUS_MODE_SELECTION);
         return;
       }
 
       startDigitalBus(passengers);
-  };
-
-  const goToBusSelection = () => {
-      setBusPassengers([]);
-      setBusSelectionCandidateId(null);
-      setBusDeck([]);
-      setBusCards([]);
-      setBusWrongCardIndex(null);
-      setBusFocusIndex(null);
-      setPhysicalBusPosition(1);
-      setIsBusWon(false);
-      setIsBusDeckExhausted(false);
-      setBusDecksUsed(1);
-      setCurrentBusIndex(1);
-      setFeedback(null);
-      setBusMode(null);
-      setPhase(GamePhase.BUS_PLAYER_SELECTION);
-  };
-
-  const startPhysicalBusFromSelection = () => {
-      if (!busSelectionCandidateId) return;
-      const passenger = players.find(p => p.id === busSelectionCandidateId);
-      if (!passenger) return;
-      startPhysicalBus([passenger]);
-  };
-
-  const startDigitalBusFromSelection = () => {
-      if (!busSelectionCandidateId) return;
-      const passenger = players.find(p => p.id === busSelectionCandidateId);
-      if (!passenger) return;
-      startDigitalBus([passenger]);
   };
 
   const restartBus = () => {
@@ -2204,22 +2165,13 @@ const App: React.FC = () => {
                       <p className="text-sm uppercase font-black tracking-[0.3em] text-amber-300">Fysieke modus</p>
                       <h2 className="text-4xl font-black text-white leading-tight">Bouw de piramide</h2>
                       <p className="text-slate-300 text-base max-w-xl mx-auto">Pak een fysiek deck en bouw een piramide met {settings.pyramidRows} rijen op tafel. Begin met de onderste laag en werk naar boven.</p>
-                      <p className="text-slate-400 text-sm max-w-xl mx-auto">Kies daarna of je de piramide fysiek houdt en direct doorgaat naar de bus, of toch een digitale piramide wil draaien.</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
-                      <button
-                          onClick={goToBusSelection}
-                          className="w-full bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-lg px-6 py-4 rounded-2xl shadow-2xl border border-white/10 active:scale-95 transition-all"
-                      >
-                          Naar de bus
-                      </button>
-                      <button
-                          onClick={() => { setPyramidMode('digital'); setShowPyramidInstructions(false); }}
-                          className="w-full bg-slate-900/80 text-white font-black text-lg px-6 py-4 rounded-2xl shadow-xl border border-white/10 hover:border-red-400/60 active:scale-95 transition-all"
-                      >
-                          Toch een digitale piramide
-                      </button>
-                  </div>
+                  <button
+                      onClick={() => setShowPyramidInstructions(false)}
+                      className="bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-lg px-6 py-4 rounded-2xl shadow-2xl border border-white/10 active:scale-95 transition-all"
+                  >
+                      Piramide ligt klaar, start!
+                  </button>
               </RootContainer>
           );
       }
@@ -2403,59 +2355,6 @@ const App: React.FC = () => {
        );
   }
 
-  if (phase === GamePhase.BUS_PLAYER_SELECTION) {
-      return (
-          <RootContainer className="items-center justify-center p-6" variant="bus">
-              <div className="max-w-3xl w-full space-y-6">
-                  <div className="text-center space-y-2">
-                      <p className="text-sm text-red-200 uppercase tracking-[0.25em] font-black">Bus selectie</p>
-                      <h2 className="text-4xl font-black text-white leading-tight">Wie heeft de minste kaarten?</h2>
-                      <p className="text-slate-300 text-sm max-w-2xl mx-auto">Kies de speler met de minste kaarten; diegene stapt de bus in. Gebruik de knoppen hieronder om verder te gaan met de fysieke bus of kies alsnog voor een digitale bus.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {players.map((p) => {
-                          const isSelected = busSelectionCandidateId === p.id;
-                          return (
-                              <button
-                                  key={p.id}
-                                  onClick={() => setBusSelectionCandidateId(p.id)}
-                                  className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all active:scale-95 ${isSelected ? 'border-red-500 bg-red-900/40 shadow-red-900/30' : 'border-white/10 bg-black/40 hover:border-red-500/40'}`}
-                              >
-                                  <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border border-white/10 flex items-center justify-center text-lg font-black text-white">
-                                      {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : p.name.charAt(0)}
-                                  </div>
-                                  <div className="flex flex-col flex-1 min-w-0">
-                                      <span className="text-white font-black truncate">{p.name}</span>
-                                      <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">{p.hand.length} kaart(en)</span>
-                                  </div>
-                                  {isSelected && <Check size={18} className="text-red-400" />}
-                              </button>
-                          );
-                      })}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <button
-                          disabled={!busSelectionCandidateId}
-                          onClick={startPhysicalBusFromSelection}
-                          className={`w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-lg px-6 py-4 rounded-2xl border border-white/10 shadow-2xl transition-all active:scale-95 ${!busSelectionCandidateId ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-red-900/50'}`}
-                      >
-                          Start fysieke bus
-                      </button>
-                      <button
-                          disabled={!busSelectionCandidateId}
-                          onClick={startDigitalBusFromSelection}
-                          className={`w-full bg-slate-900/80 text-white font-black text-lg px-6 py-4 rounded-2xl border border-white/10 shadow-xl transition-all active:scale-95 ${!busSelectionCandidateId ? 'opacity-60 cursor-not-allowed' : 'hover:border-red-400/60'}`}
-                      >
-                          Toch een digitale bus
-                      </button>
-                  </div>
-              </div>
-          </RootContainer>
-      );
-  }
-
   if (phase === GamePhase.BUS_MODE_SELECTION) {
       const passengerNames = busPassengers.map(p => p.name).join(' & ');
       return (
@@ -2510,7 +2409,7 @@ const App: React.FC = () => {
                       <h2 className="text-3xl font-black text-white">Kies hoe je de bus speelt</h2>
                       <p className="text-slate-300 text-sm">Selecteer een optie om verder te gaan.</p>
                       <button
-                          onClick={() => setPhase(GamePhase.BUS_PLAYER_SELECTION)}
+                          onClick={() => setPhase(GamePhase.BUS_MODE_SELECTION)}
                           className="bg-red-600 text-white font-black px-6 py-3 rounded-2xl shadow-lg border border-white/10 active:scale-95 transition-all"
                       >
                           Terug naar keuze
