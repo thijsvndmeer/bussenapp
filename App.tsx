@@ -1488,13 +1488,13 @@ const App: React.FC = () => {
       setBusMode('physical');
       setIsSelectingBusPlayer(false);
 
-      if (settings.sharedBus) {
-          setPhase(GamePhase.BUS_TEAM_SELECTION);
-      } else {
-          setTimeout(() => {
-              startBus([passenger]);
-          }, 5000);
-      }
+      setTimeout(() => {
+        if (settings.sharedBus) {
+            setPhase(GamePhase.BUS_TEAM_SELECTION);
+        } else {
+            startBus([passenger]);
+        }
+      }, 5000);
   };
 
   const handleSharedBusSelection = (partner: Player | null) => {
@@ -2419,7 +2419,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                    <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
                        {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
                    </div>
-                   <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Smart</h2>
+                   <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Bus</h2>
                    <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
                        <span className="text-white border-b-2 border-red-500">{victim.name}</span>, Wie neem je mee de bus in?
                    </p>
@@ -2458,8 +2458,8 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
           return (
               <RootContainer className="items-center justify-center" disableBaseBg showTexture={false}>
                   <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-1000 ease-out" style={busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
-                      <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">BUS</h1>
-                      <div className="flex flex-col gap-8 items-center z-10">
+                      <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">samen in de bus!</h1>
+                      <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
                           {busPassengers.map(p => (
                               <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
                                   <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
