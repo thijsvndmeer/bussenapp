@@ -2562,12 +2562,7 @@ const App: React.FC = () => {
                         <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
                             <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="pointer-events-auto w-full sm:w-auto text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-emerald-200/60 shadow-[0_12px_30px_rgba(251,191,36,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
-                                style={{
-                                  background: 'linear-gradient(120deg, #10b981, #14b8a6, #fbbf24, #a855f7, #22c55e)',
-                                  backgroundSize: '280% 280%',
-                                  animation: 'gradient-xy 12s ease-in-out infinite'
-                                }}
+                                className="pointer-events-auto w-full sm:w-auto bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-emerald-300/60 shadow-[0_12px_30px_rgba(16,185,129,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 animate-[pulse_2.2s_ease-in-out_infinite]"
                             >
                                 Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                             </button>
@@ -2734,12 +2729,7 @@ const App: React.FC = () => {
                         ) : isBusWon ? (
                              <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="w-full text-white text-xl font-black px-12 py-4 rounded-2xl border border-emerald-200/60 shadow-[0_12px_30px_rgba(251,191,36,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
-                                style={{
-                                  background: 'linear-gradient(120deg, #10b981, #14b8a6, #fbbf24, #a855f7, #22c55e)',
-                                  backgroundSize: '280% 280%',
-                                  animation: 'gradient-xy 12s ease-in-out infinite'
-                                }}
+                                className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white text-xl font-black px-12 py-4 rounded-2xl border border-emerald-300/60 shadow-[0_12px_30px_rgba(16,185,129,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 animate-[pulse_2.2s_ease-in-out_infinite]"
                              >
                                  Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                              </button>
