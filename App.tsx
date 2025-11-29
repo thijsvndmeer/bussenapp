@@ -2579,7 +2579,7 @@ const App: React.FC = () => {
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
                                 className="pointer-events-auto w-full sm:w-auto text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-amber-300/60 shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
                                 style={{
-                                    background: 'linear-gradient(90deg, #fde047, #f1f5f9, #f59e0b, #fde047)',
+                                    background: 'linear-gradient(90deg, #dd8e17ff, #bb9517ff, #f59e0b, #fd9947ff)',
                                     backgroundSize: '300% 300%',
                                     animation: 'end-gradient 3s ease-in-out infinite',
                                 }}
