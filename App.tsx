@@ -270,6 +270,7 @@ interface RootContainerProps {
   shake?: boolean;
   variant?: 'default' | 'bus' | 'pyramid';
   isDiscoActive?: boolean; // Add this
+  style?: React.CSSProperties;
 }
 
 interface PersistedPlayerState {
@@ -368,199 +369,35 @@ const GlobalAnimations = () => (
 
 
 
-const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default', isDiscoActive = false}) => {
-
-
-
-
-
-
-
+const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default', isDiscoActive = false, style}) => {
     let bgClass = 'bg-animated-gradient';
-
-
-
-
-
-
-
     let additionalStyles: React.CSSProperties = {};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     if (variant === 'bus') bgClass = 'bg-animated-bus';
-
-
-
-
-
-
-
     if (variant === 'pyramid') bgClass = 'bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     if (isDiscoActive) {
-
-
-
-
-
-
-
         bgClass = ''; // Clear default bgClass
-
-
-
-
-
-
-
         additionalStyles = {
-
-
-
-
-
-
-
             background: 'linear-gradient(120deg, #ff3a7f, #ffb347, #5ac8fa, #7c3aed, #0ea5e9, #22d3ee, #f472b6)',
-
-
-
-
-
-
-
             backgroundSize: '400% 400%',
-
-
-
-
-
-
-
             animation: 'disco-gradient 3s ease infinite',
-
-
-
-
-
-
-
         };
-
-
-
-
-
-
-
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    const combinedStyles = { ...additionalStyles, ...style };
 
     return (
-
-
-
-
-
-
-
-        <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={additionalStyles}>
-
-
-
-
-
-
-
+        <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={combinedStyles}>
             <GlobalAnimations />
 
-
-
-
-
-
-
             {/* Scanlines / Overlay effect */}
-
-
-
-
-
-
-
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
-
-
-
-
-
-
             {children}
-
-
-
-
-
-
-
         </div>
-
-
-
-
-
-
-
     );
-
-
-
-
-
-
-
-};
+  };
 
 // --- APP COMPONENT ---
 
@@ -2454,42 +2291,47 @@ const App: React.FC = () => {
           );
       }
 
-      if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
-          const passengerNames = busPassengers.map(p => p.name).join(' & ');
-          const progress = Math.min(1, Math.max(0, physicalBusPosition / settings.busLength));
-          const progressPercent = Math.round(progress * 100);
-          const progressGradient = progress >= 1 ? 'from-emerald-400 via-lime-300 to-teal-200 shadow-[0_0_25px_rgba(74,222,128,0.55)]' : 'from-red-500 via-amber-400 to-emerald-400 shadow-[0_0_20px_rgba(248,113,113,0.45)]';
-          const progressContainerTone = progress >= 1 ? 'bg-emerald-900/50 border-emerald-500/50 shadow-[0_10px_40px_rgba(34,197,94,0.25)]' : 'bg-red-900/40 border-red-500/40 shadow-[0_10px_40px_rgba(248,113,113,0.2)]';
-          return (
-              <RootContainer className={`p-6 ${isBusWon ? 'bus-happy' : ''}`} variant="bus">
-                  <div className="w-full max-w-4xl mx-auto bg-gradient-to-b from-black/80 via-slate-950/80 to-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
-                      <div className="flex flex-col gap-4">
-                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                              <div>
-                                  <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
-                                  <h2 className="text-4xl font-black text-white leading-tight">De Busrit</h2>
-                                  <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
-                              </div>
-                              <div className={`w-full md:w-96 rounded-2xl p-5 transition-all duration-500 ${progressContainerTone}`}>
-                                  <div className="flex items-center justify-between mb-2 text-white font-black text-sm uppercase tracking-[0.15em]">
-                                      <div className="flex items-center gap-2">
-                                          <BusFront className="text-red-300" size={20} />
-                                          <span>Voortgang</span>
-                                      </div>
-                                      <span>{progressPercent}%</span>
-                                  </div>
-                                  <div className="relative h-4 md:h-5 rounded-full bg-slate-900/80 overflow-hidden border border-white/10 shadow-inner">
-                                      <div
-                                          className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${progressGradient} transition-all duration-700 ease-out`}
-                                          style={{ width: `${progress * 100}%`, filter: `drop-shadow(0 0 18px rgba(248,113,113,0.45))` }}
-                                      />
-                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent)]" />
-                                      <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white/70 font-black tracking-[0.2em]">
-                                          Kaart {physicalBusPosition} / {settings.busLength}
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
+        if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
+            const passengerNames = busPassengers.map(p => p.name).join(' & ');
+            const progress = Math.min(1, Math.max(0, physicalBusPosition / settings.busLength));
+            const progressPercent = Math.round(progress * 100);
+            const progressGradient = progress >= 1 ? 'from-emerald-400 via-teal-300 to-cyan-200 shadow-[0_0_30px_rgba(34,197,94,0.45)]' : 'from-red-500 via-amber-400 to-emerald-400 shadow-[0_0_20px_rgba(248,113,113,0.45)]';
+            const progressContainerTone = progress >= 1 ? 'bg-emerald-900/50 border-emerald-500/50 shadow-[0_10px_40px_rgba(34,197,94,0.25)]' : 'bg-red-900/40 border-red-500/40 shadow-[0_10px_40px_rgba(248,113,113,0.2)]';
+            const progressWidth = Math.max(progress * 100, 4);
+            const progressIconClass = isBusWon ? 'text-emerald-200' : 'text-red-200';
+            return (
+                <RootContainer className={`p-6 physical-bus-surface ${isBusWon ? 'bus-complete' : ''}`} variant="bus">
+                    <div className="w-full flex justify-center px-2 sm:px-4 mb-5">
+                        <div className={`w-full max-w-4xl rounded-3xl border-2 ${progressContainerTone} overflow-hidden relative backdrop-blur-sm`}>
+                            <div className="relative h-6 md:h-7 bg-slate-950/70 border border-white/10 overflow-hidden">
+                                <div
+                                    className={`h-full rounded-2xl bg-gradient-to-r ${progressGradient} transition-all duration-700 ease-out`}
+                                    style={{ width: `${progressWidth}%`, filter: progress >= 1 ? 'drop-shadow(0 0 24px rgba(52,211,153,0.5))' : 'drop-shadow(0 0 18px rgba(248,113,113,0.35))' }}
+                                />
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent)]" />
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-between px-4 text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-white drop-shadow-lg pointer-events-none">
+                                <div className="flex items-center gap-2">
+                                    <BusFront className={progressIconClass} size={16} />
+                                    <span>Voortgang</span>
+                                </div>
+                                <span>{progressPercent}%</span>
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs text-white/80 font-black tracking-[0.3em] drop-shadow-lg pointer-events-none">
+                                Kaart {physicalBusPosition} / {settings.busLength}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-4xl mx-auto bg-gradient-to-b from-black/80 via-slate-950/80 to-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div>
+                                    <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
+                                    <h2 className="text-4xl font-black text-white leading-tight">De Busrit</h2>
+                                    <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
+                                </div>
+                            </div>
 
                           <div className="flex flex-wrap justify-center gap-2 bg-black/40 border border-white/10 rounded-2xl p-4 shadow-inner">
                               {Array.from({ length: settings.busLength }).map((_, idx) => (
@@ -2536,24 +2378,17 @@ const App: React.FC = () => {
                               >
                                   Toch een Digitale Bus
                               </button>
-                              {isBusWon ? (
-                                  <button
-                                      onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
-                                  >
-                                      Naar het Einde
-                                  </button>
-                              ) : (
-                                  <button
-                                      disabled
-                                      className="w-full bg-slate-800/60 text-slate-400 font-black py-3 rounded-2xl border border-white/5 shadow-inner opacity-60 cursor-not-allowed"
-                                  >
-                                      Bus nog bezig...
-                                  </button>
-                              )}
-                          </div>
-                      </div>
-                  </div>
+                                {isBusWon && (
+                                    <button
+                                        onClick={() => setPhase(GamePhase.GAME_OVER)}
+                                        className="w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 text-black font-black py-4 rounded-2xl border-2 border-emerald-200 shadow-[0_12px_40px_rgba(52,211,153,0.35)] active:scale-95 transition-all hover:shadow-[0_18px_50px_rgba(52,211,153,0.4)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200"
+                                    >
+                                        Naar het Einde
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
               </RootContainer>
           );
       }
