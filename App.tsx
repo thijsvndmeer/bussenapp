@@ -5,8 +5,8 @@ import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
-const ADMOB_APP_ID = 'Bussenca-app-pub-7627297114391750~5463450367';
-const ADMOB_INTERSTITIAL_UNIT_ID = 'rondeklaarca-app-pub-7627297114391750/7299276212';
+const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
+const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
 
 type CameraPlugin = {
@@ -20,18 +20,22 @@ type CameraPlugin = {
   }) => Promise<{ dataUrl?: string }>;
 };
 
+type InterstitialPlacementOptions = {
+  adId: string;
+  adName?: string;
+  placement?: string;
+  type?: 'interstitial';
+  format?: 'full-screen';
+};
+
 type AdMobPlugin = {
-  initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
-  prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
-  showInterstitial?: () => Promise<void>;
+  initialize: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
+  prepareInterstitial: (options: InterstitialPlacementOptions) => Promise<void>;
+  showInterstitial: (options?: { adName?: string }) => Promise<void>;
 };
 
 const Camera = registerPlugin<CameraPlugin>('Camera');
-
-const getAdMobPlugin = (): AdMobPlugin | null => {
-  const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
-  return plugin ?? null;
-};
+const AdMob = registerPlugin<AdMobPlugin>('AdMob');
 
 // --- CONSTANTS & PHRASES ---
 
@@ -583,6 +587,8 @@ const App: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
+  const [isInterstitialLoading, setIsInterstitialLoading] = useState(false);
+  const [isInterstitialReady, setIsInterstitialReady] = useState(false);
 
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
@@ -702,11 +708,10 @@ const App: React.FC = () => {
   );
 
   const initializeAdMob = useCallback(async () => {
-    const adMob = getAdMobPlugin();
-    if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
+    if (Capacitor.getPlatform() === 'web' || adMobReadyRef.current) return;
 
     try {
-      await adMob.initialize({
+      await AdMob.initialize({
         appId: ADMOB_APP_ID,
         requestTrackingAuthorization: true,
       });
@@ -912,6 +917,7 @@ const App: React.FC = () => {
     initializeAdMob();
   }, [initializeAdMob]);
 
+
   // --- HELPERS ---
 
   const triggerShake = () => {
@@ -1097,26 +1103,57 @@ const App: React.FC = () => {
     triggerFileCapture('gallery');
   };
 
-  // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
+  const loadLeaderboardInterstitial = useCallback(async () => {
+    if (Capacitor.getPlatform() === 'web') return false;
+    if (!adMobReadyRef.current) {
+      await initializeAdMob();
+    }
+
+    if (isInterstitialLoading) return isInterstitialReady;
+
+    setIsInterstitialLoading(true);
+    try {
+      await AdMob.prepareInterstitial({
+        adId: ADMOB_INTERSTITIAL_UNIT_ID,
+        adName: INTERSTITIAL_PLACEMENT,
+        placement: INTERSTITIAL_PLACEMENT,
+        type: 'interstitial',
+        format: 'full-screen',
+      });
+      setIsInterstitialReady(true);
+      return true;
+    } catch (error) {
+      console.warn('Interstitial laden mislukt', error);
+      setIsInterstitialReady(false);
+      return false;
+    } finally {
+      setIsInterstitialLoading(false);
+    }
+  }, [initializeAdMob, isInterstitialLoading, isInterstitialReady]);
+
   const showLeaderboardInterstitial = useCallback(async () => {
-    const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') return;
+    if (Capacitor.getPlatform() === 'web') return;
 
     try {
-      if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
-        await adMob.initialize({
-          appId: ADMOB_APP_ID,
-          requestTrackingAuthorization: true,
-        });
-        adMobReadyRef.current = true;
+      if (!isInterstitialReady) {
+        const loaded = await loadLeaderboardInterstitial();
+        if (!loaded) return;
       }
 
-      await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
-      await adMob.showInterstitial();
+      await AdMob.showInterstitial({ adName: INTERSTITIAL_PLACEMENT });
+      setIsInterstitialReady(false);
     } catch (error) {
       console.warn('Interstitial tonen mislukt', error);
     }
-  }, []);
+  }, [isInterstitialReady, loadLeaderboardInterstitial]);
+
+  useEffect(() => {
+    if (phase === GamePhase.GAME_OVER) {
+      loadLeaderboardInterstitial();
+    } else {
+      setIsInterstitialReady(false);
+    }
+  }, [phase, loadLeaderboardInterstitial]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

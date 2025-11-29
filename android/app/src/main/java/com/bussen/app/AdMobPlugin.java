@@ -1,0 +1,152 @@
+package com.bussen.app;
+
+import androidx.annotation.NonNull;
+
+import android.os.Handler;
+import android.os.Looper;
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+
+@CapacitorPlugin(name = "AdMob")
+public class AdMobPlugin extends Plugin {
+    private static final String TAG = "AdMobPlugin";
+
+    private InterstitialAd interstitialAd;
+    private boolean isLoading = false;
+    private boolean isInitialized = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    @PluginMethod
+    public void initialize(PluginCall call) {
+        mainHandler.post(() -> {
+            if (isInitialized) {
+                JSObject result = new JSObject();
+                result.put("status", "initialized");
+                call.resolve(result);
+                return;
+            }
+
+            try {
+                MobileAds.initialize(getContext(), status -> {
+                    isInitialized = true;
+                    JSObject result = new JSObject();
+                    result.put("status", "initialized");
+                    call.resolve(result);
+                });
+            } catch (Exception e) {
+                call.reject("Failed to initialize Mobile Ads SDK: " + e.getMessage());
+            }
+        });
+    }
+
+    @PluginMethod
+    public void prepareInterstitial(PluginCall call) {
+        String adId = call.getString("adId");
+        String adName = call.getString("adName", "");
+        String placement = call.getString("placement", "");
+
+        if (adId == null || adId.isEmpty()) {
+            call.reject("adId is required to load an interstitial ad.");
+            return;
+        }
+
+        mainHandler.post(() -> {
+            if (!isInitialized) {
+                call.reject("Mobile Ads SDK is not initialized yet.");
+                return;
+            }
+
+            isLoading = true;
+            AdRequest request = new AdRequest.Builder().build();
+
+            InterstitialAd.load(getContext(), adId, request, new InterstitialAdLoadCallback() {
+                @Override
+                public void onAdLoaded(@NonNull InterstitialAd ad) {
+                    interstitialAd = ad;
+                    isLoading = false;
+                    attachFullScreenCallbacks(ad, adName, placement);
+
+                    JSObject result = new JSObject();
+                    result.put("adName", adName);
+                    result.put("placement", placement);
+                    notifyEvent("loaded", adName, placement);
+                    call.resolve(result);
+                }
+
+                @Override
+                public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                    interstitialAd = null;
+                    isLoading = false;
+                    notifyEvent("loadFailed", adName, placement);
+                    call.reject(loadAdError.getMessage());
+                }
+            });
+        });
+    }
+
+    @PluginMethod
+    public void showInterstitial(PluginCall call) {
+        String adName = call.getString("adName", "");
+        mainHandler.post(() -> {
+            if (interstitialAd == null) {
+                call.reject("Interstitial ad is not ready yet.");
+                return;
+            }
+
+            interstitialAd.show(getActivity());
+            JSObject result = new JSObject();
+            result.put("adName", adName);
+            call.resolve(result);
+        });
+    }
+
+    private void attachFullScreenCallbacks(InterstitialAd ad, String adName, String placement) {
+        ad.setFullScreenContentCallback(new FullScreenContentCallback() {
+            @Override
+            public void onAdDismissedFullScreenContent() {
+                interstitialAd = null;
+                notifyEvent("dismissed", adName, placement);
+            }
+
+            @Override
+            public void onAdFailedToShowFullScreenContent(AdError adError) {
+                interstitialAd = null;
+                notifyEvent("showFailed", adName, placement);
+            }
+
+            @Override
+            public void onAdShowedFullScreenContent() {
+                notifyEvent("shown", adName, placement);
+            }
+
+            @Override
+            public void onAdClicked() {
+                notifyEvent("clicked", adName, placement);
+            }
+
+            @Override
+            public void onAdImpression() {
+                notifyEvent("impression", adName, placement);
+            }
+        });
+    }
+
+    private void notifyEvent(String eventName, String adName, String placement) {
+        JSObject payload = new JSObject();
+        payload.put("event", eventName);
+        payload.put("adName", adName);
+        payload.put("placement", placement);
+        notifyListeners(eventName, payload);
+    }
+}
