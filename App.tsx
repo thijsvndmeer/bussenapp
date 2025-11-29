@@ -2018,7 +2018,7 @@ const App: React.FC = () => {
 
       if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
           return (
-              <RootContainer className="p-6 items-center justify-center" variant="pyramid">
+              <RootContainer className="p-6 items-center justify-center overflow-y-auto" variant="pyramid">
                   {manualBusSelectionOverlay}
 
                   <div className="w-full max-w-2xl bg-black/60 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-6 text-center">
@@ -2300,7 +2300,7 @@ const App: React.FC = () => {
             const progressWidth = Math.max(progress * 100, 4);
             const progressIconClass = isBusWon ? 'text-emerald-200' : 'text-red-200';
             return (
-                <RootContainer className={`p-6 physical-bus-surface ${isBusWon ? 'bus-complete' : ''}`} variant="bus">
+                <RootContainer className={`p-6 pb-safe overflow-y-auto physical-bus-surface ${isBusWon ? 'bus-complete' : ''}`} variant="bus">
                     <div className="w-full flex justify-center px-2 sm:px-4 mb-5">
                         <div className={`w-full max-w-4xl rounded-3xl border-2 ${progressContainerTone} overflow-hidden relative backdrop-blur-sm`}>
                             <div className="relative h-6 md:h-7 bg-slate-950/70 border border-white/10 overflow-hidden">
