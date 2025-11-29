@@ -304,6 +304,8 @@ interface PersistedGameState {
   busMode: 'physical' | 'digital' | null;
   physicalBusPosition: number;
   busDecksUsed: number;
+  pyramidMode: 'physical' | 'digital';
+  busSelectionCandidateId: string | null;
   usedPhrases: string[];
 }
 
@@ -767,6 +769,8 @@ const App: React.FC = () => {
       busMode,
       physicalBusPosition,
       busDecksUsed,
+      pyramidMode,
+      busSelectionCandidateId,
       usedPhrases: Array.from(usedPhrases),
     };
 
@@ -802,6 +806,8 @@ const App: React.FC = () => {
     busMode,
     physicalBusPosition,
     busDecksUsed,
+    pyramidMode,
+    busSelectionCandidateId,
     usedPhrases,
   ]);
 
@@ -853,6 +859,7 @@ const App: React.FC = () => {
       if (parsed.busMode !== undefined) setBusMode(parsed.busMode);
       if (parsed.physicalBusPosition !== undefined) setPhysicalBusPosition(parsed.physicalBusPosition);
       if (parsed.busDecksUsed !== undefined) setBusDecksUsed(parsed.busDecksUsed);
+      if (parsed.busSelectionCandidateId !== undefined) setBusSelectionCandidateId(parsed.busSelectionCandidateId);
       if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
     } catch (error) {
       console.error('Herstellen spelstaat mislukt', error);
@@ -1547,6 +1554,10 @@ const App: React.FC = () => {
   };
 
   const determineLoserAndAnimate = () => {
+      if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
+          goToBusSelection();
+          return;
+      }
       triggerHaptic('majorLoss');
       const eligiblePlayers = players.filter(p => !p.isImmune);
       const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
@@ -2253,10 +2264,16 @@ const App: React.FC = () => {
               {/* Manual Proceed Button */}
               {isPyramidComplete && !pendingMatches && (
                    <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
-                       <button 
-                          onClick={determineLoserAndAnimate}
+                      <button
+                          onClick={() => {
+                              if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
+                                  goToBusSelection();
+                                  return;
+                              }
+                              determineLoserAndAnimate();
+                          }}
                           className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
-                       >
+                      >
                           <BusFront size={28} /> NAAR DE BUS <ArrowRight size={28} strokeWidth={3} />
                        </button>
                    </div>
