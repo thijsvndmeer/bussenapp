@@ -2027,13 +2027,13 @@ const App: React.FC = () => {
 
       if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
           return (
-              <RootContainer className="p-6 items-center justify-center overflow-y-auto" variant="pyramid">
+              <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid">
                   {manualBusSelectionOverlay}
 
-                  <div className="w-full max-w-2xl bg-black/60 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-6 text-center">
+                  <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
                       <div className="space-y-4 text-left">
-                          <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300 text-center">Fysieke piramide</p>
-                          <h2 className="text-4xl font-black text-white leading-tight text-center">Bouw de piramide op tafel</h2>
+                          <p className="text-[11px] uppercase font-black tracking-[0.25em] text-amber-300 text-center">Fysieke piramide</p>
+                          <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">Bouw de piramide op tafel</h2>
 
                           <div className="w-full flex flex-col items-center gap-2 mt-2">
                               {Array.from({ length: settings.pyramidRows }, (_, i) => i + 1).map(row => (
@@ -2041,23 +2041,28 @@ const App: React.FC = () => {
                                       {Array.from({ length: row }).map((_, idx) => (
                                           <div
                                               key={idx}
-                                              className="w-12 h-16 rounded-xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_20px_rgba(251,191,36,0.3)]"
+                                              className="w-10 h-14 sm:w-12 sm:h-16 rounded-xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_20px_rgba(251,191,36,0.3)]"
                                           ></div>
                                       ))}
                                   </div>
                               ))}
                           </div>
 
-                          <div className="space-y-1 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
+                          <div className="space-y-2 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
+                              <div className="flex flex-wrap gap-2 text-[11px] uppercase font-black tracking-[0.2em] text-amber-200 justify-center">
+                                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-200/40">Mobiel klaar</span>
+                                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-200/40">Stap-voor-stap</span>
+                                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-200/40">Groot tekst</span>
+                              </div>
                               <p className="text-lg font-black text-white">Bouw een Fysieke Piramide:</p>
-                              <p>1.  Leg Kaarten: Leg echte speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
-                              <p>2.  Begin onderop met een rij van {settings.pyramidRows} kaarten.</p>
-                              <p>3.  Bouw Omhoog: Elke volgende rij heeft één kaart minder, eindigend met één kaart aan de top.</p>
-                              <p>4.  Draai Om: Zodra de piramide ligt, draaien jullie de kaarten rij voor rij om, van onder naar boven.</p>
+                              <p>1.  Leg speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
+                              <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij.</p>
+                              <p>3.  Elke volgende rij heeft één kaart minder tot je een topkaart hebt.</p>
+                              <p>4.  Draai kaarten rij voor rij om, van onder naar boven.</p>
                           </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <button
                               onClick={() => {
                                   setPyramidMode('digital');
@@ -2067,13 +2072,13 @@ const App: React.FC = () => {
                                   setIsPyramidComplete(false);
                                   generateDigitalPyramid();
                               }}
-                              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
+                              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
                           >
                               Toch een Digitale Piramide
                           </button>
                           <button
                               onClick={() => setIsSelectingBusPlayer(true)}
-                              className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all"
+                              className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
                           >
                               Naar de Bus
                           </button>
@@ -2332,34 +2337,34 @@ const App: React.FC = () => {
 
             return (
                 <RootContainer
-                    className="p-6 pb-28 pb-safe overflow-y-auto transition-[background,filter] duration-1000 ease-out"
+                    className="p-4 sm:p-6 pb-28 pb-safe overflow-y-auto transition-[background,filter] duration-1000 ease-out"
                     style={{ background: physicalBusBackground, transition: 'background 1200ms ease, filter 1200ms ease' }}
                 >
                     <div className="w-full max-w-4xl mx-auto space-y-6">
-                        <div className="bg-gradient-to-b from-black/80 via-slate-950/80 to-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                <div>
-                                    <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
-                                    <h2 className="text-4xl font-black text-white leading-tight">De Busrit</h2>
+                        <div className="bg-gradient-to-b from-black/85 via-slate-950/85 to-black/80 backdrop-blur-xl border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-4 sm:p-6 space-y-6">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                                <div className="space-y-1 text-center md:text-left">
+                                    <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
+                                    <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">De Busrit</h2>
                                     <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                                 </div>
-                                <div className="text-right text-slate-300 text-xs uppercase font-black tracking-[0.25em]">
+                                <div className="text-right text-slate-200 text-[11px] uppercase font-black tracking-[0.25em] bg-white/5 border border-white/10 px-3 py-2 rounded-2xl self-start md:self-center">
                                     Kaart {physicalBusPosition} / {settings.busLength}
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between text-[11px] uppercase font-black tracking-[0.25em] text-amber-200">
+                            <div className="bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)] animate-in fade-in duration-500 space-y-4">
+                                <div className="flex items-center justify-between text-[11px] uppercase font-black tracking-[0.25em] text-amber-200 flex-wrap gap-2">
                                     <span className="flex items-center gap-2">
                                         <Sparkles size={16} className="text-amber-300" />
                                         Voorbeeldkaarten
                                     </span>
                                     <span className="text-slate-200">Voortgang</span>
                                 </div>
-                                <div className="flex flex-wrap justify-center gap-4 bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)] animate-in fade-in duration-500">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                     {progressCards.map(({ idx, isUnlocked, isComplete, isCurrent, tip }) => (
                                         <div key={idx} className="flex flex-col items-center gap-2">
-                                            <div className="relative w-24 h-32 md:w-28 md:h-36 perspective-1000">
+                                            <div className="relative w-full max-w-[120px] h-32 sm:h-36 perspective-1000">
                                                 <div
                                                     className={`absolute inset-0 preserve-3d transition-transform duration-700 ease-out ${isUnlocked ? 'rotate-y-180' : ''} ${isCurrent ? 'scale-105' : ''}`}
                                                 >
@@ -2377,7 +2382,7 @@ const App: React.FC = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-400 text-center w-24 md:w-28">
+                                            <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-400 text-center w-full">
                                                 {isCurrent ? 'Nu bezig' : isComplete ? 'Gedaan' : 'Volgende'}
                                             </div>
                                         </div>
@@ -2385,37 +2390,45 @@ const App: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2 text-slate-100">
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3 text-slate-100 text-sm leading-relaxed">
+                                <div className="flex flex-wrap gap-2 text-[11px] uppercase font-black tracking-[0.2em] text-slate-200">
+                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">Sneloverzicht</span>
+                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">Mobiel vriendelijk</span>
+                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">Altijd leesbaar</span>
+                                </div>
                                 <p className="text-lg font-black text-white">De Busrit met Fysieke Kaarten:</p>
-                                <p>1.  De Chauffeur: De dealer van de vorige ronde is de buschauffeur.</p>
-                                <p>2.  Kaarten Leggen: De chauffeur legt een rij van {settings.busLength} kaarten neer (gelijk aan de buslengte-instelling), met de afbeelding naar beneden.</p>
-                                <p>3.  Hoger of Lager: De speler in de bus raadt of de volgende kaart in de rij hoger of lager is dan de vorige. De eerste kaart wordt gratis omgedraaid.</p>
-                                <p>4.  Fout Geraden? Bij een foute gok drinkt de speler het aantal slokken gelijk aan de positie in de rij (bv. 3e kaart = 3 slokken) en begint opnieuw bij de eerste kaart.</p>
-                                <p>5.  Correct Geraden? Ga door naar de volgende kaart.</p>
-                                <p>6.  Einde: De busrit is voorbij als de speler de hele rij correct raadt.</p>
+                                <p>1.  De chauffeur van de vorige ronde is nu de buschauffeur.</p>
+                                <p>2.  Leg een rij van {settings.busLength} kaarten met de afbeelding naar beneden.</p>
+                                <p>3.  Raad hoger of lager dan de vorige kaart – de eerste kaart is gratis.</p>
+                                <p>4.  Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.</p>
+                                <p>5.  Goed? Ga door naar de volgende kaart.</p>
+                                <p>6.  Hele rij gehaald? Je bent vrij!</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                                 <button
                                     onClick={() => handlePhysicalBusGuess('correct')}
-                                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-black text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(34,197,94,0.35)] border border-emerald-300/50 active:scale-[0.99] transition-all"
+                                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-black text-lg sm:text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(34,197,94,0.35)] border border-emerald-300/50 active:scale-[0.99] transition-all"
                                 >
                                     <ThumbsUp size={26} />
                                     Correct
                                 </button>
                                 <button
                                     onClick={() => handlePhysicalBusGuess('incorrect')}
-                                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-red-600 to-red-800 text-white font-black text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(239,68,68,0.35)] border border-red-300/50 active:scale-[0.99] transition-all"
+                                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-red-600 to-red-800 text-white font-black text-lg sm:text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(239,68,68,0.35)] border border-red-300/50 active:scale-[0.99] transition-all"
                                 >
                                     <ThumbsDown size={26} />
                                     Incorrect
                                 </button>
                             </div>
 
-                            <div className="flex justify-center">
+                            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
+                                <div className="text-slate-300 text-xs uppercase tracking-[0.2em] font-black bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-center w-full sm:w-auto">
+                                    Optimized voor kleine schermen
+                                </div>
                                 <button
                                     onClick={() => startDigitalBus(busPassengers)}
-                                    className="w-full max-w-sm text-center text-slate-300 font-semibold py-2 px-3 rounded-xl hover:text-white transition-all underline underline-offset-4 decoration-slate-500"
+                                    className="w-full sm:w-auto text-center text-slate-200 font-semibold py-3 px-4 rounded-xl hover:text-white transition-all underline underline-offset-4 decoration-slate-500"
                                 >
                                     Toch een Digitale Bus
                                 </button>
@@ -2423,10 +2436,10 @@ const App: React.FC = () => {
                         </div>
                     </div>
                     {isBusWon && (
-                        <div className="absolute bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
                             <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
+                                className="pointer-events-auto w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-800 text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
                             >
                                 Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                             </button>
