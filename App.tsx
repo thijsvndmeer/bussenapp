@@ -630,6 +630,7 @@ const App: React.FC = () => {
   const [busWinBurst, setBusWinBurst] = useState(false);
   const [busMode, setBusMode] = useState<'physical' | 'digital' | null>(null);
   const [physicalBusPosition, setPhysicalBusPosition] = useState(1);
+  const [busSelectionCandidateId, setBusSelectionCandidateId] = useState<string | null>(null);
   const busScrollRef = useRef<HTMLDivElement>(null);
   const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
