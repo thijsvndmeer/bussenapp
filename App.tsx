@@ -1215,32 +1215,16 @@ const App: React.FC = () => {
     setIsBusEntrance(false);
   }, []);
 
-  const [isFinishingBus, setIsFinishingBus] = useState(false);
-
-  const handleBusWinContinue = async () => {
-    if (isFinishingBus) return;
-
-    setIsFinishingBus(true);
-    try {
-      resetBusState();
-      setPhase(GamePhase.GAME_OVER);
-      await loadLeaderboardInterstitial();
-    } catch (error) {
-      console.warn('Bus afronden mislukt', error);
-    } finally {
-      setIsFinishingBus(false);
-    }
+  const handleBusWinContinue = () => {
+    resetBusState();
+    setPhase(GamePhase.GAME_OVER);
+    loadLeaderboardInterstitial();
   };
 
   const handleGameOverContinue = async () => {
-    try {
-      await showLeaderboardInterstitial();
-    } catch (error) {
-      console.warn('Kon interstitial na leaderboard niet tonen', error);
-    } finally {
-      resetBusState();
-      setPhase(GamePhase.SETUP);
-    }
+    await showLeaderboardInterstitial();
+    resetBusState();
+    setPhase(GamePhase.SETUP);
   };
 
   const handleStartPress = () => {
@@ -2462,12 +2446,7 @@ const App: React.FC = () => {
                         ) : isBusWon ? (
                              <button
                                 onClick={handleBusWinContinue}
-                                disabled={isFinishingBus}
-                                className={`w-full bg-gradient-to-r from-yellow-600 to-amber-800 text-white text-xl font-black py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center justify-center gap-3 transition-transform border-t border-yellow-400 ${
-                                  isFinishingBus
-                                    ? 'opacity-70 cursor-not-allowed'
-                                    : 'hover:scale-105 active:scale-95'
-                                }`}
+                                className="w-full bg-gradient-to-r from-yellow-600 to-amber-800 text-white text-xl font-black py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 border-t border-yellow-400"
                              >
                                  {isFinishingBus ? 'Bezig...' : 'Verder'} <ArrowRight size={24} strokeWidth={3} />
                              </button>
