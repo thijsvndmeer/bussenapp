@@ -744,77 +744,6 @@ const App: React.FC = () => {
     }
   }, [storageAvailable, players, newPlayerName, newPlayerImage]);
 
-  const persistGameState = useCallback(() => {
-    if (!storageAvailable) return;
-
-    const payload: PersistedGameState = {
-      settings,
-      phase,
-      deck,
-      immunePlayerId,
-      activePlayerIndex,
-      roundStep,
-      feedback,
-      lastDrawnCard,
-      isWaitingForNextPlayer,
-      pyramid,
-      revealedPyramidCards: Array.from(revealedPyramidCards),
-      pendingMatches,
-      loserReveal,
-      isPyramidComplete,
-      showPyramidInstructions,
-      busDriver,
-      busPassengers,
-      busCards,
-      currentBusIndex,
-      busWrongCardIndex,
-      isBusEntrance,
-      isBusWon,
-      busMode,
-      physicalBusPosition,
-      busDecksUsed,
-      pyramidMode,
-      busSelectionCandidateId,
-      usedPhrases: Array.from(usedPhrases),
-    };
-
-    try {
-      localStorage.setItem(GAME_STATE_KEY, JSON.stringify(payload));
-    } catch (error) {
-      console.warn('Kon spelstaat niet opslaan', error);
-    }
-  }, [
-    storageAvailable,
-    settings,
-    phase,
-    deck,
-    immunePlayerId,
-    activePlayerIndex,
-    roundStep,
-    feedback,
-    lastDrawnCard,
-    isWaitingForNextPlayer,
-    pyramid,
-    revealedPyramidCards,
-    pendingMatches,
-    loserReveal,
-    isPyramidComplete,
-    showPyramidInstructions,
-    busDriver,
-    busPassengers,
-    busCards,
-    currentBusIndex,
-    busWrongCardIndex,
-    isBusEntrance,
-    isBusWon,
-    busMode,
-    physicalBusPosition,
-    busDecksUsed,
-    pyramidMode,
-    busSelectionCandidateId,
-    usedPhrases,
-  ]);
-
   // Hydrate players only
   const hydratePlayers = useCallback(() => {
     if (!storageAvailable) return;
@@ -831,60 +760,13 @@ const App: React.FC = () => {
     }
   }, [storageAvailable, setPlayers, setNewPlayerName, setNewPlayerImage]);
 
-  // Hydrate game state conditionally
-  const hydrateGameState = useCallback(() => {
-    if (!storageAvailable) return;
-    try {
-      const saved = localStorage.getItem(GAME_STATE_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved) as Partial<PersistedGameState>;
-      if (parsed.settings) setSettings(parsed.settings);
-      if (parsed.phase) setPhase(parsed.phase);
-      if (parsed.deck) setDeck(parsed.deck);
-      if (parsed.immunePlayerId !== undefined) setImmunePlayerId(parsed.immunePlayerId);
-      if (parsed.activePlayerIndex !== undefined) setActivePlayerIndex(parsed.activePlayerIndex);
-      if (parsed.roundStep) setRoundStep(parsed.roundStep);
-      if (parsed.feedback !== undefined) setFeedback(parsed.feedback);
-      if (parsed.lastDrawnCard !== undefined) setLastDrawnCard(parsed.lastDrawnCard);
-      if (parsed.isWaitingForNextPlayer !== undefined) setIsWaitingForNextPlayer(parsed.isWaitingForNextPlayer);
-      if (parsed.pyramid) setPyramid(parsed.pyramid);
-      if (parsed.revealedPyramidCards) setRevealedPyramidCards(new Set(parsed.revealedPyramidCards));
-      if (parsed.pendingMatches !== undefined) setPendingMatches(parsed.pendingMatches);
-      if (parsed.loserReveal !== undefined) setLoserReveal(parsed.loserReveal);
-      if (parsed.isPyramidComplete !== undefined) setIsPyramidComplete(parsed.isPyramidComplete);
-      if (parsed.showPyramidInstructions !== undefined) setShowPyramidInstructions(parsed.showPyramidInstructions);
-      if (parsed.busDriver !== undefined) setBusDriver(parsed.busDriver);
-      if (parsed.busPassengers) setBusPassengers(parsed.busPassengers);
-      if (parsed.busCards) setBusCards(parsed.busCards);
-      if (parsed.currentBusIndex !== undefined) setCurrentBusIndex(parsed.currentBusIndex);
-      if (parsed.busWrongCardIndex !== undefined) setBusWrongCardIndex(parsed.busWrongCardIndex);
-      if (parsed.isBusEntrance !== undefined) setIsBusEntrance(parsed.isBusEntrance);
-      if (parsed.isBusWon !== undefined) setIsBusWon(parsed.isBusWon);
-      if (parsed.busMode !== undefined) setBusMode(parsed.busMode);
-      if (parsed.physicalBusPosition !== undefined) setPhysicalBusPosition(parsed.physicalBusPosition);
-      if (parsed.busDecksUsed !== undefined) setBusDecksUsed(parsed.busDecksUsed);
-      if (parsed.busSelectionCandidateId !== undefined) setBusSelectionCandidateId(parsed.busSelectionCandidateId);
-      if (parsed.pyramidMode) setPyramidMode(parsed.pyramidMode);
-      if (parsed.usedPhrases) setUsedPhrases(new Set(parsed.usedPhrases));
-    } catch (error) {
-      console.error('Herstellen spelstaat mislukt', error);
-      localStorage.removeItem(GAME_STATE_KEY);
-    }
-  }, [
-    storageAvailable, setSettings, setPhase, setDeck, setImmunePlayerId, setActivePlayerIndex, setRoundStep,
-    setFeedback, setLastDrawnCard, setIsWaitingForNextPlayer, setPyramid, setRevealedPyramidCards,
-    setPendingMatches, setLoserReveal, setIsPyramidComplete, setBusDriver, setBusPassengers,
-    setBusCards, setCurrentBusIndex, setBusWrongCardIndex, setIsBusEntrance, setIsBusWon,
-    setBusDecksUsed, setUsedPhrases
-  ]);
-
   // Main hydration effect on component mount
   useEffect(() => {
     hydratePlayers(); // Always hydrate players
-    if (localStorage.getItem(GAME_STATE_KEY)) { // Only hydrate game state if it exists (implies app was paused, not terminated)
-      hydrateGameState();
+    if (storageAvailable) {
+      localStorage.removeItem(GAME_STATE_KEY); // Ensure game state never persists between sessions
     }
-  }, [hydratePlayers, hydrateGameState]);
+  }, [hydratePlayers, storageAvailable]);
 
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
@@ -922,7 +804,6 @@ const App: React.FC = () => {
 
     const handleAppPause = () => {
       persistPlayers();
-      persistGameState(); // Persist both players and game state on native pause
     }
 
     document.addEventListener('pause', handleAppPause);
@@ -932,7 +813,7 @@ const App: React.FC = () => {
       document.removeEventListener('pause', handleAppPause);
       document.removeEventListener('resume', handleAppPause);
     };
-  }, [persistPlayers, persistGameState]); // Dependency array changes
+  }, [persistPlayers]); // Dependency array changes
 
 
   useEffect(() => {
@@ -1565,6 +1446,38 @@ const App: React.FC = () => {
       }
   };
 
+  const goToBusSelection = () => {
+      const eligiblePlayers = players.filter(p => !p.isImmune);
+      const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
+
+      const playerStats = candidates.map(p => {
+          let totalValue = 0;
+          if (settings.mode === GameMode.DIGITAL) {
+             p.hand.forEach(c => { totalValue += c.rank; });
+             return { id: p.id, count: p.hand.length, val: totalValue };
+          } else {
+             return { id: p.id, count: p.drinksTaken, val: 0 };
+          }
+      });
+
+      playerStats.sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return b.val - a.val;
+      });
+
+      const victimId = playerStats[0].id;
+      const victim = players.find(p => p.id === victimId)!;
+      const driver = players.find(p => p.isDealer) || players[0];
+      const title = getUniquePhrase(LOSER_TITLES);
+
+      setBusDriver(driver);
+      setBusPassengers([victim]);
+      setLoserReveal({ player: victim, title: title });
+
+      if (settings.sharedBus) setPhase(GamePhase.BUS_TEAM_SELECTION);
+      else startBus([victim]);
+  };
+
   const determineLoserAndAnimate = () => {
       if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
           goToBusSelection();
@@ -1580,20 +1493,20 @@ const App: React.FC = () => {
              p.hand.forEach(c => { totalValue += c.rank; });
              return { id: p.id, count: p.hand.length, val: totalValue };
           } else {
-             return { id: p.id, count: p.drinksTaken, val: 0 }; 
+             return { id: p.id, count: p.drinksTaken, val: 0 };
           }
       });
 
       playerStats.sort((a, b) => {
-          if (b.count !== a.count) return b.count - a.count; 
+          if (b.count !== a.count) return b.count - a.count;
           return b.val - a.val;
       });
-      
+
       const victimId = playerStats[0].id;
       const victim = players.find(p => p.id === victimId)!;
       const driver = players.find(p => p.isDealer) || players[0];
       const title = getUniquePhrase(LOSER_TITLES);
-      
+
       setBusDriver(driver);
       setBusPassengers([victim]);
       setLoserReveal({ player: victim, title: title });
