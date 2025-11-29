@@ -474,6 +474,10 @@ const App: React.FC = () => {
   const [busSelectionCandidateId, setBusSelectionCandidateId] = useState<string | null>(null);
   const busScrollRef = useRef<HTMLDivElement>(null);
   const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const busProgressContainerRef = useRef<HTMLDivElement>(null);
+  const busProgressContentRef = useRef<HTMLDivElement>(null);
+  const busProgressItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [busProgressScale, setBusProgressScale] = useState(1);
 
   // Audio FX
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -803,11 +807,29 @@ const App: React.FC = () => {
 
   const getActivePlayer = () => players[activePlayerIndex];
 
+  const recalcBusProgressScale = useCallback(() => {
+    const container = busProgressContainerRef.current;
+    const content = busProgressContentRef.current;
+    if (!container || !content) return;
+
+    const availableWidth = container.clientWidth;
+    const contentWidth = content.scrollWidth;
+
+    if (!contentWidth) return;
+
+    const nextScale = Math.min(1, availableWidth / contentWidth);
+    setBusProgressScale(Math.max(0.65, nextScale));
+  }, []);
+
   // --- SCROLL HELPERS ---
   useEffect(() => {
     // Keep refs array in sync with cards
     busCardRefs.current = busCardRefs.current.slice(0, busCards.length);
   }, [busCards.length]);
+
+  useEffect(() => {
+    busProgressItemRefs.current = busProgressItemRefs.current.slice(0, settings.busLength);
+  }, [settings.busLength]);
 
   useEffect(() => {
     if (phase !== GamePhase.THE_BUS || busCards.length === 0) return;
@@ -834,10 +856,10 @@ const App: React.FC = () => {
     if (previousEl && targetEl) {
       const containerRect = container.getBoundingClientRect();
       const previousRect = previousEl.getBoundingClientRect();
-      const targetRect = targetEl.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
 
-      const left = Math.min(previousRect.left, targetRect.left) - containerRect.left + container.scrollLeft;
-      const right = Math.max(previousRect.right, targetRect.right) - containerRect.left + container.scrollLeft;
+    const left = Math.min(previousRect.left, targetRect.left) - containerRect.left + container.scrollLeft;
+    const right = Math.max(previousRect.right, targetRect.right) - containerRect.left + container.scrollLeft;
 
       const desiredCenter = (left + right) / 2;
       const newScrollLeft = desiredCenter - containerRect.width / 2;
@@ -845,6 +867,25 @@ const App: React.FC = () => {
       container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
     }
   }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
+
+  useEffect(() => {
+    if (phase !== GamePhase.THE_BUS || settings.mode !== GameMode.PHYSICAL || busMode !== 'physical') return;
+
+    recalcBusProgressScale();
+    const handleResize = () => recalcBusProgressScale();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [busMode, phase, recalcBusProgressScale, settings.busLength, settings.mode]);
+
+  useEffect(() => {
+    if (phase !== GamePhase.THE_BUS || settings.mode !== GameMode.PHYSICAL || busMode !== 'physical') return;
+
+    const targetIndex = Math.min(settings.busLength - 1, Math.max(0, physicalBusPosition - 1));
+    const targetEl = busProgressItemRefs.current[targetIndex];
+
+    targetEl?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [busMode, phase, physicalBusPosition, settings.busLength, settings.mode]);
 
   useEffect(() => {
     if (isBusWon) {
@@ -1969,7 +2010,10 @@ const App: React.FC = () => {
                   <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2">
                   {feedback ? (
                       <div className="space-y-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
-                          <div className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-xl backdrop-blur-md ${feedback.type === 'success' ? 'bg-emerald-900/80 border-emerald-500 text-emerald-100' : 'bg-red-900/80 border-red-500 text-white animate-shake'}`}>
+                          <div
+                              key={feedback.text}
+                              className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-xl backdrop-blur-md animate-pop ${feedback.type === 'success' ? 'bg-emerald-900/80 border-emerald-500 text-emerald-100' : 'bg-red-900/80 border-red-500 text-white animate-shake'}`}
+                          >
                               {feedback.text}
                           </div>
                           <button onClick={nextPlayerTurn} className="w-full bg-white hover:bg-slate-200 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
@@ -2427,15 +2471,32 @@ const App: React.FC = () => {
                                     </span>
                                     <span className="text-slate-200">Kaarten</span>
                                 </div>
-                                <div className="flex justify-center flex-nowrap gap-2 sm:gap-3 md:gap-4 overflow-x-auto no-scrollbar px-1 py-1">
-                                    {busProgressCards.map(({ idx, isComplete }) => (
-                                        <div key={idx} className="w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex-none perspective-1000">
-                                            <div className={`relative w-full h-full preserve-3d transition-transform duration-700 ease-out ${isComplete ? 'rotate-y-180' : ''}`}>
-                                                <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_18px_rgba(251,191,36,0.28)] transition-[background,box-shadow] duration-700 ease-out"></div>
-                                                <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 shadow-[0_10px_24px_rgba(16,185,129,0.45)] transition-[background,box-shadow] duration-700 ease-out"></div>
+                                <div
+                                    ref={busProgressContainerRef}
+                                    className="flex justify-center overflow-x-auto no-scrollbar px-1 py-1 scroll-smooth"
+                                >
+                                    <div
+                                        ref={busProgressContentRef}
+                                        className="flex flex-nowrap gap-2 sm:gap-3 md:gap-4 transition-transform duration-200"
+                                        style={{
+                                            transform: `scale(${busProgressScale})`,
+                                            transformOrigin: 'center',
+                                            minWidth: 'max-content',
+                                        }}
+                                    >
+                                        {busProgressCards.map(({ idx, isComplete }) => (
+                                            <div
+                                                key={idx}
+                                                ref={el => busProgressItemRefs.current[idx] = el}
+                                                className="w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex-none perspective-1000"
+                                            >
+                                                <div className={`relative w-full h-full preserve-3d transition-transform duration-700 ease-out ${isComplete ? 'rotate-y-180' : ''}`}>
+                                                    <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_18px_rgba(251,191,36,0.28)] transition-[background,box-shadow] duration-700 ease-out"></div>
+                                                    <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 shadow-[0_10px_24px_rgba(16,185,129,0.45)] transition-[background,box-shadow] duration-700 ease-out"></div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
