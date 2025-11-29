@@ -1541,36 +1541,58 @@ const App: React.FC = () => {
   };
 
   const proceedToBus = () => {
-      if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
-          goToBusSelection();
+      if (settings.mode === GameMode.PHYSICAL) {
+          setIsSelectingBusPlayer(true);
           return;
       }
       determineLoserAndAnimate();
   };
 
+  const handleManualBusPassengerSelect = (passenger: Player) => {
+      triggerHaptic('medium');
+      const driver = players.find(p => p.isDealer) || players[0];
+      setBusDriver(driver);
+      setLoserReveal({ player: passenger, title: getUniquePhrase(LOSER_TITLES) });
+      setBusPassengers([passenger]);
+      setIsSelectingBusPlayer(false);
+
+      if (settings.sharedBus) {
+          setPhase(GamePhase.BUS_TEAM_SELECTION);
+      } else {
+          startBus([passenger]);
+      }
+  };
+
   const handleSharedBusSelection = (partner: Player | null) => {
       triggerHaptic('medium');
-      if (partner) {
-          setBusPassengers(prev => [...prev, partner]);
-          startBus([...busPassengers, partner]);
-      } else {
-          startBus(busPassengers);
-      }
+      const currentPassengers = busPassengers.length ? busPassengers : [];
+      const updatedPassengers = partner ? [...currentPassengers, partner] : currentPassengers;
+      setBusPassengers(updatedPassengers);
+      startBus(updatedPassengers);
   };
 
   // --- BUS LOGIC ---
 
-  const startDigitalBus = (passengers: Player[]) => {
+  const startDigitalBus = (passengers: Player[], options?: { skipEntrance?: boolean }) => {
+      const selectedPassengers = passengers.length ? passengers : busPassengers;
+      if (!options?.skipEntrance) {
+          const driver = players.find(p => p.isDealer) || players[0];
+          setBusDriver(driver);
+          resetBusState();
+          setBusPassengers(selectedPassengers);
+          setBusMode('digital');
+          setIsBusEntrance(true);
+          setPhase(GamePhase.THE_BUS);
+          setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 900);
+          return;
+      }
+
+      setIsBusEntrance(false);
       setBusMode('digital');
       setBusDecksUsed(1); // Reset bus decks used at the start of bus phase
       setIsBusDeckExhausted(false);
       setBusFocusIndex(null);
       setIsBusWon(false);
-
-      if (settings.sharedBus) {
-        setIsBusEntrance(true);
-        setTimeout(() => setIsBusEntrance(false), 3000);
-      }
       playSound('busEnter');
 
       const needed = settings.busLength;
@@ -1584,7 +1606,7 @@ const App: React.FC = () => {
       setFeedback(null);
   };
 
-  const startPhysicalBus = (passengersOverride?: Player[]) => {
+  const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean }) => {
       const passengers = passengersOverride ?? busPassengers;
       if (passengers.length === 0) {
           setFeedback({ text: 'Selecteer eerst wie de bus in gaat.', type: 'error' });
@@ -1592,12 +1614,20 @@ const App: React.FC = () => {
           return;
       }
 
-      resetBusState();
-      setBusPassengers(passengers);
+      if (!options?.skipEntrance) {
+          const driver = players.find(p => p.isDealer) || players[0];
+          setBusDriver(driver);
+          resetBusState();
+          setBusPassengers(passengers);
+          setBusMode('physical');
+          setIsBusEntrance(true);
+          setPhase(GamePhase.THE_BUS);
+          setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 900);
+          return;
+      }
 
       triggerHaptic('medium');
       playSound('busEnter');
-      setBusMode('physical');
       setIsBusEntrance(false);
       setIsBusWon(false);
       setBusWrongCardIndex(null);
@@ -1618,8 +1648,6 @@ const App: React.FC = () => {
         return;
       }
 
-      resetBusState();
-      setBusPassengers(passengers);
       startDigitalBus(passengers);
   };
 
@@ -2115,47 +2143,46 @@ const App: React.FC = () => {
 
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
+      const manualBusSelectionOverlay = isSelectingBusPlayer ? (
+          <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
+              <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
+                  <div className="text-center space-y-2">
+                      <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">Kies passagier</p>
+                      <h3 className="text-3xl font-black text-white leading-tight">Wie verloor de piramide?</h3>
+                      <p className="text-slate-300 text-sm">Selecteer handmatig wie de bus in moet.</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto">
+                      {players.map((p) => (
+                          <button
+                              key={p.id}
+                              onClick={() => handleManualBusPassengerSelect(p)}
+                              className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-2xl p-3 text-left hover:border-amber-400 hover:bg-amber-500/10 transition-all active:scale-95"
+                          >
+                              <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
+                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
+                                      <span className="w-full h-full flex items-center justify-center text-white font-black text-lg">{p.name.charAt(0)}</span>
+                                  )}
+                              </div>
+                              <span className="text-white font-bold truncate">{p.name}</span>
+                          </button>
+                      ))}
+                  </div>
+
+                  <button
+                      onClick={() => setIsSelectingBusPlayer(false)}
+                      className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
+                  >
+                      Annuleren
+                  </button>
+              </div>
+          </div>
+      ) : null;
+
       if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
           return (
               <RootContainer className="p-6 items-center justify-center" variant="pyramid">
-                  {isSelectingBusPlayer && (
-                      <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
-                          <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
-                              <div className="text-center space-y-2">
-                                  <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">Kies passagier</p>
-                                  <h3 className="text-3xl font-black text-white leading-tight">Wie verloor de piramide?</h3>
-                                  <p className="text-slate-300 text-sm">Selecteer handmatig wie de bus in moet.</p>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto">
-                                  {players.map((p) => (
-                                      <button
-                                          key={p.id}
-                                          onClick={() => {
-                                              startBus([p]);
-                                              setIsSelectingBusPlayer(false);
-                                          }}
-                                          className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-2xl p-3 text-left hover:border-amber-400 hover:bg-amber-500/10 transition-all active:scale-95"
-                                      >
-                                          <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
-                                              {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
-                                                  <span className="w-full h-full flex items-center justify-center text-white font-black text-lg">{p.name.charAt(0)}</span>
-                                              )}
-                                          </div>
-                                          <span className="text-white font-bold truncate">{p.name}</span>
-                                      </button>
-                                  ))}
-                              </div>
-
-                              <button
-                                  onClick={() => setIsSelectingBusPlayer(false)}
-                                  className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
-                              >
-                                  Annuleren
-                              </button>
-                          </div>
-                      </div>
-                  )}
+                  {manualBusSelectionOverlay}
 
                   <div className="w-full max-w-2xl bg-black/60 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-6 text-center">
                       <div className="space-y-4 text-left">
@@ -2163,7 +2190,7 @@ const App: React.FC = () => {
                           <h2 className="text-4xl font-black text-white leading-tight text-center">Bouw de piramide op tafel</h2>
 
                           <div className="w-full flex flex-col items-center gap-2 mt-2">
-                              {[1,2,3,4].map(row => (
+                              {Array.from({ length: settings.pyramidRows }, (_, i) => i + 1).map(row => (
                                   <div key={row} className="flex gap-2 justify-center">
                                       {Array.from({ length: row }).map((_, idx) => (
                                           <div
@@ -2178,7 +2205,7 @@ const App: React.FC = () => {
                           <div className="space-y-1 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
                               <p className="text-lg font-black text-white">Bouw een Fysieke Piramide:</p>
                               <p>1.  Leg Kaarten: Leg echte speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
-                              <p>2.  Begin Onderop: De onderste rij heeft evenveel kaarten als de ingestelde piramidehoogte.</p>
+                              <p>2.  Begin onderop met een rij van {settings.pyramidRows} kaarten.</p>
                               <p>3.  Bouw Omhoog: Elke volgende rij heeft één kaart minder, eindigend met één kaart aan de top.</p>
                               <p>4.  Draai Om: Zodra de piramide ligt, draaien jullie de kaarten rij voor rij om, van onder naar boven.</p>
                           </div>
@@ -2209,9 +2236,10 @@ const App: React.FC = () => {
               </RootContainer>
           );
       }
-      return (
-          <RootContainer className="p-0" variant="pyramid" shake={screenShake}>
-              {/* Match Modal */}
+        return (
+            <RootContainer className="p-0" variant="pyramid" shake={screenShake}>
+                {manualBusSelectionOverlay}
+                {/* Match Modal */}
               {pendingMatches && (
                   <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300">
                       {/* Card Reveal for Match */}
@@ -2386,7 +2414,7 @@ const App: React.FC = () => {
                    >
                        NIEMAND
                    </button>
-                   {players.filter(p => p.id !== victim.id).map(p => (
+                   {players.filter(p => !busPassengers.some(bp => bp.id === p.id)).map(p => (
                        <button 
                            key={p.id} 
                            onClick={() => handleSharedBusSelection(p)}
@@ -2408,11 +2436,32 @@ const App: React.FC = () => {
 
   // 6. THE BUS
   if (phase === GamePhase.THE_BUS) {
+      if (isBusEntrance) {
+          return (
+              <RootContainer className="bg-black items-center justify-center" variant="bus">
+                  <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">BUS</h1>
+                  <div className="flex flex-col gap-8 items-center z-10">
+                      {busPassengers.map(p => (
+                          <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
+                              <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
+                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-4xl font-black">{p.name.charAt(0)}</div>}
+                              </div>
+                              <div className="text-4xl font-black text-white uppercase tracking-widest">{p.name}</div>
+                          </div>
+                      ))}
+                  </div>
+              </RootContainer>
+          );
+      }
+
       if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
           const passengerNames = busPassengers.map(p => p.name).join(' & ');
           const progress = Math.min(1, Math.max(0, physicalBusPosition / settings.busLength));
+          const progressPercent = Math.round(progress * 100);
+          const progressGradient = progress >= 1 ? 'from-emerald-400 via-lime-300 to-teal-200 shadow-[0_0_25px_rgba(74,222,128,0.55)]' : 'from-red-500 via-amber-400 to-emerald-400 shadow-[0_0_20px_rgba(248,113,113,0.45)]';
+          const progressContainerTone = progress >= 1 ? 'bg-emerald-900/50 border-emerald-500/50 shadow-[0_10px_40px_rgba(34,197,94,0.25)]' : 'bg-red-900/40 border-red-500/40 shadow-[0_10px_40px_rgba(248,113,113,0.2)]';
           return (
-              <RootContainer className="p-6" variant="bus">
+              <RootContainer className={`p-6 ${isBusWon ? 'bus-happy' : ''}`} variant="bus">
                   <div className="w-full max-w-4xl mx-auto bg-gradient-to-b from-black/80 via-slate-950/80 to-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
                       <div className="flex flex-col gap-4">
                           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -2421,18 +2470,36 @@ const App: React.FC = () => {
                                   <h2 className="text-4xl font-black text-white leading-tight">De Busrit</h2>
                                   <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                               </div>
-                              <div className="w-full md:w-80 bg-red-900/40 border border-red-500/40 rounded-2xl p-4 shadow-inner">
+                              <div className={`w-full md:w-96 rounded-2xl p-5 transition-all duration-500 ${progressContainerTone}`}>
                                   <div className="flex items-center justify-between mb-2 text-white font-black text-sm uppercase tracking-[0.15em]">
                                       <div className="flex items-center gap-2">
                                           <BusFront className="text-red-300" size={20} />
                                           <span>Voortgang</span>
                                       </div>
-                                      <span>Kaart {physicalBusPosition} / {settings.busLength}</span>
+                                      <span>{progressPercent}%</span>
                                   </div>
-                                  <div className="h-3 rounded-full bg-slate-900 overflow-hidden border border-red-500/30">
-                                      <div className="h-full bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 shadow-[0_0_20px_rgba(248,113,113,0.45)]" style={{ width: `${progress * 100}%` }} />
+                                  <div className="relative h-4 md:h-5 rounded-full bg-slate-900/80 overflow-hidden border border-white/10 shadow-inner">
+                                      <div
+                                          className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${progressGradient} transition-all duration-700 ease-out`}
+                                          style={{ width: `${progress * 100}%`, filter: `drop-shadow(0 0 18px rgba(248,113,113,0.45))` }}
+                                      />
+                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent)]" />
+                                      <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white/70 font-black tracking-[0.2em]">
+                                          Kaart {physicalBusPosition} / {settings.busLength}
+                                      </div>
                                   </div>
                               </div>
+                          </div>
+
+                          <div className="flex flex-wrap justify-center gap-2 bg-black/40 border border-white/10 rounded-2xl p-4 shadow-inner">
+                              {Array.from({ length: settings.busLength }).map((_, idx) => (
+                                  <div
+                                      key={idx}
+                                      className="w-14 h-20 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white/10 shadow-[0_6px_18px_rgba(0,0,0,0.35)] flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]"
+                                  >
+                                      #{idx + 1}
+                                  </div>
+                              ))}
                           </div>
 
                           <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2 text-slate-100">
@@ -2469,12 +2536,21 @@ const App: React.FC = () => {
                               >
                                   Toch een Digitale Bus
                               </button>
-                              <button
-                                  onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                  className="w-full bg-slate-800/60 text-slate-100 font-black py-3 rounded-2xl border border-white/5 shadow-lg active:scale-95 transition-all"
-                              >
-                                  Naar het Einde
-                              </button>
+                              {isBusWon ? (
+                                  <button
+                                      onClick={() => setPhase(GamePhase.GAME_OVER)}
+                                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
+                                  >
+                                      Naar het Einde
+                                  </button>
+                              ) : (
+                                  <button
+                                      disabled
+                                      className="w-full bg-slate-800/60 text-slate-400 font-black py-3 rounded-2xl border border-white/5 shadow-inner opacity-60 cursor-not-allowed"
+                                  >
+                                      Bus nog bezig...
+                                  </button>
+                              )}
                           </div>
                       </div>
                   </div>
@@ -2482,29 +2558,11 @@ const App: React.FC = () => {
           );
       }
 
-      if (isBusEntrance) {
-          return (
-              <RootContainer className="bg-black items-center justify-center" variant="bus">
-                  <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">BUS</h1>
-                  <div className="flex flex-col gap-8 items-center z-10">
-                      {busPassengers.map(p => (
-                          <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
-                              <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
-                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-4xl font-black">{p.name.charAt(0)}</div>}
-                              </div>
-                              <div className="text-4xl font-black text-white uppercase tracking-widest">{p.name}</div>
-                          </div>
-                      ))}
-                  </div>
-              </RootContainer>
-          );
-      }
+        const passengerNames = busPassengers.map(p => p.name).join(' & ');
+        const remainingBusCards = busDeck.length;
 
-      const passengerNames = busPassengers.map(p => p.name).join(' & ');
-      const remainingBusCards = busDeck.length;
-
-      return (
-          <RootContainer className="p-0 relative" variant="bus" shake={screenShake}>
+        return (
+            <RootContainer className={`p-0 relative ${isBusWon ? 'bus-happy' : ''}`} variant="bus" shake={screenShake}>
               {isBusWon && <Confetti />}
 
               {/* Header - Redesigned */}
@@ -2538,10 +2596,21 @@ const App: React.FC = () => {
                           </button>
                       )}
                   </div>
-              </div>
+                </div>
 
-              {/* Bus Cards */}
-              <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
+                <div className="flex flex-wrap justify-center gap-2 px-5 pb-5">
+                    {Array.from({ length: settings.busLength }).map((_, idx) => (
+                        <div
+                            key={idx}
+                            className="w-14 h-20 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-black border border-white/10 shadow-[0_8px_25px_rgba(0,0,0,0.35)] flex items-center justify-center text-xs font-black text-slate-400 uppercase tracking-[0.25em] animate-pulse"
+                        >
+                            BUS
+                        </div>
+                    ))}
+                </div>
+
+                {/* Bus Cards */}
+                <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/40 to-transparent animate-pulse pointer-events-none"></div>
                    <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black via-black/40 to-transparent pointer-events-none" />
                    <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black via-black/40 to-transparent pointer-events-none" />
