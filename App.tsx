@@ -2313,12 +2313,21 @@ const App: React.FC = () => {
             const passengerNames = busPassengers.map(p => p.name).join(' & ');
             const completedExampleCards = Math.max(0, Math.min(settings.busLength, physicalBusPosition - 1));
 
+            const progressTutorial = [
+                'Gratis startkaart – draai deze meteen om.',
+                'Gok hoger of lager dan de vorige kaart.',
+                'Check het resultaat en schuif door naar de volgende.',
+                'Fout? Drink het kaartnummer en begin opnieuw.',
+                'Laatste kaart gehaald? Dan ben je vrij!'
+            ];
+
             const progressCards = Array.from({ length: settings.busLength }).map((_, idx) => {
                 const isUnlocked = isBusWon || idx === 0 || idx < physicalBusPosition;
                 const isComplete = isBusWon || idx < completedExampleCards;
                 const isCurrent = !isBusWon && idx === Math.max(0, physicalBusPosition - 1);
+                const tip = progressTutorial[idx] ?? `Kaart ${idx + 1}: dezelfde hoger/lager-regel.`;
 
-                return { idx, isUnlocked, isComplete, isCurrent };
+                return { idx, isUnlocked, isComplete, isCurrent, tip };
             });
 
             return (
@@ -2348,20 +2357,23 @@ const App: React.FC = () => {
                                     <span className="text-slate-200">Voortgang</span>
                                 </div>
                                 <div className="flex flex-wrap justify-center gap-4 bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)] animate-in fade-in duration-500">
-                                    {progressCards.map(({ idx, isUnlocked, isComplete, isCurrent }) => (
+                                    {progressCards.map(({ idx, isUnlocked, isComplete, isCurrent, tip }) => (
                                         <div key={idx} className="flex flex-col items-center gap-2">
                                             <div className="relative w-24 h-32 md:w-28 md:h-36 perspective-1000">
                                                 <div
                                                     className={`absolute inset-0 preserve-3d transition-transform duration-700 ease-out ${isUnlocked ? 'rotate-y-180' : ''} ${isCurrent ? 'scale-105' : ''}`}
                                                 >
-                                                    <div className="absolute inset-0 backface-hidden rounded-2xl overflow-hidden bg-gradient-to-br from-amber-300/85 via-amber-400/75 to-amber-500/85 border border-amber-200/70 shadow-[0_0_34px_rgba(251,191,36,0.6)]">
-                                                        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: `radial-gradient(rgba(251,191,36,0.9) 10%, transparent 10%)`, backgroundSize: '12px 12px' }}></div>
-                                                        <div className="absolute inset-0 border border-amber-100/60 rounded-2xl"></div>
+                                                    <div className="absolute inset-0 backface-hidden rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800/90 via-slate-900 to-black border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+                                                        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: `radial-gradient(#64748b 12%, transparent 12%)`, backgroundSize: '10px 10px' }}></div>
+                                                        <div className="absolute inset-0 border border-white/5 rounded-2xl"></div>
+                                                        <div className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-slate-200 uppercase tracking-[0.2em]">
+                                                            <span className="bg-black/30 px-3 py-1 rounded-full border border-white/10 shadow-inner">#{idx + 1}</span>
+                                                        </div>
                                                     </div>
 
-                                                    <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-2xl overflow-hidden ${isComplete ? 'shadow-[0_0_38px_rgba(52,211,153,0.8)]' : 'shadow-[0_0_26px_rgba(52,211,153,0.55)]'} bg-gradient-to-br from-emerald-500/85 via-emerald-500/80 to-emerald-700/90 border border-emerald-100/70 transition-[box-shadow,transform] duration-700 ease-out`}>
-                                                        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: `radial-gradient(rgba(16,185,129,0.85) 10%, transparent 10%)`, backgroundSize: '12px 12px' }}></div>
-                                                        <div className="absolute inset-0 border border-emerald-50/70 rounded-2xl"></div>
+                                                    <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-2xl overflow-hidden ${isComplete ? 'shadow-[0_0_30px_rgba(52,211,153,0.65)]' : 'shadow-[0_0_24px_rgba(52,211,153,0.35)]'} bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 text-emerald-50 flex flex-col items-center justify-center p-3 text-center`}>
+                                                        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100 mb-1">Stap {idx + 1}</div>
+                                                        <p className="text-xs font-semibold leading-tight drop-shadow-lg">{tip}</p>
                                                     </div>
                                                 </div>
                                             </div>
