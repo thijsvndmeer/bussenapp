@@ -2351,29 +2351,29 @@ const App: React.FC = () => {
   const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
   const physicalBusBackgroundStyle: React.CSSProperties = isBusWon
       ? {
-          background: 'radial-gradient(circle at 20% 18%, rgba(16,185,129,0.18), transparent 42%), radial-gradient(circle at 78% 6%, rgba(6,182,212,0.16), transparent 36%), linear-gradient(135deg, #0a2f2c 0%, #0c3f38 45%, #0a2d3a 100%)',
-          backgroundSize: '240% 240%',
-          animation: 'gradient-xy 18s ease infinite',
-          transition: 'background 1200ms ease, filter 1200ms ease'
+          background: 'radial-gradient(circle at 22% 20%, rgba(250,204,21,0.25), transparent 40%), radial-gradient(circle at 78% 16%, rgba(99,102,241,0.22), transparent 36%), radial-gradient(circle at 46% 74%, rgba(34,197,94,0.2), transparent 42%), linear-gradient(135deg, #0d2430 0%, #0e3d43 28%, #16304f 52%, #2b1b3f 76%, #0f2a45 100%)',
+          backgroundSize: '260% 260%',
+          animation: 'gradient-xy 22s ease-in-out infinite',
+          transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
         }
       : {
           background: 'radial-gradient(circle at 22% 18%, rgba(226,232,240,0.08), transparent 40%), radial-gradient(circle at 78% 6%, rgba(59,130,246,0.12), transparent 36%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)',
           backgroundSize: '240% 240%',
-          animation: 'gradient-xy 18s ease infinite',
-          transition: 'background 1200ms ease, filter 1200ms ease'
+          animation: 'gradient-xy 18s ease-in-out infinite',
+          transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
         };
   const digitalBusBackgroundStyle: React.CSSProperties = isBusWon
       ? {
-          background: 'radial-gradient(circle at 14% 14%, rgba(14,165,233,0.16), transparent 38%), radial-gradient(circle at 86% 12%, rgba(124,58,237,0.18), transparent 36%), linear-gradient(135deg, #0b1f33 0%, #0f2842 40%, #0c1f32 100%)',
-          backgroundSize: '240% 240%',
-          animation: 'gradient-xy 16s ease infinite',
-          transition: 'background 1200ms ease, filter 1200ms ease'
+          background: 'radial-gradient(circle at 16% 18%, rgba(251,191,36,0.22), transparent 40%), radial-gradient(circle at 84% 14%, rgba(168,85,247,0.24), transparent 36%), radial-gradient(circle at 48% 78%, rgba(34,211,238,0.2), transparent 42%), linear-gradient(135deg, #0b1f33 0%, #123a55 24%, #0c3b35 50%, #2d1f45 74%, #0b2c4c 100%)',
+          backgroundSize: '260% 260%',
+          animation: 'gradient-xy 20s ease-in-out infinite',
+          transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
         }
       : {
           background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
           backgroundSize: '240% 240%',
-          animation: 'gradient-xy 16s ease infinite',
-          transition: 'background 1200ms ease, filter 1200ms ease'
+          animation: 'gradient-xy 16s ease-in-out infinite',
+          transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
         };
 
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
