@@ -24,11 +24,23 @@ public class AdMobPlugin extends Plugin {
 
     private InterstitialAd interstitialAd;
     private boolean isLoading = false;
+    private boolean isInitialized = false;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @PluginMethod
     public void initialize(PluginCall call) {
         String appId = call.getString("appId", "");
+        synchronized (this) {
+            if (isInitialized) {
+                JSObject result = new JSObject();
+                result.put("status", "initialized");
+                result.put("appId", appId);
+                call.resolve(result);
+                return;
+            }
+            isInitialized = true;
+        }
+
         mainHandler.post(() -> MobileAds.initialize(getContext(), status -> {
             JSObject result = new JSObject();
             result.put("status", "initialized");
@@ -48,15 +60,33 @@ public class AdMobPlugin extends Plugin {
             return;
         }
 
-        mainHandler.post(() -> {
+        synchronized (this) {
+            if (interstitialAd != null) {
+                JSObject result = new JSObject();
+                result.put("adName", adName);
+                result.put("placement", placement);
+                call.resolve(result);
+                return;
+            }
+
+            if (isLoading) {
+                call.reject("An interstitial ad is already loading.");
+                return;
+            }
+
             isLoading = true;
+        }
+
+        mainHandler.post(() -> {
             AdRequest request = new AdRequest.Builder().build();
 
             InterstitialAd.load(getContext(), adId, request, new InterstitialAdLoadCallback() {
                 @Override
                 public void onAdLoaded(@NonNull InterstitialAd ad) {
-                    interstitialAd = ad;
-                    isLoading = false;
+                    synchronized (AdMobPlugin.this) {
+                        interstitialAd = ad;
+                        isLoading = false;
+                    }
                     attachFullScreenCallbacks(ad, adName, placement);
 
                     JSObject result = new JSObject();
@@ -68,8 +98,10 @@ public class AdMobPlugin extends Plugin {
 
                 @Override
                 public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                    interstitialAd = null;
-                    isLoading = false;
+                    synchronized (AdMobPlugin.this) {
+                        interstitialAd = null;
+                        isLoading = false;
+                    }
                     notifyEvent("loadFailed", adName, placement);
                     call.reject(loadAdError.getMessage());
                 }
@@ -81,12 +113,17 @@ public class AdMobPlugin extends Plugin {
     public void showInterstitial(PluginCall call) {
         String adName = call.getString("adName", "");
         mainHandler.post(() -> {
-            if (interstitialAd == null) {
+            InterstitialAd adToShow;
+            synchronized (AdMobPlugin.this) {
+                adToShow = interstitialAd;
+            }
+
+            if (adToShow == null) {
                 call.reject("Interstitial ad is not ready yet.");
                 return;
             }
 
-            interstitialAd.show(getActivity());
+            adToShow.show(getActivity());
             JSObject result = new JSObject();
             result.put("adName", adName);
             call.resolve(result);
@@ -97,13 +134,17 @@ public class AdMobPlugin extends Plugin {
         ad.setFullScreenContentCallback(new FullScreenContentCallback() {
             @Override
             public void onAdDismissedFullScreenContent() {
-                interstitialAd = null;
+                synchronized (AdMobPlugin.this) {
+                    interstitialAd = null;
+                }
                 notifyEvent("dismissed", adName, placement);
             }
 
             @Override
             public void onAdFailedToShowFullScreenContent(AdError adError) {
-                interstitialAd = null;
+                synchronized (AdMobPlugin.this) {
+                    interstitialAd = null;
+                }
                 notifyEvent("showFailed", adName, placement);
             }
 
@@ -130,5 +171,14 @@ public class AdMobPlugin extends Plugin {
         payload.put("adName", adName);
         payload.put("placement", placement);
         notifyListeners(eventName, payload);
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        synchronized (this) {
+            interstitialAd = null;
+            isLoading = false;
+        }
+        super.handleOnDestroy();
     }
 }

@@ -625,6 +625,7 @@ const App: React.FC = () => {
   const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
   const [busFocusIndex, setBusFocusIndex] = useState<number | null>(null);
   const [busWinBurst, setBusWinBurst] = useState(false);
+  const [isFinishingBus, setIsFinishingBus] = useState(false);
   const busScrollRef = useRef<HTMLDivElement>(null);
   const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -1215,11 +1216,18 @@ const App: React.FC = () => {
     setIsBusEntrance(false);
   }, []);
 
-  const handleBusWinContinue = () => {
-    resetBusState();
-    setPhase(GamePhase.GAME_OVER);
-    loadLeaderboardInterstitial();
-  };
+  const handleBusWinContinue = useCallback(async () => {
+    if (isFinishingBus) return;
+
+    setIsFinishingBus(true);
+    try {
+      resetBusState();
+      setPhase(GamePhase.GAME_OVER);
+      await loadLeaderboardInterstitial();
+    } finally {
+      setIsFinishingBus(false);
+    }
+  }, [isFinishingBus, loadLeaderboardInterstitial, resetBusState]);
 
   const handleGameOverContinue = async () => {
     await showLeaderboardInterstitial();
