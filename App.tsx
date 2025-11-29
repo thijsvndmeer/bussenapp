@@ -271,6 +271,8 @@ interface RootContainerProps {
   variant?: 'default' | 'pyramid';
   isDiscoActive?: boolean; // Add this
   style?: React.CSSProperties;
+  disableBaseBg?: boolean;
+  showTexture?: boolean;
 }
 
 interface PersistedPlayerState {
@@ -369,8 +371,8 @@ const GlobalAnimations = () => (
 
 
 
-const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default', isDiscoActive = false, style}) => {
-    let bgClass = 'bg-animated-gradient';
+const RootContainer: React.FC<RootContainerProps> = ({children, className='', shake=false, variant='default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true}) => {
+    let bgClass = disableBaseBg ? '' : 'bg-animated-gradient';
     let additionalStyles: React.CSSProperties = {};
 
     if (variant === 'pyramid') bgClass = 'bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black';
@@ -391,7 +393,7 @@ const RootContainer: React.FC<RootContainerProps> = ({children, className='', sh
             <GlobalAnimations />
 
             {/* Scanlines / Overlay effect */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+            {showTexture && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>}
 
             {children}
         </div>
@@ -1408,12 +1410,12 @@ const App: React.FC = () => {
       const currentPassengers = busPassengers.length ? busPassengers : [];
       const updatedPassengers = partner ? [...currentPassengers, partner] : currentPassengers;
       setBusPassengers(updatedPassengers);
-      startBus(updatedPassengers);
+      startBus(updatedPassengers, { showEntrance: !!partner });
   };
 
   // --- BUS LOGIC ---
 
-  const startDigitalBus = (passengers: Player[], options?: { skipEntrance?: boolean }) => {
+  const startDigitalBus = (passengers: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
       const selectedPassengers = passengers.length ? passengers : busPassengers;
       if (!options?.skipEntrance) {
           const driver = players.find(p => p.isDealer) || players[0];
@@ -1423,7 +1425,9 @@ const App: React.FC = () => {
           setBusMode('digital');
       }
 
-      if (settings.sharedBus && !options?.skipEntrance) {
+      const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !options?.skipEntrance;
+
+      if (shouldShowEntrance) {
           setIsBusEntrance(true);
           setPhase(GamePhase.THE_BUS);
           setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 900);
@@ -1449,7 +1453,7 @@ const App: React.FC = () => {
       setFeedback(null);
   };
 
-  const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean }) => {
+  const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
       const passengers = passengersOverride ?? busPassengers;
       if (passengers.length === 0) {
           setFeedback({ text: 'Selecteer eerst wie de bus in gaat.', type: 'error' });
@@ -1465,7 +1469,9 @@ const App: React.FC = () => {
           setBusMode('physical');
       }
 
-      if (settings.sharedBus && !options?.skipEntrance) {
+      const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !options?.skipEntrance;
+
+      if (shouldShowEntrance) {
           setIsBusEntrance(true);
           setPhase(GamePhase.THE_BUS);
           setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 900);
@@ -1488,13 +1494,13 @@ const App: React.FC = () => {
       setPhase(GamePhase.THE_BUS);
   };
 
-  const startBus = (passengers: Player[]) => {
+  const startBus = (passengers: Player[], options?: { showEntrance?: boolean }) => {
       if (settings.mode === GameMode.PHYSICAL) {
-        startPhysicalBus(passengers);
+        startPhysicalBus(passengers, { showEntrance: options?.showEntrance });
         return;
       }
 
-      startDigitalBus(passengers);
+      startDigitalBus(passengers, { showEntrance: options?.showEntrance });
   };
 
   const restartBus = () => {
@@ -2247,48 +2253,69 @@ const App: React.FC = () => {
 
   // 5. BUS TEAM SELECT
   const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
-  const physicalBusBackground = isBusWon
-      ? 'radial-gradient(circle at 18% 18%, rgba(16,185,129,0.18), transparent 42%), radial-gradient(circle at 80% 4%, rgba(34,211,238,0.16), transparent 40%), linear-gradient(135deg, #0b2c2f 0%, #0f3b36 45%, #0a1f2a 100%)'
-      : 'radial-gradient(circle at 18% 18%, rgba(248,113,113,0.12), transparent 42%), radial-gradient(circle at 80% 4%, rgba(14,165,233,0.12), transparent 40%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)';
-  const digitalBusBackground = isBusWon
-      ? 'radial-gradient(circle at 12% 14%, rgba(14,165,233,0.16), transparent 38%), radial-gradient(circle at 84% 10%, rgba(124,58,237,0.14), transparent 36%), linear-gradient(135deg, #0b1b2f 0%, #0f223a 40%, #0c1a2a 100%)'
-      : 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)';
-  const currentBusBackground = resolvedBusMode === 'digital' ? digitalBusBackground : physicalBusBackground;
+  const physicalBusBackgroundStyle: React.CSSProperties = isBusWon
+      ? {
+          background: 'radial-gradient(circle at 20% 18%, rgba(16,185,129,0.18), transparent 42%), radial-gradient(circle at 78% 6%, rgba(6,182,212,0.16), transparent 36%), linear-gradient(135deg, #0a2f2c 0%, #0c3f38 45%, #0a2d3a 100%)',
+          backgroundSize: '240% 240%',
+          animation: 'gradient-xy 18s ease infinite',
+          transition: 'background 1200ms ease, filter 1200ms ease'
+        }
+      : {
+          background: 'radial-gradient(circle at 22% 18%, rgba(226,232,240,0.08), transparent 40%), radial-gradient(circle at 78% 6%, rgba(59,130,246,0.12), transparent 36%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)',
+          backgroundSize: '240% 240%',
+          animation: 'gradient-xy 18s ease infinite',
+          transition: 'background 1200ms ease, filter 1200ms ease'
+        };
+  const digitalBusBackgroundStyle: React.CSSProperties = isBusWon
+      ? {
+          background: 'radial-gradient(circle at 14% 14%, rgba(14,165,233,0.16), transparent 38%), radial-gradient(circle at 86% 12%, rgba(124,58,237,0.18), transparent 36%), linear-gradient(135deg, #0b1f33 0%, #0f2842 40%, #0c1f32 100%)',
+          backgroundSize: '240% 240%',
+          animation: 'gradient-xy 16s ease infinite',
+          transition: 'background 1200ms ease, filter 1200ms ease'
+        }
+      : {
+          background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
+          backgroundSize: '240% 240%',
+          animation: 'gradient-xy 16s ease infinite',
+          transition: 'background 1200ms ease, filter 1200ms ease'
+        };
 
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
        const victim = busPassengers[0];
        return (
-           <RootContainer className="items-center justify-center p-6 text-center" style={{ background: currentBusBackground, transition: 'background 900ms ease' }}>
-               <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
-                   {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
-               </div>
-               <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Smart</h2>
-               <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
-                   <span className="text-white border-b-2 border-red-500">{victim.name}</span>, Wie neem je mee de bus in?
-               </p>
+           <RootContainer className="items-center justify-center p-6 text-center" disableBaseBg showTexture={false}>
+               <div className="flex-1 w-full h-full flex flex-col items-center justify-center" style={resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
+                   <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
+                       {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
+                   </div>
+                   <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Smart</h2>
+                   <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
+                       <span className="text-white border-b-2 border-red-500">{victim.name}</span>, Wie neem je mee de bus in?
+                   </p>
 
-               <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
-                   <button 
-                        onClick={() => handleSharedBusSelection(null)}
-                        className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
-                   >
-                       NIEMAND
-                   </button>
-                   {players.filter(p => !busPassengers.some(bp => bp.id === p.id)).map(p => (
-                       <button 
-                           key={p.id} 
-                           onClick={() => handleSharedBusSelection(p)}
-                           className="w-full bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between text-white font-bold text-sm hover:bg-red-900/50 border border-white/5 hover:border-red-500 transition-all shadow-lg active:scale-95"
+                   <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
+                       <button
+                            onClick={() => handleSharedBusSelection(null)}
+                            className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
                        >
-                           <div className="flex items-center gap-4">
-                               <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
-                                   {p.image ? <img src={p.image} className="w-full h-full object-cover"/> : null}
-                               </div>
-                               <span className="text-lg">{p.name}</span>
-                           </div>
-                           <HeartPulse size={20} className="text-red-500" />
+                           NIEMAND
                        </button>
-                   ))}
+                       {players.filter(p => !busPassengers.some(bp => bp.id === p.id)).map(p => (
+                           <button
+                               key={p.id}
+                               onClick={() => handleSharedBusSelection(p)}
+                               className="w-full bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between text-white font-bold text-sm hover:bg-red-900/50 border border-white/5 hover:border-red-500 transition-all shadow-lg active:scale-95"
+                           >
+                               <div className="flex items-center gap-4">
+                                   <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
+                                       {p.image ? <img src={p.image} className="w-full h-full object-cover"/> : null}
+                                   </div>
+                                   <span className="text-lg">{p.name}</span>
+                               </div>
+                               <HeartPulse size={20} className="text-red-500" />
+                           </button>
+                       ))}
+                   </div>
                </div>
            </RootContainer>
        );
@@ -2298,17 +2325,19 @@ const App: React.FC = () => {
   if (phase === GamePhase.THE_BUS) {
       if (isBusEntrance) {
           return (
-              <RootContainer className="bg-black/80 items-center justify-center" style={{ background: currentBusBackground, transition: 'background 900ms ease' }}>
-                  <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">BUS</h1>
-                  <div className="flex flex-col gap-8 items-center z-10">
-                      {busPassengers.map(p => (
-                          <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
-                              <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
-                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-4xl font-black">{p.name.charAt(0)}</div>}
+              <RootContainer className="items-center justify-center" disableBaseBg showTexture={false}>
+                  <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm" style={busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
+                      <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter scale-150">BUS</h1>
+                      <div className="flex flex-col gap-8 items-center z-10">
+                          {busPassengers.map(p => (
+                              <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
+                                  <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
+                                      {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-4xl font-black">{p.name.charAt(0)}</div>}
+                                  </div>
+                                  <div className="text-4xl font-black text-white uppercase tracking-widest">{p.name}</div>
                               </div>
-                              <div className="text-4xl font-black text-white uppercase tracking-widest">{p.name}</div>
-                          </div>
-                      ))}
+                          ))}
+                      </div>
                   </div>
               </RootContainer>
           );
@@ -2316,32 +2345,17 @@ const App: React.FC = () => {
 
         if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
             const passengerNames = busPassengers.map(p => p.name).join(' & ');
-            const completedExampleCards = Math.max(0, Math.min(settings.busLength, physicalBusPosition - 1));
-
-            const progressTutorial = [
-                'Gratis startkaart – draai deze meteen om.',
-                'Gok hoger of lager dan de vorige kaart.',
-                'Check het resultaat en schuif door naar de volgende.',
-                'Fout? Drink het kaartnummer en begin opnieuw.',
-                'Laatste kaart gehaald? Dan ben je vrij!'
-            ];
-
-            const progressCards = Array.from({ length: settings.busLength }).map((_, idx) => {
-                const isUnlocked = isBusWon || idx === 0 || idx < physicalBusPosition;
-                const isComplete = isBusWon || idx < completedExampleCards;
-                const isCurrent = !isBusWon && idx === Math.max(0, physicalBusPosition - 1);
-                const tip = progressTutorial[idx] ?? `Kaart ${idx + 1}: dezelfde hoger/lager-regel.`;
-
-                return { idx, isUnlocked, isComplete, isCurrent, tip };
-            });
+            const completedCards = isBusWon ? settings.busLength : Math.max(1, Math.min(settings.busLength, physicalBusPosition));
+            const busProgressCards = Array.from({ length: settings.busLength }).map((_, idx) => ({
+                idx,
+                isComplete: idx < completedCards,
+            }));
 
             return (
-                <RootContainer
-                    className="p-4 sm:p-6 pb-28 pb-safe overflow-y-auto transition-[background,filter] duration-1000 ease-out"
-                    style={{ background: physicalBusBackground, transition: 'background 1200ms ease, filter 1200ms ease' }}
-                >
-                    <div className="w-full max-w-4xl mx-auto space-y-6">
-                        <div className="bg-gradient-to-b from-black/85 via-slate-950/85 to-black/80 backdrop-blur-xl border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-4 sm:p-6 space-y-6">
+                <RootContainer disableBaseBg showTexture={false}>
+                    <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-6 pb-28 pb-safe transition-[background,filter] duration-1000 ease-out" style={physicalBusBackgroundStyle}>
+                        <div className="w-full max-w-4xl mx-auto space-y-6">
+                            <div className="bg-gradient-to-b from-black/85 via-slate-950/85 to-black/80 backdrop-blur-xl border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-4 sm:p-6 space-y-6">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                                 <div className="space-y-1 text-center md:text-left">
                                     <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
@@ -2357,33 +2371,16 @@ const App: React.FC = () => {
                                 <div className="flex items-center justify-between text-[11px] uppercase font-black tracking-[0.25em] text-amber-200 flex-wrap gap-2">
                                     <span className="flex items-center gap-2">
                                         <Sparkles size={16} className="text-amber-300" />
-                                        Voorbeeldkaarten
+                                        Voortgang
                                     </span>
-                                    <span className="text-slate-200">Voortgang</span>
+                                    <span className="text-slate-200">Kaarten</span>
                                 </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
-                                    {progressCards.map(({ idx, isUnlocked, isComplete, isCurrent, tip }) => (
-                                        <div key={idx} className="flex flex-col items-center gap-2">
-                                            <div className="relative w-full max-w-[120px] h-32 sm:h-36 perspective-1000">
-                                                <div
-                                                    className={`absolute inset-0 preserve-3d transition-transform duration-700 ease-out ${isUnlocked ? 'rotate-y-180' : ''} ${isCurrent ? 'scale-105' : ''}`}
-                                                >
-                                                    <div className="absolute inset-0 backface-hidden rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800/90 via-slate-900 to-black border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
-                                                        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: `radial-gradient(#64748b 12%, transparent 12%)`, backgroundSize: '10px 10px' }}></div>
-                                                        <div className="absolute inset-0 border border-white/5 rounded-2xl"></div>
-                                                        <div className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-slate-200 uppercase tracking-[0.2em]">
-                                                            <span className="bg-black/30 px-3 py-1 rounded-full border border-white/10 shadow-inner">#{idx + 1}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-2xl overflow-hidden ${isComplete ? 'shadow-[0_0_30px_rgba(52,211,153,0.65)]' : 'shadow-[0_0_24px_rgba(52,211,153,0.35)]'} bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 text-emerald-50 flex flex-col items-center justify-center p-3 text-center`}>
-                                                        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100 mb-1">Stap {idx + 1}</div>
-                                                        <p className="text-xs font-semibold leading-tight drop-shadow-lg">{tip}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-400 text-center w-full">
-                                                {isCurrent ? 'Nu bezig' : isComplete ? 'Gedaan' : 'Volgende'}
+                                <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                                    {busProgressCards.map(({ idx, isComplete }) => (
+                                        <div key={idx} className="w-16 h-24 sm:w-20 sm:h-28 perspective-1000">
+                                            <div className={`relative w-full h-full preserve-3d transition-transform duration-700 ease-out ${isComplete ? 'rotate-y-180' : ''}`}>
+                                                <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_20px_rgba(251,191,36,0.3)]"></div>
+                                                <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 shadow-[0_8px_24px_rgba(16,185,129,0.45)]"></div>
                                             </div>
                                         </div>
                                     ))}
@@ -2428,18 +2425,19 @@ const App: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => startDigitalBus(busPassengers)}
-                                    className="w-full sm:w-auto text-center text-slate-200 font-semibold py-3 px-4 rounded-xl hover:text-white transition-all underline underline-offset-4 decoration-slate-500"
+                                    className="w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-colors underline underline-offset-4 decoration-slate-500/70"
                                 >
                                     Toch een Digitale Bus
                                 </button>
                             </div>
                         </div>
                     </div>
+                    </div>
                     {isBusWon && (
                         <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
                             <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="pointer-events-auto w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-800 text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
+                                className="pointer-events-auto w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-800 text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-red-400/60 shadow-[0_12px_30px_rgba(220,38,38,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 animate-bounce-subtle"
                             >
                                 Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                             </button>
@@ -2453,7 +2451,8 @@ const App: React.FC = () => {
         const remainingBusCards = busDeck.length;
 
         return (
-            <RootContainer className="p-0 relative transition-[background,filter] duration-1000 ease-out" shake={screenShake} style={{ background: digitalBusBackground, transition: 'background 900ms ease, filter 900ms ease' }}>
+            <RootContainer className="p-0 relative" shake={screenShake} disableBaseBg showTexture={false}>
+              <div className="absolute inset-0 -z-10" style={digitalBusBackgroundStyle}></div>
               {isBusWon && <Confetti />}
 
               {/* Header - Redesigned */}
@@ -2498,7 +2497,7 @@ const App: React.FC = () => {
                         ref={busScrollRef}
                         className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
                    >
-                       {busCards.map((card, index) => {
+                      {busCards.map((card, index) => {
                            // Logic for revealing cards
                            const isBase = index === 0; // Always revealed
                            // isHistory means it was a previous successful guess
@@ -2605,7 +2604,7 @@ const App: React.FC = () => {
                         ) : isBusWon ? (
                              <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
+                                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-2xl border border-red-400/60 shadow-[0_12px_30px_rgba(220,38,38,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 animate-bounce-subtle"
                              >
                                  Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                              </button>
