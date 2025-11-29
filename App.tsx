@@ -1202,8 +1202,28 @@ const App: React.FC = () => {
     setPlayers(players.filter(p => p.id !== id));
   };
 
+  const resetBusState = useCallback(() => {
+    setIsBusWon(false);
+    setBusPassengers([]);
+    setBusCards([]);
+    setBusDeck([]);
+    setCurrentBusIndex(1);
+    setBusWrongCardIndex(null);
+    setIsBusDeckExhausted(false);
+    setBusFocusIndex(null);
+    setBusDecksUsed(1);
+    setIsBusEntrance(false);
+  }, []);
+
+  const handleBusWinContinue = () => {
+    resetBusState();
+    setPhase(GamePhase.GAME_OVER);
+    loadLeaderboardInterstitial();
+  };
+
   const handleGameOverContinue = async () => {
     await showLeaderboardInterstitial();
+    resetBusState();
     setPhase(GamePhase.SETUP);
   };
 
@@ -2425,7 +2445,7 @@ const App: React.FC = () => {
                             </>
                         ) : isBusWon ? (
                              <button
-                                onClick={() => setPhase(GamePhase.GAME_OVER)}
+                                onClick={handleBusWinContinue}
                                 className="w-full bg-gradient-to-r from-yellow-600 to-amber-800 text-white text-xl font-black py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 border-t border-yellow-400"
                              >
                                  Verder <ArrowRight size={24} strokeWidth={3} />
