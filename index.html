@@ -121,6 +121,17 @@
         filter: saturate(1.15);
       }
 
+      .physical-bus-surface.bg-animated-bus {
+        background-image: none;
+        background: linear-gradient(150deg, #0b1224, #0f172a, #111827);
+        transition: background 0.6s ease;
+      }
+
+      .physical-bus-surface.bus-complete.bg-animated-bus {
+        background-image: none;
+        background: linear-gradient(150deg, #0b2f2f, #0c3a34, #0ea5e9);
+      }
+
       .glass-panel {
         background: rgba(15, 23, 42, 0.6);
         backdrop-filter: blur(12px);
