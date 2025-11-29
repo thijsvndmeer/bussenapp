@@ -346,6 +346,12 @@ const GlobalAnimations = () => (
 
 
 
+    @keyframes end-gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
     @keyframes bounce-subtle {
 
 
@@ -2350,19 +2356,19 @@ const App: React.FC = () => {
 
   // 5. BUS TEAM SELECT
   const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
-  const physicalBusBackgroundStyle: React.CSSProperties = isBusWon
-      ? {
-          background: 'radial-gradient(circle at 22% 20%, rgba(250,204,21,0.25), transparent 40%), radial-gradient(circle at 78% 16%, rgba(99,102,241,0.22), transparent 36%), radial-gradient(circle at 46% 74%, rgba(34,197,94,0.2), transparent 42%), linear-gradient(135deg, #0d2430 0%, #0e3d43 28%, #16304f 52%, #2b1b3f 76%, #0f2a45 100%)',
-          backgroundSize: '260% 260%',
-          animation: 'gradient-xy 22s ease-in-out infinite',
-          transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
-        }
-      : {
-          background: 'radial-gradient(circle at 22% 18%, rgba(226,232,240,0.08), transparent 40%), radial-gradient(circle at 78% 6%, rgba(59,130,246,0.12), transparent 36%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)',
-          backgroundSize: '240% 240%',
-          animation: 'gradient-xy 18s ease-in-out infinite',
-          transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
-        };
+  const physicalBusBgStyle = {
+    background: 'radial-gradient(circle at 22% 18%, rgba(226,232,240,0.08), transparent 40%), radial-gradient(circle at 78% 6%, rgba(59,130,246,0.12), transparent 36%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)',
+    backgroundSize: '240% 240%',
+    animation: 'gradient-xy 18s ease-in-out infinite',
+  };
+
+  const physicalBusBgStyleWon = {
+      background: 'radial-gradient(circle at 22% 20%, rgba(250,204,21,0.25), transparent 40%), radial-gradient(circle at 78% 16%, rgba(99,102,241,0.22), transparent 36%), radial-gradient(circle at 46% 74%, rgba(34,197,94,0.2), transparent 42%), linear-gradient(135deg, #0d2430 0%, #0e3d43 28%, #16304f 52%, #2b1b3f 76%, #0f2a45 100%)',
+      backgroundSize: '260% 260%',
+      animation: 'gradient-xy 22s ease-in-out infinite',
+  };
+
+  const physicalBusBackgroundStyle: React.CSSProperties = isBusWon ? physicalBusBgStyleWon : physicalBusBgStyle;
   const digitalBusBackgroundStyle: React.CSSProperties = isBusWon
       ? {
           background: 'radial-gradient(circle at 16% 18%, rgba(251,191,36,0.22), transparent 40%), radial-gradient(circle at 84% 14%, rgba(168,85,247,0.24), transparent 36%), radial-gradient(circle at 48% 78%, rgba(34,211,238,0.2), transparent 42%), linear-gradient(135deg, #0b1f33 0%, #123a55 24%, #0c3b35 50%, #2d1f45 74%, #0b2c4c 100%)',
@@ -2454,8 +2460,16 @@ const App: React.FC = () => {
 
             return (
                 <RootContainer disableBaseBg showTexture={false}>
-                    <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-6 pb-28 pb-safe transition-[background,filter] duration-1000 ease-out" style={physicalBusBackgroundStyle}>
-                        <div className="w-full max-w-4xl mx-auto space-y-6">
+                    <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-6 pb-28 pb-safe relative">
+                        <div 
+                            className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
+                            style={{ ...physicalBusBgStyle, opacity: isBusWon ? 0 : 1 }} 
+                        />
+                        <div 
+                            className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
+                            style={{ ...physicalBusBgStyleWon, opacity: isBusWon ? 1 : 0 }}
+                        />
+                        <div className="w-full max-w-4xl mx-auto space-y-6 relative z-10">
                             <div className={busPanelClasses}>
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                                 <div className="space-y-1 text-center md:text-left">
@@ -2563,7 +2577,12 @@ const App: React.FC = () => {
                         <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
                             <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="pointer-events-auto w-full sm:w-auto bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-emerald-300/60 shadow-[0_12px_30px_rgba(16,185,129,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 animate-[pulse_2.2s_ease-in-out_infinite]"
+                                className="pointer-events-auto w-full sm:w-auto text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-amber-300/60 shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
+                                style={{
+                                    background: 'linear-gradient(90deg, #fde047, #f1f5f9, #f59e0b, #fde047)',
+                                    backgroundSize: '300% 300%',
+                                    animation: 'end-gradient 3s ease-in-out infinite',
+                                }}
                             >
                                 Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                             </button>
@@ -2730,7 +2749,12 @@ const App: React.FC = () => {
                         ) : isBusWon ? (
                              <button
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 text-white text-xl font-black px-12 py-4 rounded-2xl border border-emerald-300/60 shadow-[0_12px_30px_rgba(16,185,129,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 animate-[pulse_2.2s_ease-in-out_infinite]"
+                                className="w-full text-white text-xl font-black px-12 py-4 rounded-2xl border border-amber-300/60 shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
+                                style={{
+                                    background: 'linear-gradient(90deg, #fde047, #f1f5f9, #f59e0b, #fde047)',
+                                    backgroundSize: '300% 300%',
+                                    animation: 'end-gradient 3s ease-in-out infinite',
+                                }}
                              >
                                  Naar het Einde <ArrowRight size={24} strokeWidth={3} />
                              </button>
