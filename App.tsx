@@ -2448,7 +2448,7 @@ const App: React.FC = () => {
                                 onClick={handleBusWinContinue}
                                 className="w-full bg-gradient-to-r from-yellow-600 to-amber-800 text-white text-xl font-black py-5 rounded-2xl shadow-[0_0_30px_rgba(250,204,21,0.4)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 border-t border-yellow-400"
                              >
-                                 Verder <ArrowRight size={24} strokeWidth={3} />
+                                 {isFinishingBus ? 'Bezig...' : 'Verder'} <ArrowRight size={24} strokeWidth={3} />
                              </button>
                         ) : (
                             <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
