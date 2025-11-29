@@ -1482,6 +1482,7 @@ const App: React.FC = () => {
       triggerHaptic('medium');
       const driver = players.find(p => p.isDealer) || players[0];
       setBusDriver(driver);
+      resetBusState();
       setLoserReveal({ player: passenger, title: getUniquePhrase(LOSER_TITLES) });
       setBusPassengers([passenger]);
       setBusMode('physical');
@@ -1490,7 +1491,9 @@ const App: React.FC = () => {
       if (settings.sharedBus) {
           setPhase(GamePhase.BUS_TEAM_SELECTION);
       } else {
-          startBus([passenger]);
+          setTimeout(() => {
+              startBus([passenger]);
+          }, 5000);
       }
   };
 
@@ -1511,10 +1514,8 @@ const App: React.FC = () => {
           setBusDriver(driver);
           resetBusState();
           setBusPassengers(selectedPassengers);
-          setBusMode('digital');
       }
-
-      const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !options?.skipEntrance;
+const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !options?.skipEntrance;
 
       if (shouldShowEntrance) {
           setIsBusEntrance(true);
@@ -2091,9 +2092,9 @@ const App: React.FC = () => {
           <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
               <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
                   <div className="text-center space-y-2">
-                      <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">Kies passagier</p>
-                      <h3 className="text-3xl font-black text-white leading-tight">Wie verloor de piramide?</h3>
-                      <p className="text-slate-300 text-sm">Selecteer handmatig wie de bus in moet.</p>
+                      <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">de bus in jij</p>
+                      <h3 className="text-3xl font-black text-white leading-tight">Wie heeft nu de meeste kaarten?</h3>
+                      <p className="text-slate-300 text-sm"></p>
                   </div>
 
                   <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto">
@@ -2127,11 +2128,38 @@ const App: React.FC = () => {
           return (
               <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid">
                   {manualBusSelectionOverlay}
+                  {loserReveal && (
+                      <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
+                          
+                          {/* Strobe effect overlay */}
+                          <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
+
+                          <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center">{loserReveal.title}</h2>
+                          
+                          <div className="relative z-10 w-48 h-48 mb-8">
+                              <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
+                              <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
+                              <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
+                                   {loserReveal.player.image ? (
+                                        <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{animationIterationCount: 1}} />
+                                   ) : (
+                                        <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
+                                   )}
+                              </div>
+                          </div>
+                          
+                          <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
+                          <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
+                              Naar de Bus!
+                          </div>
+                      </div>
+                  )}
 
                   <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
                       <div className="space-y-4 text-left">
-                          <p className="text-[11px] uppercase font-black tracking-[0.25em] text-amber-300 text-center">Fysieke piramide</p>
-                          <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">Bouw de piramide op tafel</h2>
+                          <p className="text-[11px] uppercase font-black tracking-[0.25em] text-amber-300 text-center">een echte piramide</p>
+                          <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">Bouw deze piramide op tafel</h2>
 
                           <div className="w-full flex flex-col items-center gap-2 mt-2">
                               {Array.from({ length: settings.pyramidRows }, (_, i) => i + 1).map(row => (
@@ -2148,7 +2176,7 @@ const App: React.FC = () => {
 
                           <div className="space-y-2 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
                               <div className="flex items-center justify-between gap-3">
-                                  <p className="text-lg font-black text-white">Bouw een Fysieke Piramide</p>
+                                  <p className="text-lg font-black text-white">Bouw een Piramide starter guide</p>
                                   <button
                                       onClick={() => setIsPyramidInstructionsCollapsed(prev => !prev)}
                                       className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200 hover:text-amber-100 transition-colors"
@@ -2162,10 +2190,10 @@ const App: React.FC = () => {
                               </div>
                               {!isPyramidInstructionsCollapsed && (
                                   <div className="space-y-1">
-                                      <p>1.  Leg speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
-                                      <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij.</p>
-                                      <p>3.  Elke volgende rij heeft één kaart minder tot je een topkaart hebt.</p>
-                                      <p>4.  Draai kaarten rij voor rij om, van onder naar boven.</p>
+                                      <p>1.  Leg speelkaarten met het plaatje naar beneden in een piramidevorm (duh)</p>
+                                      <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij</p>
+                                      <p>3.  Elke volgende rij heeft één kaart minder tot je een bovenste kaart hebt</p>
+                                      <p>4.  Draai kaarten rij voor rij om, van onder naar boven</p>
                                   </div>
                               )}
                           </div>
@@ -2199,6 +2227,33 @@ const App: React.FC = () => {
         return (
             <RootContainer className="p-0" variant="pyramid" shake={screenShake}>
                 {manualBusSelectionOverlay}
+                {loserReveal && (
+                    <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
+                        
+                        {/* Strobe effect overlay */}
+                        <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
+
+                        <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center">{loserReveal.title}</h2>
+                        
+                        <div className="relative z-10 w-48 h-48 mb-8">
+                            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
+                            <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
+                            <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
+                                 {loserReveal.player.image ? (
+                                      <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{animationIterationCount: 1}} />
+                                 ) : (
+                                      <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
+                                 )}
+                            </div>
+                        </div>
+                        
+                        <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
+                        <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
+                            Naar de Bus!
+                        </div>
+                    </div>
+                )}
                 {/* Match Modal */}
               {pendingMatches && (
                   <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300">
@@ -2239,34 +2294,7 @@ const App: React.FC = () => {
                   </div>
               )}
 
-              {/* Loser Reveal - DRAMATIC */}
-              {loserReveal && (
-                  <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
-                      
-                      {/* Strobe effect overlay */}
-                      <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
 
-                      <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center">{loserReveal.title}</h2>
-                      
-                      <div className="relative z-10 w-48 h-48 mb-8">
-                          <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
-                          <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
-                          <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
-                               {loserReveal.player.image ? (
-                                    <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{animationIterationCount: 1}} />
-                               ) : (
-                                    <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
-                               )}
-                          </div>
-                      </div>
-                      
-                      <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-                      <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
-                          Naar de Bus!
-                      </div>
-                  </div>
-              )}
 
               <div className="flex-none flex justify-between items-center px-5 py-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl">
                   <div>
@@ -2453,6 +2481,9 @@ const App: React.FC = () => {
                 idx,
                 isComplete: idx < completedCards,
             }));
+            const eligiblePlayers = players.filter(p => !busPassengers.some(bp => bp.id === p.id));
+            const playerPool = eligiblePlayers.length > 0 ? eligiblePlayers : players;
+            const randomPlayerForInstructions = playerPool.length > 0 ? playerPool[Math.floor(Math.random() * playerPool.length)] : null;
             const busPanelClasses = `${isBusWon
                 ? 'bg-gradient-to-b from-black/80 via-emerald-950/75 to-black/75 border border-emerald-700/40 shadow-[0_20px_60px_rgba(16,185,129,0.28)]'
                 : 'bg-gradient-to-b from-black/85 via-slate-950/85 to-black/80 border border-red-800/40 shadow-[0_20px_60px_rgba(220,38,38,0.35)]'
@@ -2488,7 +2519,6 @@ const App: React.FC = () => {
                                         <Sparkles size={16} className="text-amber-300" />
                                         Voortgang
                                     </span>
-                                    <span className="text-slate-200">Kaarten</span>
                                 </div>
                                 <div
                                     ref={busProgressContainerRef}
@@ -2521,7 +2551,7 @@ const App: React.FC = () => {
 
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3 text-slate-100 text-sm leading-relaxed">
                                 <div className="flex items-center justify-between gap-3">
-                                    <p className="text-lg font-black text-white">De Busrit met Fysieke Kaarten</p>
+                                    <p className="text-lg font-black text-white">De Busrit met echte Kaarten</p>
                                     <button
                                         onClick={() => setIsBusInstructionsCollapsed(prev => !prev)}
                                         className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-200 hover:text-white transition-colors"
@@ -2535,12 +2565,12 @@ const App: React.FC = () => {
                                 </div>
                                 {!isBusInstructionsCollapsed && (
                                     <div className="space-y-1">
-                                        <p>1.  De chauffeur van de vorige ronde is nu de buschauffeur.</p>
+                                        <p>1.  Kies iemand om de kaarten uit te delen, bijvoorbeeld {randomPlayerForInstructions?.name || 'jij'}.</p>
                                         <p>2.  Leg een rij van {settings.busLength} kaarten met de afbeelding naar beneden.</p>
-                                        <p>3.  Raad hoger of lager dan de vorige kaart – de eerste kaart is gratis.</p>
+                                        <p>3.  Raad hoger of lager dan de vorige kaart, de eerste kaart is altijd omgedraaid.</p>
                                         <p>4.  Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.</p>
                                         <p>5.  Goed? Ga door naar de volgende kaart.</p>
-                                        <p>6.  Hele rij gehaald? Je bent vrij!</p>
+                                        <p>6.  Hele rij gehaald? Je mag uit de bus!</p>
                                     </div>
                                 )}
                             </div>
@@ -2579,7 +2609,7 @@ const App: React.FC = () => {
                                 onClick={() => setPhase(GamePhase.GAME_OVER)}
                                 className="pointer-events-auto w-full sm:w-auto text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-amber-300/60 shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
                                 style={{
-                                    background: 'linear-gradient(90deg, #fde047, #f1f5f9, #f59e0b, #fde047)',
+                                    background: 'linear-gradient(90deg, #dd8e17ff, #bb9517ff, #f59e0b, #fd9947ff)',
                                     backgroundSize: '300% 300%',
                                     animation: 'end-gradient 3s ease-in-out infinite',
                                 }}
