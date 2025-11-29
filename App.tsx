@@ -1284,6 +1284,23 @@ const App: React.FC = () => {
 
   // --- PYRAMID LOGIC ---
 
+  const generateDigitalPyramid = () => {
+    let currentDeck = deck;
+    const required = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+    if (currentDeck.length < required) currentDeck = shuffleDeck(createDeck());
+
+    const newPyramid: Card[][] = [];
+    for (let i = 1; i <= settings.pyramidRows; i++) {
+        const rowCards: Card[] = [];
+        for (let j = 0; j < i; j++) {
+            rowCards.push(currentDeck.pop()!);
+        }
+        newPyramid.push(rowCards);
+    }
+    setDeck(currentDeck);
+    setPyramid(newPyramid);
+  };
+
   const initializePyramid = () => {
     triggerHaptic('medium');
     setPhase(GamePhase.PYRAMID);
@@ -1293,20 +1310,7 @@ const App: React.FC = () => {
     setIsPyramidComplete(false);
 
     if (settings.mode === GameMode.DIGITAL) {
-        let currentDeck = deck;
-        const required = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
-        if (currentDeck.length < required) currentDeck = shuffleDeck(createDeck());
-
-        const newPyramid: Card[][] = [];
-        for (let i = 1; i <= settings.pyramidRows; i++) {
-            const rowCards: Card[] = [];
-            for (let j = 0; j < i; j++) {
-                rowCards.push(currentDeck.pop()!);
-            }
-            newPyramid.push(rowCards);
-        }
-        setDeck(currentDeck);
-        setPyramid(newPyramid);
+        generateDigitalPyramid();
     }
     if (settings.mode === GameMode.PHYSICAL) {
         const newPyramid: Card[][] = [];
@@ -2157,26 +2161,48 @@ const App: React.FC = () => {
                       <div className="space-y-4 text-left">
                           <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300 text-center">Fysieke piramide</p>
                           <h2 className="text-4xl font-black text-white leading-tight text-center">Bouw de piramide op tafel</h2>
-                          <ol className="list-decimal list-inside space-y-2 text-slate-200 text-base">
-                              <li>Leg kaarten neer in een piramide-vorm, met de afbeelding naar beneden.</li>
-                              <li>Begin met een rij van {settings.pyramidRows} kaarten onderaan (de piramidehoogte).</li>
-                              <li>Elke rij daarboven heeft telkens één kaart minder.</li>
-                              <li>De bovenste rij heeft één kaart.</li>
-                          </ol>
+
+                          <div className="w-full flex flex-col items-center gap-2 mt-2">
+                              {[1,2,3,4].map(row => (
+                                  <div key={row} className="flex gap-2 justify-center">
+                                      {Array.from({ length: row }).map((_, idx) => (
+                                          <div
+                                              key={idx}
+                                              className="w-12 h-16 rounded-xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_20px_rgba(251,191,36,0.3)]"
+                                          ></div>
+                                      ))}
+                                  </div>
+                              ))}
+                          </div>
+
+                          <div className="space-y-1 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
+                              <p className="text-lg font-black text-white">Bouw een Fysieke Piramide:</p>
+                              <p>1.  Leg Kaarten: Leg echte speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
+                              <p>2.  Begin Onderop: De onderste rij heeft evenveel kaarten als de ingestelde piramidehoogte.</p>
+                              <p>3.  Bouw Omhoog: Elke volgende rij heeft één kaart minder, eindigend met één kaart aan de top.</p>
+                              <p>4.  Draai Om: Zodra de piramide ligt, draaien jullie de kaarten rij voor rij om, van onder naar boven.</p>
+                          </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <button
-                              onClick={() => setPyramidMode('digital')}
+                              onClick={() => {
+                                  setPyramidMode('digital');
+                                  setFeedback(null);
+                                  setRevealedPyramidCards(new Set());
+                                  setLoserReveal(null);
+                                  setIsPyramidComplete(false);
+                                  generateDigitalPyramid();
+                              }}
                               className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all"
                           >
-                              Build digital pyramid instead
+                              Toch een Digitale Piramide
                           </button>
                           <button
                               onClick={() => setIsSelectingBusPlayer(true)}
                               className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all"
                           >
-                              To the Bus
+                              Naar de Bus
                           </button>
                       </div>
                   </div>
@@ -2384,54 +2410,72 @@ const App: React.FC = () => {
   if (phase === GamePhase.THE_BUS) {
       if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
           const passengerNames = busPassengers.map(p => p.name).join(' & ');
+          const progress = Math.min(1, Math.max(0, physicalBusPosition / settings.busLength));
           return (
               <RootContainer className="p-6" variant="bus">
-                  <div className="w-full max-w-3xl mx-auto bg-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div>
-                              <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
-                              <h2 className="text-4xl font-black text-white leading-tight">De Busrit</h2>
-                              <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
-                          </div>
-                          <div className="flex items-center gap-3 bg-red-900/30 border border-red-500/40 rounded-2xl px-4 py-3 text-white font-black shadow-inner">
-                              <BusFront className="text-red-300" size={24} />
-                              <div className="text-left leading-tight">
-                                  <p className="text-xs uppercase tracking-[0.2em] text-red-200">Voortgang</p>
-                                  <p className="text-xl">Kaart {physicalBusPosition} / {settings.busLength}</p>
+                  <div className="w-full max-w-4xl mx-auto bg-gradient-to-b from-black/80 via-slate-950/80 to-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
+                      <div className="flex flex-col gap-4">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                              <div>
+                                  <p className="text-xs uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
+                                  <h2 className="text-4xl font-black text-white leading-tight">De Busrit</h2>
+                                  <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
+                              </div>
+                              <div className="w-full md:w-80 bg-red-900/40 border border-red-500/40 rounded-2xl p-4 shadow-inner">
+                                  <div className="flex items-center justify-between mb-2 text-white font-black text-sm uppercase tracking-[0.15em]">
+                                      <div className="flex items-center gap-2">
+                                          <BusFront className="text-red-300" size={20} />
+                                          <span>Voortgang</span>
+                                      </div>
+                                      <span>Kaart {physicalBusPosition} / {settings.busLength}</span>
+                                  </div>
+                                  <div className="h-3 rounded-full bg-slate-900 overflow-hidden border border-red-500/30">
+                                      <div className="h-full bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 shadow-[0_0_20px_rgba(248,113,113,0.45)]" style={{ width: `${progress * 100}%` }} />
+                                  </div>
                               </div>
                           </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <button
-                              onClick={() => handlePhysicalBusGuess('correct')}
-                              className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-black text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(34,197,94,0.35)] border border-emerald-300/50 active:scale-[0.99] transition-all"
-                          >
-                              <ThumbsUp size={26} />
-                              Correct
-                          </button>
-                          <button
-                              onClick={() => handlePhysicalBusGuess('incorrect')}
-                              className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-red-600 to-red-800 text-white font-black text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(239,68,68,0.35)] border border-red-300/50 active:scale-[0.99] transition-all"
-                          >
-                              <ThumbsDown size={26} />
-                              Incorrect
-                          </button>
-                      </div>
+                          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2 text-slate-100">
+                              <p className="text-lg font-black text-white">De Busrit met Fysieke Kaarten:</p>
+                              <p>1.  De Chauffeur: De dealer van de vorige ronde is de buschauffeur.</p>
+                              <p>2.  Kaarten Leggen: De chauffeur legt een rij van {settings.busLength} kaarten neer (gelijk aan de buslengte-instelling), met de afbeelding naar beneden.</p>
+                              <p>3.  Hoger of Lager: De speler in de bus raadt of de volgende kaart in de rij hoger of lager is dan de vorige. De eerste kaart wordt gratis omgedraaid.</p>
+                              <p>4.  Fout Geraden? Bij een foute gok drinkt de speler het aantal slokken gelijk aan de positie in de rij (bv. 3e kaart = 3 slokken) en begint opnieuw bij de eerste kaart.</p>
+                              <p>5.  Correct Geraden? Ga door naar de volgende kaart.</p>
+                              <p>6.  Einde: De busrit is voorbij als de speler de hele rij correct raadt.</p>
+                          </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <button
-                              onClick={() => startDigitalBus(busPassengers)}
-                              className="w-full bg-gradient-to-r from-slate-800 to-slate-900 text-white font-black py-3 rounded-2xl border border-white/10 shadow-lg active:scale-95 transition-all"
-                          >
-                              Build digital bus instead
-                          </button>
-                          <button
-                              onClick={() => setPhase(GamePhase.GAME_OVER)}
-                              className="w-full bg-slate-800/60 text-slate-100 font-black py-3 rounded-2xl border border-white/5 shadow-lg active:scale-95 transition-all"
-                          >
-                              To the End
-                          </button>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <button
+                                  onClick={() => handlePhysicalBusGuess('correct')}
+                                  className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-black text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(34,197,94,0.35)] border border-emerald-300/50 active:scale-[0.99] transition-all"
+                              >
+                                  <ThumbsUp size={26} />
+                                  Correct
+                              </button>
+                              <button
+                                  onClick={() => handlePhysicalBusGuess('incorrect')}
+                                  className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-red-600 to-red-800 text-white font-black text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(239,68,68,0.35)] border border-red-300/50 active:scale-[0.99] transition-all"
+                              >
+                                  <ThumbsDown size={26} />
+                                  Incorrect
+                              </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <button
+                                  onClick={() => startDigitalBus(busPassengers)}
+                                  className="w-full bg-gradient-to-r from-slate-800 to-slate-900 text-white font-black py-3 rounded-2xl border border-white/10 shadow-lg active:scale-95 transition-all"
+                              >
+                                  Toch een Digitale Bus
+                              </button>
+                              <button
+                                  onClick={() => setPhase(GamePhase.GAME_OVER)}
+                                  className="w-full bg-slate-800/60 text-slate-100 font-black py-3 rounded-2xl border border-white/5 shadow-lg active:scale-95 transition-all"
+                              >
+                                  Naar het Einde
+                              </button>
+                          </div>
                       </div>
                   </div>
               </RootContainer>
@@ -2464,28 +2508,37 @@ const App: React.FC = () => {
               {isBusWon && <Confetti />}
 
               {/* Header - Redesigned */}
-              <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl">
+              <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap">
                   <div>
                       <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">De Bus</h2>
                   </div>
-                                <div className="flex items-center gap-4">
-                                    <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-                                        <BusFront size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
-                                        <span>{remainingBusCards} over</span>
-                                    </div>
-                                    {settings.busDecks > 1 && (
-                                      <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-                                        <span>Pakje</span>
-                                        <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
-                                      </div>
-                                    )}
-                                    <div className="text-right">
-                                        <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                                            {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
-                                        </span>
-                                        <span className="text-white text-sm font-black">{passengerNames}</span>
-                                    </div>
-                                </div>              </div>
+                  <div className="flex items-center gap-3 flex-wrap justify-end">
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
+                          <BusFront size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
+                          <span>{remainingBusCards} over</span>
+                      </div>
+                      {settings.busDecks > 1 && (
+                        <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
+                          <span>Pakje</span>
+                          <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
+                        </div>
+                      )}
+                      <div className="text-right">
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                              {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
+                          </span>
+                          <span className="text-white text-sm font-black">{passengerNames}</span>
+                      </div>
+                      {settings.mode === GameMode.PHYSICAL && (
+                          <button
+                              onClick={() => startPhysicalBus()}
+                              className="px-3 py-2 rounded-xl bg-red-900/60 border border-red-500/50 text-white text-xs font-black uppercase tracking-[0.15em] hover:border-red-300 transition-all active:scale-95"
+                          >
+                              Terug naar Fysieke Bus
+                          </button>
+                      )}
+                  </div>
+              </div>
 
               {/* Bus Cards */}
               <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
