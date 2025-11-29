@@ -2312,8 +2312,20 @@ const App: React.FC = () => {
         if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
             const passengerNames = busPassengers.map(p => p.name).join(' & ');
             const completedExampleCards = Math.max(0, Math.min(settings.busLength, physicalBusPosition - 1));
+
+            const progressCards = Array.from({ length: settings.busLength }).map((_, idx) => {
+                const isUnlocked = isBusWon || idx === 0 || idx < physicalBusPosition;
+                const isComplete = isBusWon || idx < completedExampleCards;
+                const isCurrent = !isBusWon && idx === Math.max(0, physicalBusPosition - 1);
+
+                return { idx, isUnlocked, isComplete, isCurrent };
+            });
+
             return (
-                <RootContainer className="p-6 pb-safe overflow-y-auto" style={{ background: physicalBusBackground, transition: 'background 1200ms ease, filter 1200ms ease' }}>
+                <RootContainer
+                    className="p-6 pb-28 pb-safe overflow-y-auto transition-[background,filter] duration-1000 ease-out"
+                    style={{ background: physicalBusBackground, transition: 'background 1200ms ease, filter 1200ms ease' }}
+                >
                     <div className="w-full max-w-4xl mx-auto space-y-6">
                         <div className="bg-gradient-to-b from-black/80 via-slate-950/80 to-black/70 border border-red-800/40 rounded-3xl shadow-[0_20px_60px_rgba(220,38,38,0.35)] p-6 space-y-6">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -2335,19 +2347,29 @@ const App: React.FC = () => {
                                     </span>
                                     <span className="text-slate-200">Voortgang</span>
                                 </div>
-                                <div className="flex flex-wrap justify-center gap-3 bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)]">
-                                    {Array.from({ length: settings.busLength }).map((_, idx) => {
-                                        const isCompleted = isBusWon || idx < completedExampleCards;
-                                        return (
-                                            <div
-                                                key={idx}
-                                                className={`relative w-14 h-20 md:w-16 md:h-24 rounded-2xl overflow-hidden flex items-center justify-center text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-500 ${isCompleted ? 'bg-gradient-to-br from-emerald-500/60 via-teal-500/50 to-emerald-700/60 border border-emerald-200/60 shadow-[0_0_28px_rgba(52,211,153,0.5)] text-emerald-50' : 'bg-gradient-to-br from-amber-500/30 via-yellow-500/20 to-amber-700/30 border border-amber-200/60 shadow-[0_0_28px_rgba(251,191,36,0.5)] text-amber-50'}`}
-                                            >
-                                                <span className="drop-shadow-lg">#{idx + 1}</span>
-                                                {!isCompleted && <div className="absolute inset-0 bg-white/5 mix-blend-overlay" />}
+                                <div className="flex flex-wrap justify-center gap-4 bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)] animate-in fade-in duration-500">
+                                    {progressCards.map(({ idx, isUnlocked, isComplete, isCurrent }) => (
+                                        <div key={idx} className="flex flex-col items-center gap-2">
+                                            <div className="relative w-24 h-32 md:w-28 md:h-36 perspective-1000">
+                                                <div
+                                                    className={`absolute inset-0 preserve-3d transition-transform duration-700 ease-out ${isUnlocked ? 'rotate-y-180' : ''} ${isCurrent ? 'scale-105' : ''}`}
+                                                >
+                                                    <div className="absolute inset-0 backface-hidden rounded-2xl overflow-hidden bg-gradient-to-br from-amber-300/85 via-amber-400/75 to-amber-500/85 border border-amber-200/70 shadow-[0_0_34px_rgba(251,191,36,0.6)]">
+                                                        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: `radial-gradient(rgba(251,191,36,0.9) 10%, transparent 10%)`, backgroundSize: '12px 12px' }}></div>
+                                                        <div className="absolute inset-0 border border-amber-100/60 rounded-2xl"></div>
+                                                    </div>
+
+                                                    <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-2xl overflow-hidden ${isComplete ? 'shadow-[0_0_38px_rgba(52,211,153,0.8)]' : 'shadow-[0_0_26px_rgba(52,211,153,0.55)]'} bg-gradient-to-br from-emerald-500/85 via-emerald-500/80 to-emerald-700/90 border border-emerald-100/70 transition-[box-shadow,transform] duration-700 ease-out`}>
+                                                        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: `radial-gradient(rgba(16,185,129,0.85) 10%, transparent 10%)`, backgroundSize: '12px 12px' }}></div>
+                                                        <div className="absolute inset-0 border border-emerald-50/70 rounded-2xl"></div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        );
-                                    })}
+                                            <div className="text-[10px] uppercase font-black tracking-[0.25em] text-slate-400 text-center w-24 md:w-28">
+                                                {isCurrent ? 'Nu bezig' : isComplete ? 'Gedaan' : 'Volgende'}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
@@ -2378,24 +2400,26 @@ const App: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                            <div className="flex justify-center">
                                 <button
                                     onClick={() => startDigitalBus(busPassengers)}
-                                    className="w-full text-center text-slate-300 font-semibold py-2 px-3 rounded-xl hover:text-white transition-all underline underline-offset-4 decoration-slate-500"
+                                    className="w-full max-w-sm text-center text-slate-300 font-semibold py-2 px-3 rounded-xl hover:text-white transition-all underline underline-offset-4 decoration-slate-500"
                                 >
                                     Toch een Digitale Bus
                                 </button>
-                                {isBusWon && (
-                                    <button
-                                        onClick={() => setPhase(GamePhase.GAME_OVER)}
-                                        className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
-                                    >
-                                        Naar het Einde <ArrowRight size={24} strokeWidth={3} />
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>
+                    {isBusWon && (
+                        <div className="absolute bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500">
+                            <button
+                                onClick={() => setPhase(GamePhase.GAME_OVER)}
+                                className="pointer-events-auto bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
+                            >
+                                Naar het Einde <ArrowRight size={24} strokeWidth={3} />
+                            </button>
+                        </div>
+                    )}
               </RootContainer>
           );
       }
@@ -2404,7 +2428,7 @@ const App: React.FC = () => {
         const remainingBusCards = busDeck.length;
 
         return (
-            <RootContainer className="p-0 relative" shake={screenShake} style={{ background: digitalBusBackground, transition: 'background 900ms ease, filter 900ms ease' }}>
+            <RootContainer className="p-0 relative transition-[background,filter] duration-1000 ease-out" shake={screenShake} style={{ background: digitalBusBackground, transition: 'background 900ms ease, filter 900ms ease' }}>
               {isBusWon && <Confetti />}
 
               {/* Header - Redesigned */}
