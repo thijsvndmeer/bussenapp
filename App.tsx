@@ -1547,7 +1547,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
       if (shouldShowEntrance) {
           setIsBusEntrance(true);
           setPhase(GamePhase.THE_BUS);
-          setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 1800);
+          setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 3000);
           return;
       }
 
@@ -1591,7 +1591,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
       if (shouldShowEntrance) {
           setIsBusEntrance(true);
           setPhase(GamePhase.THE_BUS);
-          setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 1800);
+          setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 3000);
           return;
       }
 
@@ -2485,7 +2485,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
           return (
               <RootContainer className="items-center justify-center" disableBaseBg showTexture={false}>
                   <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out" style={busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
-                      <h1 className="text-7xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">samen in de bus!</h1>
+                      <h1 className="text-3xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">Samen in de bus!</h1>
                       <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
                           {busPassengers.map(p => (
                               <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
