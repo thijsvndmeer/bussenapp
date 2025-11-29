@@ -24,30 +24,17 @@ public class AdMobPlugin extends Plugin {
 
     private InterstitialAd interstitialAd;
     private boolean isLoading = false;
-    private boolean isInitialized = false;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @PluginMethod
     public void initialize(PluginCall call) {
-        mainHandler.post(() -> {
-            if (isInitialized) {
-                JSObject result = new JSObject();
-                result.put("status", "initialized");
-                call.resolve(result);
-                return;
-            }
-
-            try {
-                MobileAds.initialize(getContext(), status -> {
-                    isInitialized = true;
-                    JSObject result = new JSObject();
-                    result.put("status", "initialized");
-                    call.resolve(result);
-                });
-            } catch (Exception e) {
-                call.reject("Failed to initialize Mobile Ads SDK: " + e.getMessage());
-            }
-        });
+        String appId = call.getString("appId", "");
+        mainHandler.post(() -> MobileAds.initialize(getContext(), status -> {
+            JSObject result = new JSObject();
+            result.put("status", "initialized");
+            result.put("appId", appId);
+            call.resolve(result);
+        }));
     }
 
     @PluginMethod
@@ -62,11 +49,6 @@ public class AdMobPlugin extends Plugin {
         }
 
         mainHandler.post(() -> {
-            if (!isInitialized) {
-                call.reject("Mobile Ads SDK is not initialized yet.");
-                return;
-            }
-
             isLoading = true;
             AdRequest request = new AdRequest.Builder().build();
 

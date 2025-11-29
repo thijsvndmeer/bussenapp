@@ -36,7 +36,7 @@
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-7627297114391750~5463450367" />
+            android:value="Bussenca-app-pub-7627297114391750~5463450367" />
     </application>
 
     <!-- Permissions -->
