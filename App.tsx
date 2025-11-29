@@ -168,6 +168,8 @@ const createOscillatorSound = (
 
 const PLAYER_DATA_KEY = 'bus-app-player-data-v1';
 const GAME_STATE_KEY = 'bus-app-game-state-v1';
+const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
+const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
@@ -451,6 +453,7 @@ const App: React.FC = () => {
   const [loserReveal, setLoserReveal] = useState<{player: Player, title: string} | null>(null);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
+  const [isPyramidInstructionsCollapsed, setIsPyramidInstructionsCollapsed] = useState(false);
 
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
@@ -467,6 +470,7 @@ const App: React.FC = () => {
   const [busWinBurst, setBusWinBurst] = useState(false);
   const [busMode, setBusMode] = useState<'physical' | 'digital' | null>(null);
   const [physicalBusPosition, setPhysicalBusPosition] = useState(1);
+  const [isBusInstructionsCollapsed, setIsBusInstructionsCollapsed] = useState(false);
   const [busSelectionCandidateId, setBusSelectionCandidateId] = useState<string | null>(null);
   const busScrollRef = useRef<HTMLDivElement>(null);
   const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -621,6 +625,43 @@ const App: React.FC = () => {
       localStorage.removeItem(GAME_STATE_KEY); // Ensure game state never persists between sessions
     }
   }, [hydratePlayers, storageAvailable]);
+
+  useEffect(() => {
+    if (!storageAvailable) return;
+
+    try {
+      const savedPyramid = localStorage.getItem(PYRAMID_INSTRUCTIONS_COLLAPSED_KEY);
+      const savedBus = localStorage.getItem(BUS_INSTRUCTIONS_COLLAPSED_KEY);
+
+      if (savedPyramid !== null) {
+        setIsPyramidInstructionsCollapsed(savedPyramid === 'true');
+      }
+
+      if (savedBus !== null) {
+        setIsBusInstructionsCollapsed(savedBus === 'true');
+      }
+    } catch (error) {
+      console.warn('Kon instructiestatus niet herstellen', error);
+    }
+  }, [storageAvailable]);
+
+  useEffect(() => {
+    if (!storageAvailable) return;
+    try {
+      localStorage.setItem(PYRAMID_INSTRUCTIONS_COLLAPSED_KEY, String(isPyramidInstructionsCollapsed));
+    } catch (error) {
+      console.warn('Kon piramide-instructies niet opslaan', error);
+    }
+  }, [isPyramidInstructionsCollapsed, storageAvailable]);
+
+  useEffect(() => {
+    if (!storageAvailable) return;
+    try {
+      localStorage.setItem(BUS_INSTRUCTIONS_COLLAPSED_KEY, String(isBusInstructionsCollapsed));
+    } catch (error) {
+      console.warn('Kon bus-instructies niet opslaan', error);
+    }
+  }, [isBusInstructionsCollapsed, storageAvailable]);
 
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
@@ -1585,24 +1626,24 @@ const App: React.FC = () => {
 
       triggerHaptic('heavy');
 
-      if (result === 'correct') {
-          triggerHaptic('success');
-          playSound('busStep');
+        if (result === 'correct') {
+            triggerHaptic('success');
+            playSound('busStep');
 
-          const nextPosition = Math.min(settings.busLength, physicalBusPosition + 1);
-          if (physicalBusPosition >= settings.busLength) {
-              setIsBusWon(true);
-              playSound('celebrate');
-              setImmunePlayerId(busPassengers[0].id);
-              setPhysicalBusPosition(settings.busLength);
-              setFeedback({ text: 'Je hebt de bus overleefd! Vrijstelling!', type: 'success' });
-              return;
-          }
+            const nextPosition = Math.min(settings.busLength, physicalBusPosition + 1);
+            if (nextPosition >= settings.busLength) {
+                setIsBusWon(true);
+                playSound('celebrate');
+                setImmunePlayerId(busPassengers[0].id);
+                setPhysicalBusPosition(settings.busLength);
+                setFeedback({ text: 'Je hebt de bus overleefd! Vrijstelling!', type: 'success' });
+                return;
+            }
 
-          setPhysicalBusPosition(nextPosition);
-          setFeedback({ text: `Goed! Kaart ${nextPosition} klaar.`, type: 'info' });
-          return;
-      }
+            setPhysicalBusPosition(nextPosition);
+            setFeedback({ text: `Goed! Kaart ${nextPosition} klaar.`, type: 'info' });
+            return;
+        }
 
       triggerHaptic('error');
       triggerShake();
@@ -2055,16 +2096,27 @@ const App: React.FC = () => {
                           </div>
 
                           <div className="space-y-2 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
-                              <div className="flex flex-wrap gap-2 text-[11px] uppercase font-black tracking-[0.2em] text-amber-200 justify-center">
-                                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-200/40">Mobiel klaar</span>
-                                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-200/40">Stap-voor-stap</span>
-                                  <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-200/40">Groot tekst</span>
+                              <div className="flex items-center justify-between gap-3">
+                                  <p className="text-lg font-black text-white">Bouw een Fysieke Piramide</p>
+                                  <button
+                                      onClick={() => setIsPyramidInstructionsCollapsed(prev => !prev)}
+                                      className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200 hover:text-amber-100 transition-colors"
+                                  >
+                                      {isPyramidInstructionsCollapsed ? 'Toon' : 'Verberg'}
+                                      <ChevronDown
+                                          size={16}
+                                          className={`transition-transform ${isPyramidInstructionsCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                                      />
+                                  </button>
                               </div>
-                              <p className="text-lg font-black text-white">Bouw een Fysieke Piramide:</p>
-                              <p>1.  Leg speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
-                              <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij.</p>
-                              <p>3.  Elke volgende rij heeft één kaart minder tot je een topkaart hebt.</p>
-                              <p>4.  Draai kaarten rij voor rij om, van onder naar boven.</p>
+                              {!isPyramidInstructionsCollapsed && (
+                                  <div className="space-y-1">
+                                      <p>1.  Leg speelkaarten met de afbeelding naar beneden in een piramidevorm.</p>
+                                      <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij.</p>
+                                      <p>3.  Elke volgende rij heeft één kaart minder tot je een topkaart hebt.</p>
+                                      <p>4.  Draai kaarten rij voor rij om, van onder naar boven.</p>
+                                  </div>
+                              )}
                           </div>
                       </div>
 
@@ -2375,12 +2427,12 @@ const App: React.FC = () => {
                                     </span>
                                     <span className="text-slate-200">Kaarten</span>
                                 </div>
-                                <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                                <div className="flex justify-center flex-nowrap gap-2 sm:gap-3 md:gap-4 overflow-x-auto no-scrollbar px-1 py-1">
                                     {busProgressCards.map(({ idx, isComplete }) => (
-                                        <div key={idx} className="w-16 h-24 sm:w-20 sm:h-28 perspective-1000">
+                                        <div key={idx} className="w-12 h-16 sm:w-14 sm:h-20 md:w-16 md:h-24 flex-none perspective-1000">
                                             <div className={`relative w-full h-full preserve-3d transition-transform duration-700 ease-out ${isComplete ? 'rotate-y-180' : ''}`}>
-                                                <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_20px_rgba(251,191,36,0.3)]"></div>
-                                                <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 shadow-[0_8px_24px_rgba(16,185,129,0.45)]"></div>
+                                                <div className="absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-amber-500/60 to-amber-700/80 border border-amber-300/50 shadow-[0_8px_18px_rgba(251,191,36,0.28)] transition-[background,box-shadow] duration-700 ease-out"></div>
+                                                <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-emerald-500/80 via-teal-500/70 to-emerald-700/80 border border-emerald-200/60 shadow-[0_10px_24px_rgba(16,185,129,0.45)] transition-[background,box-shadow] duration-700 ease-out"></div>
                                             </div>
                                         </div>
                                     ))}
@@ -2388,18 +2440,29 @@ const App: React.FC = () => {
                             </div>
 
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3 text-slate-100 text-sm leading-relaxed">
-                                <div className="flex flex-wrap gap-2 text-[11px] uppercase font-black tracking-[0.2em] text-slate-200">
-                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">Sneloverzicht</span>
-                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">Mobiel vriendelijk</span>
-                                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10">Altijd leesbaar</span>
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-lg font-black text-white">De Busrit met Fysieke Kaarten</p>
+                                    <button
+                                        onClick={() => setIsBusInstructionsCollapsed(prev => !prev)}
+                                        className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-200 hover:text-white transition-colors"
+                                    >
+                                        {isBusInstructionsCollapsed ? 'Toon' : 'Verberg'}
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform ${isBusInstructionsCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                                        />
+                                    </button>
                                 </div>
-                                <p className="text-lg font-black text-white">De Busrit met Fysieke Kaarten:</p>
-                                <p>1.  De chauffeur van de vorige ronde is nu de buschauffeur.</p>
-                                <p>2.  Leg een rij van {settings.busLength} kaarten met de afbeelding naar beneden.</p>
-                                <p>3.  Raad hoger of lager dan de vorige kaart – de eerste kaart is gratis.</p>
-                                <p>4.  Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.</p>
-                                <p>5.  Goed? Ga door naar de volgende kaart.</p>
-                                <p>6.  Hele rij gehaald? Je bent vrij!</p>
+                                {!isBusInstructionsCollapsed && (
+                                    <div className="space-y-1">
+                                        <p>1.  De chauffeur van de vorige ronde is nu de buschauffeur.</p>
+                                        <p>2.  Leg een rij van {settings.busLength} kaarten met de afbeelding naar beneden.</p>
+                                        <p>3.  Raad hoger of lager dan de vorige kaart – de eerste kaart is gratis.</p>
+                                        <p>4.  Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.</p>
+                                        <p>5.  Goed? Ga door naar de volgende kaart.</p>
+                                        <p>6.  Hele rij gehaald? Je bent vrij!</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
@@ -2419,10 +2482,7 @@ const App: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
-                                <div className="text-slate-300 text-xs uppercase tracking-[0.2em] font-black bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-center w-full sm:w-auto">
-                                    Optimized voor kleine schermen
-                                </div>
+                            <div className="flex flex-col sm:flex-row items-center sm:justify-end gap-3">
                                 <button
                                     onClick={() => startDigitalBus(busPassengers)}
                                     className="w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-colors underline underline-offset-4 decoration-slate-500/70"
