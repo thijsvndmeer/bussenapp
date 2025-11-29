@@ -713,6 +713,23 @@ const App: React.FC = () => {
     [playTone]
   );
 
+  const resetBusState = useCallback(() => {
+    setBusMode(null);
+    setBusPassengers([]);
+    setBusCards([]);
+    setBusDeck([]);
+    setBusDecksUsed(1);
+    setIsBusDeckExhausted(false);
+    setBusWrongCardIndex(null);
+    setBusFocusIndex(null);
+    setIsBusWon(false);
+    setIsBusEntrance(false);
+    setBusWinBurst(false);
+    setCurrentBusIndex(1);
+    setPhysicalBusPosition(1);
+    setFeedback(null);
+  }, []);
+
   const initializeAdMob = useCallback(async () => {
     const adMob = getAdMobPlugin();
     if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
@@ -1092,13 +1109,11 @@ const App: React.FC = () => {
 
   const confirmStart = (mode: GameMode) => {
     triggerHaptic('heavy');
+    resetBusState();
     setSettings(prev => ({ ...prev, mode }));
     setPyramidMode(mode === GameMode.PHYSICAL ? 'physical' : 'digital');
     setDeck(shuffleDeck(createDeck()));
-    setBusDeck([]);
-    setBusDecksUsed(1); // Reset bus decks used
-    setIsBusDeckExhausted(false);
-    
+
     const dealerIndex = Math.floor(Math.random() * players.length);
     const updatedPlayers = players.map((p, i) => ({
       ...p,
@@ -1447,6 +1462,7 @@ const App: React.FC = () => {
   };
 
   const goToBusSelection = () => {
+      resetBusState();
       const eligiblePlayers = players.filter(p => !p.isImmune);
       const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
 
@@ -1479,6 +1495,7 @@ const App: React.FC = () => {
   };
 
   const determineLoserAndAnimate = () => {
+      resetBusState();
       if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
           goToBusSelection();
           return;
@@ -1515,6 +1532,14 @@ const App: React.FC = () => {
           if (settings.sharedBus) setPhase(GamePhase.BUS_TEAM_SELECTION);
           else startBus([victim]);
       }, 5000);
+  };
+
+  const proceedToBus = () => {
+      if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
+          goToBusSelection();
+          return;
+      }
+      determineLoserAndAnimate();
   };
 
   const handleSharedBusSelection = (partner: Player | null) => {
@@ -1554,6 +1579,16 @@ const App: React.FC = () => {
   };
 
   const startPhysicalBus = () => {
+      if (busPassengers.length === 0) {
+          setFeedback({ text: 'Selecteer eerst wie de bus in gaat.', type: 'error' });
+          setPhase(GamePhase.PYRAMID);
+          return;
+      }
+
+      const passengers = [...busPassengers];
+      resetBusState();
+      setBusPassengers(passengers);
+
       triggerHaptic('medium');
       playSound('busEnter');
       setBusMode('physical');
@@ -1572,20 +1607,10 @@ const App: React.FC = () => {
   };
 
   const startBus = (passengers: Player[]) => {
+      resetBusState();
       setBusPassengers(passengers);
-      setBusDeck([]);
-      setBusCards([]);
-      setBusWrongCardIndex(null);
-      setBusFocusIndex(null);
-      setPhysicalBusPosition(1);
-      setIsBusWon(false);
-      setIsBusDeckExhausted(false);
-      setBusDecksUsed(1);
-      setCurrentBusIndex(1);
-      setFeedback(null);
 
       if (settings.mode === GameMode.PHYSICAL) {
-        setBusMode(null);
         setPhase(GamePhase.BUS_MODE_SELECTION);
         return;
       }
@@ -1671,13 +1696,13 @@ const App: React.FC = () => {
   };
 
   const handlePhysicalBusGuess = (result: 'correct' | 'incorrect') => {
-      if (busPassengers.length === 0) return;
+      if (busPassengers.length === 0 || isBusWon) return;
 
       if (result === 'correct') {
           triggerHaptic('success');
           playSound('busStep');
 
-          const nextPosition = physicalBusPosition + 1;
+          const nextPosition = Math.min(settings.busLength, physicalBusPosition + 1);
           if (physicalBusPosition >= settings.busLength) {
               setIsBusWon(true);
               playSound('celebrate');
@@ -2213,13 +2238,7 @@ const App: React.FC = () => {
               {isPyramidComplete && !pendingMatches && (
                    <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
                       <button
-                          onClick={() => {
-                              if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
-                                  goToBusSelection();
-                                  return;
-                              }
-                              determineLoserAndAnimate();
-                          }}
+                          onClick={proceedToBus}
                           className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
                       >
                           <BusFront size={28} /> NAAR DE BUS <ArrowRight size={28} strokeWidth={3} />
