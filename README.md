@@ -7,7 +7,7 @@
     *   Automated card dealing for each game phase.
     *   Intuitive UI for "Pyramid" and "Bus Ride" stages.
     *   Support for haptic feedback for game events.
-    *   AdMob integration (optional).
+    *   AdMob integration.
     *   Mobile-first design, deployable on iOS and Android via Capacitor.
 -   **Tech Stack:**
     *   **Frontend:** React (with Hooks), TypeScript
@@ -32,8 +32,8 @@ Before you begin, ensure you have the following installed:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/YOUR_USERNAME/bussen-app.git
-    cd bussen-app
+    git clone https://github.com/thijsvndmeer/bussenapp.git
+    cd bussenapp
     ```
 2.  **Install dependencies:**
     ```bash
@@ -60,7 +60,7 @@ To run the application in your browser for development:
 ```bash
 npm run dev
 ```
-This will start a local development server, usually accessible at `http://localhost:5173`.
+This will start a local development server, usually accessible at `localhost`.
 
 ### Running on Mobile Devices/Emulators
 
@@ -113,8 +113,9 @@ We welcome contributions! Please follow these guidelines:
 ### Code of Conduct
 Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing. (Placeholder - create this file if needed).
 
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details. (Placeholder - create this file if needed).
-
 ## Support
 If you encounter any issues or have questions, please use the [GitHub Issues](https://github.com/YOUR_USERNAME/bussen-app/issues) page to report them.
+
+Copyright (c) 2025 Thijs van der Meer
+
+All Rights Reserved.
