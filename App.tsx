@@ -1283,29 +1283,41 @@ const App: React.FC = () => {
   const [pyramidScale, setPyramidScale] = useState(1);
 
   const calculatePyramidScale = useCallback(() => {
-    const rows = settings.pyramidRows;
-    const baseScale = Math.min(1, Math.max(0.55, 1 - (rows - 3) * 0.12));
-
     const container = pyramidContainerRef.current;
     const content = pyramidContentRef.current;
 
     if (container && content) {
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
+      const containerWidth = container.clientWidth - 40; // Subtract padding for a buffer
+      const containerHeight = container.clientHeight - 40; // Subtract padding for a buffer
       const contentWidth = content.scrollWidth;
       const contentHeight = content.scrollHeight;
 
+      // If content dimensions are 0 (e.g., not yet rendered), use a default scale
+      if (contentWidth === 0 || contentHeight === 0) {
+        setPyramidScale(1); // Or a sensible default
+        return;
+      }
+
       const widthScale = containerWidth / contentWidth;
       const heightScale = containerHeight / contentHeight;
-      const fitScale = Math.min(widthScale, heightScale);
+      let fitScale = Math.min(widthScale, heightScale);
 
-      const finalScale = Math.max(0.45, Math.min(baseScale, fitScale));
-      setPyramidScale(finalScale);
+      // Ensure a reasonable minimum scale, but allow smaller if necessary to fit
+      const minAbsoluteScale = 0.3; // Prevent cards from becoming tiny, adjust as needed
+
+      // Prioritize fitting, but don't go below minAbsoluteScale unless absolutely necessary
+      if (fitScale < minAbsoluteScale) {
+        // If content is too large, allow it to shrink more to fit
+        setPyramidScale(fitScale);
+      } else {
+        // Otherwise, use a comfortable scale, but don't exceed 1 (original size)
+        setPyramidScale(Math.min(1, fitScale));
+      }
       return;
     }
 
-    setPyramidScale(baseScale);
-  }, [settings.pyramidRows]);
+    setPyramidScale(1); // Default scale if refs are not available
+  }, []);
 
   useEffect(() => {
     calculatePyramidScale();
