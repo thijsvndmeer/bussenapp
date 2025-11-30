@@ -54,6 +54,12 @@ type AdTelemetry = {
   lastError: string | null;
 };
 
+type AdTelemetry = {
+  lastAttempt: number | null;
+  lastResult: 'idle' | 'success' | 'failed' | 'skipped';
+  lastError: string | null;
+};
+
 // --- CONSTANTS & PHRASES ---
 
 const SUCCESS_PHRASES = [
@@ -637,11 +643,6 @@ const App: React.FC = () => {
   }, [setFeedback]);
 
   const ensureAdMobSession = useCallback(async (adMob: AdMobPlugin) => {
-    if (!Capacitor.isNativePlatform?.()) {
-      logAdEvent('AdMob initialisatie overgeslagen buiten native platforms');
-      return;
-    }
-
     if (adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
 
     logAdEvent('Initialising AdMob session');
@@ -1069,13 +1070,6 @@ const App: React.FC = () => {
     const adMob = getAdMobPlugin();
     adTelemetryRef.current.lastAttempt = Date.now();
 
-    if (!Capacitor.isNativePlatform?.()) {
-      logAdEvent('Webplatform gedetecteerd, sla interstitial over en navigeer door');
-      adTelemetryRef.current.lastResult = 'skipped';
-      notifyAdFallback('We slaan de advertentie over op web en sturen je terug naar het menu.');
-      return false;
-    }
-
     if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') {
       logAdEvent('AdMob plugin niet gevonden, toon fallback en ga door');
       adTelemetryRef.current.lastResult = 'skipped';
@@ -1164,17 +1158,11 @@ const App: React.FC = () => {
   };
 
   const handleGameOverContinue = async () => {
-    try {
-      const adShown = await showLeaderboardInterstitial();
-      if (!adShown) {
-        logAdEvent('Ga verder zonder interstitial na game-over flow');
-      }
-    } catch (error) {
-      logAdEvent('Onverwachte fout tijdens interstitial flow, ga verder naar menu', error);
-      notifyAdFallback('Advertentie kon niet worden getoond. We gaan terug naar het menu.');
-    } finally {
-      setPhase(GamePhase.SETUP);
+    const adShown = await showLeaderboardInterstitial();
+    if (!adShown) {
+      logAdEvent('Ga verder zonder interstitial na game-over flow');
     }
+    setPhase(GamePhase.SETUP);
   };
 
   const handleStartPress = () => {
