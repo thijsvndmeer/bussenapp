@@ -2125,7 +2125,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                   </div>
 
                   <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto">
-                      {players.map((p) => (
+                      {players.filter(p => !p.isImmune).map((p) => (
                           <button
                               key={p.id}
                               onClick={() => handleManualBusPassengerSelect(p)}
@@ -2137,6 +2137,21 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                   )}
                               </div>
                               <span className="text-white font-bold truncate">{p.name}</span>
+                          </button>
+                      ))}
+                      {players.filter(p => p.isImmune).map((p) => (
+                          <button
+                              key={p.id}
+                              disabled
+                              className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-2xl p-3 text-left cursor-not-allowed opacity-50"
+                          >
+                              <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500 grayscale">
+                                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
+                                      <span className="w-full h-full flex items-center justify-center text-white/70 font-black text-lg">{p.name.charAt(0)}</span>
+                                  )}
+                              </div>
+                              <span className="text-white/70 font-bold truncate line-through">{p.name}</span>
+                              <Shield size={20} className="text-yellow-400 ml-auto" />
                           </button>
                       ))}
                   </div>
@@ -2458,7 +2473,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                        >
                            NIEMAND
                        </button>
-                       {players.filter(p => !busPassengers.some(bp => bp.id === p.id)).map(p => (
+                       {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && !p.isImmune).map(p => (
                            <button
                                key={p.id}
                                onClick={() => handleSharedBusSelection(p)}
@@ -2471,6 +2486,21 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                    <span className="text-lg">{p.name}</span>
                                </div>
                                <HeartPulse size={20} className="text-red-500" />
+                           </button>
+                       ))}
+                       {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && p.isImmune).map(p => (
+                           <button
+                               key={p.id}
+                               disabled
+                               className="w-full bg-slate-900/40 p-4 rounded-2xl flex items-center justify-between text-white/50 font-bold text-sm border border-white/5 shadow-lg cursor-not-allowed opacity-60"
+                           >
+                               <div className="flex items-center gap-4">
+                                   <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-slate-500 grayscale">
+                                       {p.image ? <img src={p.image} className="w-full h-full object-cover"/> : null}
+                                   </div>
+                                   <span className="text-lg line-through">{p.name}</span>
+                               </div>
+                               <Shield size={20} className="text-yellow-400" />
                            </button>
                        ))}
                    </div>
