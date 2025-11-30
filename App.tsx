@@ -6,8 +6,8 @@ import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, 
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import './styles/animations.css';
 
-const ADMOB_APP_ID = 'Bussenca-app-pub-7627297114391750~5463450367';
-const ADMOB_INTERSTITIAL_UNIT_ID = 'rondeklaarca-app-pub-7627297114391750/7299276212';
+const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
+const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
 
 type CameraPlugin = {
