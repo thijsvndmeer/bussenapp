@@ -1834,11 +1834,13 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
                               <Settings size={14} /> Instellingen
                           </div>
-                          {isSettingsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          <div className={`transform transition-transform duration-300 ${isSettingsOpen ? 'rotate-180' : 'rotate-0'}`}>
+                            <ChevronDown size={14} />
+                          </div>
                       </button>
                       
-                      {isSettingsOpen && (
-                          <div className="p-4 space-y-4 bg-black/20 animate-in slide-in-from-top-2">
+                      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsOpen ? 'max-h-96' : 'max-h-0'}`}>
+                        <div className="p-4 space-y-4 bg-black/20 border-t border-slate-800">
                               <div>
                                   <div className="flex justify-between mb-2">
                                       <label className="text-[10px] text-slate-400 font-bold uppercase">Piramide Hoogte</label>
@@ -1867,7 +1869,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                    </button>
                               </div>
                           </div>
-                      )}
+                      </div>
                   </div>
               </div>
               
@@ -2238,18 +2240,18 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                       {isPyramidInstructionsCollapsed ? 'Toon' : 'Verberg'}
                                       <ChevronDown
                                           size={16}
-                                          className={`transition-transform ${isPyramidInstructionsCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                                          className={`transition-transform duration-300 ${isPyramidInstructionsCollapsed ? 'rotate-0' : 'rotate-180'}`}
                                       />
                                   </button>
                               </div>
-                              {!isPyramidInstructionsCollapsed && (
-                                  <div className="space-y-1">
+                              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${!isPyramidInstructionsCollapsed ? 'max-h-96' : 'max-h-0'}`}>
+                                  <div className="space-y-1 pt-2">
                                       <p>1.  Leg speelkaarten met het plaatje naar beneden in een piramidevorm (duh)</p>
                                       <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij</p>
                                       <p>3.  Elke volgende rij heeft één kaart minder tot je een bovenste kaart hebt</p>
                                       <p>4.  Draai kaarten rij voor rij om, van onder naar boven</p>
                                   </div>
-                              )}
+                              </div>
                           </div>
                       </div>
 
@@ -2468,7 +2470,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
        const victim = busPassengers[0];
        return (
-           <RootContainer className="items-center justify-center p-6 text-center" disableBaseBg showTexture={false}>
+           <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false}>
                <div className="flex-1 w-full h-full flex flex-col items-center justify-center" style={resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
                    <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
                        {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
@@ -2628,12 +2630,12 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                         {isBusInstructionsCollapsed ? 'Toon' : 'Verberg'}
                                         <ChevronDown
                                             size={16}
-                                            className={`transition-transform ${isBusInstructionsCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                                            className={`transition-transform duration-300 ${isBusInstructionsCollapsed ? 'rotate-0' : 'rotate-180'}`}
                                         />
                                     </button>
                                 </div>
-                                {!isBusInstructionsCollapsed && (
-                                    <div className="space-y-1">
+                                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${!isBusInstructionsCollapsed ? 'max-h-96' : 'max-h-0'}`}>
+                                    <div className="space-y-1 pt-2">
                                         <p>1.  Kies iemand om de kaarten uit te delen, bijvoorbeeld {randomPlayerForInstructions?.name || 'jij'}.</p>
                                         <p>2.  Leg een rij van {settings.busLength} kaarten met de afbeelding naar beneden.</p>
                                         <p>3.  Raad hoger of lager dan de vorige kaart, de eerste kaart is altijd omgedraaid.</p>
@@ -2641,7 +2643,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                         <p>5.  Goed? Ga door naar de volgende kaart.</p>
                                         <p>6.  Hele rij gehaald? Je mag uit de bus!</p>
                                     </div>
-                                )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
