@@ -1,6 +1,89 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, Suit, Rank } from '../types';
 import { Heart, Diamond, Club, Spade, Crown } from 'lucide-react';
+
+const CARD_SIZES = {
+  sm: { width: 'w-14', height: 'h-20', text: 'text-base', cornerIcon: 10, radius: 'rounded-[6px]', p: 'p-1' },
+  md: { width: 'w-32', height: 'h-44', text: 'text-2xl', cornerIcon: 14, radius: 'rounded-[10px]', p: 'p-2.5' },
+  lg: { width: 'w-48', height: 'h-64', text: 'text-4xl', cornerIcon: 20, radius: 'rounded-[14px]', p: 'p-4' },
+  xl: { width: 'w-72', height: 'h-96', text: 'text-6xl', cornerIcon: 32, radius: 'rounded-[20px]', p: 'p-6' },
+} as const;
+
+const getRankString = (rank: Rank) => {
+  switch (rank) {
+    case Rank.JACK: return 'J';
+    case Rank.QUEEN: return 'Q';
+    case Rank.KING: return 'K';
+    case Rank.ACE: return 'A';
+    default: return rank.toString();
+  }
+};
+
+const getSuitIcon = (suit: Suit, iconSize: number | string, fill: boolean = true) => {
+  const props = {
+      size: typeof iconSize === 'number' ? iconSize : undefined,
+      className: typeof iconSize === 'string' ? iconSize : undefined,
+      fill: fill ? "currentColor" : "none",
+      strokeWidth: fill ? 0 : 2
+  };
+
+  switch (suit) {
+    case Suit.HEARTS: return <Heart {...props} className={`${props.className || ''} text-[#e11d48]`} />;
+    case Suit.DIAMONDS: return <Diamond {...props} className={`${props.className || ''} text-[#e11d48]`} />;
+    case Suit.CLUBS: return <Club {...props} className={`${props.className || ''} text-[#1e293b]`} />;
+    case Suit.SPADES: return <Spade {...props} className={`${props.className || ''} text-[#1e293b]`} />;
+  }
+};
+
+const renderPips = (card: Card, size: PlayingCardProps['size']) => {
+  const isFaceCard = card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING;
+  const isAce = card.rank === Rank.ACE;
+  if (isFaceCard || isAce) return null;
+
+  const pips = [];
+  const rankVal = card.rank;
+
+  const pipSize = size === 'sm' ? 10 : size === 'md' ? 18 : size === 'lg' ? 24 : 40;
+
+  const Pip = () => getSuitIcon(card.suit, pipSize);
+  const InvertedPip = () => <div className="rotate-180">{getSuitIcon(card.suit, pipSize)}</div>;
+
+  if (rankVal === 2) {
+      return <div className="flex justify-center flex-col items-center gap-10 h-full py-4"><Pip /><InvertedPip /></div>;
+  }
+  if (rankVal === 3) {
+      return <div className="flex justify-center flex-col items-center gap-2 h-full py-4"><Pip /><Pip /><InvertedPip /></div>;
+  }
+
+  // General Grid for 4-10
+  return (
+      <div className="absolute inset-8 grid grid-cols-3 gap-1">
+          {/* Left Col */}
+          <div className="flex flex-col justify-between items-center">
+              <Pip />
+              {(rankVal >= 6) && <Pip />}
+              {(rankVal >= 9) && <InvertedPip />}
+              <InvertedPip />
+          </div>
+
+          {/* Center Col */}
+          <div className="flex flex-col justify-around items-center py-2">
+              {(rankVal === 5 || rankVal === 9) && <Pip />}
+              {(rankVal === 7 || rankVal === 8 || rankVal === 10) && <Pip />}
+              {(rankVal === 8 || rankVal === 10) && <InvertedPip />}
+              {(rankVal === 7 && <div className="h-4"></div>)} {/* Spacer */}
+          </div>
+
+          {/* Right Col */}
+          <div className="flex flex-col justify-between items-center">
+              <Pip />
+              {(rankVal >= 6) && <Pip />}
+              {(rankVal >= 9) && <InvertedPip />}
+              <InvertedPip />
+          </div>
+      </div>
+  );
+};
 
 interface PlayingCardProps {
   card: Card | null;
@@ -23,120 +106,19 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   disabled = false,
   showRankOnly = false
 }) => {
-  
-  // --- Helpers ---
-  
-  const getSuitIcon = (suit: Suit, iconSize: number | string, fill: boolean = true) => {
-    const props = { 
-        size: typeof iconSize === 'number' ? iconSize : undefined, 
-        className: typeof iconSize === 'string' ? iconSize : undefined,
-        fill: fill ? "currentColor" : "none",
-        strokeWidth: fill ? 0 : 2
-    };
-    
-    switch (suit) {
-      case Suit.HEARTS: return <Heart {...props} className={`${props.className || ''} text-[#e11d48]`} />;
-      case Suit.DIAMONDS: return <Diamond {...props} className={`${props.className || ''} text-[#e11d48]`} />;
-      case Suit.CLUBS: return <Club {...props} className={`${props.className || ''} text-[#1e293b]`} />;
-      case Suit.SPADES: return <Spade {...props} className={`${props.className || ''} text-[#1e293b]`} />;
-    }
-  };
 
-  const getRankString = (rank: Rank) => {
-    switch (rank) {
-      case Rank.JACK: return 'J';
-      case Rank.QUEEN: return 'Q';
-      case Rank.KING: return 'K';
-      case Rank.ACE: return 'A';
-      default: return rank.toString();
-    }
-  };
-
-  const isRed = card && (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS);
-  const isFaceCard = card && (card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING);
-  const isAce = card && card.rank === Rank.ACE;
-
-  // --- Size Config ---
-  // Adjusted sizes to be slightly more realistic proportions (Poker size is roughly 2.5 x 3.5)
-  const sizes = {
-    sm: { width: 'w-14', height: 'h-20', text: 'text-base', cornerIcon: 10, radius: 'rounded-[6px]', p: 'p-1' },
-    md: { width: 'w-32', height: 'h-44', text: 'text-2xl', cornerIcon: 14, radius: 'rounded-[10px]', p: 'p-2.5' },
-    lg: { width: 'w-48', height: 'h-64', text: 'text-4xl', cornerIcon: 20, radius: 'rounded-[14px]', p: 'p-4' },
-    xl: { width: 'w-72', height: 'h-96', text: 'text-6xl', cornerIcon: 32, radius: 'rounded-[20px]', p: 'p-6' },
-  };
-
-  const s = sizes[size];
-
-  // --- Pip Generation (The dots on the card) ---
-  const renderPips = () => {
-      if (!card || isFaceCard || isAce) return null;
-      
-      // This is a simplified grid approach to mimic real cards
-      const pips = [];
-      const rankVal = card.rank;
-      
-      // Column layouts based on standard card designs
-      const colClass = "flex flex-col justify-between items-center h-full py-4";
-      const pipSize = size === 'sm' ? 10 : size === 'md' ? 18 : size === 'lg' ? 24 : 40;
-      
-      const Pip = () => getSuitIcon(card.suit, pipSize);
-      const InvertedPip = () => <div className="rotate-180">{getSuitIcon(card.suit, pipSize)}</div>;
-
-      // Logic for 2 columns (Left/Right)
-      const col1 = [];
-      const col2 = []; // Middle
-      const col3 = [];
-
-      if (rankVal >= 2) { col1.push(<Pip key="c1-1"/>); col3.push(<Pip key="c3-1"/>); }
-      if (rankVal >= 4) { col1.push(<InvertedPip key="c1-2"/>); col3.push(<InvertedPip key="c3-2"/>); }
-      if (rankVal >= 6) { 
-          // For 6, 7, 8 we need middle side pips
-          // Resetting for cleaner logic:
-      }
-
-      // Hardcoded layouts for perfection
-      if (rankVal === 2) {
-          return <div className="flex justify-center flex-col items-center gap-10 h-full py-4"><Pip /><InvertedPip /></div>;
-      }
-      if (rankVal === 3) {
-          return <div className="flex justify-center flex-col items-center gap-2 h-full py-4"><Pip /><Pip /><InvertedPip /></div>;
-      }
-      
-      // General Grid for 4-10
-      return (
-          <div className="absolute inset-8 grid grid-cols-3 gap-1">
-              {/* Left Col */}
-              <div className="flex flex-col justify-between items-center">
-                  <Pip />
-                  {(rankVal >= 6) && <Pip />}
-                  {(rankVal >= 9) && <InvertedPip />}
-                  <InvertedPip />
-              </div>
-              
-              {/* Center Col */}
-              <div className="flex flex-col justify-around items-center py-2">
-                  {(rankVal === 5 || rankVal === 9) && <Pip />}
-                  {(rankVal === 7 || rankVal === 8 || rankVal === 10) && <Pip />}
-                  {(rankVal === 8 || rankVal === 10) && <InvertedPip />}
-                  {(rankVal === 7 && <div className="h-4"></div>)} {/* Spacer */}
-              </div>
-
-              {/* Right Col */}
-              <div className="flex flex-col justify-between items-center">
-                  <Pip />
-                  {(rankVal >= 6) && <Pip />}
-                  {(rankVal >= 9) && <InvertedPip />}
-                  <InvertedPip />
-              </div>
-          </div>
-      );
-  };
+  const sizeConfig = CARD_SIZES[size];
+  const isRed = useMemo(() => !!card && (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS), [card]);
+  const isFaceCard = useMemo(() => !!card && (card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING), [card]);
+  const isAce = useMemo(() => !!card && card.rank === Rank.ACE, [card]);
+  const rankLabel = useMemo(() => card ? getRankString(card.rank) : '', [card]);
+  const pipContent = useMemo(() => card ? renderPips(card, size) : null, [card, size]);
 
   const isFlipped = isFaceDown;
 
   return (
     <div
-      className={`perspective-1000 ${s.width} ${s.height} ${s.radius} ${className} relative select-none group overflow-hidden
+      className={`perspective-1000 ${sizeConfig.width} ${sizeConfig.height} ${sizeConfig.radius} ${className} relative select-none group overflow-hidden
         ${highlight ? 'shadow-[0_0_30px_rgba(250,204,21,0.8)] scale-105' : 'shadow-[0_2px_15px_-3px_rgba(0,0,0,0.5)]'}
       `}
       onClick={!disabled ? onClick : undefined}
@@ -151,7 +133,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         <div className={`
           absolute inset-0 backface-hidden
           bg-gradient-to-b from-[#fdfdfd] to-[#f3f4f6] /* Paper White */
-          ${s.radius}
+          ${sizeConfig.radius}
           border border-white/80
           ring-1 ring-black/5
           shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
@@ -167,14 +149,14 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
             <>
               {/* --- Top Left Corner --- */}
               <div className={`absolute top-1 left-1.5 flex flex-col items-center leading-none ${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>
-                <span className={`${s.text} font-serif font-bold tracking-tighter`}>{getRankString(card.rank)}</span>
-                <div className="mt-0">{getSuitIcon(card.suit, s.cornerIcon)}</div>
+                <span className={`${sizeConfig.text} font-serif font-bold tracking-tighter`}>{rankLabel}</span>
+                <div className="mt-0">{getSuitIcon(card.suit, sizeConfig.cornerIcon)}</div>
               </div>
 
               {/* --- Bottom Right Corner (Inverted) --- */}
               <div className={`absolute bottom-1 right-1.5 flex flex-col items-center leading-none transform rotate-180 ${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>
-                <span className={`${s.text} font-serif font-bold tracking-tighter`}>{getRankString(card.rank)}</span>
-                <div className="mt-0">{getSuitIcon(card.suit, s.cornerIcon)}</div>
+                <span className={`${sizeConfig.text} font-serif font-bold tracking-tighter`}>{rankLabel}</span>
+                <div className="mt-0">{getSuitIcon(card.suit, sizeConfig.cornerIcon)}</div>
               </div>
 
               {/* --- Center Content --- */}
@@ -202,9 +184,9 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                            </div>
 
                            {/* Large Letter Background */}
-                           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif font-black ${size === 'sm' ? 'text-4xl' : 'text-8xl'} opacity-10 ${isRed ? 'text-red-900' : 'text-slate-900'}`}>
-                               {getRankString(card.rank)}
-                           </div>
+                          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif font-black ${size === 'sm' ? 'text-4xl' : 'text-8xl'} opacity-10 ${isRed ? 'text-red-900' : 'text-slate-900'}`}>
+                              {rankLabel}
+                          </div>
 
                            {/* Bottom Icon (Inverted) */}
                            <div className="flex justify-end transform rotate-180">
@@ -217,11 +199,11 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                   )}
 
                   {/* NUMBER CARDS (Pips) */}
-                  {!isAce && !isFaceCard && size !== 'sm' && renderPips()}
+                  {!isAce && !isFaceCard && size !== 'sm' && pipContent}
                   
                   {/* Fallback for small number cards */}
                   {!isAce && !isFaceCard && size === 'sm' && (
-                      <div className="font-serif font-bold text-2xl opacity-20 tracking-tighter">{getRankString(card.rank)}</div>
+                      <div className="font-serif font-bold text-2xl opacity-20 tracking-tighter">{rankLabel}</div>
                   )}
               </div>
             </>
@@ -232,7 +214,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         <div className={`
           absolute inset-0 backface-hidden rotate-y-180
           bg-[#1e40af] /* Classic Blue Deck */
-          ${s.radius}
+          ${sizeConfig.radius}
           border-[6px] border-white
           ring-1 ring-black/10
           shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
@@ -260,4 +242,4 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   );
 };
 
-export default PlayingCard;
+export default React.memo(PlayingCard);

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
@@ -173,6 +173,26 @@ const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collaps
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+
+const queueStorageWrite = (key: string, value: string, label: string) => {
+  if (!storageAvailable) return;
+
+  const write = () => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.warn(`Kon ${label} niet opslaan`, error);
+    }
+  };
+
+  const requester = (window as typeof window & { requestIdleCallback?: (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number }).requestIdleCallback;
+
+  if (typeof requester === 'function') {
+    requester(() => write(), { timeout: 500 });
+  } else {
+    setTimeout(write, 0);
+  }
+};
 
 const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -504,6 +524,13 @@ const App: React.FC = () => {
   const busProgressItemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [busProgressScale, setBusProgressScale] = useState(1);
 
+  const activePlayer = useMemo(() => players[activePlayerIndex], [players, activePlayerIndex]);
+  const currentDealerIndex = useMemo(() => players.findIndex(p => p.isDealer), [players]);
+  const sortedPlayers = useMemo(
+    () => [...players].sort((a, b) => (b.drinksTaken + b.adtjes * 5) - (a.drinksTaken + a.adtjes * 5)),
+    [players]
+  );
+
   // Audio FX
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -616,20 +643,13 @@ const App: React.FC = () => {
   }, []);
 
   const persistPlayers = useCallback(() => {
-    if (!storageAvailable) return;
-
     const payload: PersistedPlayerState = {
       players,
       newPlayerName,
       newPlayerImage,
     };
-
-    try {
-      localStorage.setItem(PLAYER_DATA_KEY, JSON.stringify(payload));
-    } catch (error) {
-      console.warn('Kon spelersdata niet opslaan', error);
-    }
-  }, [storageAvailable, players, newPlayerName, newPlayerImage]);
+    queueStorageWrite(PLAYER_DATA_KEY, JSON.stringify(payload), 'spelersdata');
+  }, [players, newPlayerName, newPlayerImage]);
 
   // Hydrate players only
   const hydratePlayers = useCallback(() => {
@@ -677,7 +697,11 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!storageAvailable) return;
     try {
-      localStorage.setItem(PYRAMID_INSTRUCTIONS_COLLAPSED_KEY, String(isPyramidInstructionsCollapsed));
+      queueStorageWrite(
+        PYRAMID_INSTRUCTIONS_COLLAPSED_KEY,
+        String(isPyramidInstructionsCollapsed),
+        'piramide-instructies'
+      );
     } catch (error) {
       console.warn('Kon piramide-instructies niet opslaan', error);
     }
@@ -686,7 +710,11 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!storageAvailable) return;
     try {
-      localStorage.setItem(BUS_INSTRUCTIONS_COLLAPSED_KEY, String(isBusInstructionsCollapsed));
+      queueStorageWrite(
+        BUS_INSTRUCTIONS_COLLAPSED_KEY,
+        String(isBusInstructionsCollapsed),
+        'bus-instructies'
+      );
     } catch (error) {
       console.warn('Kon bus-instructies niet opslaan', error);
     }
@@ -695,7 +723,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!storageAvailable) return;
     try {
-      localStorage.setItem(GAME_SETTINGS_KEY, JSON.stringify(settings));
+      queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(settings), 'instellingen');
     } catch (error) {
       console.warn('Kon instellingen niet opslaan', error);
     }
@@ -839,7 +867,7 @@ const App: React.FC = () => {
     return card;
   };
 
-  const getActivePlayer = () => players[activePlayerIndex];
+  const getActivePlayer = useCallback(() => activePlayer, [activePlayer]);
 
   const recalcBusProgressScale = useCallback(() => {
     const container = busProgressContainerRef.current;
@@ -854,6 +882,49 @@ const App: React.FC = () => {
     const nextScale = Math.min(1, availableWidth / contentWidth);
     setBusProgressScale(Math.max(0.65, nextScale));
   }, []);
+
+  const busCardStates = useMemo(() => {
+    return busCards.map((card, index) => {
+      const isBase = index === 0;
+      const isHistory = index < currentBusIndex;
+      const isReference = index === currentBusIndex - 1;
+      const isTarget = index === currentBusIndex;
+      const isFocused = busFocusIndex === index;
+      const isWrong = index === busWrongCardIndex;
+      const isRevealed = isBase || isHistory || isWrong || isBusWon;
+
+      let containerClass = '';
+      if (isBusWon) {
+        containerClass = 'opacity-100 scale-100 z-10';
+      } else {
+        containerClass = 'opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]';
+
+        if (isReference) {
+          containerClass = 'opacity-100 scale-110 z-20';
+        } else if (isTarget) {
+          containerClass = 'opacity-100 scale-100 z-10';
+        } else if (isWrong) {
+          containerClass = 'opacity-100 scale-110 z-20';
+        }
+
+        if (isFocused) {
+          containerClass += ' saturate-150 drop-shadow-[0_0_50px_rgba(248,113,113,0.45)]';
+        }
+      }
+
+      return {
+        card,
+        index,
+        isBase,
+        isHistory,
+        isReference,
+        isFocused,
+        isRevealed,
+        containerClass,
+        isWrong,
+      };
+    });
+  }, [busCards, currentBusIndex, busWrongCardIndex, isBusWon, busFocusIndex]);
 
   // --- SCROLL HELPERS ---
   useEffect(() => {
@@ -1097,7 +1168,7 @@ const App: React.FC = () => {
     setShowConfetti(false);
     setIsDiscoActive(false); // <--- Add this line
     
-    const dealerIndex = players.findIndex(p => p.isDealer);
+    const dealerIndex = currentDealerIndex;
     if (activePlayerIndex === dealerIndex) {
       if (roundStep === RoundStep.SUIT) {
            initializePyramid();
@@ -2743,81 +2814,43 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                         ref={busScrollRef}
                         className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
                    >
-                      {busCards.map((card, index) => {
-                           // Logic for revealing cards
-                           const isBase = index === 0; // Always revealed
-                           // isHistory means it was a previous successful guess
-                           const isHistory = index < currentBusIndex;
-                           // currentBusIndex IS the target. It should NOT be revealed yet unless we won.
-                           // busWrongCardIndex is set when we make a WRONG guess on the target.
+                      {busCardStates.map(({ card, index, isBase, isHistory, isReference, isFocused, isRevealed, containerClass, isWrong }) => (
+                           <div
+                             key={`${card.id}-${index}`}
+                             ref={el => busCardRefs.current[index] = el}
+                             className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}
+                           >
+                               {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
 
-                           const isRevealed = isBase || isHistory || index === busWrongCardIndex || isBusWon;
+                               <PlayingCard
+                                   card={card}
+                                   isFaceDown={!isRevealed}
+                                   size="md"
+                                   highlight={!isBusWon && (isReference || isWrong || isFocused)}
+                                   className={
+                                        isBusWon
+                                            ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
+                                            : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
+                               />
 
-                           // Prioritize the reference card (the one we compare against)
-                           const isReference = index === currentBusIndex - 1;
-                           const isTarget = index === currentBusIndex;
-                           const isFocused = busFocusIndex === index;
-
-                           // Styles
-                           // By default, dim cards in the past or future
-                           let containerClass = "";
-                           if (isBusWon) {
-                               containerClass = "opacity-100 scale-100 z-10"; // Default winning state style for all cards
-                           } else {
-                               // Normal state logic
-                               containerClass = "opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]"; // Grayscale by default if not isBusWon
-    
-                               if (isReference) {
-                                   containerClass = "opacity-100 scale-110 z-20"; // Override if reference
-                               } else if (isTarget) {
-                                   containerClass = "opacity-100 scale-100 z-10"; // Override if target
-                               } else if (index === busWrongCardIndex) {
-                                   containerClass = "opacity-100 scale-110 z-20"; // Override if wrong card
-                               }
-    
-                               if (isFocused) {
-                                   containerClass += " saturate-150 drop-shadow-[0_0_50px_rgba(248,113,113,0.45)]"; // Add on top if focused
-                               }
-                           }
-
-                           return (
-                               <div
-                                 key={`${card.id}-${index}`}
-                                 ref={el => busCardRefs.current[index] = el}
-                                 className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}
-                               >
-                                   {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
-
-                                   <PlayingCard
-                                       card={card}
-                                       isFaceDown={!isRevealed}
-                                       size="md"
-                                       highlight={!isBusWon && (isReference || index === busWrongCardIndex || isFocused)} // Highlight the known card
-                                       className={
-                                            isBusWon
-                                                ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
-                                                : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${index === busWrongCardIndex ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
-                                   />
-
-                                   {/* Icons */}
-                                   {isHistory && index > 0 && !isReference && !isBusWon && (
-                                        <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
-                                            <Check size={16} className="text-white" strokeWidth={4} />
-                                        </div>
-                                   )}
-                                   {index === busWrongCardIndex && !isBusWon && (
-                                        <div className="absolute -bottom-4 bg-red-600 rounded-full p-1.5 shadow-lg animate-ping z-20 border-2 border-black">
-                                            <X size={16} className="text-white" strokeWidth={4} />
-                                        </div>
-                                   )}
-                                   {isBusWon && (
-                                       <div className="absolute -top-16 z-50 animate-[bounce_0.5s_infinite]">
-                                            <Sparkles className="text-yellow-400 w-12 h-12 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" fill="currentColor" />
-                                       </div>
-                                   )}
-                               </div>
-                           );
-                       })}
+                               {/* Icons */}
+                               {isHistory && index > 0 && !isReference && !isBusWon && (
+                                    <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
+                                        <Check size={16} className="text-white" strokeWidth={4} />
+                                    </div>
+                               )}
+                               {isWrong && !isBusWon && (
+                                    <div className="absolute -bottom-4 bg-red-600 rounded-full p-1.5 shadow-lg animate-ping z-20 border-2 border-black">
+                                        <X size={16} className="text-white" strokeWidth={4} />
+                                    </div>
+                               )}
+                               {isBusWon && (
+                                   <div className="absolute -top-16 z-50 animate-[bounce_0.5s_infinite]">
+                                        <Sparkles className="text-yellow-400 w-12 h-12 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" fill="currentColor" />
+                                   </div>
+                               )}
+                           </div>
+                       ))}
                    </div>
               </div>
 
@@ -2871,8 +2904,6 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
 
   // 7. GAME OVER
   if (phase === GamePhase.GAME_OVER) {
-      const sortedPlayers = [...players].sort((a, b) => (b.drinksTaken + b.adtjes * 5) - (a.drinksTaken + a.adtjes * 5));
-      
       return (
           <RootContainer className="p-0">
               <Confetti />
