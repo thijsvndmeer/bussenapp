@@ -7,6 +7,22 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     androidScheme: 'https'
+  },
+  plugins: {
+    AdMob: {
+      appOpen: {
+        enabled: true
+      },
+      interstitial: {
+        enabled: true
+      },
+      rewarded: {
+        enabled: true
+      },
+      banner: {
+        enabled: true
+      }
+    }
   }
 };
 
