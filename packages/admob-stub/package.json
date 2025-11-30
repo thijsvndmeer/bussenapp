@@ -1,0 +1,9 @@
+{
+  "name": "@capacitor-community/admob",
+  "version": "6.0.0-stub",
+  "description": "Stub AdMob plugin for offline builds",
+  "main": "index.js",
+  "type": "module",
+  "files": ["index.js", "index.d.ts"],
+  "license": "MIT"
+}

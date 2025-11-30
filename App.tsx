@@ -4,6 +4,7 @@ import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings 
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import AdMobPackage, { AdMob as CommunityAdMob } from '@capacitor-community/admob';
 import './styles/animations.css';
 
 const ADMOB_APP_ID = 'Bussenca-app-pub-7627297114391750~5463450367';
@@ -21,17 +22,36 @@ type CameraPlugin = {
   }) => Promise<{ dataUrl?: string }>;
 };
 
-type AdMobPlugin = {
-  initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
-  prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
-  showInterstitial?: () => Promise<void>;
-};
+type AdMobPlugin = typeof CommunityAdMob;
 
 const Camera = registerPlugin<CameraPlugin>('Camera');
 
 const getAdMobPlugin = (): AdMobPlugin | null => {
+  if (Capacitor.isPluginAvailable?.('AdMob')) {
+    const plugin = CommunityAdMob ?? (AdMobPackage as unknown as AdMobPlugin);
+    if (
+      plugin &&
+      (typeof plugin.initialize === 'function' || typeof plugin.showInterstitial === 'function')
+    ) {
+      return plugin;
+    }
+  }
+
   const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
-  return plugin ?? null;
+  if (
+    plugin &&
+    (typeof plugin.initialize === 'function' || typeof plugin.showInterstitial === 'function')
+  ) {
+    return plugin;
+  }
+
+  return null;
+};
+
+type AdTelemetry = {
+  lastAttempt: number | null;
+  lastResult: 'idle' | 'success' | 'failed' | 'skipped';
+  lastError: string | null;
 };
 
 // --- CONSTANTS & PHRASES ---
@@ -452,6 +472,11 @@ const App: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
+  const adTelemetryRef = useRef<AdTelemetry>({
+    lastAttempt: null,
+    lastResult: 'idle',
+    lastError: null,
+  });
 
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
@@ -600,20 +625,50 @@ const App: React.FC = () => {
     setFeedback(null);
   }, []);
 
+  const logAdEvent = useCallback((message: string, detail?: unknown) => {
+    const timestamp = new Date().toISOString();
+    const payload = detail ? { detail } : undefined;
+    console.log(`[AdMob:${INTERSTITIAL_PLACEMENT}][${timestamp}] ${message}`, payload ?? '');
+  }, []);
+
+  const notifyAdFallback = useCallback((message: string) => {
+    setFeedback({ text: message, type: 'info' });
+    triggerHaptic('warning');
+  }, [setFeedback]);
+
+  const ensureAdMobSession = useCallback(async (adMob: AdMobPlugin) => {
+    if (!Capacitor.isNativePlatform?.()) {
+      logAdEvent('AdMob initialisatie overgeslagen buiten native platforms');
+      return;
+    }
+
+    if (adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
+
+    logAdEvent('Initialising AdMob session');
+    await adMob.initialize({
+      appId: ADMOB_APP_ID,
+      requestTrackingAuthorization: true,
+    });
+    adMobReadyRef.current = true;
+    logAdEvent('AdMob initialised successfully');
+  }, [logAdEvent]);
+
   const initializeAdMob = useCallback(async () => {
     const adMob = getAdMobPlugin();
-    if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
+    if (!adMob) {
+      logAdEvent('AdMob plugin niet beschikbaar, initialisatie overgeslagen');
+      adTelemetryRef.current.lastResult = 'skipped';
+      return;
+    }
 
     try {
-      await adMob.initialize({
-        appId: ADMOB_APP_ID,
-        requestTrackingAuthorization: true,
-      });
-      adMobReadyRef.current = true;
+      await ensureAdMobSession(adMob);
     } catch (error) {
+      adTelemetryRef.current.lastError = (error as Error)?.message ?? String(error);
+      adTelemetryRef.current.lastResult = 'failed';
       console.warn('AdMob initialisatie mislukt', error);
     }
-  }, []);
+  }, [ensureAdMobSession, logAdEvent]);
 
   const persistPlayers = useCallback(() => {
     if (!storageAvailable) return;
@@ -758,6 +813,12 @@ const App: React.FC = () => {
   useEffect(() => {
     initializeAdMob();
   }, [initializeAdMob]);
+
+  useEffect(() => {
+    if (phase === GamePhase.GAME_OVER) {
+      prepareLeaderboardInterstitial();
+    }
+  }, [phase, prepareLeaderboardInterstitial]);
 
   // --- HELPERS ---
 
@@ -982,25 +1043,78 @@ const App: React.FC = () => {
   };
 
   // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
-  const showLeaderboardInterstitial = useCallback(async () => {
+  const prepareLeaderboardInterstitial = useCallback(async () => {
     const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') return;
+    if (!adMob || typeof adMob.prepareInterstitial !== 'function') {
+      logAdEvent('AdMob plugin ontbreekt of ondersteunt geen interstitials, preload overgeslagen');
+      adTelemetryRef.current.lastResult = 'skipped';
+      return false;
+    }
 
     try {
-      if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
-        await adMob.initialize({
-          appId: ADMOB_APP_ID,
-          requestTrackingAuthorization: true,
-        });
-        adMobReadyRef.current = true;
-      }
-
-      await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
-      await adMob.showInterstitial();
+      await ensureAdMobSession(adMob);
+      await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: `${INTERSTITIAL_PLACEMENT}_preload` });
+      logAdEvent('Interstitial preload voltooid voor game-over flow');
+      adTelemetryRef.current.lastResult = 'success';
+      return true;
     } catch (error) {
-      console.warn('Interstitial tonen mislukt', error);
+      adTelemetryRef.current.lastError = (error as Error)?.message ?? String(error);
+      adTelemetryRef.current.lastResult = 'failed';
+      logAdEvent('Preload van interstitial mislukt', error);
+      return false;
     }
-  }, []);
+  }, [ensureAdMobSession, logAdEvent]);
+
+  const showLeaderboardInterstitial = useCallback(async () => {
+    const adMob = getAdMobPlugin();
+    adTelemetryRef.current.lastAttempt = Date.now();
+
+    if (!Capacitor.isNativePlatform?.()) {
+      logAdEvent('Webplatform gedetecteerd, sla interstitial over en navigeer door');
+      adTelemetryRef.current.lastResult = 'skipped';
+      notifyAdFallback('We slaan de advertentie over op web en sturen je terug naar het menu.');
+      return false;
+    }
+
+    if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') {
+      logAdEvent('AdMob plugin niet gevonden, toon fallback en ga door');
+      adTelemetryRef.current.lastResult = 'skipped';
+      notifyAdFallback('Advertentie niet beschikbaar. We sturen je direct terug naar het menu.');
+      return false;
+    }
+
+    const attemptShow = async (label: 'initial' | 'retry') => {
+      await ensureAdMobSession(adMob);
+      await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: `${INTERSTITIAL_PLACEMENT}_${label}` });
+      logAdEvent(`Interstitial voorbereid (${label})`);
+      await adMob.showInterstitial();
+      logAdEvent(`Interstitial getoond (${label})`);
+    };
+
+    try {
+      await attemptShow('initial');
+      adTelemetryRef.current.lastResult = 'success';
+      triggerHaptic('success');
+      return true;
+    } catch (error) {
+      adTelemetryRef.current.lastError = (error as Error)?.message ?? String(error);
+      adTelemetryRef.current.lastResult = 'failed';
+      logAdEvent('Eerste poging interstitial tonen mislukt, probeer opnieuw', error);
+
+      try {
+        await attemptShow('retry');
+        adTelemetryRef.current.lastResult = 'success';
+        triggerHaptic('success');
+        return true;
+      } catch (retryError) {
+        adTelemetryRef.current.lastError = (retryError as Error)?.message ?? String(retryError);
+        adTelemetryRef.current.lastResult = 'failed';
+        logAdEvent('Tweede poging interstitial tonen mislukt, val terug naar menu', retryError);
+        notifyAdFallback('Advertentie kon niet geladen worden. We gaan direct terug naar het menu.');
+        return false;
+      }
+    }
+  }, [ensureAdMobSession, logAdEvent, notifyAdFallback]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1050,8 +1164,17 @@ const App: React.FC = () => {
   };
 
   const handleGameOverContinue = async () => {
-    await showLeaderboardInterstitial();
-    setPhase(GamePhase.SETUP);
+    try {
+      const adShown = await showLeaderboardInterstitial();
+      if (!adShown) {
+        logAdEvent('Ga verder zonder interstitial na game-over flow');
+      }
+    } catch (error) {
+      logAdEvent('Onverwachte fout tijdens interstitial flow, ga verder naar menu', error);
+      notifyAdFallback('Advertentie kon niet worden getoond. We gaan terug naar het menu.');
+    } finally {
+      setPhase(GamePhase.SETUP);
+    }
   };
 
   const handleStartPress = () => {
