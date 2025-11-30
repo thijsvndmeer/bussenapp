@@ -99,22 +99,10 @@ The application may utilize environment variables, especially for services like 
 ### App Settings
 In-app settings for the game (e.g., number of players, specific game rules, sound/haptic preferences) are managed directly within the application's UI.
 
-## Contributing
-We welcome contributions! Please follow these guidelines:
-
-1.  **Fork** the repository.
-2.  **Create a new branch** for your feature or bugfix: `git checkout -b feature/your-feature-name` or `bugfix/issue-description`.
-3.  **Make your changes**, adhering to the existing coding style and TypeScript conventions.
-4.  **Test your changes** thoroughly to ensure no regressions and that functionality is preserved.
-5.  **Commit your changes** with clear and descriptive commit messages.
-6.  **Push your branch** to your forked repository.
-7.  **Open a Pull Request** to the `main` branch of the original repository, describing your changes in detail.
-
-### Code of Conduct
-Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing. (Placeholder - create this file if needed).
-
 ## Support
-If you encounter any issues or have questions, please use the [GitHub Issues](https://github.com/YOUR_USERNAME/bussen-app/issues) page to report them.
+If you encounter any issues or have questions, please use the [GitHub Issues](https://github.com/thijsvndmeer/bussenapp/issues) page to report them.
+
+## Copyright
 
 Copyright (c) 2025 Thijs van der Meer
 
