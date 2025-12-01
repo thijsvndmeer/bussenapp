@@ -1157,7 +1157,7 @@ const App: React.FC = () => {
       console.warn('Interstitial tonen mislukt', error);
       return false;
     }
-  }, [adsRemoved]);
+  }, [adsRemovalHydrated, adsRemoved]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
