@@ -27,7 +27,14 @@ type AdMobPlugin = {
   showInterstitial?: () => Promise<void>;
 };
 
+type PreferencesPlugin = {
+  get: (options: { key: string }) => Promise<{ value?: string | null }>;
+  set: (options: { key: string; value: string }) => Promise<void>;
+  remove: (options: { key: string }) => Promise<void>;
+};
+
 const Camera = registerPlugin<CameraPlugin>('Camera');
+const Preferences = registerPlugin<PreferencesPlugin>('Preferences');
 
 const getAdMobPlugin = (): AdMobPlugin | null => {
   const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
@@ -172,6 +179,7 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
+const ADS_REMOVED_KEY = 'bus-app-ads-removed-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -472,6 +480,10 @@ const App: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
+  const [adsRemoved, setAdsRemoved] = useState(false);
+  const [adsRemovalHydrated, setAdsRemovalHydrated] = useState(false);
+  const [shouldShowAdRemovalOffer, setShouldShowAdRemovalOffer] = useState(false);
+  const [isAdInfoOpen, setIsAdInfoOpen] = useState(false);
 
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
@@ -628,6 +640,8 @@ const App: React.FC = () => {
   }, []);
 
   const initializeAdMob = useCallback(async () => {
+    if (!adsRemovalHydrated || adsRemoved) return;
+
     const adMob = getAdMobPlugin();
     if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
 
@@ -640,7 +654,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.warn('AdMob initialisatie mislukt', error);
     }
-  }, []);
+  }, [adsRemovalHydrated, adsRemoved]);
 
   const persistPlayers = useCallback(() => {
     const payload: PersistedPlayerState = {
@@ -728,6 +742,67 @@ const App: React.FC = () => {
       console.warn('Kon instellingen niet opslaan', error);
     }
   }, [settings, storageAvailable]);
+
+  useEffect(() => {
+    const hydrateAdsRemovalState = async () => {
+      if (Capacitor.getPlatform() !== 'web' && Capacitor.isPluginAvailable('Preferences')) {
+        try {
+          const { value } = await Preferences.get({ key: ADS_REMOVED_KEY });
+          setAdsRemoved(value === 'true');
+        } catch (error) {
+          console.warn('Kon advertentievrije status niet laden van account', error);
+          setAdsRemoved(false);
+        } finally {
+          setAdsRemovalHydrated(true);
+        }
+        return;
+      }
+
+      if (!storageAvailable) {
+        setAdsRemoved(false);
+        setAdsRemovalHydrated(true);
+        return;
+      }
+
+      try {
+        setAdsRemoved(localStorage.getItem(ADS_REMOVED_KEY) === 'true');
+      } catch (error) {
+        console.warn('Kon advertentievrije status niet laden', error);
+        setAdsRemoved(false);
+      } finally {
+        setAdsRemovalHydrated(true);
+      }
+    };
+
+    hydrateAdsRemovalState();
+  }, [storageAvailable]);
+
+  useEffect(() => {
+    if (!adsRemovalHydrated) return;
+
+    const persistAdRemovalState = async () => {
+      if (Capacitor.getPlatform() !== 'web' && Capacitor.isPluginAvailable('Preferences')) {
+        try {
+          await Preferences.set({ key: ADS_REMOVED_KEY, value: String(adsRemoved) });
+          return;
+        } catch (error) {
+          console.warn('Kon advertentievrije status niet opslaan in account', error);
+        }
+      }
+
+      if (!storageAvailable) return;
+      queueStorageWrite(ADS_REMOVED_KEY, String(adsRemoved), 'advertentievrije status');
+    };
+
+    persistAdRemovalState();
+  }, [adsRemoved, adsRemovalHydrated, storageAvailable]);
+
+  useEffect(() => {
+    if (adsRemoved) {
+      setShouldShowAdRemovalOffer(false);
+      setIsAdInfoOpen(false);
+    }
+    }, [adsRemovalHydrated, adsRemoved]);
 
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
@@ -1052,10 +1127,19 @@ const App: React.FC = () => {
     triggerFileCapture('gallery');
   };
 
+  const handleAdRemovalPurchase = () => {
+    triggerHaptic('success');
+    setAdsRemoved(true);
+    setShouldShowAdRemovalOffer(false);
+    setIsAdInfoOpen(false);
+  };
+
   // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
-  const showLeaderboardInterstitial = useCallback(async () => {
+  const showLeaderboardInterstitial = useCallback(async (): Promise<boolean> => {
+    if (!adsRemovalHydrated || adsRemoved) return false;
+
     const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') return;
+    if (!adMob || typeof adMob.prepareInterstitial !== 'function' || typeof adMob.showInterstitial !== 'function') return false;
 
     try {
       if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
@@ -1068,10 +1152,12 @@ const App: React.FC = () => {
 
       await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
       await adMob.showInterstitial();
+      return true;
     } catch (error) {
       console.warn('Interstitial tonen mislukt', error);
+      return false;
     }
-  }, []);
+  }, [adsRemoved]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1121,7 +1207,10 @@ const App: React.FC = () => {
   };
 
   const handleGameOverContinue = async () => {
-    await showLeaderboardInterstitial();
+    const wasAdShown = await showLeaderboardInterstitial();
+    if (wasAdShown) {
+      setShouldShowAdRemovalOffer(true);
+    }
     setPhase(GamePhase.SETUP);
   };
 
@@ -1827,6 +1916,24 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
   if (phase === GamePhase.SETUP) {
       return (
           <RootContainer className="p-4">
+              {adsRemovalHydrated && !adsRemoved && shouldShowAdRemovalOffer && (
+                  <div className="mb-4">
+                      <div className="w-full bg-gradient-to-r from-slate-900 to-slate-800 border border-red-500/30 rounded-3xl p-4 shadow-2xl flex items-center gap-3">
+                          <div className="flex-1">
+                              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400 mb-1">Reclames</p>
+                              <p className="text-white font-black text-xl leading-tight">Reclames weghalen?</p>
+                              <p className="text-slate-300 text-xs">Geen onderbrekingen meer na de rondes.</p>
+                          </div>
+                          <button
+                              onClick={() => setIsAdInfoOpen(true)}
+                              className="bg-white text-black font-black px-4 py-3 rounded-2xl shadow-lg active:scale-95 transition-transform whitespace-nowrap"
+                          >
+                              €2,99
+                          </button>
+                      </div>
+                  </div>
+              )}
+
               <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
                   <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text">
                       Bussen
@@ -1943,7 +2050,40 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                       </div>
                   </div>
               </div>
-              
+
+              {isAdInfoOpen && !adsRemoved && (
+                  <div className="fixed inset-0 z-[105] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in">
+                      <div className="bg-slate-900/95 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-md m-4 space-y-4 animate-in zoom-in-50 duration-300">
+                          <div className="space-y-2">
+                              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-400">Reclames</p>
+                              <h3 className="text-2xl font-black text-white leading-tight">Reclames weghalen?</h3>
+                              <p className="text-slate-300 text-sm">We tonen soms een advertentie om Bussen gratis te houden en nieuwe features te bouwen.</p>
+                              <p className="text-slate-200 text-sm font-semibold">We weten dat reclames irritant kunnen zijn. Daarom kun je ze voor altijd uitschakelen.</p>
+                          </div>
+
+                          <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4 space-y-2">
+                              <p className="text-white font-bold text-base">Voor €2,99 geen onderbrekingen meer.</p>
+                              <p className="text-slate-400 text-xs">Na aankoop zie je nooit meer advertenties in de app.</p>
+                          </div>
+
+                          <div className="space-y-2">
+                              <button
+                                  onClick={handleAdRemovalPurchase}
+                                  className="w-full bg-gradient-to-r from-red-500 to-red-700 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2"
+                              >
+                                  Geen reclames meer - €2,99
+                              </button>
+                              <button
+                                  onClick={() => setIsAdInfoOpen(false)}
+                                  className="w-full bg-slate-700/60 text-white font-bold py-3 rounded-xl hover:bg-slate-600/60 active:scale-95 transition-transform"
+                              >
+                                  Misschien later
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
               {/* Photo Options Modal */}
               {isPhotoOptionsModalOpen && (
                   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in">
