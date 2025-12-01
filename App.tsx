@@ -4,6 +4,7 @@ import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings 
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { AdMob } from '@capacitor-community/admob';
 import './styles/animations.css';
 
 const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
@@ -37,8 +38,8 @@ const Camera = registerPlugin<CameraPlugin>('Camera');
 const Preferences = registerPlugin<PreferencesPlugin>('Preferences');
 
 const getAdMobPlugin = (): AdMobPlugin | null => {
-  const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
-  return plugin ?? null;
+  if (!Capacitor.isPluginAvailable('AdMob')) return null;
+  return AdMob as unknown as AdMobPlugin;
 };
 
 // --- CONSTANTS & PHRASES ---
