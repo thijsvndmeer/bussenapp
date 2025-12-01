@@ -2326,7 +2326,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                         animation: 'disco-gradient 2.2s linear infinite'
                                       }}
                                     >
-                                      DISCO! (+1 voor iedereen)
+                                      DISCO!
                                     </button>
                                  )}
                              </>
@@ -2467,27 +2467,47 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                           </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <button
-                              onClick={() => {
-                                  setPyramidMode('digital');
-                                  setFeedback(null);
-                                  setRevealedPyramidCards(new Set());
-                                  setLoserReveal(null);
-                                  setIsPyramidComplete(false);
-                                  generateDigitalPyramid();
-                              }}
-                              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white font-black py-3 rounded-2xl border border-emerald-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
-                          >
-                              Toch een Digitale Piramide
-                          </button>
-                          <button
-                              onClick={() => setIsSelectingBusPlayer(true)}
-                              className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
-                          >
-                              Naar de Bus
-                          </button>
-                      </div>
+                                            <div className="flex flex-col items-center gap-2">
+
+                                                <button
+
+                                                    onClick={() => setIsSelectingBusPlayer(true)}
+
+                                                    className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
+
+                                                >
+
+                                                    Naar de Bus
+
+                                                </button>
+
+                                                <button
+
+                                                    onClick={() => {
+
+                                                        setPyramidMode('digital');
+
+                                                        setFeedback(null);
+
+                                                        setRevealedPyramidCards(new Set());
+
+                                                        setLoserReveal(null);
+
+                                                        setIsPyramidComplete(false);
+
+                                                        generateDigitalPyramid();
+
+                                                    }}
+
+                                                    className="w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-colors underline underline-offset-4 decoration-slate-500/70 self-end"
+
+                                                >
+
+                                                    Toch een Digitale Piramide
+
+                                                </button>
+
+                                            </div>
                   </div>
               </RootContainer>
           );
@@ -2571,28 +2591,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                   </div>
               </div>
 
-              {settings.mode === GameMode.PHYSICAL && (
-                  <div className="px-5 py-4 bg-black/40 backdrop-blur border-b border-white/5">
-                      <div className="flex items-center justify-between mb-3">
-                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.25em]">Kaartenmodus</p>
-                          <span className="text-xs font-semibold text-slate-300">{pyramidMode === 'physical' ? 'Eigen deck' : 'In-app kaarten'}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                          <button
-                              onClick={() => setPyramidMode('physical')}
-                              className={`py-3 rounded-2xl font-black text-sm border transition-all active:scale-95 ${pyramidMode === 'physical' ? 'bg-red-700 text-white border-red-400 shadow-[0_10px_25px_rgba(220,38,38,0.25)]' : 'bg-slate-900/70 text-slate-200 border-white/10 hover:border-red-500/50'}`}
-                          >
-                              Fysieke kaarten
-                          </button>
-                          <button
-                              onClick={() => setPyramidMode('digital')}
-                              className={`py-3 rounded-2xl font-black text-sm border transition-all active:scale-95 ${pyramidMode === 'digital' ? 'bg-emerald-700 text-white border-emerald-400 shadow-[0_10px_25px_rgba(16,185,129,0.25)]' : 'bg-slate-900/70 text-slate-200 border-white/10 hover:border-emerald-400/50'}`}
-                          >
-                              Digitale kaarten
-                          </button>
-                      </div>
-                  </div>
-              )}
+
 
               {feedback && !pendingMatches && (
                   <div className="absolute top-24 left-0 right-0 z-50 flex justify-center pointer-events-none">
@@ -2875,10 +2874,10 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                                 </button>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-center sm:justify-end gap-3">
+                            <div className="flex flex-col sm:flex-row items-center sm:justify-end gap-3 min-h-[40px]">
                                 <button
                                     onClick={() => startDigitalBus(busPassengers)}
-                                    className="w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-colors underline underline-offset-4 decoration-slate-500/70"
+                                    className={`w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-opacity duration-300 underline underline-offset-4 decoration-slate-500/70 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                                 >
                                     Toch een Digitale Bus
                                 </button>
@@ -2935,14 +2934,7 @@ const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !optio
                           </span>
                           <span className="text-white text-sm font-black">{passengerNames}</span>
                       </div>
-                      {settings.mode === GameMode.PHYSICAL && (
-                          <button
-                              onClick={() => startPhysicalBus()}
-                              className="px-3 py-2 rounded-xl bg-red-900/60 border border-red-500/50 text-white text-xs font-black uppercase tracking-[0.15em] hover:border-red-300 transition-all active:scale-95"
-                          >
-                              Terug naar Fysieke Bus
-                          </button>
-                      )}
+
                   </div>
                 </div>
 
