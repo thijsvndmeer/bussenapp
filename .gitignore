@@ -3,9 +3,4 @@ npm-debug.log*
 .DS_Store
 /dist
 /.env.local
-android/app/build
-android/.gradle
-android/.idea
-android/local.properties
-android/captures
-android/.cxx
+/android/
