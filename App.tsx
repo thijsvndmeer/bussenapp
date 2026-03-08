@@ -2,11 +2,12 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
+import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
 const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
 const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
@@ -260,7 +261,6 @@ const shuffleDeck = (deck: Card[]): Card[] => {
   return newDeck;
 };
 
-const getSipsText = (count: number) => `${count} ${count === 1 ? 'slok' : 'slokken'}`;
 
 // --- COMPONENTS ---
 
@@ -458,6 +458,8 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
 // --- APP COMPONENT ---
 
 const App: React.FC = () => {
+  const { t, lang, setLanguage } = useTranslation();
+  const getSipsText = (count: number) => `${count} ${count === 1 ? t('slok') : t('slokken')}`;
   // --- STATE ---
   const [settings, setSettings] = useState<GameSettings>(() => {
     const defaultSettings: GameSettings = {
@@ -629,12 +631,12 @@ const App: React.FC = () => {
           setTimeout(() => playTone({ frequency: 310, duration: 0.08, type: 'triangle', volume: 0.08 }), 40);
           setTimeout(() => playTone({ frequency: 360, duration: 0.08, type: 'triangle', volume: 0.08 }), 80);
           break;
-        case 'disco':
-          playTone({ frequency: 440, duration: 0.1, type: 'triangle', volume: 0.08 });
-          setTimeout(() => playTone({ frequency: 554, duration: 0.1, type: 'triangle', volume: 0.08 }), 50);
-          setTimeout(() => playTone({ frequency: 660, duration: 0.1, type: 'triangle', volume: 0.08 }), 100);
-          setTimeout(() => playTone({ frequency: 880, duration: 0.1, type: 'triangle', volume: 0.08 }), 150);
+        case 'disco': {
+          const audio = new Audio('/assets/sounds/danger_alarm.mp3');
+          audio.volume = 1.0; // Play loudly
+          audio.play().catch(e => console.warn('Disco sound failed', e));
           break;
+        }
       }
     },
     [playTone]
@@ -1088,7 +1090,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!isDiscoActive) return;
-    const t = setTimeout(() => setIsDiscoActive(false), 500000); // Fallback timeout for 5 seconds
+    const t = setTimeout(() => setIsDiscoActive(false), 5000); // Fallback timeout for 5 seconds
     return () => clearTimeout(t);
   }, [isDiscoActive]);
 
@@ -1154,7 +1156,7 @@ const App: React.FC = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setFeedback({ text: 'Kies een afbeelding om te gebruiken als profielfoto.', type: 'error' });
+      setFeedback({ text: t('Kies een afbeelding om te gebruiken als profielfoto.'), type: 'error' });
       return;
     }
 
@@ -1165,7 +1167,7 @@ const App: React.FC = () => {
       setTimeout(() => inputRef.current?.focus(), 10);
     } catch (error) {
       console.error('Afbeelding verwerken mislukt', error);
-      setFeedback({ text: 'Kon de foto niet laden. Controleer de rechten of probeer een kleinere afbeelding.', type: 'error' });
+      setFeedback({ text: t('Kon de foto niet laden. Controleer de rechten of probeer een kleinere afbeelding.'), type: 'error' });
     }
   };
 
@@ -1273,7 +1275,7 @@ const App: React.FC = () => {
       triggerHaptic('success');
       playSound('success');
       const phrase = getUniquePhrase(SUCCESS_PHRASES);
-      setFeedback({ text: `${phrase} Goed geraden!`, type: 'success' });
+      setFeedback({ text: `${t(phrase)} ${t("Goed geraden!")}`, type: 'success' });
       setShowConfetti(true);
       playSound('celebrate');
     } else {
@@ -1281,7 +1283,7 @@ const App: React.FC = () => {
       triggerShake();
       playSound('fail');
       const phrase = getUniquePhrase(FAILURE_PHRASES);
-      setFeedback({ text: `${phrase} drink zelf ${getSipsText(sips)}.`, type: 'error' });
+      setFeedback({ text: `${t(phrase)} ${t("drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
     setPlayers(newPlayers);
@@ -1327,7 +1329,7 @@ const App: React.FC = () => {
       triggerHaptic('success');
       playSound('success');
       const phrase = getUniquePhrase(SUCCESS_PHRASES);
-      setFeedback({ text: `${phrase} Goed geraden!`, type: 'success' });
+      setFeedback({ text: `${t(phrase)} ${t("Goed geraden!")}`, type: 'success' });
       setShowConfetti(true);
       playSound('celebrate');
     } else {
@@ -1335,7 +1337,7 @@ const App: React.FC = () => {
       triggerShake();
       playSound('fail');
       const phrase = getUniquePhrase(FAILURE_PHRASES);
-      setFeedback({ text: `${phrase} Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+      setFeedback({ text: `${t(phrase)} ${t("Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
 
@@ -1363,7 +1365,7 @@ const App: React.FC = () => {
       playSound('disco');
       setShowConfetti(true);
       setIsDiscoActive(true);
-      setFeedback({ text: `DISCO! Iedereen behalve ${currentPlayer.name} drinkt 1 slok.`, type: 'success' });
+      setFeedback({ text: `${t("DISCO! Iedereen behalve")} ${currentPlayer.name} ${t("drinkt 1 slok.")}`, type: 'success' });
 
       newPlayers.forEach((p, idx) => {
         if (idx !== activePlayerIndex) p.drinksTaken += 1;
@@ -1375,7 +1377,7 @@ const App: React.FC = () => {
       playSound('fail');
       const sips = roundStep;
       const phrase = getUniquePhrase(FAILURE_PHRASES);
-      setFeedback({ text: `${phrase} Jammer! Drink zelf ${getSipsText(sips)}.`, type: 'error' });
+      setFeedback({ text: `${t(phrase)} ${t("Jammer! Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
 
@@ -1497,7 +1499,7 @@ const App: React.FC = () => {
       // Display playful message
       triggerHaptic('warning');
       const phrase = getUniquePhrase(PYRAMID_WARNING_PHRASES);
-      setFeedback({ text: phrase, type: 'warning' });
+      setFeedback({ text: t(phrase), type: 'warning' });
       setTimeout(() => setFeedback(null), 2500); // Clear message after 2.5 seconds
       return;
     }
@@ -1515,7 +1517,7 @@ const App: React.FC = () => {
 
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       setFeedback({
-        text: isTop ? "ADTJE VOOR DE ZAAL!" : `Wie heeft deze kaart? ${getSipsText(sips)}!`,
+        text: isTop ? t("ADTJE VOOR DE ZAAL!") : `${t("Wie heeft deze kaart?")} ${getSipsText(sips)}!`,
         type: 'info'
       });
       if (isFinished) setIsPyramidComplete(true);
@@ -1523,7 +1525,7 @@ const App: React.FC = () => {
     }
 
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'digital') {
-      setFeedback({ text: `Deze kaart is ${getSipsText(sips)} waard.`, type: 'info' });
+      setFeedback({ text: `${t("Deze kaart is")} ${getSipsText(sips)} ${t("waard.")}`, type: 'info' });
       if (isFinished) setIsPyramidComplete(true);
       return;
     }
@@ -1717,7 +1719,7 @@ const App: React.FC = () => {
   const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
     const passengers = passengersOverride ?? busPassengers;
     if (passengers.length === 0) {
-      setFeedback({ text: 'Selecteer eerst wie de bus in gaat.', type: 'error' });
+      setFeedback({ text: t('Selecteer eerst wie de bus in gaat.'), type: 'error' });
       setPhase(GamePhase.PYRAMID);
       return;
     }
@@ -1778,14 +1780,14 @@ const App: React.FC = () => {
         setIsBusWon(true);
         playSound('celebrate');
         setImmunePlayerId(busPassengers[0].id);
-        setFeedback({ text: 'Geen kaarten meer! Je bent vrij!', type: 'success' });
+        setFeedback({ text: t('Geen kaarten meer! Je bent vrij!'), type: 'success' });
         return;
       } else {
         tempAvailableDeck = shuffleDeck(createDeck()); // Shuffle new deck
         actualBusDecksUsed = busDecksUsed + 1; // Increment counter
         setBusDecksUsed(actualBusDecksUsed);
         playSound('reshuffle');
-        infoFeedback = { text: `Pakje ${actualBusDecksUsed} / ${settings.busDecks}. Hoger of lager?`, type: 'info' };
+        infoFeedback = { text: `${t("Pakje")} ${actualBusDecksUsed} / ${settings.busDecks}. ${t("Hoger of lager?")}`, type: 'info' };
       }
     }
 
@@ -1830,7 +1832,7 @@ const App: React.FC = () => {
       playSound('busFail');
       const sips = currentBusIndex;
       const phrase = getUniquePhrase(FAILURE_PHRASES);
-      setFeedback({ text: `${phrase} ${getSipsText(sips)} & Opnieuw!`, type: 'error' });
+      setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
 
       const newPlayers = [...players];
@@ -1858,12 +1860,12 @@ const App: React.FC = () => {
         playSound('celebrate');
         setImmunePlayerId(busPassengers[0].id);
         setPhysicalBusPosition(settings.busLength);
-        setFeedback({ text: 'Je hebt de bus overleefd! Vrijstelling!', type: 'success' });
+        setFeedback({ text: t('Je hebt de bus overleefd! Vrijstelling!'), type: 'success' });
         return;
       }
 
       setPhysicalBusPosition(nextPosition);
-      setFeedback({ text: `Goed! Kaart ${nextPosition} klaar.`, type: 'info' });
+      setFeedback({ text: `${t("Goed! Kaart")} ${nextPosition} ${t("klaar.")}`, type: 'info' });
       return;
     }
 
@@ -1872,7 +1874,7 @@ const App: React.FC = () => {
     playSound('busFail');
     const sips = physicalBusPosition;
     const phrase = getUniquePhrase(FAILURE_PHRASES);
-    setFeedback({ text: `${phrase} ${getSipsText(sips)} & opnieuw!`, type: 'error' });
+    setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("opnieuw!")}`, type: 'error' });
 
     const newPlayers = [...players];
     busPassengers.forEach(bp => {
@@ -1892,14 +1894,14 @@ const App: React.FC = () => {
       <RootContainer className="p-4">
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
           <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text">
-            Bussen
+            {t("Bussen")}
           </h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
         </div>
 
         <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
           <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
-            <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500" /> Spelers</h2>
+            <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500" /> {t("Spelers")}</h2>
             <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
           </div>
 
@@ -1921,7 +1923,7 @@ const App: React.FC = () => {
                 <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center animate-bounce">
                   <Users size={24} />
                 </div>
-                <span className="font-bold text-sm uppercase tracking-widest">Start met toevoegen</span>
+                <span className="font-bold text-sm uppercase tracking-widest">{t("Start met toevoegen")}</span>
               </div>
             )}
           </div>
@@ -1941,7 +1943,7 @@ const App: React.FC = () => {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Naam..."
+              placeholder={t("Naam...")}
               className="flex-1 min-w-0 h-full bg-slate-900/80 border border-slate-700 rounded-2xl px-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
               value={newPlayerName}
               onChange={e => setNewPlayerName(e.target.value)}
@@ -1958,7 +1960,7 @@ const App: React.FC = () => {
             disabled={players.length < 2}
             className="w-full bg-gradient-to-r from-red-600 to-red-800 disabled:opacity-50 disabled:grayscale text-white font-black text-xl py-5 rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110 border-t border-red-400"
           >
-            <Play fill="currentColor" size={24} /> START SPEL
+            <Play fill="currentColor" size={24} /> {t("START SPEL")}
           </button>
 
           <div className="glass-panel rounded-2xl border-slate-800 overflow-hidden transition-all duration-300">
@@ -1967,7 +1969,7 @@ const App: React.FC = () => {
               className="w-full flex items-center justify-between p-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-                <Settings size={14} /> Instellingen
+                <Settings size={14} /> {t("Instellingen")}
               </div>
               <div className={`transform transition-transform duration-300 ${isSettingsOpen ? 'rotate-180' : 'rotate-0'}`}>
                 <ChevronDown size={14} />
@@ -1978,27 +1980,27 @@ const App: React.FC = () => {
               <div className="p-4 space-y-4 bg-black/20 border-t border-slate-800">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase">Piramide Hoogte</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Piramide Hoogte")}</label>
                     <span className="text-red-500 font-bold text-sm">{settings.pyramidRows}</span>
                   </div>
                   <input type="range" min="3" max="7" step="1" value={settings.pyramidRows} onChange={(e) => setSettings({ ...settings, pyramidRows: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase">Bus Kaarten</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Bus Kaarten")}</label>
                     <span className="text-red-500 font-bold text-sm">{settings.busLength}</span>
                   </div>
                   <input type="range" min="3" max="12" step="1" value={settings.busLength} onChange={(e) => setSettings({ ...settings, busLength: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase">Bus Pakjes</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Bus Pakjes")}</label>
                     <span className="text-red-500 font-bold text-sm">{settings.busDecks}</span>
                   </div>
                   <input type="range" min="1" max="5" step="1" value={settings.busDecks} onChange={(e) => setSettings({ ...settings, busDecks: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div className="flex items-center justify-between pt-2">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase">Gedeelde Bus</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Gedeelde Bus")}</label>
                   <button onClick={() => setSettings({ ...settings, sharedBus: !settings.sharedBus })} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.sharedBus ? 'left-7' : 'left-1'}`}></div>
                   </button>
@@ -2008,7 +2010,7 @@ const App: React.FC = () => {
                   onClick={() => setIsMoreSettingsOpen(true)}
                   className="w-full mt-4 py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 active:scale-95"
                 >
-                  Meer Instellingen
+                  {t("Meer Instellingen")}
                 </button>
               </div>
             </div>
@@ -2019,24 +2021,24 @@ const App: React.FC = () => {
         {isPhotoOptionsModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in">
             <div className="bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
-              <h3 className="text-xl font-bold text-white text-center mb-4">Profielfoto kiezen</h3>
+              <h3 className="text-xl font-bold text-white text-center mb-4">{t("Profielfoto kiezen")}</h3>
               <button
                 onClick={handleTakePhoto}
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
               >
-                <CameraIcon size={20} /> Maak foto
+                <CameraIcon size={20} /> {t("Maak foto")}
               </button>
               <button
                 onClick={handleSelectFromGallery}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
               >
-                <ImageIcon size={20} /> Kies uit galerij
+                <ImageIcon size={20} /> {t("Kies uit galerij")}
               </button>
               <button
                 onClick={() => setIsPhotoOptionsModalOpen(false)}
                 className="w-full bg-slate-700/50 text-white font-bold py-3 rounded-xl hover:bg-slate-600/50 active:scale-95 transition-transform"
               >
-                Annuleren
+                {t("Annuleren")}
               </button>
             </div>
           </div>
@@ -2047,23 +2049,44 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in">
             <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl w-full max-w-sm m-4 space-y-6 animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-                <h3 className="text-xl font-black text-white uppercase tracking-wider">Meer Instellingen</h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-wider">{t("Meer Instellingen")}</h3>
                 <button onClick={() => setIsMoreSettingsOpen(false)} className="text-slate-500 hover:text-white transition-colors">
                   <X size={24} />
                 </button>
               </div>
 
-              <div className="space-y-4 py-4 min-h-[50vh] flex flex-col items-center justify-center text-center">
+              <div className="space-y-4 py-4 min-h-[40vh] flex flex-col items-center justify-center text-center">
                 <Settings size={48} className="text-slate-700 mb-4 animate-[spin_10s_linear_infinite]" />
-                <p className="text-slate-400 font-medium">Binnenkort beschikbaar...</p>
-                <p className="text-sm text-slate-600">Nieuwe instellingen komen hier.</p>
+
+                <div className="flex flex-col gap-3 w-full px-4">
+                  <h4 className="text-white font-medium">{t("Taal / Language")}</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setLanguage('nl')}
+                      className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'nl' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
+                    >
+                      <span className="text-white text-lg font-bold">🇳🇱 NL</span>
+                    </button>
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'en' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
+                    >
+                      <span className="text-white text-lg font-bold">🇬🇧 EN</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-8 opacity-50">
+                  <p className="text-slate-400 font-medium">{t("Binnenkort beschikbaar...")}</p>
+                  <p className="text-xs text-slate-600">{t("Nieuwe instellingen komen hier.")}</p>
+                </div>
               </div>
 
               <button
                 onClick={() => setIsMoreSettingsOpen(false)}
                 className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform"
               >
-                Sluiten
+                {t("Sluiten")}
               </button>
             </div>
           </div>
@@ -2076,26 +2099,26 @@ const App: React.FC = () => {
   if (phase === GamePhase.MODE_SELECTION) {
     return (
       <RootContainer className="items-center justify-center p-6">
-        <h2 className="text-3xl font-black text-white mb-8 animate-in zoom-in text-center">Kies je strijd</h2>
+        <h2 className="text-3xl font-black text-white mb-8 animate-in zoom-in text-center">{t("Kies je strijd")}</h2>
         <div className="grid gap-4 w-full max-w-sm">
           <button onClick={() => confirmStart(GameMode.DIGITAL)} className="group bg-gradient-to-br from-slate-900 to-slate-950 border border-red-500/30 p-8 rounded-3xl text-left hover:border-red-500 transition-all shadow-2xl active:scale-95 relative overflow-hidden">
             <div className="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="flex justify-between mb-2 relative z-10">
-              <span className="text-2xl font-black text-white uppercase italic">Digitaal</span>
+              <span className="text-2xl font-black text-white uppercase italic">{t("Digitaal")}</span>
               <Zap size={24} className="text-yellow-400 animate-pulse" />
             </div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">Automatisch & Snel</p>
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">{t("Automatisch & Snel")}</p>
           </button>
 
           <button onClick={() => confirmStart(GameMode.PHYSICAL)} className="group bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 p-8 rounded-3xl text-left hover:border-white transition-all shadow-2xl active:scale-95 relative overflow-hidden">
             <div className="flex justify-between mb-2 relative z-10">
-              <span className="text-2xl font-black text-white uppercase italic">Fysiek</span>
+              <span className="text-2xl font-black text-white uppercase italic">{t("Fysiek")}</span>
               <Users size={24} className="text-slate-300" />
             </div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">Met echte kaarten</p>
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">{t("Met echte kaarten")}</p>
           </button>
         </div>
-        <button onClick={() => setPhase(GamePhase.SETUP)} className="mt-12 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">Terug</button>
+        <button onClick={() => setPhase(GamePhase.SETUP)} className="mt-12 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">{t("Terug")}</button>
       </RootContainer>
     );
   }
@@ -2112,7 +2135,7 @@ const App: React.FC = () => {
       return (
         <RootContainer className="items-center justify-center p-6">
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
-            <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">Speler Wissel</p>
+            <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">{t("Speler Wissel")}</p>
             <div className="w-32 h-32 rounded-full mb-6 bg-gradient-to-b from-slate-800 to-black border-4 border-red-500 flex items-center justify-center overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.4)] relative">
               {activePlayer.image ? (
                 <img src={activePlayer.image} className="w-full h-full object-cover" />
@@ -2126,7 +2149,7 @@ const App: React.FC = () => {
               onClick={() => setIsWaitingForNextPlayer(false)}
               className="bg-white text-black text-xl font-black px-10 py-4 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.3)] flex items-center gap-3 mx-auto hover:scale-105 transition-transform active:scale-95"
             >
-              Start <ArrowRight size={24} strokeWidth={3} />
+              {t("Start")} <ArrowRight size={24} strokeWidth={3} />
             </button>
           </div>
         </RootContainer>
@@ -2142,7 +2165,7 @@ const App: React.FC = () => {
               {activePlayer?.image ? <img src={activePlayer.image} className="w-full h-full object-cover" /> : activePlayer?.name.charAt(0).toUpperCase()}
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] text-red-400 font-black uppercase tracking-widest mb-0.5">Aan de beurt</p>
+              <p className="text-[10px] text-red-400 font-black uppercase tracking-widest mb-0.5">{t("Aan de beurt")}</p>
               <div className="flex items-center gap-1.5">
                 <p className="font-bold text-white text-lg leading-none truncate max-w-[120px] drop-shadow-md">{activePlayer?.name}</p>
                 {activePlayer?.isImmune && <Shield size={14} className="text-yellow-400 shrink-0" />}
@@ -2151,11 +2174,11 @@ const App: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <div className="flex flex-col items-end px-3 border-r border-white/10">
-              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Op</span>
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Op")}</span>
               <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
             </div>
             <div className="flex flex-col items-end pl-1">
-              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Uit</span>
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Uit")}</span>
               <span className="text-emerald-400 font-black font-mono text-lg leading-none drop-shadow-sm"><ArrowRight size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksDistributed}</span>
             </div>
           </div>
@@ -2167,7 +2190,7 @@ const App: React.FC = () => {
             {/* Table Felt Texture */}
             <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>
 
-            <p className="relative text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">Huidige Hand</p>
+            <p className="relative text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">{t("Huidige Hand")}</p>
 
             <div className="relative flex justify-center items-center py-2 gap-2 sm:gap-3 px-2">
               {settings.mode === GameMode.DIGITAL ? (
@@ -2175,7 +2198,10 @@ const App: React.FC = () => {
                   const digitalCards = activePlayer.hand.filter(c => !c.id.startsWith('physical'));
                   const currentCardsCount = digitalCards.length;
                   const isObtained = idx < currentCardsCount;
-                  const isCurrent = idx === currentCardsCount;
+                  // Only show current card pulse if NOT showing feedback (waiting for next player)
+                  const isCurrent = idx === currentCardsCount && !feedback;
+
+                  if (idx >= 4) return null; // Safety check
 
                   if (isObtained) {
                     const c = digitalCards[idx];
@@ -2186,15 +2212,18 @@ const App: React.FC = () => {
                     );
                   } else if (isCurrent) {
                     return (
-                      <div key={`current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
-                        <span className="text-green-500 font-bold text-2xl drop-shadow-md">?</span>
+                      <div key={`current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex flex-col items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
+                        <div className="text-green-500 opacity-60 mb-1">
+                          {roundStep === 1 && <Sparkles size={20} />}
+                          {roundStep === 2 && <ArrowUpDown size={20} />}
+                          {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
+                          {roundStep === 4 && <Zap size={20} />}
+                        </div>
+                        <span className="text-green-500 font-black text-xl drop-shadow-md">?</span>
                       </div>
                     );
                   } else {
-                    return (
-                      <div key={`future-${idx}`} className="w-20 h-28 rounded-xl border-2 border-dashed border-slate-700/50 bg-slate-900/30 flex-none" style={{ zIndex: idx }}>
-                      </div>
-                    );
+                    return null;
                   }
                 })
               ) : (
@@ -2202,7 +2231,7 @@ const App: React.FC = () => {
                   {Array.from({ length: 4 }).map((_, idx) => {
                     const currentCardsCount = activePlayer.hand.length;
                     const isObtained = idx < currentCardsCount;
-                    const isCurrent = idx === currentCardsCount;
+                    const isCurrent = idx === currentCardsCount && !feedback;
 
                     if (isObtained) {
                       return (
@@ -2220,15 +2249,18 @@ const App: React.FC = () => {
                       );
                     } else if (isCurrent) {
                       return (
-                        <div key={`phys-current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
+                        <div key={`phys-current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex flex-col items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
+                          <div className="text-green-500 opacity-60 mb-1">
+                            {roundStep === 1 && <Sparkles size={20} />}
+                            {roundStep === 2 && <ArrowUpDown size={20} />}
+                            {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
+                            {roundStep === 4 && <Zap size={20} />}
+                          </div>
                           <span className="text-green-500 font-bold text-2xl drop-shadow-md">?</span>
                         </div>
                       );
                     } else {
-                      return (
-                        <div key={`phys-future-${idx}`} className="w-20 h-28 rounded-xl border-2 border-dashed border-slate-700/50 bg-slate-900/30 flex-none" style={{ zIndex: idx }}>
-                        </div>
-                      );
+                      return null;
                     }
                   })}
                 </div>
@@ -2240,13 +2272,13 @@ const App: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative">
             <div className="text-center mb-6 relative z-10">
               <span className="px-3 py-1 rounded-full bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 text-[10px] text-slate-300 font-bold uppercase tracking-widest shadow-lg">
-                Ronde {roundStep} / 4
+                {t("Ronde ")}{roundStep} / 4
               </span>
               <h2 className="text-3xl font-black text-white mt-3 drop-shadow-xl neon-text">
-                {roundStep === 1 && "Rood of Zwart?"}
-                {roundStep === 2 && "Hoger of Lager?"}
-                {roundStep === 3 && "Binnen of Buiten?"}
-                {roundStep === 4 && "Hetzelfde Teken?"}
+                {roundStep === 1 && t("Rood of Zwart?")}
+                {roundStep === 2 && t("Hoger of Lager?")}
+                {roundStep === 3 && t("Binnen of Buiten?")}
+                {roundStep === 4 && t("Hetzelfde Teken?")}
               </h2>
             </div>
 
@@ -2260,7 +2292,7 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <div className="w-48 p-6 text-center text-slate-400 text-sm font-medium border-2 border-slate-800 rounded-2xl bg-slate-900/50">
-                    Pak een kaart van de stapel...
+                    {t("Pak een kaart van de stapel...")}
                   </div>
                 )
               )}
@@ -2279,44 +2311,44 @@ const App: React.FC = () => {
                 {feedback.text}
               </div>
               <button onClick={nextPlayerTurn} className="w-full bg-white hover:bg-slate-200 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                Volgende <ArrowRight size={20} strokeWidth={3} />
+                {t("Volgende")} <ArrowRight size={20} strokeWidth={3} />
               </button>
             </div>
           ) : (
             settings.mode === GameMode.PHYSICAL ? (
               <div className="grid grid-cols-2 gap-4">
                 <button onClick={() => handlePhysicalGuess(true)} className="bg-gradient-to-b from-emerald-600 to-emerald-800 border-t border-emerald-400 active:scale-95 transition-transform py-4 rounded-2xl font-black text-white text-lg flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(16,185,129,0.3)]">
-                  <ThumbsUp size={20} strokeWidth={3} /> GOED
+                  <ThumbsUp size={20} strokeWidth={3} /> {t("GOED")}
                 </button>
                 <button onClick={() => handlePhysicalGuess(false)} className="bg-gradient-to-b from-red-600 to-red-800 border-t border-red-400 active:scale-95 transition-transform py-4 rounded-2xl font-black text-white text-lg flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(220,38,38,0.3)]">
-                  <ThumbsDown size={20} strokeWidth={3} /> FOUT
+                  <ThumbsDown size={20} strokeWidth={3} /> {t("FOUT")}
                 </button>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {roundStep === 1 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('RED')} className="bg-gradient-to-br from-red-600 to-red-800 border-t border-red-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ROOD</button>
-                    <button onClick={() => handleDigitalGuess('BLACK')} className="bg-gradient-to-br from-slate-800 to-black border-t border-slate-600 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ZWART</button>
+                    <button onClick={() => handleDigitalGuess('RED')} className="bg-gradient-to-br from-red-600 to-red-800 border-t border-red-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ROOD")}</button>
+                    <button onClick={() => handleDigitalGuess('BLACK')} className="bg-gradient-to-br from-slate-800 to-black border-t border-slate-600 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ZWART")}</button>
                   </>
                 )}
                 {roundStep === 2 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">HOGER</button>
-                    <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">LAGER</button>
-                    <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">GELIJK</button>
+                    <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("HOGER")}</button>
+                    <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("LAGER")}</button>
+                    <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">{t("GELIJK")}</button>
                   </>
                 )}
                 {roundStep === 3 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('BETWEEN')} className="bg-gradient-to-br from-emerald-600 to-emerald-800 border-t border-emerald-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">BINNEN</button>
-                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className="bg-gradient-to-br from-orange-600 to-orange-800 border-t border-orange-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">BUITEN</button>
+                    <button onClick={() => handleDigitalGuess('BETWEEN')} className="bg-gradient-to-br from-emerald-600 to-emerald-800 border-t border-emerald-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("BINNEN")}</button>
+                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className="bg-gradient-to-br from-orange-600 to-orange-800 border-t border-orange-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("BUITEN")}</button>
                   </>
                 )}
                 {roundStep === 4 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ZELFDE</button>
-                    <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">ANDERS</button>
+                    <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ZELFDE")}</button>
+                    <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ANDERS")}</button>
                     {canAttemptDisco && (
                       <button
                         onClick={handleDiscoAttempt}
@@ -2327,7 +2359,7 @@ const App: React.FC = () => {
                           animation: 'disco-gradient 2.2s linear infinite'
                         }}
                       >
-                        DISCO!
+                        {t("DISCO!")}
                       </button>
                     )}
                   </>
@@ -2346,8 +2378,8 @@ const App: React.FC = () => {
       <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
           <div className="text-center space-y-2">
-            <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">de bus in jij</p>
-            <h3 className="text-3xl font-black text-white leading-tight">Wie heeft nu de meeste kaarten?</h3>
+            <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">{t("de bus in jij")}</p>
+            <h3 className="text-3xl font-black text-white leading-tight">{t("Wie heeft nu de meeste kaarten?")}</h3>
             <p className="text-slate-300 text-sm"></p>
           </div>
 
@@ -2387,7 +2419,7 @@ const App: React.FC = () => {
             onClick={() => setIsSelectingBusPlayer(false)}
             className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
           >
-            Annuleren
+            {t("Annuleren")}
           </button>
         </div>
       </div>
@@ -2420,15 +2452,15 @@ const App: React.FC = () => {
 
               <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
               <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
-                Naar de Bus!
+                {t("Naar de Bus!")}
               </div>
             </div>
           )}
 
           <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
             <div className="space-y-4 text-left">
-              <p className="text-[11px] uppercase font-black tracking-[0.25em] text-amber-300 text-center">een echte piramide</p>
-              <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">Bouw deze piramide op tafel</h2>
+              <p className="text-[11px] uppercase font-black tracking-[0.25em] text-amber-300 text-center">{t("een echte piramide")}</p>
+              <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">{t("Bouw deze piramide op tafel")}</h2>
 
               <div className="w-full flex flex-col items-center gap-2 mt-2">
                 {Array.from({ length: settings.pyramidRows }, (_, i) => i + 1).map(row => (
@@ -2445,12 +2477,12 @@ const App: React.FC = () => {
 
               <div className="space-y-2 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-lg font-black text-white">Bouw een Piramide starter guide</p>
+                  <p className="text-lg font-black text-white">{t("Bouw een Piramide starter guide")}</p>
                   <button
                     onClick={() => setIsPyramidInstructionsCollapsed(prev => !prev)}
                     className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200 hover:text-amber-100 transition-colors"
                   >
-                    {isPyramidInstructionsCollapsed ? 'Toon' : 'Verberg'}
+                    {isPyramidInstructionsCollapsed ? t('Toon') : t('Verberg')}
                     <ChevronDown
                       size={16}
                       className={`transition-transform duration-300 ${isPyramidInstructionsCollapsed ? 'rotate-0' : 'rotate-180'}`}
@@ -2459,10 +2491,10 @@ const App: React.FC = () => {
                 </div>
                 <div className={`transition-all duration-300 ease-in-out overflow-hidden ${!isPyramidInstructionsCollapsed ? 'max-h-96' : 'max-h-0'}`}>
                   <div className="space-y-1 pt-2">
-                    <p>1.  Leg speelkaarten met het plaatje naar beneden in een piramidevorm (duh)</p>
-                    <p>2.  Start onderaan met {settings.pyramidRows} kaarten in de breedste rij</p>
-                    <p>3.  Elke volgende rij heeft één kaart minder tot je een bovenste kaart hebt</p>
-                    <p>4.  Draai kaarten rij voor rij om, van onder naar boven</p>
+                    <p>1.  {t("Leg speelkaarten met het plaatje naar beneden in een piramidevorm (duh)")}</p>
+                    <p>2.  {t("Start onderaan met")} {settings.pyramidRows} {t("kaarten in de breedste rij")}</p>
+                    <p>3.  {t("Elke volgende rij heeft één kaart minder tot je een bovenste kaart hebt")}</p>
+                    <p>4.  {t("Draai kaarten rij voor rij om, van onder naar boven")}</p>
                   </div>
                 </div>
               </div>
@@ -2478,7 +2510,7 @@ const App: React.FC = () => {
 
               >
 
-                Naar de Bus
+                {t("Naar de Bus")}
 
               </button>
 
@@ -2504,7 +2536,7 @@ const App: React.FC = () => {
 
               >
 
-                Toch een Digitale Piramide
+                {t("Toch een Digitale Piramide")}
 
               </button>
 
@@ -2556,8 +2588,8 @@ const App: React.FC = () => {
               <button onClick={() => setPendingMatches(null)} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
 
               <div className="p-6 text-center border-b border-white/5">
-                <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">MATCH!</h3>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Wie legt op?</p>
+                <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">{t("MATCH!")}</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">{t("Wie legt op?")}</p>
               </div>
 
               <div className="p-5 grid grid-cols-2 gap-3">
@@ -2576,7 +2608,7 @@ const App: React.FC = () => {
               </div>
               <div className="bg-black/50 p-3 text-center">
                 <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                  <ArrowRight size={12} /> Uitdelen: {getSipsText(pendingMatches.sips)}
+                  <ArrowRight size={12} /> {t(" Uitdelen: ")} {getSipsText(pendingMatches.sips)}
                 </p>
               </div>
             </div>
@@ -2587,8 +2619,8 @@ const App: React.FC = () => {
 
         <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div>
-            <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">Piramide</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Draai kaarten om</p>
+            <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">{t("Piramide")}</h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t("Draai kaarten om")}</p>
           </div>
         </div>
 
@@ -2609,7 +2641,7 @@ const App: React.FC = () => {
               onClick={proceedToBus}
               className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
             >
-              <BusFront size={28} /> NAAR DE BUS <ArrowRight size={28} strokeWidth={3} />
+              <BusFront size={28} /> {t(" NAAR DE BUS ")} <ArrowRight size={28} strokeWidth={3} />
             </button>
           </div>
         )}
@@ -2687,9 +2719,9 @@ const App: React.FC = () => {
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
-          <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">Gedeelde Bus</h2>
+          <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">{t("Gedeelde Bus")}</h2>
           <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
-            <span className="text-white border-b-2 border-red-500">{victim.name}</span>, Wie neem je mee de bus in?
+            <span className="text-white border-b-2 border-red-500">{victim.name}</span>{t(", Wie neem je mee de bus in?")}
           </p>
 
           <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
@@ -2697,7 +2729,7 @@ const App: React.FC = () => {
               onClick={() => handleSharedBusSelection(null)}
               className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
             >
-              NIEMAND
+              {t("NIEMAND")}
             </button>
             {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && !p.isImmune).map(p => (
               <button
@@ -2741,7 +2773,7 @@ const App: React.FC = () => {
       return (
         <RootContainer className="items-center justify-center" disableBaseBg showTexture={false} disableSafeTop>
           <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out p-4" style={{ ...((busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-            <h1 className="text-3xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">Samen in de bus!</h1>
+            <h1 className="text-3xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">{t("Samen in de bus!")}</h1>
             <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
               {busPassengers.map(p => (
                 <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
@@ -2787,12 +2819,12 @@ const App: React.FC = () => {
               <div className={busPanelClasses}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                   <div className="space-y-1 text-center md:text-left">
-                    <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">Fysieke bus</p>
-                    <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">De Busrit</h2>
-                    <p className="text-slate-300 text-sm">Passagier{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
+                    <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">{t("Fysieke bus")}</p>
+                    <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t("De Busrit")}</h2>
+                    <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                   </div>
                   <div className="text-right text-slate-200 text-[11px] uppercase font-black tracking-[0.25em] bg-white/5 border border-white/10 px-3 py-2 rounded-2xl self-start md:self-center">
-                    Kaart {physicalBusPosition} / {settings.busLength}
+                    {t("Kaart")} {physicalBusPosition} / {settings.busLength}
                   </div>
                 </div>
 
@@ -2800,7 +2832,7 @@ const App: React.FC = () => {
                   <div className="flex items-center justify-between text-[11px] uppercase font-black tracking-[0.25em] text-amber-200 flex-wrap gap-2">
                     <span className="flex items-center gap-2">
                       <Sparkles size={16} className="text-amber-300" />
-                      Voortgang
+                      {t("Voortgang")}
                     </span>
                   </div>
                   <div
@@ -2834,12 +2866,12 @@ const App: React.FC = () => {
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3 text-slate-100 text-sm leading-relaxed">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-lg font-black text-white">De Busrit met echte Kaarten</p>
+                    <p className="text-lg font-black text-white">{t("De Busrit met echte Kaarten")}</p>
                     <button
                       onClick={() => setIsBusInstructionsCollapsed(prev => !prev)}
                       className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-200 hover:text-white transition-colors"
                     >
-                      {isBusInstructionsCollapsed ? 'Toon' : 'Verberg'}
+                      {isBusInstructionsCollapsed ? t('Toon') : t('Verberg')}
                       <ChevronDown
                         size={16}
                         className={`transition-transform duration-300 ${isBusInstructionsCollapsed ? 'rotate-0' : 'rotate-180'}`}
@@ -2848,12 +2880,12 @@ const App: React.FC = () => {
                   </div>
                   <div className={`transition-all duration-300 ease-in-out overflow-hidden ${!isBusInstructionsCollapsed ? 'max-h-96' : 'max-h-0'}`}>
                     <div className="space-y-1 pt-2">
-                      <p>1.  Kies iemand om de kaarten uit te delen, bijvoorbeeld {randomPlayerForInstructions?.name || 'jij'}.</p>
-                      <p>2.  Leg een rij van {settings.busLength} kaarten met de afbeelding naar beneden.</p>
-                      <p>3.  Raad hoger of lager dan de vorige kaart, de eerste kaart is altijd omgedraaid.</p>
-                      <p>4.  Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.</p>
-                      <p>5.  Goed? Ga door naar de volgende kaart.</p>
-                      <p>6.  Hele rij gehaald? Je mag uit de bus!</p>
+                      <p>1.  {t("Kies iemand om de kaarten uit te delen, bijvoorbeeld")} {randomPlayerForInstructions?.name || t('jij')}.</p>
+                      <p>2.  {t("Leg een rij van")} {settings.busLength} {t("kaarten met de afbeelding naar beneden.")}</p>
+                      <p>3.  {t("Raad hoger of lager dan de vorige kaart, de eerste kaart is altijd omgedraaid.")}</p>
+                      <p>4.  {t("Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.")}</p>
+                      <p>5.  {t("Goed? Ga door naar de volgende kaart.")}</p>
+                      <p>6.  {t("Hele rij gehaald? Je mag uit de bus!")}</p>
                     </div>
                   </div>
                 </div>
@@ -2864,14 +2896,14 @@ const App: React.FC = () => {
                     className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-black text-lg sm:text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(34,197,94,0.35)] border border-emerald-300/50 active:scale-[0.99] transition-all"
                   >
                     <ThumbsUp size={26} />
-                    Correct
+                    {t("Correct")}
                   </button>
                   <button
                     onClick={() => handlePhysicalBusGuess('incorrect')}
                     className="flex items-center justify-center gap-3 w-full bg-gradient-to-br from-red-600 to-red-800 text-white font-black text-lg sm:text-xl py-4 rounded-2xl shadow-[0_12px_30px_rgba(239,68,68,0.35)] border border-red-300/50 active:scale-[0.99] transition-all"
                   >
                     <ThumbsDown size={26} />
-                    Incorrect
+                    {t("Incorrect")}
                   </button>
                 </div>
 
@@ -2880,7 +2912,7 @@ const App: React.FC = () => {
                     onClick={() => startDigitalBus(busPassengers)}
                     className={`w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-opacity duration-300 underline underline-offset-4 decoration-slate-500/70 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                   >
-                    Toch een Digitale Bus
+                    {t("Toch een Digitale Bus")}
                   </button>
                 </div>
               </div>
@@ -2897,7 +2929,7 @@ const App: React.FC = () => {
                   animation: 'end-gradient 3s ease-in-out infinite',
                 }}
               >
-                Naar het Einde <ArrowRight size={24} strokeWidth={3} />
+                {t("Naar het Einde")} <ArrowRight size={24} strokeWidth={3} />
               </button>
             </div>
           )}
@@ -2916,22 +2948,22 @@ const App: React.FC = () => {
         {/* Header - Redesigned */}
         <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
           <div>
-            <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">De Bus</h2>
+            <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">{t("De Bus")}</h2>
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
               <BusFront size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
-              <span>{remainingBusCards} over</span>
+              <span>{remainingBusCards} {t(" over")}</span>
             </div>
             {settings.busDecks > 1 && (
               <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-                <span>Pakje</span>
+                <span>{t("Pakje")}</span>
                 <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
               </div>
             )}
             <div className="text-right">
               <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                {busPassengers.length > 1 ? 'Passagiers' : 'Passagier'}
+                {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}
               </span>
               <span className="text-white text-sm font-black">{passengerNames}</span>
             </div>
@@ -2954,7 +2986,7 @@ const App: React.FC = () => {
                 ref={el => busCardRefs.current[index] = el}
                 className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}
               >
-                {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">Start</span>}
+                {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
 
                 <PlayingCard
                   card={card}
@@ -3001,21 +3033,21 @@ const App: React.FC = () => {
           <div className="flex items-center justify-center gap-4">
             {isBusDeckExhausted ? (
               <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
-                Pakje leeg – pak een nieuw deck om verder te gaan
+                {t("Pakje leeg – pak een nieuw deck om verder te gaan")}
               </div>
             ) : busWrongCardIndex === null && !isBusWon ? (
               <div className="flex flex-col gap-3 w-full">
                 <div className="flex items-center justify-center gap-4">
                   <button onClick={() => handleBusGuess('HIGHER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500">
                     <ChevronUp size={32} className="text-green-400 mb-1 group-hover:scale-125 transition-transform" />
-                    <span className="text-sm uppercase tracking-[0.2em]">Hoger</span>
+                    <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
                   </button>
                   <button onClick={() => handleBusGuess('LOWER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500">
                     <ChevronDown size={32} className="text-red-400 mb-1 group-hover:scale-125 transition-transform" />
-                    <span className="text-sm uppercase tracking-[0.2em]">Lager</span>
+                    <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
                   </button>
                 </div>
-                <button onClick={() => handleBusGuess('EQUAL')} className="w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95">GELIJK</button>
+                <button onClick={() => handleBusGuess('EQUAL')} className="w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95">{t("GELIJK")}</button>
               </div>
             ) : isBusWon ? (
               <button
@@ -3027,7 +3059,7 @@ const App: React.FC = () => {
                   animation: 'end-gradient 3s ease-in-out infinite',
                 }}
               >
-                Naar het Einde <ArrowRight size={24} strokeWidth={3} />
+                {t("Naar het Einde")} <ArrowRight size={24} strokeWidth={3} />
               </button>
             ) : (
               <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
@@ -3046,12 +3078,12 @@ const App: React.FC = () => {
         <Confetti />
         <div className="flex-1 overflow-y-auto p-6 relative z-10">
           <div className="text-center mb-10 mt-8">
-            <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">Uitslag</h1>
+            <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">{t("Uitslag")}</h1>
             {immunePlayerId && (
               <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4">
                 <Shield size={20} className="text-yellow-400" />
                 <div>
-                  <p className="text-yellow-400 text-[10px] font-black uppercase leading-none tracking-widest mb-1">Immuniteit</p>
+                  <p className="text-yellow-400 text-[10px] font-black uppercase leading-none tracking-widest mb-1">{t("Immuniteit")}</p>
                   <p className="text-white font-bold text-lg leading-none">{players.find(p => p.id === immunePlayerId)?.name}</p>
                 </div>
               </div>
@@ -3061,8 +3093,8 @@ const App: React.FC = () => {
           <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden mb-8 shadow-2xl">
             <div className="grid grid-cols-12 bg-black/40 p-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
               <div className="col-span-1 text-center">#</div>
-              <div className="col-span-7">Speler</div>
-              <div className="col-span-4 text-right">Slokken</div>
+              <div className="col-span-7">{t("Speler")}</div>
+              <div className="col-span-4 text-right">{t("Slokken")}</div>
             </div>
             {sortedPlayers.map((p, i) => (
               <div key={p.id} className={`grid grid-cols-12 p-4 items-center border-b border-white/5 ${p.id === immunePlayerId ? 'bg-yellow-500/10' : ''}`}>
@@ -3082,7 +3114,7 @@ const App: React.FC = () => {
           </div>
 
           <button onClick={handleGameOverContinue} className="w-full bg-white text-black py-5 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.3)] text-lg uppercase tracking-widest hover:scale-105 transition-transform active:scale-95">
-            Terug naar Menu
+            {t("Terug naar Menu")}
           </button>
         </div>
       </RootContainer>
