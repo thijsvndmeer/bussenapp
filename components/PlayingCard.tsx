@@ -21,10 +21,10 @@ const getRankString = (rank: Rank) => {
 
 const getSuitIcon = (suit: Suit, iconSize: number | string, fill: boolean = true) => {
   const props = {
-      size: typeof iconSize === 'number' ? iconSize : undefined,
-      className: typeof iconSize === 'string' ? iconSize : undefined,
-      fill: fill ? "currentColor" : "none",
-      strokeWidth: fill ? 0 : 2
+    size: typeof iconSize === 'number' ? iconSize : undefined,
+    className: typeof iconSize === 'string' ? iconSize : undefined,
+    fill: fill ? "currentColor" : "none",
+    strokeWidth: fill ? 0 : 2
   };
 
   switch (suit) {
@@ -35,7 +35,7 @@ const getSuitIcon = (suit: Suit, iconSize: number | string, fill: boolean = true
   }
 };
 
-const renderPips = (card: Card, size: PlayingCardProps['size']) => {
+const renderPips = (card: Card, size: 'sm' | 'md' | 'lg' | 'xl') => {
   const isFaceCard = card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING;
   const isAce = card.rank === Rank.ACE;
   if (isFaceCard || isAce) return null;
@@ -49,39 +49,39 @@ const renderPips = (card: Card, size: PlayingCardProps['size']) => {
   const InvertedPip = () => <div className="rotate-180">{getSuitIcon(card.suit, pipSize)}</div>;
 
   if (rankVal === 2) {
-      return <div className="flex justify-center flex-col items-center gap-10 h-full py-4"><Pip /><InvertedPip /></div>;
+    return <div className="flex justify-center flex-col items-center gap-10 h-full py-4"><Pip /><InvertedPip /></div>;
   }
   if (rankVal === 3) {
-      return <div className="flex justify-center flex-col items-center gap-2 h-full py-4"><Pip /><Pip /><InvertedPip /></div>;
+    return <div className="flex justify-center flex-col items-center gap-2 h-full py-4"><Pip /><Pip /><InvertedPip /></div>;
   }
 
   // General Grid for 4-10
   return (
-      <div className="absolute inset-8 grid grid-cols-3 gap-1">
-          {/* Left Col */}
-          <div className="flex flex-col justify-between items-center">
-              <Pip />
-              {(rankVal >= 6) && <Pip />}
-              {(rankVal >= 9) && <InvertedPip />}
-              <InvertedPip />
-          </div>
-
-          {/* Center Col */}
-          <div className="flex flex-col justify-around items-center py-2">
-              {(rankVal === 5 || rankVal === 9) && <Pip />}
-              {(rankVal === 7 || rankVal === 8 || rankVal === 10) && <Pip />}
-              {(rankVal === 8 || rankVal === 10) && <InvertedPip />}
-              {(rankVal === 7 && <div className="h-4"></div>)} {/* Spacer */}
-          </div>
-
-          {/* Right Col */}
-          <div className="flex flex-col justify-between items-center">
-              <Pip />
-              {(rankVal >= 6) && <Pip />}
-              {(rankVal >= 9) && <InvertedPip />}
-              <InvertedPip />
-          </div>
+    <div className="absolute inset-8 grid grid-cols-3 gap-1">
+      {/* Left Col */}
+      <div className="flex flex-col justify-between items-center">
+        <Pip />
+        {(rankVal >= 6) && <Pip />}
+        {(rankVal >= 9) && <InvertedPip />}
+        <InvertedPip />
       </div>
+
+      {/* Center Col */}
+      <div className="flex flex-col justify-around items-center py-2">
+        {(rankVal === 5 || rankVal === 9) && <Pip />}
+        {(rankVal === 7 || rankVal === 8 || rankVal === 10) && <Pip />}
+        {(rankVal === 8 || rankVal === 10) && <InvertedPip />}
+        {(rankVal === 7 && <div className="h-4"></div>)} {/* Spacer */}
+      </div>
+
+      {/* Right Col */}
+      <div className="flex flex-col justify-between items-center">
+        <Pip />
+        {(rankVal >= 6) && <Pip />}
+        {(rankVal >= 9) && <InvertedPip />}
+        <InvertedPip />
+      </div>
+    </div>
   );
 };
 
@@ -93,28 +93,24 @@ interface PlayingCardProps {
   onClick?: () => void;
   highlight?: boolean;
   disabled?: boolean;
-  showRankOnly?: boolean;
 }
 
-const PlayingCard: React.FC<PlayingCardProps> = ({ 
-  card, 
-  isFaceDown = false, 
-  size = 'md', 
+const PlayingCard: React.FC<PlayingCardProps> = ({
+  card,
+  isFaceDown = false,
+  size = 'md',
   className = '',
   onClick,
   highlight = false,
   disabled = false,
-  showRankOnly = false
 }) => {
 
   const sizeConfig = CARD_SIZES[size];
-  const isRed = useMemo(() => !!card && (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS), [card]);
-  const isFaceCard = useMemo(() => !!card && (card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING), [card]);
-  const isAce = useMemo(() => !!card && card.rank === Rank.ACE, [card]);
-  const rankLabel = useMemo(() => card ? getRankString(card.rank) : '', [card]);
-  const pipContent = useMemo(() => card ? renderPips(card, size) : null, [card, size]);
-
-  const isFlipped = isFaceDown;
+  const isRed = !!card && (card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS);
+  const isFaceCard = !!card && (card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING);
+  const isAce = !!card && card.rank === Rank.ACE;
+  const rankLabel = card ? getRankString(card.rank) : '';
+  const pipContent = useMemo(() => card ? renderPips(card, size as 'sm' | 'md' | 'lg' | 'xl') : null, [card, size]);
 
   return (
     <div
@@ -125,10 +121,10 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
     >
       <div className={`
         w-full h-full relative preserve-3d transition-transform duration-500 cubic-bezier(0.175, 0.885, 0.32, 1.275)
-        ${isFlipped ? 'rotate-y-180' : ''}
+        ${isFaceDown ? 'rotate-y-180' : ''}
         ${onClick && !disabled ? 'cursor-pointer' : ''}
       `}>
-        
+
         {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
@@ -139,11 +135,11 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
           overflow-hidden
         `}>
-           {/* Texture Overlay */}
-           <div className="absolute inset-0 opacity-10 pointer-events-none" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`}}></div>
-           
-           {/* Safe Area / Border Helper */}
-           <div className="absolute inset-0 rounded-[inherit] border border-slate-200/50 pointer-events-none"></div>
+          {/* Texture Overlay */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")` }}></div>
+
+          {/* Safe Area / Border Helper */}
+          <div className="absolute inset-0 rounded-[inherit] border border-slate-200/50 pointer-events-none"></div>
 
           {card && (
             <>
@@ -161,50 +157,50 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
               {/* --- Center Content --- */}
               <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-                  
-                  {/* ACE */}
-                  {isAce && (
-                      <div className="transform scale-150 drop-shadow-sm">
-                          {getSuitIcon(card.suit, size === 'sm' ? 24 : size === 'md' ? 60 : 100)}
+
+                {/* ACE */}
+                {isAce && (
+                  <div className="transform scale-150 drop-shadow-sm">
+                    {getSuitIcon(card.suit, size === 'sm' ? 24 : size === 'md' ? 60 : 100)}
+                  </div>
+                )}
+
+                {/* FACE CARDS (J, Q, K) */}
+                {isFaceCard && (
+                  <div className={`w-full h-3/4 border-2 ${isRed ? 'border-[#e11d48]/30' : 'border-slate-800/30'} rounded-lg flex flex-col justify-between p-2 relative overflow-hidden bg-gradient-to-b from-transparent via-yellow-500/5 to-transparent`}>
+                    {/* Decorative inner lines */}
+                    <div className="absolute inset-0.5 border border-yellow-600/20 rounded opacity-50"></div>
+
+                    {/* Top Icon */}
+                    <div className="flex justify-start">
+                      <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'} opacity-80`}>
+                        <Crown size={size === 'sm' ? 16 : 32} strokeWidth={1.5} fill="currentColor" className="text-yellow-600" />
+                        <div className="-mt-1 ml-2">{getSuitIcon(card.suit, size === 'sm' ? 12 : 24)}</div>
                       </div>
-                  )}
+                    </div>
 
-                  {/* FACE CARDS (J, Q, K) */}
-                  {isFaceCard && (
-                      <div className={`w-full h-3/4 border-2 ${isRed ? 'border-[#e11d48]/30' : 'border-slate-800/30'} rounded-lg flex flex-col justify-between p-2 relative overflow-hidden bg-gradient-to-b from-transparent via-yellow-500/5 to-transparent`}>
-                           {/* Decorative inner lines */}
-                           <div className="absolute inset-0.5 border border-yellow-600/20 rounded opacity-50"></div>
-                           
-                           {/* Top Icon */}
-                           <div className="flex justify-start">
-                               <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'} opacity-80`}>
-                                    <Crown size={size === 'sm' ? 16 : 32} strokeWidth={1.5} fill="currentColor" className="text-yellow-600" />
-                                    <div className="-mt-1 ml-2">{getSuitIcon(card.suit, size === 'sm' ? 12 : 24)}</div>
-                               </div>
-                           </div>
+                    {/* Large Letter Background */}
+                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif font-black ${size === 'sm' ? 'text-4xl' : 'text-8xl'} opacity-10 ${isRed ? 'text-red-900' : 'text-slate-900'}`}>
+                      {rankLabel}
+                    </div>
 
-                           {/* Large Letter Background */}
-                          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif font-black ${size === 'sm' ? 'text-4xl' : 'text-8xl'} opacity-10 ${isRed ? 'text-red-900' : 'text-slate-900'}`}>
-                              {rankLabel}
-                          </div>
-
-                           {/* Bottom Icon (Inverted) */}
-                           <div className="flex justify-end transform rotate-180">
-                               <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'} opacity-80`}>
-                                    <Crown size={size === 'sm' ? 16 : 32} strokeWidth={1.5} fill="currentColor" className="text-yellow-600" />
-                                    <div className="-mt-1 ml-2">{getSuitIcon(card.suit, size === 'sm' ? 12 : 24)}</div>
-                               </div>
-                           </div>
+                    {/* Bottom Icon (Inverted) */}
+                    <div className="flex justify-end transform rotate-180">
+                      <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'} opacity-80`}>
+                        <Crown size={size === 'sm' ? 16 : 32} strokeWidth={1.5} fill="currentColor" className="text-yellow-600" />
+                        <div className="-mt-1 ml-2">{getSuitIcon(card.suit, size === 'sm' ? 12 : 24)}</div>
                       </div>
-                  )}
+                    </div>
+                  </div>
+                )}
 
-                  {/* NUMBER CARDS (Pips) */}
-                  {!isAce && !isFaceCard && size !== 'sm' && pipContent}
-                  
-                  {/* Fallback for small number cards */}
-                  {!isAce && !isFaceCard && size === 'sm' && (
-                      <div className="font-serif font-bold text-2xl opacity-20 tracking-tighter">{rankLabel}</div>
-                  )}
+                {/* NUMBER CARDS (Pips) */}
+                {!isAce && !isFaceCard && size !== 'sm' && pipContent}
+
+                {/* Fallback for small number cards */}
+                {!isAce && !isFaceCard && size === 'sm' && (
+                  <div className="font-serif font-bold text-2xl opacity-20 tracking-tighter">{rankLabel}</div>
+                )}
               </div>
             </>
           )}
@@ -220,21 +216,21 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
           overflow-hidden
         `}>
-            {/* Realistic Back Pattern (CSS Pattern) */}
-            <div className="w-full h-full opacity-60" style={{
-                backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
-                backgroundSize: '8px 8px',
-                backgroundPosition: '0 0, 4px 4px'
-            }}></div>
-            
-            {/* Center Logo/Graphic */}
-            <div className="absolute inset-0 flex items-center justify-center">
-                 <div className="w-1/2 h-1/3 border-2 border-white/30 rounded-full flex items-center justify-center backdrop-blur-[1px]">
-                     <div className="text-white/50 font-serif font-bold italic tracking-widest transform -rotate-12 text-sm">
-                         BUSSEN
-                     </div>
-                 </div>
+          {/* Realistic Back Pattern (CSS Pattern) */}
+          <div className="w-full h-full opacity-60" style={{
+            backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
+            backgroundSize: '8px 8px',
+            backgroundPosition: '0 0, 4px 4px'
+          }}></div>
+
+          {/* Center Logo/Graphic */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-1/2 h-1/3 border-2 border-white/30 rounded-full flex items-center justify-center backdrop-blur-[1px]">
+              <div className="text-white/50 font-serif font-bold italic tracking-widest transform -rotate-12 text-sm">
+                BUSSEN
+              </div>
             </div>
+          </div>
         </div>
 
       </div>
