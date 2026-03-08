@@ -22,6 +22,9 @@ const config: CapacitorConfig = {
       banner: {
         enabled: true
       }
+    },
+    StatusBar: {
+      overlaysWebView: true
     }
   }
 };

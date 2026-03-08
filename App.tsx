@@ -5,31 +5,18 @@ import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
 
 const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
 const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
 
-type CameraPlugin = {
-  getPhoto: (options: {
-    quality?: number;
-    allowEditing?: boolean;
-    resultType: 'uri' | 'base64' | 'dataUrl';
-    source: 'CAMERA' | 'PHOTOS' | 'PROMPT';
-    width?: number;
-    height?: number;
-  }) => Promise<{ dataUrl?: string }>;
-};
-
 type AdMobPlugin = {
   initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
   prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
   showInterstitial?: () => Promise<void>;
 };
-
-const Camera = registerPlugin<CameraPlugin>('Camera');
-
 const getAdMobPlugin = (): AdMobPlugin | null => {
   const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
   return plugin ?? null;
@@ -324,6 +311,7 @@ interface RootContainerProps {
   style?: React.CSSProperties;
   disableBaseBg?: boolean;
   showTexture?: boolean;
+  disableSafeTop?: boolean;
 }
 
 interface PersistedPlayerState {
@@ -428,7 +416,7 @@ const GlobalAnimations = () => (
 
 
 
-const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true }) => {
+const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false }) => {
   let bgClass = disableBaseBg ? '' : 'bg-animated-gradient';
   let additionalStyles: React.CSSProperties = {};
 
@@ -445,8 +433,18 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
 
   const combinedStyles = { ...additionalStyles, ...style };
 
+  const isAndroid = Capacitor.getPlatform() === 'android';
+  const safeTopPadding = isAndroid ? 'max(env(safe-area-inset-top, 0px), 16px)' : 'env(safe-area-inset-top, 0px)';
+  const containerPaddingTop = disableSafeTop ? '0px' : safeTopPadding;
+
+  const finalStyle = {
+    paddingTop: containerPaddingTop,
+    '--safe-top': safeTopPadding,
+    ...combinedStyles,
+  } as React.CSSProperties;
+
   return (
-    <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={combinedStyles}>
+    <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
 
       {/* Scanlines / Overlay effect */}
@@ -499,8 +497,9 @@ const App: React.FC = () => {
   const [isPhotoOptionsModalOpen, setIsPhotoOptionsModalOpen] = useState(false); // New state for photo options modal
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputCameraRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
-  const adInterstitialReadyRef = useRef(false);
+  const adInterstitialPromiseRef = useRef<Promise<void> | null>(null);
   const lastAdShownRef = useRef<number>(0);
   const AD_COOLDOWN_MS = 60_000; // 1 minute cooldown between ads
 
@@ -674,26 +673,32 @@ const App: React.FC = () => {
   }, []);
 
   // Pre-load an interstitial ad so it's ready to display instantly
-  const prepareAdInterstitial = useCallback(async () => {
-    if (adInterstitialReadyRef.current) return; // Already prepared
+  const prepareAdInterstitial = useCallback(() => {
+    // If we're already loading or have loaded an ad, just return that Promise
+    if (adInterstitialPromiseRef.current) return adInterstitialPromiseRef.current;
 
     const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.prepareInterstitial !== 'function') return;
+    if (!adMob || typeof adMob.prepareInterstitial !== 'function') return Promise.resolve();
 
-    try {
-      if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
-        await adMob.initialize({
-          appId: ADMOB_APP_ID,
-          requestTrackingAuthorization: true,
-        });
-        adMobReadyRef.current = true;
+    const loadAd = async () => {
+      try {
+        if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
+          await adMob.initialize({
+            appId: ADMOB_APP_ID,
+            requestTrackingAuthorization: true,
+          });
+          adMobReadyRef.current = true;
+        }
+
+        await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
+      } catch (error) {
+        console.warn('Interstitial voorbereiden mislukt', error);
+        adInterstitialPromiseRef.current = null; // Clear so we can try again later
       }
+    };
 
-      await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
-      adInterstitialReadyRef.current = true;
-    } catch (error) {
-      console.warn('Interstitial voorbereiden mislukt', error);
-    }
+    adInterstitialPromiseRef.current = loadAd();
+    return adInterstitialPromiseRef.current;
   }, []);
 
   // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
@@ -709,26 +714,17 @@ const App: React.FC = () => {
     if (!adMob || typeof adMob.showInterstitial !== 'function') return;
 
     try {
-      // If not pre-loaded yet, prepare now as a fallback
-      if (!adInterstitialReadyRef.current && typeof adMob.prepareInterstitial === 'function') {
-        if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
-          await adMob.initialize({
-            appId: ADMOB_APP_ID,
-            requestTrackingAuthorization: true,
-          });
-          adMobReadyRef.current = true;
-        }
-        await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
-      }
+      // Ensure it is prepared (this will wait if a background preload is still running)
+      await prepareAdInterstitial();
 
       await adMob.showInterstitial();
       lastAdShownRef.current = Date.now();
-      adInterstitialReadyRef.current = false; // Reset – need to prepare again for next show
+      adInterstitialPromiseRef.current = null; // Reset – force fresh preload for next time
     } catch (error) {
       console.warn('Interstitial tonen mislukt', error);
-      adInterstitialReadyRef.current = false; // Reset on failure too
+      adInterstitialPromiseRef.current = null; // Reset on failure too
     }
-  }, []);
+  }, [prepareAdInterstitial]);
 
   const persistPlayers = useCallback(() => {
     const payload: PersistedPlayerState = {
@@ -764,6 +760,7 @@ const App: React.FC = () => {
 
     // Hide status bar on native devices
     if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => { });
       StatusBar.hide().catch((e) => console.warn('Could not hide status bar', e));
     }
   }, [hydratePlayers, storageAvailable]);
@@ -888,16 +885,13 @@ const App: React.FC = () => {
   };
 
   const triggerFileCapture = (mode: 'camera' | 'gallery' = 'camera') => {
-    const input = fileInputRef.current;
-    if (!input) return;
-
     if (mode === 'camera') {
-      input.setAttribute('capture', 'user');
+      const input = fileInputCameraRef.current;
+      if (input) input.click();
     } else {
-      input.removeAttribute('capture');
+      const input = fileInputRef.current;
+      if (input) input.click();
     }
-
-    input.click();
   };
 
   const tryNativePhoto = async (
@@ -911,8 +905,8 @@ const App: React.FC = () => {
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
-        resultType: 'dataUrl',
-        source,
+        resultType: CameraResultType.DataUrl,
+        source: source === 'CAMERA' ? CameraSource.Camera : CameraSource.Photos,
         width: 640,
         height: 640,
       });
@@ -1935,6 +1929,7 @@ const App: React.FC = () => {
 
         <div className="flex-none space-y-3">
           <div className="flex gap-2 h-14">
+            <input type="file" ref={fileInputCameraRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
             <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
             <button
               onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
@@ -2469,7 +2464,7 @@ const App: React.FC = () => {
       );
     }
     return (
-      <RootContainer className="p-0" variant="pyramid" shake={screenShake}>
+      <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop>
         {manualBusSelectionOverlay}
         {loserReveal && (
           <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -2540,7 +2535,7 @@ const App: React.FC = () => {
 
 
 
-        <div className="flex-none flex justify-between items-center px-5 py-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl">
+        <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div>
             <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">Piramide</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Draai kaarten om</p>
@@ -2637,8 +2632,8 @@ const App: React.FC = () => {
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0];
     return (
-      <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false}>
-        <div className="flex-1 w-full h-full flex flex-col items-center justify-center" style={resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
+      <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false} disableSafeTop>
+        <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ ...((resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
@@ -2694,8 +2689,8 @@ const App: React.FC = () => {
   if (phase === GamePhase.THE_BUS) {
     if (isBusEntrance) {
       return (
-        <RootContainer className="items-center justify-center" disableBaseBg showTexture={false}>
-          <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out" style={busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle}>
+        <RootContainer className="items-center justify-center" disableBaseBg showTexture={false} disableSafeTop>
+          <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out p-4" style={{ ...((busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <h1 className="text-3xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">Samen in de bus!</h1>
             <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
               {busPassengers.map(p => (
@@ -2728,8 +2723,8 @@ const App: React.FC = () => {
         } backdrop-blur-xl rounded-3xl p-4 sm:p-6 space-y-6 transition-[background,box-shadow,border-color] duration-700 ease-out`;
 
       return (
-        <RootContainer disableBaseBg showTexture={false}>
-          <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-6 pb-28 pb-safe relative">
+        <RootContainer disableBaseBg showTexture={false} disableSafeTop>
+          <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <div
               className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
               style={{ ...physicalBusBgStyle, opacity: isBusWon ? 0 : 1 }}
@@ -2864,12 +2859,12 @@ const App: React.FC = () => {
     const remainingBusCards = busDeck.length;
 
     return (
-      <RootContainer className="p-0 relative" shake={screenShake} disableBaseBg showTexture={false}>
+      <RootContainer className="p-0 relative" shake={screenShake} disableBaseBg showTexture={false} disableSafeTop>
         <div className="absolute inset-0 -z-10" style={digitalBusBackgroundStyle}></div>
         {isBusWon && <Confetti />}
 
         {/* Header - Redesigned */}
-        <div className="flex-none flex items-center justify-between p-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap">
+        <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
           <div>
             <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">De Bus</h2>
           </div>
