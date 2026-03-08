@@ -4,6 +4,7 @@ import { Heart, Diamond, Club, Spade, Crown } from 'lucide-react';
 
 const CARD_SIZES = {
   sm: { width: 'w-14', height: 'h-20', text: 'text-base', cornerIcon: 10, radius: 'rounded-[6px]', p: 'p-1' },
+  base: { width: 'w-20', height: 'h-[112px]', text: 'text-lg', cornerIcon: 12, radius: 'rounded-[8px]', p: 'p-1.5' },
   md: { width: 'w-32', height: 'h-44', text: 'text-2xl', cornerIcon: 14, radius: 'rounded-[10px]', p: 'p-2.5' },
   lg: { width: 'w-48', height: 'h-64', text: 'text-4xl', cornerIcon: 20, radius: 'rounded-[14px]', p: 'p-4' },
   xl: { width: 'w-72', height: 'h-96', text: 'text-6xl', cornerIcon: 32, radius: 'rounded-[20px]', p: 'p-6' },
@@ -35,7 +36,7 @@ const getSuitIcon = (suit: Suit, iconSize: number | string, fill: boolean = true
   }
 };
 
-const renderPips = (card: Card, size: 'sm' | 'md' | 'lg' | 'xl') => {
+const renderPips = (card: Card, size: 'sm' | 'base' | 'md' | 'lg' | 'xl') => {
   const isFaceCard = card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING;
   const isAce = card.rank === Rank.ACE;
   if (isFaceCard || isAce) return null;
@@ -43,7 +44,7 @@ const renderPips = (card: Card, size: 'sm' | 'md' | 'lg' | 'xl') => {
   const pips = [];
   const rankVal = card.rank;
 
-  const pipSize = size === 'sm' ? 10 : size === 'md' ? 18 : size === 'lg' ? 24 : 40;
+  const pipSize = size === 'sm' ? 10 : size === 'base' ? 14 : size === 'md' ? 18 : size === 'lg' ? 24 : 40;
 
   const Pip = () => getSuitIcon(card.suit, pipSize);
   const InvertedPip = () => <div className="rotate-180">{getSuitIcon(card.suit, pipSize)}</div>;
@@ -88,7 +89,7 @@ const renderPips = (card: Card, size: 'sm' | 'md' | 'lg' | 'xl') => {
 interface PlayingCardProps {
   card: Card | null;
   isFaceDown?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'base' | 'md' | 'lg' | 'xl';
   className?: string;
   onClick?: () => void;
   highlight?: boolean;
@@ -110,7 +111,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   const isFaceCard = !!card && (card.rank === Rank.JACK || card.rank === Rank.QUEEN || card.rank === Rank.KING);
   const isAce = !!card && card.rank === Rank.ACE;
   const rankLabel = card ? getRankString(card.rank) : '';
-  const pipContent = useMemo(() => card ? renderPips(card, size as 'sm' | 'md' | 'lg' | 'xl') : null, [card, size]);
+  const pipContent = useMemo(() => card ? renderPips(card, size as 'sm' | 'base' | 'md' | 'lg' | 'xl') : null, [card, size]);
 
   return (
     <div
