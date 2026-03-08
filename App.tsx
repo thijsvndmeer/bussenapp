@@ -2162,26 +2162,76 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          {/* HAND - Compact Size */}
-          <div className="flex-none bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[100px]">
+          {/* HAND - Fixed Size */}
+          <div className="flex-none bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center">
             {/* Table Felt Texture */}
             <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>
 
             <p className="relative text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">Huidige Hand</p>
 
-            {/* Scrollable Hand Container - Reduced Height & Card Size */}
-            <div className="relative flex justify-center items-center overflow-x-auto py-1 gap-2 px-4 snap-x">
-              {activePlayer.hand.filter(c => !c.id.startsWith('physical')).length > 0 ? (
-                activePlayer.hand.filter(c => !c.id.startsWith('physical')).map((c, idx) => (
-                  <div key={c.id} className="snap-center flex-none transition-transform hover:scale-110 duration-300 origin-bottom" style={{ zIndex: idx }}>
-                    <PlayingCard card={c} size="sm" className="shadow-lg" />
-                  </div>
-                ))
+            <div className="relative flex justify-center items-center py-2 gap-2 sm:gap-3 px-2">
+              {settings.mode === GameMode.DIGITAL ? (
+                Array.from({ length: 4 }).map((_, idx) => {
+                  const digitalCards = activePlayer.hand.filter(c => !c.id.startsWith('physical'));
+                  const currentCardsCount = digitalCards.length;
+                  const isObtained = idx < currentCardsCount;
+                  const isCurrent = idx === currentCardsCount;
+
+                  if (isObtained) {
+                    const c = digitalCards[idx];
+                    return (
+                      <div key={c.id} className="flex-none transition-transform hover:-translate-y-2 duration-300 origin-bottom animate-pop" style={{ zIndex: idx }}>
+                        <PlayingCard card={c} size="base" className="shadow-lg" />
+                      </div>
+                    );
+                  } else if (isCurrent) {
+                    return (
+                      <div key={`current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
+                        <span className="text-green-500 font-bold text-2xl drop-shadow-md">?</span>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={`future-${idx}`} className="w-20 h-28 rounded-xl border-2 border-dashed border-slate-700/50 bg-slate-900/30 flex-none" style={{ zIndex: idx }}>
+                      </div>
+                    );
+                  }
+                })
               ) : (
-                settings.mode === GameMode.DIGITAL && <div className="text-slate-600 italic text-xs font-medium">Nog geen kaarten</div>
-              )}
-              {settings.mode === GameMode.PHYSICAL && (
-                <div className="text-slate-500 font-mono text-xs border border-dashed border-slate-700 rounded px-3 py-1">{activePlayer.hand.length} kaarten</div>
+                <div className="w-full flex justify-center gap-2 sm:gap-3">
+                  {Array.from({ length: 4 }).map((_, idx) => {
+                    const currentCardsCount = activePlayer.hand.length;
+                    const isObtained = idx < currentCardsCount;
+                    const isCurrent = idx === currentCardsCount;
+
+                    if (isObtained) {
+                      return (
+                        <div key={`phys-obtained-${idx}`} className="w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none animate-pop overflow-hidden relative" style={{ zIndex: idx }}>
+                          {/* Back texture */}
+                          <div className="absolute inset-0 opacity-60" style={{
+                            backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
+                            backgroundSize: '8px 8px',
+                            backgroundPosition: '0 0, 4px 4px'
+                          }}></div>
+                          <div className="w-[80%] h-[40%] rounded-full border-2 border-white/30 flex items-center justify-center backdrop-blur-[1px] relative z-10">
+                            <span className="text-white/50 font-serif font-bold italic tracking-widest transform -rotate-12 text-[9px]">BUSSEN</span>
+                          </div>
+                        </div>
+                      );
+                    } else if (isCurrent) {
+                      return (
+                        <div key={`phys-current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
+                          <span className="text-green-500 font-bold text-2xl drop-shadow-md">?</span>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={`phys-future-${idx}`} className="w-20 h-28 rounded-xl border-2 border-dashed border-slate-700/50 bg-slate-900/30 flex-none" style={{ zIndex: idx }}>
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
               )}
             </div>
           </div>
