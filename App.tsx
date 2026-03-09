@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -25,7 +25,7 @@ const getAdMobPlugin = (): AdMobPlugin | null => {
 
 // --- CONSTANTS & PHRASES ---
 
-const SUCCESS_PHRASES = [
+const DEFAULT_SUCCESS_PHRASES_NL = [
   "Lekker pik!", "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!",
   "ez W,", "Netjes!", "dat is m!", "Biem!", "Jaja!",
   "locked in,", "Heerlijk!", "top!", "insane!",
@@ -33,7 +33,7 @@ const SUCCESS_PHRASES = [
   "big brain,", "slayy,"
 ];
 
-const FAILURE_PHRASES = [
+const DEFAULT_FAILURE_PHRASES_NL = [
   "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii,",
   "zuipen kut,", "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
   "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje,",
@@ -41,12 +41,44 @@ const FAILURE_PHRASES = [
   "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Koekoek!", "Incapabele ziel.."
 ];
 
-const LOSER_TITLES = [
+const DEFAULT_LOSER_TITLES_NL = [
   "🍺🍺🍺", "De Lul", "L gepakt", "hahaha",
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je",
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
   "Coma zuipen!!", "Proost!"
 ];
+
+const DEFAULT_SUCCESS_PHRASES_EN = [
+  "Nice one!", "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
+  "ez W,", "Clean!", "that's it!", "Bam!", "Yes sir!",
+  "locked in,", "Lovely!", "perfect!", "insane!",
+  "neat,", "Bingo!", "clean.", "bam!",
+  "big brain,", "slayy,"
+];
+
+const DEFAULT_FAILURE_PHRASES_EN = [
+  "Bad luck!", "Drink up!", "Ouch!", "Aii,",
+  "cheers,", "lord, again??", "why are you so bad,", "skill issue,",
+  "Stupid!", "Out of luck!", "Oof...", "My bad,",
+  "just down it.", "lol,", "ha beer,", "mate..",
+  "Crybaby!", "so bad!", "Unbelievable!", "Cuckoo!", "Incapable soul.."
+];
+
+const DEFAULT_LOSER_TITLES_EN = [
+  "🍺🍺🍺", "The Loser", "Caught the L", "hahaha",
+  "🧌🧌", "Good luck friend", "ai ai ai", "there you go",
+  "💀💀", "🤡🤡", "so bad", "Hopeless",
+  "Drink up!!", "Cheers!"
+];
+
+type PhraseCategory = 'success' | 'failure' | 'loser';
+
+const DEFAULT_PHRASES: Record<string, Record<PhraseCategory, string[]>> = {
+  nl: { success: DEFAULT_SUCCESS_PHRASES_NL, failure: DEFAULT_FAILURE_PHRASES_NL, loser: DEFAULT_LOSER_TITLES_NL },
+  en: { success: DEFAULT_SUCCESS_PHRASES_EN, failure: DEFAULT_FAILURE_PHRASES_EN, loser: DEFAULT_LOSER_TITLES_EN },
+};
+
+const CUSTOM_PHRASES_KEY = 'bus-app-custom-phrases-v1';
 
 const PYRAMID_WARNING_PHRASES = [
   "Hoho! Begin onderaan, stiekemerds!",
@@ -512,6 +544,16 @@ const App: React.FC = () => {
 
   // Phrase Randomization State
   const [usedPhrases, setUsedPhrases] = useState<Set<string>>(new Set());
+  const [customPhrases, setCustomPhrases] = useState<Record<string, Record<PhraseCategory, string[]>>>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_PHRASES_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) { }
+    return { nl: { success: [], failure: [], loser: [] }, en: { success: [], failure: [], loser: [] } };
+  });
+  const [isPhraseEditorOpen, setIsPhraseEditorOpen] = useState(false);
+  const [editorCategory, setEditorCategory] = useState<PhraseCategory>('success');
+  const [editingPhraseText, setEditingPhraseText] = useState('');
 
   // Round 1-4 State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
@@ -926,7 +968,14 @@ const App: React.FC = () => {
     }
   };
 
-  const getUniquePhrase = (pool: string[]) => {
+  const getEffectivePhrases = (category: PhraseCategory): string[] => {
+    const langPhrases = customPhrases[lang]?.[category] || [];
+    if (langPhrases.length > 0) return langPhrases;
+    return DEFAULT_PHRASES[lang][category] || DEFAULT_PHRASES['nl'][category];
+  };
+
+  const getUniquePhrase = (poolOrCategory: string[] | PhraseCategory) => {
+    const pool = Array.isArray(poolOrCategory) ? poolOrCategory : getEffectivePhrases(poolOrCategory as PhraseCategory);
     let available = pool.filter(p => !usedPhrases.has(p));
     if (available.length === 0) {
       // Reset if all used
@@ -1334,7 +1383,7 @@ const App: React.FC = () => {
     if (correct) {
       triggerHaptic('success');
       playSound('success');
-      const phrase = getUniquePhrase(SUCCESS_PHRASES);
+      const phrase = getUniquePhrase('success');
       setFeedback({ text: `${t(phrase)} ${t("Goed geraden!")}`, type: 'success' });
       setShowConfetti(true);
       playSound('celebrate');
@@ -1342,7 +1391,7 @@ const App: React.FC = () => {
       triggerHaptic('error');
       triggerShake();
       playSound('fail');
-      const phrase = getUniquePhrase(FAILURE_PHRASES);
+      const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
@@ -1388,7 +1437,7 @@ const App: React.FC = () => {
     if (correct) {
       triggerHaptic('success');
       playSound('success');
-      const phrase = getUniquePhrase(SUCCESS_PHRASES);
+      const phrase = getUniquePhrase('success');
       setFeedback({ text: `${t(phrase)} ${t("Goed geraden!")}`, type: 'success' });
       setShowConfetti(true);
       playSound('celebrate');
@@ -1396,7 +1445,7 @@ const App: React.FC = () => {
       triggerHaptic('error');
       triggerShake();
       playSound('fail');
-      const phrase = getUniquePhrase(FAILURE_PHRASES);
+      const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
@@ -1436,7 +1485,7 @@ const App: React.FC = () => {
       triggerShake();
       playSound('fail');
       const sips = roundStep;
-      const phrase = getUniquePhrase(FAILURE_PHRASES);
+      const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("Jammer! Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
       currentPlayer.drinksTaken += sips;
     }
@@ -1669,7 +1718,7 @@ const App: React.FC = () => {
     resetBusState();
     const victim = findLoser();
     const driver = players.find(p => p.isDealer) || players[0];
-    const title = getUniquePhrase(LOSER_TITLES);
+    const title = getUniquePhrase('loser');
 
     setBusDriver(driver);
     setBusPassengers([victim]);
@@ -1688,7 +1737,7 @@ const App: React.FC = () => {
     triggerHaptic('majorLoss');
     const victim = findLoser();
     const driver = players.find(p => p.isDealer) || players[0];
-    const title = getUniquePhrase(LOSER_TITLES);
+    const title = getUniquePhrase('loser');
 
     setBusDriver(driver);
     setBusPassengers([victim]);
@@ -1716,7 +1765,7 @@ const App: React.FC = () => {
     const driver = players.find(p => p.isDealer) || players[0];
     setBusDriver(driver);
     resetBusState();
-    setLoserReveal({ player: passenger, title: getUniquePhrase(LOSER_TITLES) });
+    setLoserReveal({ player: passenger, title: getUniquePhrase('loser') });
     setBusPassengers([passenger]);
     setBusMode('physical');
     setIsSelectingBusPlayer(false);
@@ -1891,7 +1940,7 @@ const App: React.FC = () => {
       triggerShake();
       playSound('busFail');
       const sips = currentBusIndex;
-      const phrase = getUniquePhrase(FAILURE_PHRASES);
+      const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
 
@@ -1933,7 +1982,7 @@ const App: React.FC = () => {
     triggerShake();
     playSound('busFail');
     const sips = physicalBusPosition;
-    const phrase = getUniquePhrase(FAILURE_PHRASES);
+    const phrase = getUniquePhrase('failure');
     setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("opnieuw!")}`, type: 'error' });
 
     const newPlayers = [...players];
@@ -2156,10 +2205,14 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
-
-                <div className="mt-8 opacity-50">
-                  <p className="text-slate-400 font-medium">{t("Binnenkort beschikbaar...")}</p>
-                  <p className="text-xs text-slate-600">{t("Nieuwe instellingen komen hier.")}</p>
+                <div className="flex flex-col gap-3 w-full px-4 mt-4">
+                  <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
+                  <button
+                    onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}
+                    className="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Pencil size={16} /> {t("Berichten bewerken")}
+                  </button>
                 </div>
               </div>
 
@@ -2169,6 +2222,122 @@ const App: React.FC = () => {
               >
                 {t("Sluiten")}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Phrase Editor Modal */}
+        {isPhraseEditorOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in">
+            <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full h-[90vh] max-w-lg m-2 flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-800/50">
+                <div className="flex items-center gap-2">
+                  <Pencil size={20} className="text-red-500" />
+                  <h3 className="text-lg font-black text-white uppercase tracking-wider">{t("Berichten")} ({lang.toUpperCase()})</h3>
+                </div>
+                <button onClick={() => { setIsPhraseEditorOpen(false); setIsMoreSettingsOpen(true); }} className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-full">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex gap-2 p-3 bg-slate-900 overflow-x-auto snap-x hide-scrollbar border-b border-slate-800">
+                {(['success', 'failure', 'loser'] as PhraseCategory[]).map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setEditorCategory(cat)}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold snap-center whitespace-nowrap transition-all ${editorCategory === cat ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                  >
+                    {t(cat === 'success' ? "Goed" : cat === 'failure' ? "Fout" : "Bus Loser")}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">
+                {(() => {
+                  const effectivePhrases = getEffectivePhrases(editorCategory);
+                  return effectivePhrases.map((phrase, idx) => (
+                    <div key={`${editorCategory}-${idx}`} className="flex justify-between items-center bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 group">
+                      <span className="text-slate-200 font-medium break-words flex-1 pr-2">{phrase}</span>
+                      <button
+                        onClick={() => {
+                          const newPhrases = { ...customPhrases };
+                          if (!newPhrases[lang]) newPhrases[lang] = { success: [], failure: [], loser: [] };
+                          if (newPhrases[lang][editorCategory].length === 0) {
+                            newPhrases[lang][editorCategory] = [...DEFAULT_PHRASES[lang][editorCategory]];
+                          }
+                          newPhrases[lang][editorCategory] = newPhrases[lang][editorCategory].filter((_, i) => i !== idx);
+                          setCustomPhrases(newPhrases);
+                          localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                          triggerHaptic('light');
+                        }}
+                        className="text-slate-500 hover:text-red-500 p-2 transition-colors active:scale-95"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              <div className="p-4 bg-slate-800/80 border-t border-slate-700 space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={t("Nieuw bericht...")}
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500"
+                    value={editingPhraseText}
+                    onChange={e => setEditingPhraseText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && editingPhraseText.trim()) {
+                        const newPhrases = { ...customPhrases };
+                        if (!newPhrases[lang]) newPhrases[lang] = { success: [], failure: [], loser: [] };
+                        if (newPhrases[lang][editorCategory].length === 0) {
+                          newPhrases[lang][editorCategory] = [...DEFAULT_PHRASES[lang][editorCategory]];
+                        }
+                        newPhrases[lang][editorCategory].push(editingPhraseText.trim());
+                        setCustomPhrases(newPhrases);
+                        localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                        setEditingPhraseText('');
+                        triggerHaptic('success');
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (editingPhraseText.trim()) {
+                        const newPhrases = { ...customPhrases };
+                        if (!newPhrases[lang]) newPhrases[lang] = { success: [], failure: [], loser: [] };
+                        if (newPhrases[lang][editorCategory].length === 0) {
+                          newPhrases[lang][editorCategory] = [...DEFAULT_PHRASES[lang][editorCategory]];
+                        }
+                        newPhrases[lang][editorCategory].push(editingPhraseText.trim());
+                        setCustomPhrases(newPhrases);
+                        localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                        setEditingPhraseText('');
+                        triggerHaptic('success');
+                      }
+                    }}
+                    className="bg-red-600 text-white rounded-xl px-4 flex items-center justify-center hover:bg-red-500 transition-colors active:scale-95 shadow-lg"
+                  >
+                    <Plus size={24} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const newPhrases = { ...customPhrases };
+                    if (newPhrases[lang]) {
+                      newPhrases[lang][editorCategory] = [];
+                      setCustomPhrases(newPhrases);
+                      localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                      triggerHaptic('medium');
+                    }
+                  }}
+                  className="w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                >
+                  <RotateCcw size={14} /> {t("Herstel standaardberichten")}
+                </button>
+              </div>
             </div>
           </div>
         )}
