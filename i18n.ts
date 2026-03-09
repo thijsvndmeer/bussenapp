@@ -125,10 +125,8 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kies Afbeelding": "Choose Image",
         "Hoe wil je een foto toevoegen?": "How do you want to add a photo?",
         "Naam": "Name",
-        "Ronde": "Round",
         "Kies wie in The Bus moet": "Choose who must enter the Bus",
         "Gedeelde Bus: De volgende mag": "Shared Bus: Next player's turn",
-        "Volgende": "Next",
         "Iedereen in The Bus heeft het overleefd!": "Everyone survived The Bus!",
         "is de Bus uit ontsnapt!": "escaped the Bus!",
         "Jij mag beslissen wie in de bus gaat!": "You can decide who goes into the bus!",
@@ -258,9 +256,6 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Zo werkt het niet!": "That's not how it works!",
         "hahaha": "hahaha",
         "zo slecht": "so bad",
-        "Toch een Digitale Piramide": "Use a Digital Pyramid instead",
-        "Toch een Digitale Bus": "Use a Digital Bus instead",
-        "Volgende": "Next",
         "Toon": "Show",
         "Verberg": "Hide"
     }
