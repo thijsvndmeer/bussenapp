@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -1198,6 +1198,66 @@ const App: React.FC = () => {
     setPlayers(players.filter(p => p.id !== id));
   };
 
+  // --- DRAG-AND-DROP PLAYER REORDER ---
+  const [dragPlayerIndex, setDragPlayerIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dragNodeRef = useRef<HTMLDivElement | null>(null);
+  const dragStartYRef = useRef<number>(0);
+  const dragItemHeightRef = useRef<number>(0);
+  const playerListRef = useRef<HTMLDivElement | null>(null);
+
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    setDragPlayerIndex(index);
+    setDragOverIndex(index);
+    dragStartYRef.current = clientY;
+    const target = (e.currentTarget as HTMLElement).closest('[data-player-item]') as HTMLElement;
+    if (target) {
+      dragNodeRef.current = target as HTMLDivElement;
+      dragItemHeightRef.current = target.getBoundingClientRect().height + 8; // height + gap
+    }
+    triggerHaptic('light');
+  };
+
+  const handleDragMove = useCallback((e: TouchEvent | MouseEvent) => {
+    if (dragPlayerIndex === null) return;
+    e.preventDefault();
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+    const diff = clientY - dragStartYRef.current;
+    const indexOffset = Math.round(diff / dragItemHeightRef.current);
+    const newIndex = Math.max(0, Math.min(players.length - 1, dragPlayerIndex + indexOffset));
+    setDragOverIndex(newIndex);
+  }, [dragPlayerIndex, players.length]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragPlayerIndex !== null && dragOverIndex !== null && dragPlayerIndex !== dragOverIndex) {
+      const newPlayers = [...players];
+      const [movedPlayer] = newPlayers.splice(dragPlayerIndex, 1);
+      newPlayers.splice(dragOverIndex, 0, movedPlayer);
+      setPlayers(newPlayers);
+      triggerHaptic('medium');
+    }
+    setDragPlayerIndex(null);
+    setDragOverIndex(null);
+  }, [dragPlayerIndex, dragOverIndex, players]);
+
+  useEffect(() => {
+    if (dragPlayerIndex === null) return;
+    const onMove = (e: TouchEvent | MouseEvent) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+    return () => {
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onEnd);
+    };
+  }, [dragPlayerIndex, handleDragMove, handleDragEnd]);
+
   const handleGameOverContinue = async () => {
     await showLeaderboardInterstitial();
     setPhase(GamePhase.SETUP);
@@ -1905,19 +1965,40 @@ const App: React.FC = () => {
             <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
-            {players.map(p => (
-              <div key={p.id} className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center border-2 border-slate-600/50 font-bold text-white shadow-md overflow-hidden shrink-0">
-                    {p.image ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" /> : p.name.charAt(0).toUpperCase()}
+          <div ref={playerListRef} className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
+            {players.map((p, index) => {
+              const isDragging = dragPlayerIndex === index;
+              const isOver = dragOverIndex === index && dragPlayerIndex !== null && dragPlayerIndex !== index;
+              return (
+                <div key={p.id} data-player-item className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''}`}>
+                  {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
+                    <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
+                  )}
+                  <div className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center border-2 border-slate-600/50 font-bold text-white shadow-md overflow-hidden shrink-0">
+                        {p.image ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" /> : p.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{p.name}</span>
+                      {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <div
+                        onTouchStart={(e) => handleDragStart(e, index)}
+                        onMouseDown={(e) => handleDragStart(e, index)}
+                        className="text-slate-600 hover:text-slate-400 p-2 cursor-grab active:cursor-grabbing transition-colors touch-none select-none"
+                      >
+                        <GripVertical size={18} />
+                      </div>
+                      <button onClick={() => removePlayer(p.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18} /></button>
+                    </div>
                   </div>
-                  <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{p.name}</span>
-                  {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
+                  {isOver && dragPlayerIndex !== null && dragPlayerIndex < index && (
+                    <div className="absolute -bottom-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
+                  )}
                 </div>
-                <button onClick={() => removePlayer(p.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18} /></button>
-              </div>
-            ))}
+              );
+            })}
             {players.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
                 <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center animate-bounce">
