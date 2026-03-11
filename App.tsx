@@ -1325,7 +1325,7 @@ const App: React.FC = () => {
     setPyramidMode(mode === GameMode.PHYSICAL ? 'physical' : 'digital');
     setDeck(shuffleDeck(createDeck()));
 
-    const dealerIndex = Math.floor(Math.random() * players.length);
+    const dealerIndex = players.length - 1; // Dealer is the last player so index 0 goes first
     const updatedPlayers = players.map((p, i) => ({
       ...p,
       hand: [],
@@ -1688,6 +1688,14 @@ const App: React.FC = () => {
       }
     } else {
       setPendingMatches({ ...pendingMatches, matches: remainingMatches });
+    }
+  };
+
+  const dismissMatchModal = () => {
+    setPendingMatches(null);
+    const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+    if (revealedPyramidCards.size === totalCards) {
+      setIsPyramidComplete(true);
     }
   };
 
@@ -2149,7 +2157,7 @@ const App: React.FC = () => {
 
         {/* Photo Options Modal */}
         {isPhotoOptionsModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsPhotoOptionsModalOpen(false); }}>
             <div className="bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
               <h3 className="text-xl font-bold text-white text-center mb-4">{t("Profielfoto kiezen")}</h3>
               <button
@@ -2176,7 +2184,7 @@ const App: React.FC = () => {
 
         {/* More Settings Modal */}
         {isMoreSettingsOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsMoreSettingsOpen(false); }}>
             <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl w-full max-w-sm m-4 space-y-6 animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center border-b border-slate-800 pb-4">
                 <h3 className="text-xl font-black text-white uppercase tracking-wider">{t("Meer Instellingen")}</h3>
@@ -2228,7 +2236,7 @@ const App: React.FC = () => {
 
         {/* Phrase Editor Modal */}
         {isPhraseEditorOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsPhraseEditorOpen(false); }}>
             <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full h-[90vh] max-w-lg m-2 flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-800/50">
                 <div className="flex items-center gap-2">
@@ -2625,7 +2633,7 @@ const App: React.FC = () => {
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
     const manualBusSelectionOverlay = isSelectingBusPlayer ? (
-      <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6">
+      <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6" onClick={(e) => { if (e.target === e.currentTarget) setIsSelectingBusPlayer(false); }}>
         <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
           <div className="text-center space-y-2">
             <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">{t("de bus in jij")}</p>
@@ -2821,13 +2829,13 @@ const App: React.FC = () => {
 
             <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
             <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
-              Naar de Bus!
+              {t("Naar de Bus!")}
             </div>
           </div>
         )}
         {/* Match Modal */}
         {pendingMatches && (
-          <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300">
+          <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
             {/* Card Reveal for Match */}
             <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] animate-pop">
               <PlayingCard card={pendingMatches.card} size="md" />
@@ -2835,7 +2843,7 @@ const App: React.FC = () => {
 
             <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 animate-pulse"></div>
-              <button onClick={() => setPendingMatches(null)} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
+              <button onClick={dismissMatchModal} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
 
               <div className="p-6 text-center border-b border-white/5">
                 <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">{t("MATCH!")}</h3>
