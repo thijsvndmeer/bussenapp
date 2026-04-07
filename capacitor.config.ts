@@ -4,12 +4,12 @@ const config: CapacitorConfig = {
   appId: 'com.bussen.app',
   appName: 'Bussen Companion',
   webDir: 'dist',
-  bundledWebRuntime: false,
   server: {
     androidScheme: 'https'
   },
   plugins: {
     AdMob: {
+      initializeOnId: 'ca-app-pub-7627297114391750~5463450367',
       appOpen: {
         enabled: true
       },
