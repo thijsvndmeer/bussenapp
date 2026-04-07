@@ -28,9 +28,8 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Fysiek": "Physical",
         "Met echte kaarten": "With real cards",
         "Terug": "Back",
-        "Speler Wissel": "Change Player",
         "Start": "Start",
-        "Aan de beurt": "Turn",
+        "Aan de beurt": "This player's turn",
         "Op": "Took",
         "Uit": "Gave",
         "Huidige Hand": "Current Hand",
@@ -85,7 +84,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "jij": "you",
         "Leg een rij van": "Lay a row of",
         "kaarten met de afbeelding naar beneden.": "cards face down.",
-        "Raad hoger of lager dan de vorige kaart, de eerste kaart is altijd omgedraaid.": "Guess higher or lower than the previous card; the first card is always turned.",
+        "Raad hoger of lager dan the vorige kaart, de eerste kaart is altijd omgedraaid.": "Guess higher or lower than the previous card; the first card is always turned.",
         "Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.": "Wrong? Drink sips equal to the card number and start again at card one.",
         "Goed? Ga door naar de volgende kaart.": "Right? Continue to the next card.",
         "Hele rij gehaald? Je mag uit de bus!": "Made it through the row? You can leave the bus!",
@@ -238,7 +237,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "waard.": "worth.",
         "Selecteer eerst wie de bus in gaat.": "Select who goes into the bus first.",
         "Geen kaarten meer! Je bent vrij!": "No more cards! You are free!",
-        "Je hebt de bus overleefd! Vrijstelling!": "You survived the bus! Immunity!",
+        "Je hebt the bus overleefd! Vrijstelling!": "You survived the bus! Immunity!",
         "Goed! Kaart": "Good! Card",
         "klaar.": "done.",
         "Opnieuw!": "Again!",
@@ -266,7 +265,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Fout": "Bad",
         "Bus Loser": "Bus Loser",
         "Nieuw bericht...": "New message...",
-        "Herstel standaardberichten": "Restore default messages"
+        "Herstel standaardberichten": "Restore default messages",
+        "Fysieke Modus": "Physical Mode",
+        "Gebruik je eigen fysieke spelkaarten in plaats van digitale kaarten. De app begeleidt je alleen door de regels.": "Use your own physical card deck instead of digital ones. The app will only guide you through the rules.",
+        "Spel stoppen?": "Quit Game?",
+        "Weet je zeker dat je het huidige spel wilt stoppen? Alle voortgang gaat verloren.": "Are you sure you want to stop the current game? All progress will be lost.",
+        "Stoppen": "Quit"
     }
 };
 

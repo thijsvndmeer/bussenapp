@@ -1,6 +1,16 @@
 import React, { useMemo } from 'react';
 import { Card, Suit, Rank } from '../types';
-import { Heart, Diamond, Club, Spade, Crown, Shield, Sparkles } from 'lucide-react';
+import { Heart, Diamond, Club, Spade, Crown, User } from 'lucide-react';
+
+const FarmerIcon = ({ size, className, fill }: { size: number, className?: string, fill?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill || "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 1a4 4 0 0 0-4 4v2a9 9 0 0 0 8 0V5a4 4 0 0 0-4-4z" fill={fill} stroke="none" /> {/* Hat Top */}
+    <ellipse cx="12" cy="7" rx="10" ry="3" fill={fill} stroke="none" /> {/* Hat Brim */}
+    <circle cx="12" cy="11" r="3" fill={fill} stroke="none" /> {/* Head */}
+    <path d="M4 23v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2H4z" fill={fill} stroke="none" /> {/* Torso */}
+    <rect x="10" y="15" width="4" height="4" fill="white" /> {/* Bib detail? */}
+  </svg>
+);
 
 const CARD_SIZES = {
   sm: { width: 'w-14', text: 'text-base', cornerIcon: 10, radius: 'rounded-[6px]' },
@@ -44,7 +54,7 @@ const renderPips = (card: Card, size: 'sm' | 'base' | 'md' | 'lg' | 'xl') => {
   const rankVal = card.rank;
   const pipSize = size === 'sm' ? 10 : size === 'base' ? 14 : size === 'md' ? 22 : size === 'lg' ? 36 : 60;
 
-  const Pip = ({ x, y, inverted = false }: { x: number, y: number, inverted?: boolean }) => (
+  const Pip: React.FC<{ x: number; y: number; inverted?: boolean }> = ({ x, y, inverted = false }) => (
     <div
       className="absolute flex items-center justify-center"
       style={{ left: `${x}%`, top: `${y}%`, width: pipSize, height: pipSize, transform: 'translate(-50%, -50%)' }}
@@ -172,8 +182,8 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                       <div className="flex justify-start relative z-10 transition-transform group-hover:scale-110">
                         <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>
                           {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
-                          {card.rank === Rank.QUEEN && <Sparkles size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500 animate-pulse" />}
-                          {card.rank === Rank.JACK && <Shield size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-blue-500" />}
+                          {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
+                          {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
                         </div>
                       </div>
 
@@ -188,8 +198,8 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                       <div className="flex justify-end rotate-180 relative z-10 transition-transform group-hover:scale-110">
                         <div className={`${isRed ? 'text-[#e11d48]' : 'text-[#1e293b]'}`}>
                           {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
-                          {card.rank === Rank.QUEEN && <Sparkles size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
-                          {card.rank === Rank.JACK && <Shield size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-blue-500" />}
+                          {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
+                          {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
                         </div>
                       </div>
                     </div>
