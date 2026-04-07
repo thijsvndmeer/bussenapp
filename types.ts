@@ -65,6 +65,7 @@ export enum RoundStep {
 
 export interface GameSettings {
   mode: GameMode;
+  physicalMode: boolean; // Whether to use physical cards instead of digital
   pyramidRows: number; // 3 to 7
   sharedBus: boolean; // Allow selecting a partner for the bus
   busLength: number; // Number of cards to guess (usually 5)

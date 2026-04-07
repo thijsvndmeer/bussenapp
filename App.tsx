@@ -496,6 +496,7 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<GameSettings>(() => {
     const defaultSettings: GameSettings = {
       mode: GameMode.DIGITAL,
+      physicalMode: false,
       pyramidRows: 4,
       sharedBus: false,
       busLength: 6,
@@ -517,6 +518,11 @@ const App: React.FC = () => {
 
     return defaultSettings;
   });
+
+  // Quit confirmation state
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  // Physical mode info popup state
+  const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -1315,7 +1321,16 @@ const App: React.FC = () => {
   const handleStartPress = () => {
     if (players.length < 2) return;
     triggerHaptic('medium');
-    setPhase(GamePhase.MODE_SELECTION);
+    confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
+  };
+
+  const handleQuitGame = () => {
+    setShowQuitConfirm(false);
+    setPhase(GamePhase.SETUP);
+    setFeedback(null);
+    setLastDrawnCard(null);
+    setShowConfetti(false);
+    setIsDiscoActive(false);
   };
 
   const confirmStart = (mode: GameMode) => {
@@ -2003,7 +2018,46 @@ const App: React.FC = () => {
     setIsBusWon(false);
   };
 
+  // --- RENDERING HELPERS ---
+
+  const renderQuitModal = () => showQuitConfirm && (
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in">
+      <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl w-full max-w-sm mx-4 space-y-4 animate-in zoom-in-95 duration-300">
+        <h3 className="text-xl font-black text-white text-center">{t("Spel stoppen?")}</h3>
+        <p className="text-slate-400 text-sm text-center">{t("Weet je zeker dat je het huidige spel wilt stoppen? Alle voortgang gaat verloren.")}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowQuitConfirm(false)}
+            className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition-colors active:scale-95"
+          >
+            {t("Annuleren")}
+          </button>
+          <button
+            id="confirm-quit-btn"
+            onClick={handleQuitGame}
+            className="flex-1 py-3 bg-gradient-to-r from-red-700 to-red-900 hover:brightness-110 text-white font-bold rounded-xl border border-red-600/50 transition-all active:scale-95 shadow-[0_0_15px_rgba(220,38,38,0.3)]"
+          >
+            {t("Stoppen")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderQuitButton = (className = "ml-2 w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-400 hover:bg-slate-800/60 transition-all active:scale-90") => (
+    <button
+      onClick={() => setShowQuitConfirm(true)}
+      className={className}
+      aria-label="Quit game"
+    >
+      <X size={14} />
+    </button>
+  );
+
   // --- RENDERING ---
+
+  // Global fixed quit button shown during active gameplay (not on SETUP or GAME_OVER)
+  const isInActiveGame = phase !== GamePhase.SETUP && phase !== GamePhase.GAME_OVER;
 
   // 1. SETUP
   if (phase === GamePhase.SETUP) {
@@ -2139,10 +2193,12 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between pt-2">
                   <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Gedeelde Bus")}</label>
-                  <button onClick={() => setSettings({ ...settings, sharedBus: !settings.sharedBus })} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
+                  <button onClick={() => { const n = { ...settings, sharedBus: !settings.sharedBus }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.sharedBus ? 'left-7' : 'left-1'}`}></div>
                   </button>
                 </div>
+
+
 
                 <button
                   onClick={() => setIsMoreSettingsOpen(true)}
@@ -2213,6 +2269,23 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                <div className="flex flex-col gap-3 w-full px-4 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-white font-medium">{t("Fysieke Modus")}</h4>
+                      <button
+                        onClick={() => setShowPhysicalModeInfo(true)}
+                        className="w-5 h-5 rounded-full border border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 flex items-center justify-center transition-colors text-[12px] font-black leading-none"
+                      >
+                        i
+                      </button>
+                    </div>
+                    <button onClick={() => { const n = { ...settings, physicalMode: !settings.physicalMode }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-14 h-7 rounded-full relative transition-all ${settings.physicalMode ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${settings.physicalMode ? 'left-8' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-3 w-full px-4 mt-4">
                   <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
                   <button
@@ -2349,41 +2422,30 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Physical Mode Info Modal */}
+        {showPhysicalModeInfo && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-sm animate-in fade-in" onClick={() => setShowPhysicalModeInfo(false)}>
+            <div className="bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl w-full max-w-sm m-4 space-y-4 animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                  <span className="text-amber-400 font-black text-lg">i</span>
+                </div>
+                <h3 className="text-lg font-black text-white">{t("Fysieke Modus")}</h3>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed">{t("Gebruik je eigen fysieke spelkaarten in plaats van digitale kaarten. De app begeleidt je alleen door de regels.")}</p>
+              <button
+                onClick={() => setShowPhysicalModeInfo(false)}
+                className="w-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold py-3 rounded-xl transition-colors active:scale-95"
+              >
+                {t("Sluiten")}
+              </button>
+            </div>
+          </div>
+        )}
       </RootContainer>
     );
   }
-
-  // 2. MODE SELECTION
-  if (phase === GamePhase.MODE_SELECTION) {
-    return (
-      <RootContainer className="items-center justify-center p-6">
-        <h2 className="text-3xl font-black text-white mb-8 animate-in zoom-in text-center">{t("Kies je strijd")}</h2>
-        <div className="grid gap-4 w-full max-w-sm">
-          <button onClick={() => confirmStart(GameMode.DIGITAL)} className="group bg-gradient-to-br from-slate-900 to-slate-950 border border-red-500/30 p-8 rounded-3xl text-left hover:border-red-500 transition-all shadow-2xl active:scale-95 relative overflow-hidden">
-            <div className="absolute inset-0 bg-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="flex justify-between mb-2 relative z-10">
-              <span className="text-2xl font-black text-white uppercase italic">{t("Digitaal")}</span>
-              <Zap size={24} className="text-yellow-400 animate-pulse" />
-            </div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">{t("Automatisch & Snel")}</p>
-          </button>
-
-          <button onClick={() => confirmStart(GameMode.PHYSICAL)} className="group bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 p-8 rounded-3xl text-left hover:border-white transition-all shadow-2xl active:scale-95 relative overflow-hidden">
-            <div className="flex justify-between mb-2 relative z-10">
-              <span className="text-2xl font-black text-white uppercase italic">{t("Fysiek")}</span>
-              <Users size={24} className="text-slate-300" />
-            </div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide relative z-10">{t("Met echte kaarten")}</p>
-          </button>
-        </div>
-        <button onClick={() => setPhase(GamePhase.SETUP)} className="mt-12 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">{t("Terug")}</button>
-      </RootContainer>
-    );
-  }
-
-
-
-  // 3. ROUNDS 1-4
   if (phase === GamePhase.ROUNDS_1_4) {
     const activePlayerSuits = new Set(activePlayer.hand.map(c => c.suit));
     const missingSuit = ALL_SUITS.find(s => !activePlayerSuits.has(s));
@@ -2393,7 +2455,7 @@ const App: React.FC = () => {
       return (
         <RootContainer className="items-center justify-center p-6">
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
-            <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">{t("Speler Wissel")}</p>
+            <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">{t("Aan de beurt")}</p>
             <div className="w-32 h-32 rounded-full mb-6 bg-gradient-to-b from-slate-800 to-black border-4 border-red-500 flex items-center justify-center overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.4)] relative">
               {activePlayer.image ? (
                 <img src={activePlayer.image} className="w-full h-full object-cover" />
@@ -2430,17 +2492,24 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex flex-col items-end px-3 border-r border-white/10">
-              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Op")}</span>
-              <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-3">
+              <div className="flex flex-col items-end px-3 border-r border-white/10">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Op")}</span>
+                <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
+              </div>
+              <div className="flex flex-col items-end pl-1">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Uit")}</span>
+                <span className="text-emerald-400 font-black font-mono text-lg leading-none drop-shadow-sm"><ArrowRight size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksDistributed}</span>
+              </div>
             </div>
-            <div className="flex flex-col items-end pl-1">
-              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Uit")}</span>
-              <span className="text-emerald-400 font-black font-mono text-lg leading-none drop-shadow-sm"><ArrowRight size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksDistributed}</span>
-            </div>
+            {renderQuitButton()}
           </div>
         </div>
+
+        {renderQuitModal()}
+
+
 
         <div className="flex-1 flex flex-col min-h-0">
           {/* HAND - Fixed Size */}
@@ -2687,6 +2756,13 @@ const App: React.FC = () => {
       return (
         <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid">
           {manualBusSelectionOverlay}
+          {/* Quit button */}
+          <div className="fixed top-4 right-4 z-[96]">
+            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+          </div>
+
+          {renderQuitModal()}
+
           {loserReveal && (
             <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
@@ -2806,6 +2882,13 @@ const App: React.FC = () => {
     return (
       <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop>
         {manualBusSelectionOverlay}
+        {/* Quit button */}
+        <div className="fixed top-4 right-4 z-[96]">
+          {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+        </div>
+
+        {renderQuitModal()}
+
         {loserReveal && (
           <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
@@ -2974,6 +3057,10 @@ const App: React.FC = () => {
     return (
       <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false} disableSafeTop>
         <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ ...((resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
+          <div className="absolute top-4 right-4 z-[96]">
+            {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
+          </div>
+          {renderQuitModal()}
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
@@ -3078,7 +3165,10 @@ const App: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                   <div className="space-y-1 text-center md:text-left">
                     <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">{t("Fysieke bus")}</p>
-                    <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t("De Busrit")}</h2>
+                    <div className="flex items-center justify-center md:justify-start gap-2">
+                      <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t("De Busrit")}</h2>
+                      {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90")}
+                    </div>
                     <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                   </div>
                   <div className="text-right text-slate-200 text-[11px] uppercase font-black tracking-[0.25em] bg-white/5 border border-white/10 px-3 py-2 rounded-2xl self-start md:self-center">
@@ -3191,6 +3281,7 @@ const App: React.FC = () => {
               </button>
             </div>
           )}
+          {renderQuitModal()}
         </RootContainer>
       );
     }
@@ -3225,9 +3316,12 @@ const App: React.FC = () => {
               </span>
               <span className="text-white text-sm font-black">{passengerNames}</span>
             </div>
-
+            {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-400 hover:bg-slate-800/60 transition-all active:scale-90 border border-white/5")}
           </div>
         </div>
+
+        {renderQuitModal()}
+
 
         {/* Bus Cards */}
         <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
@@ -3379,7 +3473,12 @@ const App: React.FC = () => {
     );
   }
 
-  return null;
+  // This fallthrough renders when in results or other unhandled states
+  return (
+    <>
+      {renderQuitModal()}
+    </>
+  );
 };
 
 export default App;
