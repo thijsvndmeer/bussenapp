@@ -23,6 +23,9 @@ const config: CapacitorConfig = {
         enabled: true
       }
     },
+    Camera: {
+      androidPhotoPicker: true
+    },
     StatusBar: {
       overlaysWebView: true
     }
