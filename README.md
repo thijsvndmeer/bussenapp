@@ -1,5 +1,9 @@
 # Bussen App
 
+## About
+Bussen App is a mobile-first companion app for the Dutch card drinking game "Bussen".  
+It helps players run the game smoothly by handling setup, card distribution, and game flow across the different rounds.
+
 ## Project Overview
 -   **Purpose:** The Bussen App is a companion application for the popular card-based drinking game "Bussen". It automates card distribution, manages game phases (setup, pyramid, bus ride), and facilitates player interaction, enhancing the gameplay experience.
 -   **Key Features:**
