@@ -9,13 +9,11 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
-const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
 const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
-const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
 
 type AdMobPlugin = {
-  initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
-  prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
+  initialize?: (options?: Record<string, unknown>) => Promise<void>;
+  prepareInterstitial?: (options: { adId: string }) => Promise<void>;
   showInterstitial?: () => Promise<void>;
 };
 const getAdMobPlugin = (): AdMobPlugin | null => {
@@ -541,7 +539,8 @@ const App: React.FC = () => {
   const adMobReadyRef = useRef(false);
   const adInterstitialPromiseRef = useRef<Promise<void> | null>(null);
   const lastAdShownRef = useRef<number>(0);
-  const AD_COOLDOWN_MS = 60_000; // 1 minute cooldown between ads
+  const appHasBeenBackgroundedRef = useRef(false);
+  const AD_COOLDOWN_MS = 30_000;
 
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
@@ -712,19 +711,14 @@ const App: React.FC = () => {
     if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
 
     try {
-      await adMob.initialize({
-        appId: ADMOB_APP_ID,
-        requestTrackingAuthorization: true,
-      });
+      await adMob.initialize({});
       adMobReadyRef.current = true;
     } catch (error) {
       console.warn('AdMob initialisatie mislukt', error);
     }
   }, []);
 
-  // Pre-load an interstitial ad so it's ready to display instantly
   const prepareAdInterstitial = useCallback(() => {
-    // If we're already loading or have loaded an ad, just return that Promise
     if (adInterstitialPromiseRef.current) return adInterstitialPromiseRef.current;
 
     const adMob = getAdMobPlugin();
@@ -733,17 +727,15 @@ const App: React.FC = () => {
     const loadAd = async () => {
       try {
         if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
-          await adMob.initialize({
-            appId: ADMOB_APP_ID,
-            requestTrackingAuthorization: true,
-          });
+          await adMob.initialize({});
           adMobReadyRef.current = true;
         }
 
-        await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
+        await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID });
       } catch (error) {
         console.warn('Interstitial voorbereiden mislukt', error);
-        adInterstitialPromiseRef.current = null; // Clear so we can try again later
+        adInterstitialPromiseRef.current = null;
+        setTimeout(() => prepareAdInterstitial(), 15_000);
       }
     };
 
@@ -751,28 +743,21 @@ const App: React.FC = () => {
     return adInterstitialPromiseRef.current;
   }, []);
 
-  // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
-  // Includes 1-minute cooldown to prevent multiple ads from stacking
   const showLeaderboardInterstitial = useCallback(async () => {
     const now = Date.now();
-    if (now - lastAdShownRef.current < AD_COOLDOWN_MS) {
-      console.log('Ad cooldown actief, overgeslagen');
-      return;
-    }
+    if (now - lastAdShownRef.current < AD_COOLDOWN_MS) return;
 
     const adMob = getAdMobPlugin();
     if (!adMob || typeof adMob.showInterstitial !== 'function') return;
 
     try {
-      // Ensure it is prepared (this will wait if a background preload is still running)
       await prepareAdInterstitial();
-
       await adMob.showInterstitial();
       lastAdShownRef.current = Date.now();
-      adInterstitialPromiseRef.current = null; // Reset – force fresh preload for next time
+      adInterstitialPromiseRef.current = null;
     } catch (error) {
       console.warn('Interstitial tonen mislukt', error);
-      adInterstitialPromiseRef.current = null; // Reset on failure too
+      adInterstitialPromiseRef.current = null;
     }
   }, [prepareAdInterstitial]);
 
@@ -924,8 +909,20 @@ const App: React.FC = () => {
   }, [ensureAudioContext]);
 
   useEffect(() => {
-    initializeAdMob();
-  }, [initializeAdMob]);
+    initializeAdMob().then(() => prepareAdInterstitial());
+  }, [initializeAdMob, prepareAdInterstitial]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        appHasBeenBackgroundedRef.current = true;
+      } else if (document.visibilityState === 'visible' && appHasBeenBackgroundedRef.current) {
+        showLeaderboardInterstitial().then(() => prepareAdInterstitial());
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [showLeaderboardInterstitial, prepareAdInterstitial]);
 
   // --- HELPERS ---
 
