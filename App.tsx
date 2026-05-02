@@ -681,31 +681,9 @@ const App: React.FC = () => {
           setTimeout(() => playTone({ frequency: 360, duration: 0.08, type: 'triangle', volume: 0.08 }), 80);
           break;
         case 'disco': {
-          // Synthesis is best practice for zero-latency, zero-asset UI sounds
-          const ctx = ensureAudioContext();
-          if (!ctx) return;
-          const now = ctx.currentTime;
-          const duration = 5.0;
-          
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(400, now);
-          // Siren effect: sweep frequency up and down every 0.5s
-          for (let i = 0; i < duration; i += 0.5) {
-            osc.frequency.exponentialRampToValueAtTime(800, now + i + 0.25);
-            osc.frequency.exponentialRampToValueAtTime(400, now + i + 0.5);
-          }
-          
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(0.2, now + 0.1);
-          gain.gain.setValueAtTime(0.2, now + duration - 0.1);
-          gain.gain.linearRampToValueAtTime(0, now + duration);
-          
-          osc.connect(gain).connect(ctx.destination);
-          osc.start(now);
-          osc.stop(now + duration);
+          const audio = new Audio('/assets/sounds/danger_alarm.m4a');
+          audio.volume = 1.0; 
+          audio.play().catch(e => console.warn('Disco sound failed', e));
           break;
         }
       }
