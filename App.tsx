@@ -540,6 +540,7 @@ const App: React.FC = () => {
   const fileInputCameraRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
   const adInterstitialPromiseRef = useRef<Promise<void> | null>(null);
+  const adRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAdShownRef = useRef<number>(0);
   const AD_COOLDOWN_MS = 60_000; // 1 minute cooldown between ads
 
@@ -727,6 +728,12 @@ const App: React.FC = () => {
     // If we're already loading or have loaded an ad, just return that Promise
     if (adInterstitialPromiseRef.current) return adInterstitialPromiseRef.current;
 
+    // Clear any existing retry timeout
+    if (adRetryTimeoutRef.current) {
+      clearTimeout(adRetryTimeoutRef.current);
+      adRetryTimeoutRef.current = null;
+    }
+
     const adMob = getAdMobPlugin();
     if (!adMob || typeof adMob.prepareInterstitial !== 'function') return Promise.resolve();
 
@@ -744,11 +751,27 @@ const App: React.FC = () => {
       } catch (error) {
         console.warn('Interstitial voorbereiden mislukt', error);
         adInterstitialPromiseRef.current = null; // Clear so we can try again later
+
+        // Schedule a retry after 15 seconds
+        if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
+        adRetryTimeoutRef.current = setTimeout(() => {
+          adRetryTimeoutRef.current = null;
+          prepareAdInterstitial();
+        }, 15_000);
       }
     };
 
     adInterstitialPromiseRef.current = loadAd();
     return adInterstitialPromiseRef.current;
+  }, []);
+
+  // Cleanup ad retry timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (adRetryTimeoutRef.current) {
+        clearTimeout(adRetryTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
