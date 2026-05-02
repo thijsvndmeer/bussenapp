@@ -2,11 +2,12 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Palette } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
+import './styles/themes.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
 const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
@@ -193,6 +194,7 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
+const THEME_KEY = 'bus-app-theme-v1';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -523,6 +525,25 @@ const App: React.FC = () => {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
+
+  // Theme state
+  type ThemeId = 'classic' | 'neon' | 'emerald';
+  const [activeTheme, setActiveTheme] = useState<ThemeId>(() => {
+    if (!storageAvailable) return 'classic';
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved && ['classic', 'neon', 'emerald'].includes(saved)) return saved as ThemeId;
+    } catch (e) {}
+    return 'classic';
+  });
+
+  // Apply theme to DOM
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', activeTheme);
+    if (storageAvailable) {
+      try { localStorage.setItem(THEME_KEY, activeTheme); } catch (e) {}
+    }
+  }, [activeTheme]);
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -2272,9 +2293,44 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              <div className="space-y-4 py-4 min-h-[40vh] flex flex-col items-center justify-center text-center">
-                <Settings size={48} className="text-slate-700 mb-4 animate-[spin_10s_linear_infinite]" />
+              <div className="space-y-5 py-4 overflow-y-auto max-h-[60vh]">
 
+                {/* THEMES */}
+                <div className="flex flex-col gap-3 w-full px-4">
+                  <div className="flex items-center gap-2">
+                    <Palette size={16} className="text-slate-400" />
+                    <h4 className="text-white font-medium">{t("Thema")}</h4>
+                  </div>
+                  <div className="theme-selector-grid">
+                    {([
+                      { id: 'classic' as ThemeId, name: 'Classic', previewClass: 'theme-preview-classic' },
+                      { id: 'neon' as ThemeId, name: 'Neon', previewClass: 'theme-preview-neon' },
+                      { id: 'emerald' as ThemeId, name: 'Emerald', previewClass: 'theme-preview-emerald' },
+                    ]).map(theme => (
+                      <button
+                        key={theme.id}
+                        onClick={() => { setActiveTheme(theme.id); triggerHaptic('light'); }}
+                        className={`theme-card ${activeTheme === theme.id ? 'active' : ''}`}
+                      >
+                        <div className={`theme-card-preview ${theme.previewClass}`}>
+                          <div className="theme-card-dots">
+                            <div className="theme-card-dot dot-1" />
+                            <div className="theme-card-dot dot-2" />
+                            <div className="theme-card-dot dot-3" />
+                          </div>
+                          <span className="theme-card-name">{theme.name}</span>
+                        </div>
+                        {activeTheme === theme.id && (
+                          <div className="theme-check">
+                            <Check size={12} strokeWidth={3} className="text-white" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* LANGUAGE */}
                 <div className="flex flex-col gap-3 w-full px-4">
                   <h4 className="text-white font-medium">{t("Taal / Language")}</h4>
                   <div className="flex gap-2">
@@ -2292,7 +2348,9 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 w-full px-4 mt-4">
+
+                {/* PHYSICAL MODE */}
+                <div className="flex flex-col gap-3 w-full px-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-white font-medium">{t("Fysieke Modus")}</h4>
@@ -2309,7 +2367,8 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 w-full px-4 mt-4">
+                {/* PHRASE EDITOR */}
+                <div className="flex flex-col gap-3 w-full px-4">
                   <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
                   <button
                     onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}

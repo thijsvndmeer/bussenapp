@@ -1,0 +1,386 @@
+/* ================================================
+   BUSSEN COMPANION – THEME SYSTEM
+   ================================================
+   Themes are activated via data-theme="..." on <html>.
+   Default (no attribute) = "classic".
+   ================================================ */
+
+/* --- Theme: Classic (current default) --- */
+:root,
+[data-theme="classic"] {
+  /* Background */
+  --bg-base: #020617;
+  --bg-gradient-1: #0f172a;
+  --bg-gradient-2: #1e1b4b;
+  --bg-gradient-3: #312e81;
+  --bg-gradient-4: #0f172a;
+
+  /* Surfaces */
+  --surface-primary: rgba(15, 23, 42, 0.6);
+  --surface-secondary: rgba(15, 23, 42, 0.4);
+  --surface-card: rgba(30, 41, 59, 0.4);
+  --surface-input: rgba(15, 23, 42, 0.8);
+  --surface-header: rgba(15, 23, 42, 0.9);
+
+  /* Borders */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(51, 65, 85, 0.5);
+  --border-focus: rgba(239, 68, 68, 0.5);
+
+  /* Accent */
+  --accent-primary: #ef4444;
+  --accent-primary-hover: #dc2626;
+  --accent-secondary: #f97316;
+  --accent-glow: rgba(220, 38, 38, 0.4);
+  --accent-gradient: linear-gradient(to right, #ef4444, #f97316);
+
+  /* Text */
+  --text-primary: #f3f4f6;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-accent: #ef4444;
+
+  /* Glass panel */
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-blur: 12px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* Button gradients */
+  --btn-primary-from: #dc2626;
+  --btn-primary-to: #991b1b;
+  --btn-success-from: #059669;
+  --btn-success-to: #047857;
+  --btn-danger-from: #dc2626;
+  --btn-danger-to: #7f1d1d;
+
+  /* Misc */
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --neon-glow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3);
+  --title-gradient: linear-gradient(to right, #ef4444, #f97316);
+  --animated-gradient: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+
+  /* Player items */
+  --player-bg: rgba(30, 41, 59, 0.4);
+  --player-border: rgba(51, 65, 85, 0.5);
+  --player-avatar-from: #334155;
+  --player-avatar-to: #0f172a;
+  --player-avatar-border: rgba(71, 85, 105, 0.5);
+
+  /* Settings */
+  --settings-bg: rgba(0, 0, 0, 0.2);
+  --toggle-active: #22c55e;
+  --toggle-inactive: #334155;
+
+  /* Pyramid */
+  --pyramid-bg: radial-gradient(ellipse at top, #1e293b, #020617, #000000);
+
+  /* Feedback */
+  --feedback-success-bg: rgba(6, 78, 59, 0.8);
+  --feedback-success-border: #10b981;
+  --feedback-error-bg: rgba(127, 29, 29, 0.8);
+  --feedback-error-border: #ef4444;
+
+  /* Bus */
+  --bus-header-bg: rgba(15, 23, 42, 0.95);
+
+  /* Score table */
+  --score-header-bg: rgba(0, 0, 0, 0.4);
+}
+
+
+/* --- Theme: Neon Nights (Premium Glassmorphism) --- */
+[data-theme="neon"] {
+  /* Background – deep purple-to-cyan gradient */
+  --bg-base: #0a0118;
+  --bg-gradient-1: #0a0118;
+  --bg-gradient-2: #1a0533;
+  --bg-gradient-3: #0d1f3c;
+  --bg-gradient-4: #0a0118;
+
+  /* Surfaces – glassy dark panels with purple tint */
+  --surface-primary: rgba(20, 10, 50, 0.55);
+  --surface-secondary: rgba(20, 10, 50, 0.35);
+  --surface-card: rgba(30, 15, 60, 0.4);
+  --surface-input: rgba(10, 5, 30, 0.7);
+  --surface-header: rgba(10, 5, 30, 0.85);
+
+  /* Borders – neon-tinted */
+  --border-primary: rgba(139, 92, 246, 0.2);
+  --border-secondary: rgba(139, 92, 246, 0.15);
+  --border-focus: rgba(6, 182, 212, 0.6);
+
+  /* Accent – Cyan/Teal neon */
+  --accent-primary: #06b6d4;
+  --accent-primary-hover: #22d3ee;
+  --accent-secondary: #a855f7;
+  --accent-glow: rgba(6, 182, 212, 0.5);
+  --accent-gradient: linear-gradient(135deg, #06b6d4, #a855f7);
+
+  /* Text */
+  --text-primary: #f0f0ff;
+  --text-secondary: #a5b4fc;
+  --text-muted: #6366f1;
+  --text-accent: #06b6d4;
+
+  /* Glass panel */
+  --glass-bg: rgba(20, 10, 50, 0.45);
+  --glass-blur: 20px;
+  --glass-border: rgba(139, 92, 246, 0.2);
+
+  /* Button gradients */
+  --btn-primary-from: #06b6d4;
+  --btn-primary-to: #0891b2;
+  --btn-success-from: #06b6d4;
+  --btn-success-to: #0e7490;
+  --btn-danger-from: #e11d48;
+  --btn-danger-to: #9f1239;
+
+  /* Misc */
+  --card-shadow: 0 25px 60px -12px rgba(6, 182, 212, 0.15), 0 0 40px rgba(139, 92, 246, 0.08);
+  --neon-glow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 30px rgba(139, 92, 246, 0.3), 0 0 60px rgba(6, 182, 212, 0.1);
+  --title-gradient: linear-gradient(135deg, #06b6d4, #a855f7, #ec4899);
+  --animated-gradient: linear-gradient(-45deg, #0a0118, #1a0533, #0d1f3c, #0a0118);
+
+  /* Player items */
+  --player-bg: rgba(30, 15, 60, 0.35);
+  --player-border: rgba(139, 92, 246, 0.2);
+  --player-avatar-from: #1e1b4b;
+  --player-avatar-to: #0a0118;
+  --player-avatar-border: rgba(139, 92, 246, 0.4);
+
+  /* Settings */
+  --settings-bg: rgba(10, 5, 30, 0.3);
+  --toggle-active: #06b6d4;
+  --toggle-inactive: #1e1b4b;
+
+  /* Pyramid */
+  --pyramid-bg: radial-gradient(ellipse at top, #1a0533, #0a0118, #000000);
+
+  /* Feedback */
+  --feedback-success-bg: rgba(6, 95, 70, 0.7);
+  --feedback-success-border: #06b6d4;
+  --feedback-error-bg: rgba(127, 29, 29, 0.7);
+  --feedback-error-border: #e11d48;
+
+  /* Bus */
+  --bus-header-bg: rgba(10, 5, 30, 0.9);
+
+  /* Score table */
+  --score-header-bg: rgba(10, 5, 30, 0.6);
+}
+
+/* --- Theme: Emerald Luxe (Rich Green & Gold) --- */
+[data-theme="emerald"] {
+  /* Background */
+  --bg-base: #021a0a;
+  --bg-gradient-1: #021a0a;
+  --bg-gradient-2: #052e16;
+  --bg-gradient-3: #14532d;
+  --bg-gradient-4: #021a0a;
+
+  /* Surfaces */
+  --surface-primary: rgba(5, 30, 15, 0.6);
+  --surface-secondary: rgba(5, 30, 15, 0.35);
+  --surface-card: rgba(10, 40, 20, 0.4);
+  --surface-input: rgba(5, 20, 10, 0.75);
+  --surface-header: rgba(5, 20, 10, 0.9);
+
+  /* Borders */
+  --border-primary: rgba(52, 211, 153, 0.15);
+  --border-secondary: rgba(52, 211, 153, 0.1);
+  --border-focus: rgba(250, 204, 21, 0.5);
+
+  /* Accent – Gold */
+  --accent-primary: #fbbf24;
+  --accent-primary-hover: #f59e0b;
+  --accent-secondary: #34d399;
+  --accent-glow: rgba(250, 204, 21, 0.4);
+  --accent-gradient: linear-gradient(135deg, #fbbf24, #34d399);
+
+  /* Text */
+  --text-primary: #ecfdf5;
+  --text-secondary: #6ee7b7;
+  --text-muted: #059669;
+  --text-accent: #fbbf24;
+
+  /* Glass panel */
+  --glass-bg: rgba(5, 30, 15, 0.5);
+  --glass-blur: 16px;
+  --glass-border: rgba(52, 211, 153, 0.15);
+
+  /* Button gradients */
+  --btn-primary-from: #fbbf24;
+  --btn-primary-to: #d97706;
+  --btn-success-from: #059669;
+  --btn-success-to: #047857;
+  --btn-danger-from: #dc2626;
+  --btn-danger-to: #991b1b;
+
+  /* Misc */
+  --card-shadow: 0 25px 60px -12px rgba(52, 211, 153, 0.12), 0 0 30px rgba(250, 204, 21, 0.06);
+  --neon-glow: 0 0 10px rgba(250, 204, 21, 0.5), 0 0 25px rgba(52, 211, 153, 0.3);
+  --title-gradient: linear-gradient(135deg, #fbbf24, #34d399);
+  --animated-gradient: linear-gradient(-45deg, #021a0a, #052e16, #14532d, #021a0a);
+
+  /* Player items */
+  --player-bg: rgba(10, 40, 20, 0.35);
+  --player-border: rgba(52, 211, 153, 0.2);
+  --player-avatar-from: #052e16;
+  --player-avatar-to: #021a0a;
+  --player-avatar-border: rgba(250, 204, 21, 0.4);
+
+  /* Settings */
+  --settings-bg: rgba(5, 20, 10, 0.3);
+  --toggle-active: #fbbf24;
+  --toggle-inactive: #052e16;
+
+  /* Pyramid */
+  --pyramid-bg: radial-gradient(ellipse at top, #052e16, #021a0a, #000000);
+
+  /* Feedback */
+  --feedback-success-bg: rgba(5, 80, 60, 0.7);
+  --feedback-success-border: #34d399;
+  --feedback-error-bg: rgba(127, 29, 29, 0.7);
+  --feedback-error-border: #ef4444;
+
+  /* Bus */
+  --bus-header-bg: rgba(5, 20, 10, 0.92);
+
+  /* Score table */
+  --score-header-bg: rgba(5, 20, 10, 0.5);
+}
+
+/* ================================================
+   THEMED OVERRIDES - Apply CSS vars to classes
+   ================================================ */
+
+/* Background gradient override */
+.bg-animated-gradient {
+  background: var(--animated-gradient) !important;
+  background-size: 400% 400% !important;
+  animation: gradient-xy 15s ease infinite !important;
+}
+
+/* Glass panel override */
+.glass-panel {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Neon text override */
+.neon-text {
+  text-shadow: var(--neon-glow) !important;
+}
+
+/* Title gradient text */
+.animated-gradient-text {
+  background-image: var(--title-gradient) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+/* Base body styling */
+html, body {
+  background-color: var(--bg-base) !important;
+  color: var(--text-primary);
+}
+
+/* ================================================
+   THEME SELECTOR COMPONENT STYLES
+   ================================================ */
+.theme-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.theme-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  aspect-ratio: 1;
+}
+
+.theme-card:active {
+  transform: scale(0.95);
+}
+
+.theme-card.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.theme-card-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+}
+
+.theme-card-name {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.theme-card-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.theme-card-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* Theme card previews */
+.theme-preview-classic {
+  background: linear-gradient(135deg, #0f172a, #1e1b4b, #312e81);
+}
+.theme-preview-classic .dot-1 { background-color: #ef4444; }
+.theme-preview-classic .dot-2 { background-color: #f97316; }
+.theme-preview-classic .dot-3 { background-color: #1e293b; }
+
+.theme-preview-neon {
+  background: linear-gradient(135deg, #0a0118, #1a0533, #0d1f3c);
+}
+.theme-preview-neon .dot-1 { background-color: #06b6d4; }
+.theme-preview-neon .dot-2 { background-color: #a855f7; }
+.theme-preview-neon .dot-3 { background-color: #ec4899; }
+
+.theme-preview-emerald {
+  background: linear-gradient(135deg, #021a0a, #052e16, #14532d);
+}
+.theme-preview-emerald .dot-1 { background-color: #fbbf24; }
+.theme-preview-emerald .dot-2 { background-color: #34d399; }
+.theme-preview-emerald .dot-3 { background-color: #052e16; }
+
+/* Check indicator */
+.theme-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px var(--accent-glow);
+  animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}

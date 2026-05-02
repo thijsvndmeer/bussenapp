@@ -270,7 +270,8 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Gebruik je eigen fysieke spelkaarten in plaats van digitale kaarten. De app begeleidt je alleen door de regels.": "Use your own physical card deck instead of digital ones. The app will only guide you through the rules.",
         "Spel stoppen?": "Quit Game?",
         "Weet je zeker dat je het huidige spel wilt stoppen? Alle voortgang gaat verloren.": "Are you sure you want to stop the current game? All progress will be lost.",
-        "Stoppen": "Quit"
+        "Stoppen": "Quit",
+        "Thema": "Theme"
     }
 };
 
