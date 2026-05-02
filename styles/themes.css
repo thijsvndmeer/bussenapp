@@ -1,318 +1,367 @@
 /* ================================================
-   BUSSEN COMPANION – THEME SYSTEM
-   ================================================
-   Themes are activated via data-theme="..." on <html>.
-   Default (no attribute) = "classic".
+   BUSSEN – RADICAL THEME SYSTEM
+   Each theme changes: shapes, textures, shadows,
+   blur, border-radius, animations, backgrounds,
+   panel morphism — not just colors.
    ================================================ */
 
-/* --- Theme: Classic (current default) --- */
+/* ===== THEME: CLASSIC (default) ===== */
 :root,
 [data-theme="classic"] {
-  /* Background */
-  --bg-base: #020617;
-  --bg-gradient-1: #0f172a;
-  --bg-gradient-2: #1e1b4b;
-  --bg-gradient-3: #312e81;
-  --bg-gradient-4: #0f172a;
+  --t-radius-sm: 8px;
+  --t-radius-md: 16px;
+  --t-radius-lg: 24px;
+  --t-radius-pill: 16px;
+  --t-radius-btn: 16px;
+  --t-radius-card: 24px;
+  --t-radius-input: 16px;
+  --t-radius-avatar: 9999px;
 
-  /* Surfaces */
-  --surface-primary: rgba(15, 23, 42, 0.6);
-  --surface-secondary: rgba(15, 23, 42, 0.4);
-  --surface-card: rgba(30, 41, 59, 0.4);
-  --surface-input: rgba(15, 23, 42, 0.8);
-  --surface-header: rgba(15, 23, 42, 0.9);
+  --t-blur: 12px;
+  --t-glass-bg: rgba(15, 23, 42, 0.6);
+  --t-glass-border: rgba(255, 255, 255, 0.1);
+  --t-glass-border-width: 1px;
 
-  /* Borders */
-  --border-primary: rgba(255, 255, 255, 0.1);
-  --border-secondary: rgba(51, 65, 85, 0.5);
-  --border-focus: rgba(239, 68, 68, 0.5);
+  --t-surface: rgba(30, 41, 59, 0.4);
+  --t-surface-hover: rgba(30, 41, 59, 0.6);
+  --t-input-bg: rgba(15, 23, 42, 0.8);
+  --t-header-bg: rgba(15, 23, 42, 0.9);
 
-  /* Accent */
-  --accent-primary: #ef4444;
-  --accent-primary-hover: #dc2626;
-  --accent-secondary: #f97316;
-  --accent-glow: rgba(220, 38, 38, 0.4);
-  --accent-gradient: linear-gradient(to right, #ef4444, #f97316);
+  --t-accent: #ef4444;
+  --t-accent-hover: #dc2626;
+  --t-accent2: #f97316;
+  --t-accent-glow: rgba(220, 38, 38, 0.4);
+  --t-title-gradient: linear-gradient(to right, #ef4444, #f97316);
 
-  /* Text */
-  --text-primary: #f3f4f6;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-accent: #ef4444;
+  --t-text: #f3f4f6;
+  --t-text-secondary: #94a3b8;
+  --t-text-muted: #64748b;
 
-  /* Glass panel */
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-blur: 12px;
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --t-bg: #020617;
+  --t-animated-bg: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+  --t-animated-bg-speed: 15s;
 
-  /* Button gradients */
-  --btn-primary-from: #dc2626;
-  --btn-primary-to: #991b1b;
-  --btn-success-from: #059669;
-  --btn-success-to: #047857;
-  --btn-danger-from: #dc2626;
-  --btn-danger-to: #7f1d1d;
+  --t-btn-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+  --t-card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --t-panel-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  --t-neon-glow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3);
+  --t-btn-border: none;
+  --t-btn-text-transform: uppercase;
+  --t-btn-letter-spacing: 0.05em;
+  --t-btn-font-weight: 900;
 
-  /* Misc */
-  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --neon-glow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3);
-  --title-gradient: linear-gradient(to right, #ef4444, #f97316);
-  --animated-gradient: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+  --t-toggle-on: #22c55e;
+  --t-toggle-off: #334155;
 
-  /* Player items */
-  --player-bg: rgba(30, 41, 59, 0.4);
-  --player-border: rgba(51, 65, 85, 0.5);
-  --player-avatar-from: #334155;
-  --player-avatar-to: #0f172a;
-  --player-avatar-border: rgba(71, 85, 105, 0.5);
+  --t-overlay-bg: rgba(0,0,0,0.7);
+  --t-modal-bg: #0f172a;
+  --t-modal-border: rgba(51,65,85,1);
 
-  /* Settings */
-  --settings-bg: rgba(0, 0, 0, 0.2);
-  --toggle-active: #22c55e;
-  --toggle-inactive: #334155;
+  --t-texture-opacity: 0.1;
+  --t-texture-url: url('https://www.transparenttextures.com/patterns/stardust.png');
+  --t-texture-blend: overlay;
 
-  /* Pyramid */
-  --pyramid-bg: radial-gradient(ellipse at top, #1e293b, #020617, #000000);
+  --t-transition-speed: 0.3s;
+  --t-transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Feedback */
-  --feedback-success-bg: rgba(6, 78, 59, 0.8);
-  --feedback-success-border: #10b981;
-  --feedback-error-bg: rgba(127, 29, 29, 0.8);
-  --feedback-error-border: #ef4444;
+  --t-avatar-border: rgba(71, 85, 105, 0.5);
+  --t-avatar-from: #334155;
+  --t-avatar-to: #0f172a;
 
-  /* Bus */
-  --bus-header-bg: rgba(15, 23, 42, 0.95);
+  --t-player-border: 2px solid transparent;
+  --t-player-highlight: none;
 
-  /* Score table */
-  --score-header-bg: rgba(0, 0, 0, 0.4);
+  --t-feedback-success-bg: rgba(6, 78, 59, 0.8);
+  --t-feedback-success-border: #10b981;
+  --t-feedback-error-bg: rgba(127, 29, 29, 0.8);
+  --t-feedback-error-border: #ef4444;
 }
 
 
-/* --- Theme: Neon Nights (Premium Glassmorphism) --- */
+/* ===== THEME: NEON CYBERPUNK ===== */
 [data-theme="neon"] {
-  /* Background – deep purple-to-cyan gradient */
-  --bg-base: #0a0118;
-  --bg-gradient-1: #0a0118;
-  --bg-gradient-2: #1a0533;
-  --bg-gradient-3: #0d1f3c;
-  --bg-gradient-4: #0a0118;
+  /* Sharp, angular, tech aesthetic */
+  --t-radius-sm: 4px;
+  --t-radius-md: 6px;
+  --t-radius-lg: 8px;
+  --t-radius-pill: 4px;
+  --t-radius-btn: 4px;
+  --t-radius-card: 8px;
+  --t-radius-input: 4px;
+  --t-radius-avatar: 6px;
 
-  /* Surfaces – glassy dark panels with purple tint */
-  --surface-primary: rgba(20, 10, 50, 0.55);
-  --surface-secondary: rgba(20, 10, 50, 0.35);
-  --surface-card: rgba(30, 15, 60, 0.4);
-  --surface-input: rgba(10, 5, 30, 0.7);
-  --surface-header: rgba(10, 5, 30, 0.85);
+  --t-blur: 24px;
+  --t-glass-bg: rgba(5, 0, 20, 0.7);
+  --t-glass-border: rgba(6, 182, 212, 0.25);
+  --t-glass-border-width: 1px;
 
-  /* Borders – neon-tinted */
-  --border-primary: rgba(139, 92, 246, 0.2);
-  --border-secondary: rgba(139, 92, 246, 0.15);
-  --border-focus: rgba(6, 182, 212, 0.6);
+  --t-surface: rgba(10, 0, 30, 0.5);
+  --t-surface-hover: rgba(20, 5, 50, 0.6);
+  --t-input-bg: rgba(0, 0, 15, 0.85);
+  --t-header-bg: rgba(5, 0, 15, 0.92);
 
-  /* Accent – Cyan/Teal neon */
-  --accent-primary: #06b6d4;
-  --accent-primary-hover: #22d3ee;
-  --accent-secondary: #a855f7;
-  --accent-glow: rgba(6, 182, 212, 0.5);
-  --accent-gradient: linear-gradient(135deg, #06b6d4, #a855f7);
+  --t-accent: #06b6d4;
+  --t-accent-hover: #22d3ee;
+  --t-accent2: #e11d9b;
+  --t-accent-glow: rgba(6, 182, 212, 0.6);
+  --t-title-gradient: linear-gradient(90deg, #06b6d4, #a855f7, #ec4899);
 
-  /* Text */
-  --text-primary: #f0f0ff;
-  --text-secondary: #a5b4fc;
-  --text-muted: #6366f1;
-  --text-accent: #06b6d4;
+  --t-text: #e0f2fe;
+  --t-text-secondary: #7dd3fc;
+  --t-text-muted: #0e7490;
 
-  /* Glass panel */
-  --glass-bg: rgba(20, 10, 50, 0.45);
-  --glass-blur: 20px;
-  --glass-border: rgba(139, 92, 246, 0.2);
+  --t-bg: #030014;
+  --t-animated-bg: linear-gradient(-45deg, #030014, #0c0028, #000d1a, #030014);
+  --t-animated-bg-speed: 8s;
 
-  /* Button gradients */
-  --btn-primary-from: #06b6d4;
-  --btn-primary-to: #0891b2;
-  --btn-success-from: #06b6d4;
-  --btn-success-to: #0e7490;
-  --btn-danger-from: #e11d48;
-  --btn-danger-to: #9f1239;
+  --t-btn-shadow: 0 0 20px rgba(6,182,212,0.3), 0 0 40px rgba(6,182,212,0.1);
+  --t-card-shadow: 0 0 30px rgba(6,182,212,0.12), 0 10px 40px rgba(0,0,0,0.4);
+  --t-panel-shadow: 0 0 40px rgba(6,182,212,0.08), 0 20px 60px rgba(0,0,0,0.5);
+  --t-neon-glow: 0 0 7px rgba(6,182,212,0.8), 0 0 30px rgba(168,85,247,0.4), 0 0 80px rgba(6,182,212,0.15);
+  --t-btn-border: 1px solid rgba(6,182,212,0.4);
+  --t-btn-text-transform: uppercase;
+  --t-btn-letter-spacing: 0.15em;
+  --t-btn-font-weight: 700;
 
-  /* Misc */
-  --card-shadow: 0 25px 60px -12px rgba(6, 182, 212, 0.15), 0 0 40px rgba(139, 92, 246, 0.08);
-  --neon-glow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 30px rgba(139, 92, 246, 0.3), 0 0 60px rgba(6, 182, 212, 0.1);
-  --title-gradient: linear-gradient(135deg, #06b6d4, #a855f7, #ec4899);
-  --animated-gradient: linear-gradient(-45deg, #0a0118, #1a0533, #0d1f3c, #0a0118);
+  --t-toggle-on: #06b6d4;
+  --t-toggle-off: #0c0028;
 
-  /* Player items */
-  --player-bg: rgba(30, 15, 60, 0.35);
-  --player-border: rgba(139, 92, 246, 0.2);
-  --player-avatar-from: #1e1b4b;
-  --player-avatar-to: #0a0118;
-  --player-avatar-border: rgba(139, 92, 246, 0.4);
+  --t-overlay-bg: rgba(0,0,10,0.85);
+  --t-modal-bg: #050020;
+  --t-modal-border: rgba(6,182,212,0.3);
 
-  /* Settings */
-  --settings-bg: rgba(10, 5, 30, 0.3);
-  --toggle-active: #06b6d4;
-  --toggle-inactive: #1e1b4b;
+  --t-texture-opacity: 0.06;
+  --t-texture-url: none;
+  --t-texture-blend: normal;
 
-  /* Pyramid */
-  --pyramid-bg: radial-gradient(ellipse at top, #1a0533, #0a0118, #000000);
+  --t-transition-speed: 0.2s;
+  --t-transition-curve: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Feedback */
-  --feedback-success-bg: rgba(6, 95, 70, 0.7);
-  --feedback-success-border: #06b6d4;
-  --feedback-error-bg: rgba(127, 29, 29, 0.7);
-  --feedback-error-border: #e11d48;
+  --t-avatar-border: rgba(6,182,212,0.5);
+  --t-avatar-from: #0c0028;
+  --t-avatar-to: #030014;
 
-  /* Bus */
-  --bus-header-bg: rgba(10, 5, 30, 0.9);
+  --t-player-border: 1px solid rgba(6,182,212,0.15);
+  --t-player-highlight: 0 0 15px rgba(6,182,212,0.1);
 
-  /* Score table */
-  --score-header-bg: rgba(10, 5, 30, 0.6);
+  --t-feedback-success-bg: rgba(0, 40, 60, 0.85);
+  --t-feedback-success-border: #06b6d4;
+  --t-feedback-error-bg: rgba(60, 0, 30, 0.85);
+  --t-feedback-error-border: #e11d9b;
 }
 
-/* --- Theme: Emerald Luxe (Rich Green & Gold) --- */
-[data-theme="emerald"] {
-  /* Background */
-  --bg-base: #021a0a;
-  --bg-gradient-1: #021a0a;
-  --bg-gradient-2: #052e16;
-  --bg-gradient-3: #14532d;
-  --bg-gradient-4: #021a0a;
 
-  /* Surfaces */
-  --surface-primary: rgba(5, 30, 15, 0.6);
-  --surface-secondary: rgba(5, 30, 15, 0.35);
-  --surface-card: rgba(10, 40, 20, 0.4);
-  --surface-input: rgba(5, 20, 10, 0.75);
-  --surface-header: rgba(5, 20, 10, 0.9);
+/* ===== THEME: CASINO ROYALE ===== */
+[data-theme="casino"] {
+  /* Warm, luxurious, felt-table aesthetic */
+  --t-radius-sm: 12px;
+  --t-radius-md: 20px;
+  --t-radius-lg: 28px;
+  --t-radius-pill: 9999px;
+  --t-radius-btn: 9999px;
+  --t-radius-card: 28px;
+  --t-radius-input: 9999px;
+  --t-radius-avatar: 9999px;
 
-  /* Borders */
-  --border-primary: rgba(52, 211, 153, 0.15);
-  --border-secondary: rgba(52, 211, 153, 0.1);
-  --border-focus: rgba(250, 204, 21, 0.5);
+  --t-blur: 8px;
+  --t-glass-bg: rgba(10, 40, 20, 0.65);
+  --t-glass-border: rgba(212, 175, 55, 0.2);
+  --t-glass-border-width: 2px;
 
-  /* Accent – Gold */
-  --accent-primary: #fbbf24;
-  --accent-primary-hover: #f59e0b;
-  --accent-secondary: #34d399;
-  --accent-glow: rgba(250, 204, 21, 0.4);
-  --accent-gradient: linear-gradient(135deg, #fbbf24, #34d399);
+  --t-surface: rgba(15, 50, 25, 0.5);
+  --t-surface-hover: rgba(20, 60, 30, 0.6);
+  --t-input-bg: rgba(5, 25, 10, 0.8);
+  --t-header-bg: rgba(5, 25, 10, 0.92);
 
-  /* Text */
-  --text-primary: #ecfdf5;
-  --text-secondary: #6ee7b7;
-  --text-muted: #059669;
-  --text-accent: #fbbf24;
+  --t-accent: #d4af37;
+  --t-accent-hover: #c5a028;
+  --t-accent2: #34d399;
+  --t-accent-glow: rgba(212, 175, 55, 0.4);
+  --t-title-gradient: linear-gradient(135deg, #d4af37, #f5e6a3, #d4af37);
 
-  /* Glass panel */
-  --glass-bg: rgba(5, 30, 15, 0.5);
-  --glass-blur: 16px;
-  --glass-border: rgba(52, 211, 153, 0.15);
+  --t-text: #f5f0e1;
+  --t-text-secondary: #a3c9a8;
+  --t-text-muted: #2d6a4f;
 
-  /* Button gradients */
-  --btn-primary-from: #fbbf24;
-  --btn-primary-to: #d97706;
-  --btn-success-from: #059669;
-  --btn-success-to: #047857;
-  --btn-danger-from: #dc2626;
-  --btn-danger-to: #991b1b;
+  --t-bg: #0a1f0f;
+  --t-animated-bg: linear-gradient(-45deg, #0a1f0f, #14532d, #1a3a2a, #0a1f0f);
+  --t-animated-bg-speed: 20s;
 
-  /* Misc */
-  --card-shadow: 0 25px 60px -12px rgba(52, 211, 153, 0.12), 0 0 30px rgba(250, 204, 21, 0.06);
-  --neon-glow: 0 0 10px rgba(250, 204, 21, 0.5), 0 0 25px rgba(52, 211, 153, 0.3);
-  --title-gradient: linear-gradient(135deg, #fbbf24, #34d399);
-  --animated-gradient: linear-gradient(-45deg, #021a0a, #052e16, #14532d, #021a0a);
+  --t-btn-shadow: 0 6px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  --t-card-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,175,55,0.1);
+  --t-panel-shadow: 0 15px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  --t-neon-glow: 0 0 15px rgba(212,175,55,0.5), 0 0 40px rgba(212,175,55,0.2);
+  --t-btn-border: 2px solid rgba(212,175,55,0.3);
+  --t-btn-text-transform: uppercase;
+  --t-btn-letter-spacing: 0.12em;
+  --t-btn-font-weight: 800;
 
-  /* Player items */
-  --player-bg: rgba(10, 40, 20, 0.35);
-  --player-border: rgba(52, 211, 153, 0.2);
-  --player-avatar-from: #052e16;
-  --player-avatar-to: #021a0a;
-  --player-avatar-border: rgba(250, 204, 21, 0.4);
+  --t-toggle-on: #d4af37;
+  --t-toggle-off: #14532d;
 
-  /* Settings */
-  --settings-bg: rgba(5, 20, 10, 0.3);
-  --toggle-active: #fbbf24;
-  --toggle-inactive: #052e16;
+  --t-overlay-bg: rgba(5,15,8,0.88);
+  --t-modal-bg: #0f2a18;
+  --t-modal-border: rgba(212,175,55,0.25);
 
-  /* Pyramid */
-  --pyramid-bg: radial-gradient(ellipse at top, #052e16, #021a0a, #000000);
+  --t-texture-opacity: 0.15;
+  --t-texture-url: url('https://www.transparenttextures.com/patterns/green-dust-and-scratches.png');
+  --t-texture-blend: multiply;
 
-  /* Feedback */
-  --feedback-success-bg: rgba(5, 80, 60, 0.7);
-  --feedback-success-border: #34d399;
-  --feedback-error-bg: rgba(127, 29, 29, 0.7);
-  --feedback-error-border: #ef4444;
+  --t-transition-speed: 0.35s;
+  --t-transition-curve: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-  /* Bus */
-  --bus-header-bg: rgba(5, 20, 10, 0.92);
+  --t-avatar-border: rgba(212,175,55,0.5);
+  --t-avatar-from: #14532d;
+  --t-avatar-to: #0a1f0f;
 
-  /* Score table */
-  --score-header-bg: rgba(5, 20, 10, 0.5);
+  --t-player-border: 2px solid rgba(212,175,55,0.15);
+  --t-player-highlight: inset 0 1px 0 rgba(255,255,255,0.05);
+
+  --t-feedback-success-bg: rgba(20, 83, 45, 0.85);
+  --t-feedback-success-border: #d4af37;
+  --t-feedback-error-bg: rgba(100, 20, 20, 0.85);
+  --t-feedback-error-border: #ef4444;
 }
+
 
 /* ================================================
-   THEMED OVERRIDES - Apply CSS vars to classes
+   APPLY THEME VARIABLES TO CLASSES
    ================================================ */
 
-/* Background gradient override */
+html, body {
+  background-color: var(--t-bg) !important;
+  color: var(--t-text);
+  transition: background-color 0.5s ease;
+}
+
+/* Animated gradient background */
 .bg-animated-gradient {
-  background: var(--animated-gradient) !important;
+  background: var(--t-animated-bg) !important;
   background-size: 400% 400% !important;
-  animation: gradient-xy 15s ease infinite !important;
+  animation: gradient-xy var(--t-animated-bg-speed) ease infinite !important;
 }
 
-/* Glass panel override */
+/* Glass panels */
 .glass-panel {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(var(--glass-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
-  border-color: var(--glass-border) !important;
+  background: var(--t-glass-bg) !important;
+  backdrop-filter: blur(var(--t-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--t-blur)) !important;
+  border: var(--t-glass-border-width) solid var(--t-glass-border) !important;
+  border-radius: var(--t-radius-card) !important;
+  box-shadow: var(--t-panel-shadow) !important;
+  transition: all var(--t-transition-speed) var(--t-transition-curve) !important;
 }
 
-/* Neon text override */
-.neon-text {
-  text-shadow: var(--neon-glow) !important;
-}
-
-/* Title gradient text */
+/* Title gradient */
 .animated-gradient-text {
-  background-image: var(--title-gradient) !important;
+  background-image: var(--t-title-gradient) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
 }
 
-/* Base body styling */
-html, body {
-  background-color: var(--bg-base) !important;
-  color: var(--text-primary);
+/* Neon text */
+.neon-text {
+  text-shadow: var(--t-neon-glow) !important;
 }
 
 /* ================================================
-   THEME SELECTOR COMPONENT STYLES
+   NEON THEME – SPECIAL EFFECTS
+   ================================================ */
+
+/* Scanline overlay */
+[data-theme="neon"] .bg-animated-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(6,182,212,0.03) 2px,
+    rgba(6,182,212,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Grid background for neon */
+[data-theme="neon"] .bg-animated-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(6,182,212,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6,182,212,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Glow border on inputs */
+[data-theme="neon"] input:focus {
+  border-color: rgba(6,182,212,0.6) !important;
+  box-shadow: 0 0 15px rgba(6,182,212,0.3), 0 0 30px rgba(6,182,212,0.1) !important;
+}
+
+/* Neon button hover glow */
+[data-theme="neon"] button:active {
+  box-shadow: 0 0 25px rgba(6,182,212,0.4) !important;
+}
+
+/* ================================================
+   CASINO THEME – SPECIAL EFFECTS
+   ================================================ */
+
+/* Felt texture overlay */
+[data-theme="casino"] .bg-animated-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(212,175,55,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(212,175,55,0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Embossed input style */
+[data-theme="casino"] input:focus {
+  border-color: rgba(212,175,55,0.5) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 10px rgba(212,175,55,0.15) !important;
+}
+
+/* Gold shimmer on active buttons */
+[data-theme="casino"] button:active {
+  box-shadow: 0 0 20px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+
+
+/* ================================================
+   THEME SELECTOR UI
    ================================================ */
 .theme-selector-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .theme-card {
   position: relative;
-  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
+  border: 2px solid rgba(255,255,255,0.08);
   aspect-ratio: 1;
+  border-radius: 16px;
 }
 
 .theme-card:active {
-  transform: scale(0.95);
+  transform: scale(0.93);
 }
 
 .theme-card.active {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 20px var(--accent-glow);
+  border-color: var(--t-accent);
+  box-shadow: 0 0 25px var(--t-accent-glow);
 }
 
 .theme-card-preview {
@@ -322,65 +371,276 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 8px;
+  gap: 8px;
+  padding: 10px 6px;
+  position: relative;
 }
 
 .theme-card-name {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: white;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  z-index: 2;
 }
 
-.theme-card-dots {
+.theme-card-shapes {
   display: flex;
   gap: 5px;
+  align-items: center;
+  z-index: 2;
 }
 
-.theme-card-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.3);
+.theme-card-shape {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(255,255,255,0.4);
 }
 
-/* Theme card previews */
+/* Classic preview – rounded, subtle */
 .theme-preview-classic {
-  background: linear-gradient(135deg, #0f172a, #1e1b4b, #312e81);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
 }
-.theme-preview-classic .dot-1 { background-color: #ef4444; }
-.theme-preview-classic .dot-2 { background-color: #f97316; }
-.theme-preview-classic .dot-3 { background-color: #1e293b; }
+.theme-preview-classic .s1 { background: #ef4444; border-radius: 50%; }
+.theme-preview-classic .s2 { background: #f97316; border-radius: 8px; }
+.theme-preview-classic .s3 { background: #1e293b; border-radius: 50%; border-color: rgba(255,255,255,0.2); }
 
+/* Neon preview – sharp, glowing */
 .theme-preview-neon {
-  background: linear-gradient(135deg, #0a0118, #1a0533, #0d1f3c);
+  background: linear-gradient(135deg, #030014 0%, #0c0028 50%, #000d1a 100%);
 }
-.theme-preview-neon .dot-1 { background-color: #06b6d4; }
-.theme-preview-neon .dot-2 { background-color: #a855f7; }
-.theme-preview-neon .dot-3 { background-color: #ec4899; }
-
-.theme-preview-emerald {
-  background: linear-gradient(135deg, #021a0a, #052e16, #14532d);
+.theme-preview-neon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(6,182,212,0.06) 3px, rgba(6,182,212,0.06) 6px);
+  pointer-events: none;
 }
-.theme-preview-emerald .dot-1 { background-color: #fbbf24; }
-.theme-preview-emerald .dot-2 { background-color: #34d399; }
-.theme-preview-emerald .dot-3 { background-color: #052e16; }
+.theme-preview-neon .s1 { background: #06b6d4; border-radius: 2px; box-shadow: 0 0 8px rgba(6,182,212,0.6); }
+.theme-preview-neon .s2 { background: #a855f7; border-radius: 2px; box-shadow: 0 0 8px rgba(168,85,247,0.6); }
+.theme-preview-neon .s3 { background: #ec4899; border-radius: 2px; box-shadow: 0 0 8px rgba(236,72,153,0.6); }
 
-/* Check indicator */
+/* Casino preview – lush, golden */
+.theme-preview-casino {
+  background: linear-gradient(135deg, #0a1f0f 0%, #14532d 50%, #1a3a2a 100%);
+}
+.theme-preview-casino::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(212,175,55,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.theme-preview-casino .s1 { background: #d4af37; border-radius: 50%; box-shadow: 0 0 6px rgba(212,175,55,0.5); }
+.theme-preview-casino .s2 { background: #34d399; border-radius: 50%; }
+.theme-preview-casino .s3 { background: #14532d; border-radius: 50%; border-color: rgba(212,175,55,0.4); }
+
+/* Check badge */
 .theme-check {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
+  top: 5px;
+  right: 5px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--accent-primary);
+  background: var(--t-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 10px var(--accent-glow);
+  box-shadow: 0 0 12px var(--t-accent-glow);
   animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  z-index: 5;
+}
+
+/* ================================================
+   STRUCTURAL OVERRIDES – Shapes, Sizes, Morphism
+   These rules transform SHAPES, not just colors.
+   ================================================ */
+
+/* --- All rounded elements get themed radius --- */
+[data-theme] button {
+  border-radius: var(--t-radius-btn) !important;
+  transition: all var(--t-transition-speed) var(--t-transition-curve);
+}
+
+[data-theme] input[type="text"],
+[data-theme] input[type="range"] {
+  border-radius: var(--t-radius-input) !important;
+}
+
+/* --- Player list items --- */
+[data-theme] [data-player-item] > div {
+  border-radius: var(--t-radius-md) !important;
+  background: var(--t-surface) !important;
+  backdrop-filter: blur(var(--t-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--t-blur)) !important;
+  border: var(--t-glass-border-width) solid var(--t-glass-border) !important;
+  box-shadow: var(--t-player-highlight) !important;
+  transition: all var(--t-transition-speed) var(--t-transition-curve) !important;
+}
+
+/* --- Player avatars --- */
+[data-theme] [data-player-item] .rounded-full {
+  border-radius: var(--t-radius-avatar) !important;
+  border-color: var(--t-avatar-border) !important;
+  background: linear-gradient(to bottom right, var(--t-avatar-from), var(--t-avatar-to)) !important;
+}
+
+/* --- Modals --- */
+[data-theme] .fixed.inset-0.z-\[100\],
+[data-theme] .fixed.inset-0.z-\[110\],
+[data-theme] .fixed.inset-0.z-\[120\] {
+  background: var(--t-overlay-bg) !important;
+}
+
+[data-theme] .fixed.inset-0 > div[class*="bg-slate-900"] {
+  background: var(--t-modal-bg) !important;
+  border-color: var(--t-modal-border) !important;
+  border-radius: var(--t-radius-lg) !important;
+  box-shadow: var(--t-panel-shadow) !important;
+}
+
+/* --- Input fields --- */
+[data-theme] input[type="text"] {
+  background: var(--t-input-bg) !important;
+  border-color: var(--t-glass-border) !important;
+  color: var(--t-text) !important;
+}
+[data-theme] input[type="text"]:focus {
+  border-color: var(--t-accent) !important;
+  box-shadow: 0 0 0 2px var(--t-accent-glow) !important;
+}
+
+/* --- Start Game button (red gradient) --- */
+[data-theme] button[class*="from-red-600"][class*="to-red-800"] {
+  background: linear-gradient(to right, var(--t-accent), var(--t-accent-hover)) !important;
+  border: var(--t-btn-border) !important;
+  border-radius: var(--t-radius-btn) !important;
+  box-shadow: 0 0 20px var(--t-accent-glow), var(--t-btn-shadow) !important;
+  text-transform: var(--t-btn-text-transform) !important;
+  letter-spacing: var(--t-btn-letter-spacing) !important;
+  font-weight: var(--t-btn-font-weight) !important;
+}
+
+/* --- Headers (player bar, pyramid bar, bus bar) --- */
+[data-theme] div[class*="bg-slate-900/90"][class*="backdrop-blur"] {
+  background: var(--t-header-bg) !important;
+  border: var(--t-glass-border-width) solid var(--t-glass-border) !important;
+  border-radius: var(--t-radius-md) !important;
+  box-shadow: var(--t-panel-shadow) !important;
+}
+
+/* --- Hand area / card holder --- */
+[data-theme] div[class*="bg-black/10"][class*="rounded-3xl"] {
+  border-radius: var(--t-radius-lg) !important;
+  border-color: var(--t-glass-border) !important;
+  background: var(--t-surface) !important;
+}
+
+/* --- Feedback badges --- */
+[data-theme] div[class*="bg-emerald-900"],
+[data-theme] div[class*="bg-emerald-600"] {
+  background: var(--t-feedback-success-bg) !important;
+  border-color: var(--t-feedback-success-border) !important;
+  border-radius: var(--t-radius-md) !important;
+}
+[data-theme] div[class*="bg-red-900"][class*="border-red-500"],
+[data-theme] div[class*="bg-red-600"][class*="border-red-400"] {
+  background: var(--t-feedback-error-bg) !important;
+  border-color: var(--t-feedback-error-border) !important;
+  border-radius: var(--t-radius-md) !important;
+}
+
+/* --- Toggle switches --- */
+[data-theme] button[class*="bg-green-500"] {
+  background: var(--t-toggle-on) !important;
+  box-shadow: 0 0 10px var(--t-accent-glow) !important;
+}
+
+/* --- Round/step badges --- */
+[data-theme] span[class*="rounded-full"][class*="bg-gradient-to-r"][class*="from-slate-800"] {
+  border-radius: var(--t-radius-sm) !important;
+  border-color: var(--t-glass-border) !important;
+}
+
+/* --- Game over / results table --- */
+[data-theme] div[class*="bg-slate-900/80"][class*="rounded-3xl"][class*="border-white/10"] {
+  border-radius: var(--t-radius-card) !important;
+  background: var(--t-glass-bg) !important;
+  backdrop-filter: blur(var(--t-blur)) !important;
+  border-color: var(--t-glass-border) !important;
+}
+
+/* --- Settings panel content --- */
+[data-theme] div[class*="bg-black/20"][class*="border-t"][class*="border-slate-800"] {
+  background: var(--t-surface) !important;
+}
+
+/* --- Range inputs --- */
+[data-theme] input[type="range"] {
+  accent-color: var(--t-accent) !important;
+}
+
+/* ================================================
+   NEON – Extra structural tweaks
+   ================================================ */
+
+/* Clipped corners effect on main card panel */
+[data-theme="neon"] .glass-panel {
+  clip-path: polygon(
+    0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 8px) 100%,
+    8px 100%, 0 calc(100% - 8px)
+  );
+}
+
+/* Monospace for stat numbers */
+[data-theme="neon"] .font-mono {
+  font-family: 'Courier New', monospace !important;
+  letter-spacing: 0.08em;
+}
+
+/* Accent color for red-text elements */
+[data-theme="neon"] .text-red-400,
+[data-theme="neon"] .text-red-500 {
+  color: var(--t-accent) !important;
+}
+
+/* Player turn avatar */
+[data-theme="neon"] div[class*="border-red-500"][class*="rounded-full"] {
+  border-color: var(--t-accent) !important;
+  box-shadow: 0 0 30px var(--t-accent-glow) !important;
+}
+
+/* ================================================
+   CASINO – Extra structural tweaks
+   ================================================ */
+
+/* Ornamental double border on main panel */
+[data-theme="casino"] .glass-panel {
+  box-shadow:
+    var(--t-panel-shadow),
+    inset 0 0 0 1px rgba(212,175,55,0.08) !important;
+}
+
+/* Gold tint for accent text */
+[data-theme="casino"] .text-red-400,
+[data-theme="casino"] .text-red-500 {
+  color: var(--t-accent) !important;
+}
+
+/* Richer player avatars */
+[data-theme="casino"] div[class*="border-red-500"][class*="rounded-full"] {
+  border-color: var(--t-accent) !important;
+  box-shadow: 0 0 20px var(--t-accent-glow) !important;
+}
+
+/* Embossed white button */
+[data-theme="casino"] button[class*="bg-white"][class*="text-black"] {
+  background: linear-gradient(to bottom, #f5e6a3, #d4af37) !important;
+  color: #1a1a1a !important;
+  border: 2px solid rgba(212,175,55,0.5) !important;
+  box-shadow: 0 4px 15px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.3) !important;
 }

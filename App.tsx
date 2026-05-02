@@ -481,8 +481,8 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
     <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
 
-      {/* Scanlines / Overlay effect */}
-      {showTexture && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>}
+      {/* Theme-aware texture overlay */}
+      {showTexture && <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'var(--t-texture-url)', opacity: 'var(--t-texture-opacity)' as any, mixBlendMode: 'var(--t-texture-blend)' as any }}></div>}
 
       {children}
     </div>
@@ -527,12 +527,12 @@ const App: React.FC = () => {
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
 
   // Theme state
-  type ThemeId = 'classic' | 'neon' | 'emerald';
+  type ThemeId = 'classic' | 'neon' | 'casino';
   const [activeTheme, setActiveTheme] = useState<ThemeId>(() => {
     if (!storageAvailable) return 'classic';
     try {
       const saved = localStorage.getItem(THEME_KEY);
-      if (saved && ['classic', 'neon', 'emerald'].includes(saved)) return saved as ThemeId;
+      if (saved && ['classic', 'neon', 'casino'].includes(saved)) return saved as ThemeId;
     } catch (e) {}
     return 'classic';
   });
@@ -2304,8 +2304,8 @@ const App: React.FC = () => {
                   <div className="theme-selector-grid">
                     {([
                       { id: 'classic' as ThemeId, name: 'Classic', previewClass: 'theme-preview-classic' },
-                      { id: 'neon' as ThemeId, name: 'Neon', previewClass: 'theme-preview-neon' },
-                      { id: 'emerald' as ThemeId, name: 'Emerald', previewClass: 'theme-preview-emerald' },
+                      { id: 'neon' as ThemeId, name: 'Cyber', previewClass: 'theme-preview-neon' },
+                      { id: 'casino' as ThemeId, name: 'Casino', previewClass: 'theme-preview-casino' },
                     ]).map(theme => (
                       <button
                         key={theme.id}
@@ -2313,16 +2313,16 @@ const App: React.FC = () => {
                         className={`theme-card ${activeTheme === theme.id ? 'active' : ''}`}
                       >
                         <div className={`theme-card-preview ${theme.previewClass}`}>
-                          <div className="theme-card-dots">
-                            <div className="theme-card-dot dot-1" />
-                            <div className="theme-card-dot dot-2" />
-                            <div className="theme-card-dot dot-3" />
+                          <div className="theme-card-shapes">
+                            <div className="theme-card-shape s1" />
+                            <div className="theme-card-shape s2" />
+                            <div className="theme-card-shape s3" />
                           </div>
                           <span className="theme-card-name">{theme.name}</span>
                         </div>
                         {activeTheme === theme.id && (
                           <div className="theme-check">
-                            <Check size={12} strokeWidth={3} className="text-white" />
+                            <Check size={10} strokeWidth={3} className="text-white" />
                           </div>
                         )}
                       </button>
