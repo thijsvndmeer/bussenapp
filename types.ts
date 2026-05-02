@@ -63,6 +63,13 @@ export enum RoundStep {
   SUIT = 4,
 }
 
+export enum CardStyle {
+  MODERN = 'MODERN',
+  DARK = 'DARK',
+  CLASSIC = 'CLASSIC',
+  NEON_GLASS = 'NEON_GLASS',
+}
+
 export interface GameSettings {
   mode: GameMode;
   physicalMode: boolean; // Whether to use physical cards instead of digital
@@ -70,4 +77,5 @@ export interface GameSettings {
   sharedBus: boolean; // Allow selecting a partner for the bus
   busLength: number; // Number of cards to guess (usually 5)
   busDecks: number; // Max number of decks for the bus ride
+  cardStyle: CardStyle;
 }

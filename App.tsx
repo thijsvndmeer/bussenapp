@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings } from './types';
+import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
@@ -21,6 +21,18 @@ type AdMobPlugin = {
 const getAdMobPlugin = (): AdMobPlugin | null => {
   const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
   return plugin ?? null;
+};
+
+// --- HELPERS ---
+
+const getRankString = (rank: Rank) => {
+  switch (rank) {
+    case Rank.JACK: return 'J';
+    case Rank.QUEEN: return 'Q';
+    case Rank.KING: return 'K';
+    case Rank.ACE: return 'A';
+    default: return rank.toString();
+  }
 };
 
 // --- CONSTANTS & PHRASES ---
@@ -272,6 +284,8 @@ const cropToSquareDataUrl = (dataUrl: string, maxDimension = 640, quality = 0.8)
 
 const ALL_SUITS: Suit[] = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
 
+const PREVIEW_CARD: Card = { suit: Suit.HEARTS, rank: Rank.KING, id: 'preview-king' };
+
 const createDeck = (): Card[] => {
   const suits = ALL_SUITS;
   const ranks = [Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE];
@@ -501,6 +515,7 @@ const App: React.FC = () => {
       sharedBus: false,
       busLength: 6,
       busDecks: 1,
+      cardStyle: CardStyle.MODERN,
     };
 
     if (!storageAvailable) return defaultSettings;
@@ -508,8 +523,13 @@ const App: React.FC = () => {
     try {
       const saved = localStorage.getItem(GAME_SETTINGS_KEY);
       if (saved) {
+        const parsed = JSON.parse(saved);
+        // Migration: CREATIVE/NEON -> NEON_GLASS
+        if (parsed.cardStyle === 'CREATIVE' || parsed.cardStyle === 'NEON') {
+          parsed.cardStyle = CardStyle.NEON_GLASS;
+        }
         // Merge to ensure new settings get defaults
-        return { ...defaultSettings, ...JSON.parse(saved) };
+        return { ...defaultSettings, ...parsed };
       }
     } catch (e) {
       console.warn("Kon instellingen niet laden, gebruik standaardinstellingen", e);
@@ -519,10 +539,67 @@ const App: React.FC = () => {
     return defaultSettings;
   });
 
+  const renderDeckPreview = () => {
+    if (!previewDeckStyle) return null;
+
+    const sampleCards: Card[] = [
+      { suit: Suit.HEARTS, rank: Rank.ACE, id: 'p1' },
+      { suit: Suit.HEARTS, rank: Rank.KING, id: 'p2' },
+      { suit: Suit.DIAMONDS, rank: Rank.QUEEN, id: 'p3' },
+      { suit: Suit.CLUBS, rank: Rank.JACK, id: 'p4' },
+      { suit: Suit.SPADES, rank: Rank.TEN, id: 'p5' },
+    ];
+
+    return (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in" onClick={() => setPreviewDeckStyle(null)}>
+        <div className="w-full max-w-lg p-6 flex flex-col h-[80vh]" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-8 shrink-0">
+            <div>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
+                {t(previewDeckStyle === CardStyle.MODERN ? "Modern" : 
+                   previewDeckStyle === CardStyle.DARK ? "Donker" : 
+                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" : "Neon Glass")} {t("Stijl")}
+              </h3>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{t("Volledig Deck Voorbeeld")}</p>
+            </div>
+            <button onClick={() => setPreviewDeckStyle(null)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-2 gap-6 pb-10">
+              {/* Back Preview (Achterkant) First */}
+              <div className="flex flex-col items-center gap-3 animate-pop">
+                <PlayingCard card={sampleCards[0]} isFaceDown size="md" style={previewDeckStyle} />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Achterkant")}</span>
+              </div>
+
+              {sampleCards.map(card => (
+                <div key={card.id} className="flex flex-col items-center gap-3 animate-pop">
+                  <PlayingCard card={card} size="md" style={previewDeckStyle} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t(card.suit)} {getRankString(card.rank)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setPreviewDeckStyle(null)}
+            className="mt-6 w-full py-4 bg-white text-black font-black rounded-2xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
+          >
+            {t("Sluiten")}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Quit confirmation state
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
+  const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -2261,21 +2338,20 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* More Settings Modal */}
         {isMoreSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsMoreSettingsOpen(false); }}>
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl w-full max-w-sm m-4 space-y-6 animate-in zoom-in-95 duration-300">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 overflow-hidden">
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-slate-800 p-6 shrink-0">
                 <h3 className="text-xl font-black text-white uppercase tracking-wider">{t("Meer Instellingen")}</h3>
                 <button onClick={() => setIsMoreSettingsOpen(false)} className="text-slate-500 hover:text-white transition-colors">
                   <X size={24} />
                 </button>
               </div>
 
-              <div className="space-y-4 py-4 min-h-[40vh] flex flex-col items-center justify-center text-center">
-                <Settings size={48} className="text-slate-700 mb-4 animate-[spin_10s_linear_infinite]" />
-
-                <div className="flex flex-col gap-3 w-full px-4">
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex flex-col gap-3 w-full">
                   <h4 className="text-white font-medium">{t("Taal / Language")}</h4>
                   <div className="flex gap-2">
                     <button
@@ -2292,7 +2368,54 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 w-full px-4 mt-4">
+
+                <div className="flex flex-col gap-3 w-full pt-2">
+                  <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
+                  <button
+                    onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}
+                    className="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Pencil size={16} /> {t("Berichten bewerken")}
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full pt-2">
+                  <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON_GLASS].map((style) => (
+                      <button
+                        key={style}
+                        onClick={() => {
+                          if (settings.cardStyle === style) {
+                            setPreviewDeckStyle(style);
+                          } else {
+                            const n = { ...settings, cardStyle: style };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                          }
+                          triggerHaptic('light');
+                        }}
+                        className={`py-4 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-all ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
+                      >
+                        <div className="scale-[0.55] h-16 flex items-center justify-center">
+                          <PlayingCard card={PREVIEW_CARD} size="base" style={style} className="shadow-2xl" />
+                        </div>
+                        <span className={`text-xs font-black uppercase tracking-widest ${settings.cardStyle === style ? 'text-white' : 'text-slate-400'}`}>
+                          {t(style === CardStyle.MODERN ? "Modern" : 
+                             style === CardStyle.DARK ? "Donker" : 
+                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon Glass")}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {settings.cardStyle && (
+                    <p className="text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest mt-1 opacity-60">
+                      {t("Klik nogmaals voor deck preview")}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-3 w-full pt-4 border-t border-slate-800/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-white font-medium">{t("Fysieke Modus")}</h4>
@@ -2308,24 +2431,17 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-3 w-full px-4 mt-4">
-                  <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
-                  <button
-                    onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}
-                    className="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 flex items-center justify-center gap-2 active:scale-95"
-                  >
-                    <Pencil size={16} /> {t("Berichten bewerken")}
-                  </button>
-                </div>
               </div>
 
-              <button
-                onClick={() => setIsMoreSettingsOpen(false)}
-                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform"
-              >
-                {t("Sluiten")}
-              </button>
+              {/* Footer */}
+              <div className="p-6 border-t border-slate-800 shrink-0">
+                <button
+                  onClick={() => setIsMoreSettingsOpen(false)}
+                  className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-transform uppercase tracking-widest"
+                >
+                  {t("Sluiten")}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -2466,6 +2582,7 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+        {renderDeckPreview()}
       </RootContainer>
     );
   }
@@ -2557,7 +2674,7 @@ const App: React.FC = () => {
                     const c = digitalCards[idx];
                     return (
                       <div key={c.id} className="flex-none transition-transform hover:-translate-y-2 duration-300 origin-bottom animate-pop" style={{ zIndex: idx }}>
-                        <PlayingCard card={c} size="base" className="shadow-lg" />
+                        <PlayingCard card={c} size="base" className="shadow-lg" style={settings.cardStyle} />
                       </div>
                     );
                   } else if (isCurrent) {
@@ -2634,7 +2751,7 @@ const App: React.FC = () => {
 
             <div className="relative h-64 w-full flex items-center justify-center perspective-1000">
               {lastDrawnCard ? (
-                <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" />
+                <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" style={settings.cardStyle} />
               ) : (
                 settings.mode === GameMode.DIGITAL ? (
                   <div className="w-48 h-64 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30 animate-pulse">
@@ -2944,7 +3061,7 @@ const App: React.FC = () => {
           <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
             {/* Card Reveal for Match */}
             <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] animate-pop">
-              <PlayingCard card={pendingMatches.card} size="md" />
+              <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
             </div>
 
             <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
@@ -3027,6 +3144,7 @@ const App: React.FC = () => {
                         card={isRevealed ? card : null}
                         isFaceDown={!isRevealed}
                         size="md"
+                        style={settings.cardStyle}
                         onClick={() => revealPyramidCard(rowIndex, cardIndex)}
                         className={`transition-transform duration-300 ${!isRevealed ? 'z-10' : 'z-0'}`}
                       />
@@ -3367,6 +3485,7 @@ const App: React.FC = () => {
                   card={card}
                   isFaceDown={!isRevealed}
                   size="md"
+                  style={settings.cardStyle}
                   highlight={!isBusWon && (isReference || isWrong || isFocused)}
                   className={
                     isBusWon
@@ -3500,6 +3619,7 @@ const App: React.FC = () => {
   return (
     <>
       {renderQuitModal()}
+      {renderDeckPreview()}
     </>
   );
 };
