@@ -3,7 +3,20 @@ import { useState, useEffect } from 'react';
 export type Language = 'nl' | 'en';
 
 const dictionaries: Record<Language, Record<string, string>> = {
-    nl: {},
+    nl: {
+        "Kaartstijl": "Kaartstijl",
+        "Modern": "Modern",
+        "Donker": "Donker",
+        "Klassiek": "Klassiek",
+        "Creative": "Neon Glass",
+        "HEARTS": "Harten",
+        "DIAMONDS": "Ruiten",
+        "CLUBS": "Klaveren",
+        "SPADES": "Schoppen",
+        "Achterkant": "Achterkant",
+        "Stijl": "Stijl",
+        "Volledig Deck Voorbeeld": "Volledig Deck Voorbeeld"
+    },
     en: {
         "Bussen": "Ride the Bus",
         "Spelers": "Players",
@@ -270,7 +283,19 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Gebruik je eigen fysieke spelkaarten in plaats van digitale kaarten. De app begeleidt je alleen door de regels.": "Use your own physical card deck instead of digital ones. The app will only guide you through the rules.",
         "Spel stoppen?": "Quit Game?",
         "Weet je zeker dat je het huidige spel wilt stoppen? Alle voortgang gaat verloren.": "Are you sure you want to stop the current game? All progress will be lost.",
-        "Stoppen": "Quit"
+        "Stoppen": "Quit",
+        "Kaartstijl": "Card Style",
+        "Modern": "Modern",
+        "Donker": "Dark",
+        "Klassiek": "Classic",
+        "Creatief": "Neon Glass",
+        "HEARTS": "Hearts",
+        "DIAMONDS": "Diamonds",
+        "CLUBS": "Clubs",
+        "SPADES": "Spades",
+        "Achterkant": "Card Back",
+        "Stijl": "Style",
+        "Volledig Deck Voorbeeld": "Full Deck Preview"
     }
 };
 
