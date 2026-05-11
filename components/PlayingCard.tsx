@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, Suit, Rank, CardStyle } from '../types';
 import { Heart, Diamond, Club, Spade, Crown, User } from 'lucide-react';
+import ClassicFaceCard from './ClassicFaceCard';
 
 const FarmerIcon = ({ size, className, fill }: { size: number, className?: string, fill?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={fill || "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -190,36 +191,49 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                 {/* FACE CARDS */}
                 {isFaceCard && (
                   <div className="w-[65%] h-[75%] relative flex items-center justify-center overflow-visible">
-                    <div className={`w-full h-full border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} rounded-lg flex flex-col justify-between p-1.5 relative overflow-hidden ${isDark ? 'bg-slate-800/40' : isClassic ? 'bg-slate-50/50' : isNeonGlass ? 'bg-white/5' : 'bg-gradient-to-br from-white via-white/80 to-slate-50'} shadow-inner`}>
+                    <div className={`w-full h-full border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} rounded-lg flex flex-col justify-between relative overflow-hidden ${isDark ? 'bg-slate-800/40' : isClassic ? 'bg-slate-50/50' : isNeonGlass ? 'bg-white/5' : 'bg-gradient-to-br from-white via-white/80 to-slate-50'} shadow-inner`}>
                       {/* Damask Royal Pattern */}
                       {!isClassic && !isNeonGlass && (
                         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40l20-20 20 20H0z' fill='%23000' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
                       )}
 
-                      {/* Top Elite Icon */}
-                      <div className="flex justify-start relative z-10 transition-transform group-hover:scale-110">
-                        <div className={textColor}>
-                          {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
-                          {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
-                          {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
+                      {isClassic ? (
+                        /* AUTHENTIC CLASSIC ILLUSTRATION */
+                        <div className="absolute inset-0 flex items-center justify-center -z-0">
+                          <ClassicFaceCard 
+                            suit={card.suit} 
+                            rank={card.rank} 
+                            size={size === 'sm' ? 40 : size === 'base' ? 60 : size === 'md' ? 80 : 120} 
+                          />
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          {/* Top Elite Icon */}
+                          <div className="flex justify-start relative z-10 transition-transform group-hover:scale-110">
+                            <div className={textColor}>
+                              {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
+                              {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
+                              {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
+                            </div>
+                          </div>
 
-                      {/* Background Letter */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:scale-105 transition-transform">
-                        <span className={`font-serif font-black ${size === 'sm' ? 'text-4xl' : size === 'base' ? 'text-5xl' : 'text-8xl'} ${isDark || isNeonGlass ? 'opacity-20' : 'opacity-10'} ${isRed ? 'text-red-900' : 'text-slate-900'} leading-none`}>
-                          {rankLabel}
-                        </span>
-                      </div>
+                          {/* Background Letter */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:scale-105 transition-transform">
+                            <span className={`font-serif font-black ${size === 'sm' ? 'text-4xl' : size === 'base' ? 'text-5xl' : 'text-8xl'} ${isDark || isNeonGlass ? 'opacity-20' : 'opacity-10'} ${isRed ? 'text-red-900' : 'text-slate-900'} leading-none`}>
+                              {rankLabel}
+                            </span>
+                          </div>
 
-                      {/* Bottom Elite Icon */}
-                      <div className="flex justify-end rotate-180 relative z-10 transition-transform group-hover:scale-110">
-                        <div className={textColor}>
-                          {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
-                          {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
-                          {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
-                        </div>
-                      </div>
+                          {/* Bottom Elite Icon */}
+                          <div className="flex justify-end rotate-180 relative z-10 transition-transform group-hover:scale-110">
+                            <div className={textColor}>
+                              {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
+                              {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
+                              {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
