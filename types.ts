@@ -78,4 +78,5 @@ export interface GameSettings {
   busLength: number; // Number of cards to guess (usually 5)
   busDecks: number; // Max number of decks for the bus ride
   cardStyle: CardStyle;
+  doublePyramidCards: boolean; // Enable double sip cards in pyramid phase
 }

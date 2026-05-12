@@ -181,7 +181,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
                 {/* ACE - Targeted centering with strict aspect-square */}
                 {isAce && (
-                  <div className={`w-[45%] aspect-square flex items-center justify-center ${!isClassic ? 'drop-shadow-md' : ''} ${glowClass} transition-transform group-hover:scale-110`}>
+                  <div className={`w-[45%] aspect-square flex items-center justify-center ${!isClassic ? 'drop-shadow-md' : ''} ${glowClass} transition-transform`}>
                     <div className="w-full h-full flex items-center justify-center">
                       {getSuitIcon(card.suit, size === 'sm' ? 24 : size === 'base' ? 36 : size === 'md' ? 60 : 88, true, textColor)}
                     </div>
@@ -209,7 +209,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                       ) : (
                         <>
                           {/* Top Elite Icon */}
-                          <div className="flex justify-start relative z-10 transition-transform group-hover:scale-110">
+                          <div className="flex justify-start relative z-10 transition-transform">
                             <div className={textColor}>
                               {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
                               {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
@@ -218,14 +218,14 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                           </div>
 
                           {/* Background Letter */}
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:scale-105 transition-transform">
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-transform">
                             <span className={`font-serif font-black ${size === 'sm' ? 'text-4xl' : size === 'base' ? 'text-5xl' : 'text-8xl'} ${isDark || isNeonGlass ? 'opacity-20' : 'opacity-10'} ${isRed ? 'text-red-900' : 'text-slate-900'} leading-none`}>
                               {rankLabel}
                             </span>
                           </div>
 
                           {/* Bottom Elite Icon */}
-                          <div className="flex justify-end rotate-180 relative z-10 transition-transform group-hover:scale-110">
+                          <div className="flex justify-end rotate-180 relative z-10 transition-transform">
                             <div className={textColor}>
                               {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
                               {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}

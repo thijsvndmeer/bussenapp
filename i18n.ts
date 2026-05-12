@@ -8,14 +8,20 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Modern": "Modern",
         "Donker": "Donker",
         "Klassiek": "Klassiek",
-        "Creative": "Neon Glass",
+        "Creative": "Neon",
         "HEARTS": "Harten",
         "DIAMONDS": "Ruiten",
         "CLUBS": "Klaveren",
         "SPADES": "Schoppen",
         "Achterkant": "Achterkant",
         "Stijl": "Stijl",
-        "Volledig Deck Voorbeeld": "Volledig Deck Voorbeeld"
+        "Volledig Deck Voorbeeld": "Volledig Deck Voorbeeld",
+        "Dubbele kaarten in de piramide": "Dubbele kaarten in de piramide",
+        "Kies een kaart per niveau": "Kies een kaart per niveau",
+        "Kies een kaart per niveau voor dubbele slokken": "Kies een kaart per niveau voor dubbele slokken",
+        "Niveau": "Niveau",
+        "Matches op deze kaart tellen dubbel": "Matches op deze kaart tellen dubbel",
+        "Deze kaart kan nog niet!": "Deze kaart kan nog niet!"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -288,14 +294,20 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Modern": "Modern",
         "Donker": "Dark",
         "Klassiek": "Classic",
-        "Creatief": "Neon Glass",
+        "Creatief": "Neon",
         "HEARTS": "Hearts",
         "DIAMONDS": "Diamonds",
         "CLUBS": "Clubs",
         "SPADES": "Spades",
         "Achterkant": "Card Back",
         "Stijl": "Style",
-        "Volledig Deck Voorbeeld": "Full Deck Preview"
+        "Volledig Deck Voorbeeld": "Full Deck Preview",
+        "Dubbele kaarten in de piramide": "Double pyramid cards",
+        "Kies een kaart per niveau": "Choose one card per level",
+        "Kies een kaart per niveau voor dubbele slokken": "Choose one card per level for double sips",
+        "Niveau": "Level",
+        "Matches op deze kaart tellen dubbel": "Matches on this card count double",
+        "Deze kaart kan nog niet!": "This card isn't available yet!"
     }
 };
 

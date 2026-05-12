@@ -210,97 +210,13 @@ const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const UPDATE_1_1_PATCH_NOTES = [
-  {
-    date: '2026-05-12',
-    commit: '359889f',
-    title: 'Piramide verbeterd',
-    details: 'Nieuwe logic voor piramide kaart-matches, snellere overgang naar de bus en disco-timeout verwijderd.',
-  },
-  {
-    date: '2026-05-12',
-    commit: 'bc8d9e3',
-    title: 'Resource fixes',
-    details: 'Fixes samengevoegd voor 404 resource-errors.',
-  },
+  '🎨 Kies nu zelf je favoriete kaartstijl in de nieuwe instellingen preview modal',
+  '💾 Gekozen kaartstijlen en instellingen worden nu onthouden voor je volgende sessie',
+  '🔄 Het piramide uitdeelscherm kan nu opnieuw worden geopend',
+  '🃏 Nieuwe instelling: Dubbele kaarten in de piramide voor extra uitdaging!',
+  '✨ Kleine UI en UX verbeteringen',
+  '🛠️ Diverse bugs opgelost',
 ];
-
-const buildPatchNotesWindowHtml = () => `
-<!DOCTYPE html>
-<html lang="nl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bussen - Update ${PATCH_NOTES_VERSION}</title>
-    <style>
-      :root { color-scheme: dark; }
-      body {
-        margin: 0;
-        padding: 24px;
-        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.25), transparent 50%), #020617;
-        color: #e2e8f0;
-      }
-      .card {
-        max-width: 760px;
-        margin: 0 auto;
-        background: rgba(15, 23, 42, 0.85);
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        border-radius: 18px;
-        padding: 20px;
-        box-shadow: 0 0 35px rgba(251, 191, 36, 0.18);
-      }
-      h1 {
-        margin: 0 0 6px 0;
-        font-size: 30px;
-        letter-spacing: -0.02em;
-      }
-      .subtitle {
-        margin: 0 0 18px 0;
-        color: #fbbf24;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.2em;
-      }
-      .item {
-        margin-bottom: 14px;
-        padding: 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        background: rgba(2, 6, 23, 0.7);
-      }
-      .meta {
-        color: #94a3b8;
-        font-size: 12px;
-        margin-bottom: 6px;
-      }
-      .title {
-        margin: 0 0 4px 0;
-        color: #f8fafc;
-        font-size: 17px;
-      }
-      p {
-        margin: 0;
-        color: #cbd5e1;
-        line-height: 1.45;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="card">
-      <h1>🪙 Update ${PATCH_NOTES_VERSION}</h1>
-      <p class="subtitle">Patch notes gebaseerd op commits van de laatste 2 weken</p>
-      ${UPDATE_1_1_PATCH_NOTES.map((note) => `
-        <section class="item">
-          <div class="meta">${note.date} · ${note.commit}</div>
-          <h2 class="title">${note.title}</h2>
-          <p>${note.details}</p>
-        </section>
-      `).join('')}
-    </main>
-  </body>
-</html>
-`;
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
   if (!storageAvailable) return;
@@ -453,6 +369,7 @@ interface RootContainerProps {
   disableBaseBg?: boolean;
   showTexture?: boolean;
   disableSafeTop?: boolean;
+  showChest?: boolean;
 }
 
 interface PersistedPlayerState {
@@ -557,7 +474,7 @@ const GlobalAnimations = () => (
 
 
 
-const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false }) => {
+const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false }) => {
   const [showPatchChest, setShowPatchChest] = useState(() => {
     if (!storageAvailable) return true;
     try {
@@ -567,14 +484,10 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
     }
   });
 
+  const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+
   const openPatchNotes = useCallback(() => {
-    const patchNotesWindow = window.open('', '_blank', 'noopener,noreferrer,width=840,height=880');
-    if (!patchNotesWindow) return;
-
-    patchNotesWindow.document.open();
-    patchNotesWindow.document.write(buildPatchNotesWindowHtml());
-    patchNotesWindow.document.close();
-
+    setIsPatchNotesOpen(true);
     setShowPatchChest(false);
     if (!storageAvailable) return;
     try {
@@ -614,13 +527,13 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
     <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
 
-      {showPatchChest && (
+      {showChest && showPatchChest && (
         <button
           type="button"
           onClick={openPatchNotes}
           aria-label={`Open update ${PATCH_NOTES_VERSION} patch notes`}
           title={`Update ${PATCH_NOTES_VERSION}`}
-          className="fixed z-[99] p-2.5 rounded-2xl bg-amber-500/20 border border-amber-300/60 text-amber-100 backdrop-blur-sm shadow-[0_0_28px_rgba(251,191,36,0.65)] hover:scale-105 hover:bg-amber-400/25 active:scale-95 transition-all duration-200 animate-pulse"
+          className="fixed z-[99] p-2.5 rounded-2xl bg-amber-500/20 border border-amber-300/60 text-amber-100 backdrop-blur-sm shadow-[0_0_28px_rgba(251,191,36,0.65)] hover:scale-105 hover:bg-amber-400/25 active:scale-95 transition-all duration-200"
           style={{ top: 'calc(var(--safe-top, 0px) + 0.75rem)', right: '1rem' }}
         >
           <span className="absolute inset-0 rounded-2xl shadow-[0_0_36px_rgba(251,191,36,0.55)] pointer-events-none" />
@@ -635,6 +548,40 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
 
       {/* Scanlines / Overlay effect */}
       {showTexture && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>}
+
+      {isPatchNotesOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in" onClick={() => setIsPatchNotesOpen(false)}>
+          <div className="w-full max-w-lg p-6 flex flex-col max-h-[85vh] bg-slate-900 border border-slate-700/50 rounded-3xl shadow-2xl relative mx-4" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setIsPatchNotesOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+            <div className="mb-6 shrink-0 pr-8">
+              <h1 className="text-3xl font-black text-white flex items-center gap-2 mb-1 tracking-tight">
+                🪙 Update {PATCH_NOTES_VERSION}
+              </h1>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
+                {UPDATE_1_1_PATCH_NOTES.map((note, index) => (
+                  <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
+                    <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
+                    <span className="flex-1">{note.substring(note.indexOf(' ') + 1)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setIsPatchNotesOpen(false)}
+              className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black rounded-xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
+            >
+              Sluiten
+            </button>
+          </div>
+        </div>
+      )}
 
       {children}
     </div>
@@ -656,6 +603,7 @@ const App: React.FC = () => {
       busLength: 6,
       busDecks: 1,
       cardStyle: CardStyle.MODERN,
+      doublePyramidCards: true,
     };
 
     if (!storageAvailable) return defaultSettings;
@@ -797,6 +745,11 @@ const App: React.FC = () => {
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
   const [isPyramidInstructionsCollapsed, setIsPyramidInstructionsCollapsed] = useState(false);
+  const [isPyramidDoubleSetup, setIsPyramidDoubleSetup] = useState(false);
+  const [pyramidDoubleSetupRow, setPyramidDoubleSetupRow] = useState(0);
+  const [doubledPyramidCardIds, setDoubledPyramidCardIds] = useState<Set<string>>(new Set());
+  const [pulseValidCards, setPulseValidCards] = useState(false);
+  const [warningCooldown, setWarningCooldown] = useState(false);
 
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
@@ -1771,6 +1724,15 @@ const App: React.FC = () => {
     setRevealedPyramidCards(new Set());
     setLoserReveal(null);
     setIsPyramidComplete(false);
+    
+    // Reset double setup state
+    setDoubledPyramidCardIds(new Set());
+    if (settings.doublePyramidCards) {
+      setIsPyramidDoubleSetup(true);
+      setPyramidDoubleSetupRow(settings.pyramidRows - 1);
+    } else {
+      setIsPyramidDoubleSetup(false);
+    }
 
     if (settings.mode === GameMode.DIGITAL) {
       generateDigitalPyramid();
@@ -1785,6 +1747,42 @@ const App: React.FC = () => {
       }
       setPyramid(newPyramid);
     }
+  };
+
+  const handleDoubleCardSelection = (rowIndex: number, cardIndex: number) => {
+    const row = pyramid[rowIndex];
+    if (!row) return;
+    const card = row[cardIndex];
+    if (!card) return;
+
+    triggerHaptic('light');
+    const newDoubled = new Set(doubledPyramidCardIds);
+    newDoubled.add(card.id);
+    setDoubledPyramidCardIds(newDoubled);
+
+    if (pyramidDoubleSetupRow > 1) {
+      setPyramidDoubleSetupRow(pyramidDoubleSetupRow - 1);
+    } else {
+      setIsPyramidDoubleSetup(false);
+    }
+  };
+
+  const triggerPyramidWarning = () => {
+    if (warningCooldown) return;
+
+    triggerHaptic('warning');
+    setFeedback({ text: t("Deze kaart kan nog niet!"), type: 'warning' });
+    setPulseValidCards(true);
+    setWarningCooldown(true);
+
+    setTimeout(() => {
+      setFeedback(null);
+      setPulseValidCards(false);
+    }, 1500);
+
+    setTimeout(() => {
+      setWarningCooldown(false);
+    }, 2000);
   };
 
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
@@ -1856,11 +1854,7 @@ const App: React.FC = () => {
     }
 
     if (rowIndex !== lowestAvailableRowIndex) {
-      // Display playful message
-      triggerHaptic('warning');
-      const phrase = getUniquePhrase(PYRAMID_WARNING_PHRASES);
-      setFeedback({ text: t(phrase), type: 'warning' });
-      setTimeout(() => setFeedback(null), 2500); // Clear message after 2.5 seconds
+      triggerPyramidWarning();
       return;
     }
 
@@ -1901,9 +1895,10 @@ const App: React.FC = () => {
     if (matches.length > 0) {
       triggerHaptic('success');
       playSound('success');
+      const isDoubled = card && doubledPyramidCardIds.has(card.id);
       setPendingMatches({
         card: card,
-        sips: isTop ? 5 : sips,
+        sips: (isTop ? 5 : sips) * (isDoubled ? 2 : 1),
         matches: matches
       });
     } else {
@@ -2298,7 +2293,7 @@ const App: React.FC = () => {
   // 1. SETUP
   if (phase === GamePhase.SETUP) {
     return (
-      <RootContainer className="p-4">
+      <RootContainer className="p-4" showChest={true}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
           <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text">
             {t("Bussen")}
@@ -2434,6 +2429,13 @@ const App: React.FC = () => {
                   </button>
                 </div>
 
+                <div className="flex items-center justify-between pt-2">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Dubbele kaarten in de piramide")}</label>
+                  <button onClick={() => { const n = { ...settings, doublePyramidCards: !settings.doublePyramidCards }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-12 h-6 rounded-full relative transition-all ${settings.doublePyramidCards ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.doublePyramidCards ? 'left-7' : 'left-1'}`}></div>
+                  </button>
+                </div>
+
 
 
                 <button
@@ -2551,7 +2553,7 @@ const App: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-3 w-full pt-4 border-t border-slate-800/50">
+                <div className="flex flex-col gap-4 w-full pt-4 border-t border-slate-800/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-white font-medium">{t("Fysieke Modus")}</h4>
@@ -3194,7 +3196,7 @@ const App: React.FC = () => {
         )}
         {/* Match Modal */}
         {pendingMatches && (
-          <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
+          <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
             {/* Card Reveal for Match */}
             <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] animate-pop">
               <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
@@ -3236,8 +3238,12 @@ const App: React.FC = () => {
 
         <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div>
-            <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">{t("Piramide")}</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t("Draai kaarten om")}</p>
+            <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">
+              {isPyramidDoubleSetup ? t("Dubbele kaarten in de piramide") : t("Piramide")}
+            </h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
+            </p>
           </div>
         </div>
 
@@ -3247,6 +3253,26 @@ const App: React.FC = () => {
           <div className="absolute top-24 left-0 right-0 z-50 flex justify-center pointer-events-none">
             <div className={`mx-4 px-6 py-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl border-2 text-base font-black text-center animate-in zoom-in duration-200 ${feedback.type.includes('success') ? 'bg-green-900/90 border-green-400 text-green-100' : feedback.type === 'error' ? 'bg-red-900/90 border-red-500 text-white' : 'bg-slate-800/90 border-slate-500 text-white'}`}>
               {feedback.text}
+            </div>
+          </div>
+        )}
+        {isPyramidDoubleSetup && pyramidDoubleSetupRow >= settings.pyramidRows - 2 && (
+          <div className="absolute top-32 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
+            <div className="bg-slate-900/90 backdrop-blur-xl border-2 border-red-500/50 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-w-sm w-full animate-in slide-in-from-top-10 duration-500 ring-1 ring-red-500/20">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h3 className="text-white font-black text-lg uppercase tracking-tight leading-none">{t("Dubbele kaarten in de piramide")}</h3>
+                  <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                    {t("Niveau")} {settings.pyramidRows - pyramidDoubleSetupRow}
+                  </p>
+                </div>
+              </div>
+              <p className="text-slate-300 text-sm font-medium leading-snug">
+                {t("Kies een kaart per niveau voor dubbele slokken")}. {t("Matches op deze kaart tellen dubbel")}!
+              </p>
             </div>
           </div>
         )}
@@ -3270,53 +3296,70 @@ const App: React.FC = () => {
             className="flex flex-col items-center gap-2 md:gap-3 origin-center transition-transform duration-500"
             style={{ transform: `scale(${pyramidScale})` }}
           >
-            {pyramid.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex gap-3 justify-center">
-                {row.map((card, cardIndex) => {
-                  const isRevealed = card && revealedPyramidCards.has(card.id);
-                  let hasMatch = false;
-                  if (isRevealed && card && settings.mode === GameMode.DIGITAL) {
-                    hasMatch = players.some(p => p.hand.some(h => h.rank === card.rank));
-                  }
+            {(() => {
+              const activeRowIndex = isPyramidDoubleSetup ? pyramidDoubleSetupRow : (() => {
+                for (let i = pyramid.length - 1; i >= 0; i--) {
+                  if (pyramid[i].some(c => c && !revealedPyramidCards.has(c.id))) return i;
+                }
+                return -1;
+              })();
 
-                  return (
-                    <div key={card ? card.id : `${rowIndex}-${cardIndex}`} className={`relative group ${hasMatch ? 'cursor-pointer' : ''}`}>
-                      <PlayingCard
-                        card={isRevealed ? card : null}
-                        isFaceDown={!isRevealed}
-                        size="md"
-                        style={settings.cardStyle}
-                        onClick={() => {
-                          if (!isRevealed) {
-                            revealPyramidCard(rowIndex, cardIndex);
-                          } else if (hasMatch && card) {
-                            const sips = settings.pyramidRows - rowIndex;
-                            const isTop = rowIndex === 0;
-                            const matches: { player: Player, cardIndex: number }[] = [];
-                            players.forEach(p => {
-                              const matchIndex = p.hand.findIndex(h => h.rank === card.rank);
-                              if (matchIndex !== -1) {
-                                matches.push({ player: p, cardIndex: matchIndex });
+              return pyramid.map((row, rowIndex) => (
+                <div key={rowIndex} className="flex gap-3 justify-center relative">
+                  {row.map((card, cardIndex) => {
+                    const isRevealed = card && revealedPyramidCards.has(card.id);
+                    let hasMatch = false;
+                    if (isRevealed && card && settings.mode === GameMode.DIGITAL) {
+                      hasMatch = players.some(p => p.hand.some(h => h.rank === card.rank));
+                    }
+
+                    return (
+                      <div key={card ? card.id : `${rowIndex}-${cardIndex}`} className={`relative group ${hasMatch ? 'cursor-pointer' : ''}`}>
+                        <PlayingCard
+                          card={isRevealed ? card : null}
+                          isFaceDown={!isRevealed}
+                          size="md"
+                          style={settings.cardStyle}
+                          className={`${doubledPyramidCardIds.has(card?.id || '') ? 'rotate-90' : ''} ${isPyramidDoubleSetup && rowIndex === pyramidDoubleSetupRow ? 'ring-4 ring-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : ''} ${pulseValidCards && rowIndex === activeRowIndex && !isRevealed ? 'animate-pyramid-ring-pulse z-20' : ''} transition-all duration-300 ${!isRevealed ? 'z-10' : 'z-0'} ${hasMatch ? 'ring-[3px] ring-green-500 shadow-[0_0_25px_rgba(34,197,94,0.7)] scale-[1.02]' : ''}`}
+                          onClick={() => {
+                            if (isPyramidDoubleSetup) {
+                              if (rowIndex === pyramidDoubleSetupRow) {
+                                handleDoubleCardSelection(rowIndex, cardIndex);
+                              } else {
+                                triggerPyramidWarning();
                               }
-                            });
-                            if (matches.length > 0) {
-                              triggerHaptic('medium');
-                              setPendingMatches({ card, sips: isTop ? 5 : sips, matches });
+                              return;
                             }
-                          }
-                        }}
-                        className={`transition-transform duration-300 ${!isRevealed ? 'z-10' : 'z-0'} ${hasMatch ? 'ring-[3px] ring-green-500 shadow-[0_0_25px_rgba(34,197,94,0.7)] scale-[1.02]' : ''}`}
-                      />
-                      {cardIndex === 0 && (
-                        <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
-                          {`${settings.pyramidRows - rowIndex}x`}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                            if (!isRevealed) {
+                              revealPyramidCard(rowIndex, cardIndex);
+                            } else if (hasMatch && card) {
+                              const isDoubled = doubledPyramidCardIds.has(card.id);
+                              const sips = (settings.pyramidRows - rowIndex) * (isDoubled ? 2 : 1);
+                              const isTop = rowIndex === 0;
+                              const matches: { player: Player, cardIndex: number }[] = [];
+                              players.forEach(p => {
+                                const matchIndex = p.hand.findIndex(h => h.rank === card.rank);
+                                if (matchIndex !== -1) {
+                                  matches.push({ player: p, cardIndex: matchIndex });
+                                }
+                              });
+                              if (matches.length > 0) {
+                                triggerHaptic('medium');
+                                setPendingMatches({ card, sips: isTop ? 5 : sips, matches });
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                  {/* Row Indicator */}
+                  <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
+                    {`${settings.pyramidRows - rowIndex}x`}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         </div>
       </RootContainer>

@@ -14,3 +14,20 @@
   background-size: 200% 200%;
   animation: gradient-animation 3s ease infinite;
 }
+@keyframes ring-pulse-red {
+  0% {
+    box-shadow: 0 0 0 0px rgba(220, 38, 38, 0.8), 0 0 10px rgba(220, 38, 38, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(220, 38, 38, 0), 0 0 30px rgba(220, 38, 38, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0px rgba(220, 38, 38, 0), 0 0 10px rgba(220, 38, 38, 0);
+  }
+}
+
+.animate-pyramid-ring-pulse {
+  animation: ring-pulse-red 0.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  border: 4px solid #dc2626 !important;
+  border-radius: 12px;
+}
