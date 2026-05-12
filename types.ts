@@ -67,7 +67,7 @@ export enum CardStyle {
   MODERN = 'MODERN',
   DARK = 'DARK',
   CLASSIC = 'CLASSIC',
-  NEON_GLASS = 'NEON_GLASS',
+  NEON = 'NEON',
 }
 
 export interface GameSettings {

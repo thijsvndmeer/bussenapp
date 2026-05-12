@@ -612,9 +612,9 @@ const App: React.FC = () => {
       const saved = localStorage.getItem(GAME_SETTINGS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Migration: CREATIVE/NEON -> NEON_GLASS
-        if (parsed.cardStyle === 'CREATIVE' || parsed.cardStyle === 'NEON') {
-          parsed.cardStyle = CardStyle.NEON_GLASS;
+        // Migration: CREATIVE/NEON_GLASS -> NEON
+        if (parsed.cardStyle === 'CREATIVE' || parsed.cardStyle === 'NEON_GLASS') {
+          parsed.cardStyle = CardStyle.NEON;
         }
         // Merge to ensure new settings get defaults
         return { ...defaultSettings, ...parsed };
@@ -646,7 +646,7 @@ const App: React.FC = () => {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
                 {t(previewDeckStyle === CardStyle.MODERN ? "Modern" : 
                    previewDeckStyle === CardStyle.DARK ? "Donker" : 
-                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" : "Neon Glass")} {t("Stijl")}
+                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" : "Neon")} {t("Stijl")}
               </h3>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{t("Volledig Deck Voorbeeld")}</p>
             </div>
@@ -2520,7 +2520,7 @@ const App: React.FC = () => {
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
                   <div className="grid grid-cols-2 gap-3">
-                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON_GLASS].map((style) => (
+                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON].map((style) => (
                       <button
                         key={style}
                         onClick={() => {
@@ -2541,7 +2541,7 @@ const App: React.FC = () => {
                         <span className={`text-xs font-black uppercase tracking-widest ${settings.cardStyle === style ? 'text-white' : 'text-slate-400'}`}>
                           {t(style === CardStyle.MODERN ? "Modern" : 
                              style === CardStyle.DARK ? "Donker" : 
-                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon Glass")}
+                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
                         </span>
                       </button>
                     ))}
