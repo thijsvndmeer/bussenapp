@@ -24,7 +24,7 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
 
   const s = suitMap[suit];
   const r = rankMap[rank as Rank];
-  const localPath = `/assets/cards/klassiek/${r}${s}.svg`;
+  const localPath = `./assets/cards/klassiek/${r}${s}.svg`;
 
   return (
     <div 
