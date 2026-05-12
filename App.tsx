@@ -205,7 +205,102 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
+const PATCH_NOTES_VERSION = '1.1';
+const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+
+const UPDATE_1_1_PATCH_NOTES = [
+  {
+    date: '2026-05-12',
+    commit: '359889f',
+    title: 'Piramide verbeterd',
+    details: 'Nieuwe logic voor piramide kaart-matches, snellere overgang naar de bus en disco-timeout verwijderd.',
+  },
+  {
+    date: '2026-05-12',
+    commit: 'bc8d9e3',
+    title: 'Resource fixes',
+    details: 'Fixes samengevoegd voor 404 resource-errors.',
+  },
+];
+
+const buildPatchNotesWindowHtml = () => `
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bussen - Update ${PATCH_NOTES_VERSION}</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.25), transparent 50%), #020617;
+        color: #e2e8f0;
+      }
+      .card {
+        max-width: 760px;
+        margin: 0 auto;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 0 35px rgba(251, 191, 36, 0.18);
+      }
+      h1 {
+        margin: 0 0 6px 0;
+        font-size: 30px;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        margin: 0 0 18px 0;
+        color: #fbbf24;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.2em;
+      }
+      .item {
+        margin-bottom: 14px;
+        padding: 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(2, 6, 23, 0.7);
+      }
+      .meta {
+        color: #94a3b8;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .title {
+        margin: 0 0 4px 0;
+        color: #f8fafc;
+        font-size: 17px;
+      }
+      p {
+        margin: 0;
+        color: #cbd5e1;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>🪙 Update ${PATCH_NOTES_VERSION}</h1>
+      <p class="subtitle">Patch notes gebaseerd op commits van de laatste 2 weken</p>
+      ${UPDATE_1_1_PATCH_NOTES.map((note) => `
+        <section class="item">
+          <div class="meta">${note.date} · ${note.commit}</div>
+          <h2 class="title">${note.title}</h2>
+          <p>${note.details}</p>
+        </section>
+      `).join('')}
+    </main>
+  </body>
+</html>
+`;
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
   if (!storageAvailable) return;
@@ -463,6 +558,32 @@ const GlobalAnimations = () => (
 
 
 const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false }) => {
+  const [showPatchChest, setShowPatchChest] = useState(() => {
+    if (!storageAvailable) return true;
+    try {
+      return localStorage.getItem(PATCH_NOTES_SEEN_KEY) !== PATCH_NOTES_VERSION;
+    } catch {
+      return true;
+    }
+  });
+
+  const openPatchNotes = useCallback(() => {
+    const patchNotesWindow = window.open('', '_blank', 'noopener,noreferrer,width=840,height=880');
+    if (!patchNotesWindow) return;
+
+    patchNotesWindow.document.open();
+    patchNotesWindow.document.write(buildPatchNotesWindowHtml());
+    patchNotesWindow.document.close();
+
+    setShowPatchChest(false);
+    if (!storageAvailable) return;
+    try {
+      localStorage.setItem(PATCH_NOTES_SEEN_KEY, PATCH_NOTES_VERSION);
+    } catch (error) {
+      console.warn('Kon patch notes status niet opslaan', error);
+    }
+  }, []);
+
   let bgClass = disableBaseBg ? '' : 'bg-animated-gradient';
   let additionalStyles: React.CSSProperties = {};
 
@@ -492,6 +613,25 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   return (
     <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
+
+      {showPatchChest && (
+        <button
+          type="button"
+          onClick={openPatchNotes}
+          aria-label={`Open update ${PATCH_NOTES_VERSION} patch notes`}
+          title={`Update ${PATCH_NOTES_VERSION}`}
+          className="fixed z-[99] p-2.5 rounded-2xl bg-amber-500/20 border border-amber-300/60 text-amber-100 backdrop-blur-sm shadow-[0_0_28px_rgba(251,191,36,0.65)] hover:scale-105 hover:bg-amber-400/25 active:scale-95 transition-all duration-200 animate-pulse"
+          style={{ top: 'calc(var(--safe-top, 0px) + 0.75rem)', right: '1rem' }}
+        >
+          <span className="absolute inset-0 rounded-2xl shadow-[0_0_36px_rgba(251,191,36,0.55)] pointer-events-none" />
+          <svg viewBox="0 0 24 24" className="w-6 h-6 relative" fill="none" aria-hidden="true">
+            <rect x="3" y="8" width="18" height="12" rx="2" className="fill-amber-700" />
+            <path d="M3 12h18" className="stroke-amber-300" strokeWidth="2" strokeLinecap="round" />
+            <path d="M8 8a4 4 0 0 1 8 0" className="stroke-amber-300" strokeWidth="2" strokeLinecap="round" />
+            <rect x="10" y="12" width="4" height="4" rx="1" className="fill-amber-200" />
+          </svg>
+        </button>
+      )}
 
       {/* Scanlines / Overlay effect */}
       {showTexture && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>}
