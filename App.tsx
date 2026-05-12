@@ -1243,11 +1243,7 @@ const App: React.FC = () => {
     }
   }, [isBusWon, prepareAdInterstitial]);
 
-  useEffect(() => {
-    if (!isDiscoActive) return;
-    const t = setTimeout(() => setIsDiscoActive(false), 5000); // Fallback timeout for 5 seconds
-    return () => clearTimeout(t);
-  }, [isDiscoActive]);
+
 
   // --- PHASE HANDLERS ---
 
@@ -1872,7 +1868,7 @@ const App: React.FC = () => {
         setPhase(GamePhase.BUS_TEAM_SELECTION);
       }
       else startBus([victim]);
-    }, 5000);
+    }, 2500);
   };
 
   const proceedToBus = () => {
@@ -1899,7 +1895,7 @@ const App: React.FC = () => {
       } else {
         startBus([passenger]);
       }
-    }, 5000);
+    }, 2500);
   };
 
   const handleSharedBusSelection = (partner: Player | null) => {
@@ -3138,15 +3134,38 @@ const App: React.FC = () => {
               <div key={rowIndex} className="flex gap-3 justify-center">
                 {row.map((card, cardIndex) => {
                   const isRevealed = card && revealedPyramidCards.has(card.id);
+                  let hasMatch = false;
+                  if (isRevealed && card && settings.mode === GameMode.DIGITAL) {
+                    hasMatch = players.some(p => p.hand.some(h => h.rank === card.rank));
+                  }
+
                   return (
-                    <div key={card ? card.id : `${rowIndex}-${cardIndex}`} className="relative group">
+                    <div key={card ? card.id : `${rowIndex}-${cardIndex}`} className={`relative group ${hasMatch ? 'cursor-pointer' : ''}`}>
                       <PlayingCard
                         card={isRevealed ? card : null}
                         isFaceDown={!isRevealed}
                         size="md"
                         style={settings.cardStyle}
-                        onClick={() => revealPyramidCard(rowIndex, cardIndex)}
-                        className={`transition-transform duration-300 ${!isRevealed ? 'z-10' : 'z-0'}`}
+                        onClick={() => {
+                          if (!isRevealed) {
+                            revealPyramidCard(rowIndex, cardIndex);
+                          } else if (hasMatch && card) {
+                            const sips = settings.pyramidRows - rowIndex;
+                            const isTop = rowIndex === 0;
+                            const matches: { player: Player, cardIndex: number }[] = [];
+                            players.forEach(p => {
+                              const matchIndex = p.hand.findIndex(h => h.rank === card.rank);
+                              if (matchIndex !== -1) {
+                                matches.push({ player: p, cardIndex: matchIndex });
+                              }
+                            });
+                            if (matches.length > 0) {
+                              triggerHaptic('medium');
+                              setPendingMatches({ card, sips: isTop ? 5 : sips, matches });
+                            }
+                          }
+                        }}
+                        className={`transition-transform duration-300 ${!isRevealed ? 'z-10' : 'z-0'} ${hasMatch ? 'ring-[3px] ring-green-500 shadow-[0_0_25px_rgba(34,197,94,0.7)] scale-[1.02]' : ''}`}
                       />
                       {cardIndex === 0 && (
                         <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
