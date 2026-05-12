@@ -210,10 +210,9 @@ const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const UPDATE_1_1_PATCH_NOTES = [
-  '🎨 Kies nu zelf je favoriete kaartstijl in de nieuwe instellingen preview modal',
-  '💾 Gekozen kaartstijlen en instellingen worden nu onthouden voor je volgende sessie',
+  '🎨 Kies nu zelf je favoriete kaartstijl in de instellingen',
   '🔄 Het piramide uitdeelscherm kan nu opnieuw worden geopend',
-  '🃏 Nieuwe instelling: Dubbele kaarten in de piramide voor extra uitdaging!',
+  '🃏 Nieuwe instelling: Horizontale/dubbele kaarten in de piramide voor extra uitdaging!',
   '✨ Kleine UI en UX verbeteringen',
   '🛠️ Diverse bugs opgelost',
 ];
