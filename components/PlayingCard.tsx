@@ -76,8 +76,8 @@ const renderPips = (card: Card, size: 'sm' | 'base' | 'md' | 'lg' | 'xl', custom
     6: [{ x: 32, y: 25 }, { x: 68, y: 25 }, { x: 32, y: 50 }, { x: 68, y: 50 }, { x: 32, y: 75, inv: true }, { x: 68, y: 75, inv: true }],
     7: [{ x: 32, y: 25 }, { x: 68, y: 25 }, { x: 32, y: 50 }, { x: 68, y: 50 }, { x: 50, y: 37.5 }, { x: 32, y: 75, inv: true }, { x: 68, y: 75, inv: true }],
     8: [{ x: 32, y: 25 }, { x: 68, y: 25 }, { x: 32, y: 50 }, { x: 68, y: 50 }, { x: 50, y: 37.5 }, { x: 50, y: 62.5, inv: true }, { x: 32, y: 75, inv: true }, { x: 68, y: 75, inv: true }],
-    9: [{ x: 32, y: 20 }, { x: 68, y: 20 }, { x: 32, y: 40 }, { x: 68, y: 40 }, { x: 50, y: 50 }, { x: 32, y: 60, inv: true }, { x: 68, y: 60, inv: true }, { x: 32, y: 80, inv: true }, { x: 68, y: 80, inv: true }],
-    10: [{ x: 32, y: 20 }, { x: 68, y: 20 }, { x: 32, y: 40 }, { x: 68, y: 40 }, { x: 50, y: 30 }, { x: 50, y: 70, inv: true }, { x: 32, y: 60, inv: true }, { x: 68, y: 60, inv: true }, { x: 32, y: 80, inv: true }, { x: 68, y: 80, inv: true }],
+    9: [{ x: 32, y: 18 }, { x: 68, y: 18 }, { x: 32, y: 39 }, { x: 68, y: 39 }, { x: 50, y: 50 }, { x: 32, y: 61, inv: true }, { x: 68, y: 61, inv: true }, { x: 32, y: 82, inv: true }, { x: 68, y: 82, inv: true }],
+    10: [{ x: 32, y: 18 }, { x: 68, y: 18 }, { x: 32, y: 39 }, { x: 68, y: 39 }, { x: 50, y: 28.5 }, { x: 50, y: 71.5, inv: true }, { x: 32, y: 61, inv: true }, { x: 68, y: 61, inv: true }, { x: 32, y: 82, inv: true }, { x: 68, y: 82, inv: true }],
   };
 
   return (
