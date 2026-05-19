@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -428,24 +428,9 @@ const GlobalAnimations = () => (
 
 
     @keyframes disco-gradient {
-
-
-
       0% { background-position: 0% 50%; }
-
-
-
-      50% { background-position: 100% 50%; }
-
-
-
-      100% { background-position: 0% 50%; }
-
-
-
+      100% { background-position: 100% 50%; }
     }
-
-
 
     @keyframes end-gradient {
       0% { background-position: 0% 50%; }
@@ -609,7 +594,7 @@ const App: React.FC = () => {
       sharedBus: false,
       busLength: 6,
       busDecks: 1,
-      cardStyle: CardStyle.MODERN,
+      cardStyle: CardStyle.CLASSIC,
       doublePyramidCards: true,
     };
 
@@ -1851,6 +1836,7 @@ const App: React.FC = () => {
 
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
   const pyramidContentRef = useRef<HTMLDivElement>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pyramidScale, setPyramidScale] = useState(1);
 
   const calculatePyramidScale = useCallback(() => {
@@ -2013,15 +1999,32 @@ const App: React.FC = () => {
     const eligiblePlayers = players.filter(p => !p.isImmune);
     const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
 
-    const playerStats = candidates.map(p => {
-      let totalValue = 0;
-      if (settings.mode === GameMode.DIGITAL) {
+    // Check if any candidate still has cards in hand (relevant for both digital and physical mode if tracked)
+    const playersWithCards = candidates.filter(p => p.hand.length > 0);
+
+    if (playersWithCards.length > 0) {
+      // Prioritize cards: most cards, then highest total rank value
+      const stats = playersWithCards.map(p => {
+        let totalValue = 0;
         p.hand.forEach(c => { totalValue += c.rank; });
         return { id: p.id, count: p.hand.length, val: totalValue };
-      } else {
-        return { id: p.id, count: p.drinksTaken, val: 0 };
-      }
-    });
+      });
+
+      stats.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return b.val - a.val;
+      });
+
+      const victimId = stats[0].id;
+      return players.find(p => p.id === victimId)!;
+    }
+
+    // Fallback: most drinks taken (original physical mode logic)
+    const playerStats = candidates.map(p => ({
+      id: p.id,
+      count: p.drinksTaken,
+      val: p.drinksDistributed
+    }));
 
     playerStats.sort((a, b) => {
       if (b.count !== a.count) return b.count - a.count;
@@ -2190,7 +2193,7 @@ const App: React.FC = () => {
     setBusDeck([]);
     setBusDecksUsed(1);
     setIsBusDeckExhausted(false);
-    setPhysicalBusPosition(1);
+    setPhysicalBusPosition(2);
     setCurrentBusIndex(1);
     setFeedback(null);
     setPhase(GamePhase.THE_BUS);
@@ -2208,7 +2211,13 @@ const App: React.FC = () => {
   const restartBus = () => {
     setBusWrongCardIndex(null);
     const configuredBusLength = settings.busLength;
-    let tempAvailableDeck = busDeck; // Use temp variable to manage current deck
+
+    // Recycle unrevealed cards from the previous failed attempt
+    // These are cards that were laid out but never flipped/seen
+    const unrevealed = busCards.slice(currentBusIndex + 1);
+    const recycledDeck = shuffleDeck([...busDeck, ...unrevealed]);
+
+    let tempAvailableDeck = recycledDeck;
     let infoFeedback: Feedback | null = null;
 
     let actualBusDecksUsed = busDecksUsed; // Use temp variable for current count
@@ -2269,7 +2278,7 @@ const App: React.FC = () => {
       triggerHaptic('error');
       triggerShake();
       playSound('busFail');
-      const sips = currentBusIndex;
+      const sips = currentBusIndex + 1;
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
@@ -2303,7 +2312,7 @@ const App: React.FC = () => {
         return;
       }
 
-      setPhysicalBusPosition(nextPosition);
+      setPhysicalBusPosition(nextPosition + 1);
       setFeedback({ text: `${t("Goed! Kaart")} ${nextPosition} ${t("klaar.")}`, type: 'info' });
       return;
     }
@@ -2321,7 +2330,7 @@ const App: React.FC = () => {
       if (p) p.drinksTaken += sips;
     });
     setPlayers(newPlayers);
-    setPhysicalBusPosition(1);
+    setPhysicalBusPosition(2);
     setIsBusWon(false);
   };
 
@@ -2608,42 +2617,68 @@ const App: React.FC = () => {
                     {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON].map((style) => (
                       <button
                         key={style}
+                        onPointerDown={() => {
+                          if (settings.cardStyle === style) return;
+                          longPressTimerRef.current = setTimeout(() => {
+                            const n = { ...settings, cardStyle: style };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            triggerHaptic('heavy');
+                            longPressTimerRef.current = null;
+                          }, 3000);
+                        }}
+                        onPointerUp={() => {
+                          if (longPressTimerRef.current) {
+                            clearTimeout(longPressTimerRef.current);
+                            longPressTimerRef.current = null;
+                          }
+                        }}
+                        onPointerLeave={() => {
+                          if (longPressTimerRef.current) {
+                            clearTimeout(longPressTimerRef.current);
+                            longPressTimerRef.current = null;
+                          }
+                        }}
                         onClick={async () => {
-                          if (settings.cardStyle === style) {
-                            setPreviewDeckStyle(style);
-                          } else {
-                            const played = await showRewardedAd();
-                            if (played) {
-                                const n = { ...settings, cardStyle: style };
-                                setSettings(n);
-                                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                            }
+                          if (settings.cardStyle === style) return;
+                          const played = await showRewardedAd();
+                          if (played) {
+                            const n = { ...settings, cardStyle: style };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
                           }
                           triggerHaptic('light');
                         }}
                         className={`py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
                       >
+                        {/* Preview eye button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewDeckStyle(style);
+                            triggerHaptic('light');
+                          }}
+                          className="absolute top-2 left-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
+                        >
+                          <Eye size={12} className="text-white" />
+                        </button>
+
                         {settings.cardStyle !== style && (
-                            <div className="absolute top-2 right-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center gap-1">
-                                <Video size={12} className="text-amber-400" />
-                            </div>
+                          <div className="absolute top-2 right-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center gap-1">
+                            <Video size={12} className="text-amber-400" />
+                          </div>
                         )}
                         <div className="scale-[0.55] h-16 flex items-center justify-center">
                           <PlayingCard card={PREVIEW_CARD} size="base" style={style} className="shadow-2xl" />
                         </div>
                         <span className={`text-xs font-black uppercase tracking-widest ${settings.cardStyle === style ? 'text-white' : 'text-slate-400'}`}>
-                          {t(style === CardStyle.MODERN ? "Modern" : 
-                             style === CardStyle.DARK ? "Donker" : 
-                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
+                          {t(style === CardStyle.MODERN ? "Modern" :
+                            style === CardStyle.DARK ? "Donker" :
+                            style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
                         </span>
                       </button>
                     ))}
                   </div>
-                  {settings.cardStyle && (
-                    <p className="text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest mt-1 opacity-60">
-                      {t("Klik nogmaals voor deck preview")}
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex flex-col gap-4 w-full pt-4 border-t border-slate-800/50">
@@ -3127,14 +3162,9 @@ const App: React.FC = () => {
       return (
         <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid">
           {manualBusSelectionOverlay}
-          {/* Quit button */}
-          <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
-          </div>
+        {renderQuitModal()}
 
-          {renderQuitModal()}
-
-          {loserReveal && (
+        {loserReveal && (
             <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
 
@@ -3148,7 +3178,7 @@ const App: React.FC = () => {
                 <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
                 <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
                   {loserReveal.player.image ? (
-                    <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{ animationIterationCount: 1 }} />
+                    <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" />
                   ) : (
                     <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
                   )}
@@ -3156,7 +3186,7 @@ const App: React.FC = () => {
               </div>
 
               <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-              <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
+              <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl">
                 {t("Naar de Bus!")}
               </div>
             </div>
@@ -3253,11 +3283,6 @@ const App: React.FC = () => {
     return (
       <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop>
         {manualBusSelectionOverlay}
-        {/* Quit button */}
-        <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-          {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
-        </div>
-
         {renderQuitModal()}
 
         {loserReveal && (
@@ -3274,7 +3299,7 @@ const App: React.FC = () => {
               <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
               <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
                 {loserReveal.player.image ? (
-                  <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_1s_ease-out_reverse]" style={{ animationIterationCount: 1 }} />
+                  <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" />
                 ) : (
                   <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
                 )}
@@ -3282,7 +3307,7 @@ const App: React.FC = () => {
             </div>
 
             <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-            <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl animate-pulse">
+            <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl">
               {t("Naar de Bus!")}
             </div>
           </div>
@@ -3329,14 +3354,64 @@ const App: React.FC = () => {
 
 
 
-        <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-          <div>
-            <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">
-              {isPyramidDoubleSetup ? t("Dubbele kaarten in de piramide") : t("Piramide")}
-            </h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-              {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
-            </p>
+        <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl gap-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
+          <div className="flex items-center gap-6 overflow-hidden">
+            <div className="shrink-0">
+              <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">
+                {isPyramidDoubleSetup ? t("Dubbele kaarten in de piramide") : t("Piramide")}
+              </h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 py-1">
+              {(() => {
+                const victim = findLoser();
+                return players.map(p => {
+                  const isLoser = victim && p.id === victim.id;
+                  const hasCards = p.hand.length > 0;
+                  
+                  return (
+                    <div key={p.id} className="flex flex-col items-center shrink-0">
+                      <div className={`w-8 h-8 rounded-full border-2 transition-all relative ${isLoser ? 'border-transparent' : hasCards ? 'border-amber-500' : 'border-white/10 opacity-50'} bg-slate-800`}>
+                        {isLoser && (
+                          <div className="absolute -inset-[2px] rounded-full z-0 overflow-hidden pointer-events-none">
+                            <div 
+                              className="absolute inset-0 animate-[spin_3s_linear_infinite]"
+                              style={{
+                                background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)',
+                                padding: '2px'
+                              }}
+                            />
+                            <div className="absolute inset-[2px] bg-slate-800 rounded-full" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 rounded-full overflow-hidden z-10 pointer-events-none">
+                          {p.image ? (
+                            <img src={p.image} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white text-[10px] font-black">
+                              {p.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5 mt-1">
+                        {isLoser && <BusFront size={10} className="text-red-500" />}
+                        <span className={`text-[10px] font-black ${isLoser ? 'text-amber-400' : hasCards ? 'text-amber-400' : 'text-slate-500'}`}>
+                          {p.hand.length}/4
+                        </span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
         </div>
 
@@ -3447,7 +3522,7 @@ const App: React.FC = () => {
                     );
                   })}
                   {/* Row Indicator */}
-                  <div className="absolute -left-16 sm:-left-24 top-1/2 -translate-y-1/2 text-[12px] sm:text-[14px] w-14 sm:w-20 text-right whitespace-nowrap drop-shadow-lg opacity-80 transition-all">
+                  <div className={`absolute top-1/2 -translate-y-1/2 text-[12px] sm:text-[14px] w-14 sm:w-20 text-right whitespace-nowrap drop-shadow-lg opacity-80 transition-all ${row.some(card => card && doubledPyramidCardIds.has(card.id)) ? '-left-20 sm:-left-32' : '-left-16 sm:-left-24'}`}>
                     {Array(settings.pyramidRows - rowIndex).fill('🍺').join('')}
                   </div>
                 </div>
@@ -3566,8 +3641,7 @@ const App: React.FC = () => {
               {busPassengers.map((p, i) => (
                 <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
                   <span className="text-amber-400 font-black text-sm uppercase tracking-widest mb-3 opacity-90">{t("Speler")} {i + 1}</span>
-                  <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5 animate-pulse transition-all">
-                    {p.image ? <img src={p.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-5xl font-black animate-[spin_8s_linear_infinite]">{p.name.charAt(0)}</div>}
+                  <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5 transition-all">                    {p.image ? <img src={p.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-5xl font-black animate-[spin_8s_linear_infinite]">{p.name.charAt(0)}</div>}
                   </div>
                   <div className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-md">{p.name}</div>
                 </div>
