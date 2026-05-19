@@ -275,6 +275,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Zo werkt het niet!": "That's not how it works!",
         "hahaha": "hahaha",
         "zo slecht": "so bad",
+        "gaan samen in de bus.": "are going in the bus together.",
         "Toon": "Show",
         "Verberg": "Hide",
         "Berichten aanpassen": "Customize Messages",

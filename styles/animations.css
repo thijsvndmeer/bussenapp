@@ -16,18 +16,22 @@
 }
 @keyframes ring-pulse-red {
   0% {
-    box-shadow: 0 0 0 0px rgba(220, 38, 38, 0.8), 0 0 10px rgba(220, 38, 38, 0.6);
+    box-shadow: 0 0 0 0px rgba(255, 60, 60, 0.9), 0 0 20px rgba(255, 60, 60, 0.8);
+    border-color: #ff3c3c;
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(220, 38, 38, 0), 0 0 30px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 0 0 20px rgba(255, 60, 60, 0), 0 0 40px rgba(255, 0, 0, 0.6);
+    border-color: #ff0000;
   }
   100% {
-    box-shadow: 0 0 0 0px rgba(220, 38, 38, 0), 0 0 10px rgba(220, 38, 38, 0);
+    box-shadow: 0 0 0 0px rgba(255, 60, 60, 0), 0 0 10px rgba(255, 60, 60, 0);
+    border-color: #ff3c3c;
   }
 }
 
 .animate-pyramid-ring-pulse {
   animation: ring-pulse-red 0.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-  border: 4px solid #dc2626 !important;
+  border: 4px solid #ff3c3c !important;
   border-radius: 12px;
+  transform: scale(1.05);
 }

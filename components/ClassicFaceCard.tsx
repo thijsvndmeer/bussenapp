@@ -16,7 +16,7 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
     [Suit.SPADES]: 'S',
   };
 
-  const rankMap: Record<Rank, string> = {
+  const rankMap: Record<number, string> = {
     [Rank.JACK]: 'J',
     [Rank.QUEEN]: 'Q',
     [Rank.KING]: 'K',

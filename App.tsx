@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -11,12 +11,15 @@ import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
 const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
 const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
+const ADMOB_REWARDED_UNIT_ID = 'ca-app-pub-7627297114391750/8931215264'; // Add correct ID later
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
 
 type AdMobPlugin = {
   initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
   prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
   showInterstitial?: () => Promise<void>;
+  prepareRewardVideoAd?: (options: { adId: string; adName?: string }) => Promise<void>;
+  showRewardVideoAd?: () => Promise<{ type: string; amount: number } | void>;
 };
 const getAdMobPlugin = (): AdMobPlugin | null => {
   const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
@@ -163,7 +166,8 @@ type SoundEffect =
   | 'busStep'
   | 'busFail'
   | 'reshuffle'
-  | 'disco'; // Add this
+  | 'disco'
+  | 'stopDisco';
 
 const createOscillatorSound = (
   ctx: AudioContext,
@@ -205,16 +209,20 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
-const PATCH_NOTES_VERSION = '1.1';
+const PATCH_NOTES_VERSION = '1.2';
 const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
-const UPDATE_1_1_PATCH_NOTES = [
-  '🎨 Kies nu zelf je favoriete kaartstijl in de instellingen',
-  '🔄 Het piramide uitdeelscherm kan nu opnieuw worden geopend',
-  '🃏 Nieuwe instelling: Horizontale/dubbele kaarten in de piramide voor extra uitdaging!',
-  '✨ Kleine UI en UX verbeteringen',
-  '🛠️ Diverse bugs opgelost',
+const UPDATE_1_2_PATCH_NOTES = [
+  '🚌 Gedeelde bus animaties en UI vernieuwd voor nóg meer plezier!',
+  '🃏 De busrit gebruikt nu alleen nog ongespeelde kaarten van de piramide',
+  '🍻 Nieuwe, beter zichtbare biertjes (🍺) als slok-indicatoren',
+  '✨ De "Naar het Einde" knop ziet er spectaculairder uit',
+  '🌍 Volledige Engelse vertaling toegevoegd',
+  '🔇 Automatisch verbergen van de statusbalk voor een full-screen ervaring',
+  '🎵 Disco geluid stopt nu netjes als je verder speelt',
+  '🛡️ Duidelijkere tekst voor spelers die immuun zijn (Ging vorige ronde al in de bus)',
+  '📺 Mogelijkheid toegevoegd om (vrijwillig) een ad te kijken voor nieuwe kaartstijlen!',
 ];
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -564,7 +572,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
             </div>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
-                {UPDATE_1_1_PATCH_NOTES.map((note, index) => (
+                {UPDATE_1_2_PATCH_NOTES.map((note, index) => (
                   <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
                     <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
                     <span className="flex-1">{note.substring(note.indexOf(' ') + 1)}</span>
@@ -783,6 +791,7 @@ const App: React.FC = () => {
 
   // Audio FX
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const discoAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const ensureAudioContext = useCallback(() => {
     if (typeof window === 'undefined') return null;
@@ -850,9 +859,22 @@ const App: React.FC = () => {
           setTimeout(() => playTone({ frequency: 360, duration: 0.08, type: 'triangle', volume: 0.08 }), 80);
           break;
         case 'disco': {
+          if (discoAudioRef.current) {
+            discoAudioRef.current.pause();
+            discoAudioRef.current.currentTime = 0;
+          }
           const audio = new Audio('/assets/sounds/danger_alarm.m4a');
           audio.volume = 1.0; 
           audio.play().catch(e => console.warn('Disco sound failed', e));
+          discoAudioRef.current = audio;
+          break;
+        }
+        case 'stopDisco': {
+          if (discoAudioRef.current) {
+            discoAudioRef.current.pause();
+            discoAudioRef.current.currentTime = 0;
+            discoAudioRef.current = null;
+          }
           break;
         }
       }
@@ -942,6 +964,31 @@ const App: React.FC = () => {
       }
     };
   }, []);
+
+  const prepareRewardedAd = useCallback(async () => {
+    const adMob = getAdMobPlugin();
+    if (!adMob || typeof adMob.prepareRewardVideoAd !== 'function') return Promise.resolve();
+
+    try {
+      await adMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
+    } catch (error) {
+      console.warn('AdMob rewarded preload failed', error);
+    }
+  }, []);
+
+  const showRewardedAd = useCallback(async () => {
+    const adMob = getAdMobPlugin();
+    if (!adMob || typeof adMob.showRewardVideoAd !== 'function') return false;
+
+    try {
+      await prepareRewardedAd();
+      await adMob.showRewardVideoAd();
+      return true;
+    } catch (error) {
+      console.warn('AdMob rewarded show failed', error);
+      return false;
+    }
+  }, [prepareRewardedAd]);
 
   // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
   // Includes 1-minute cooldown to prevent multiple ads from stacking
@@ -1118,6 +1165,21 @@ const App: React.FC = () => {
   useEffect(() => {
     initializeAdMob();
   }, [initializeAdMob]);
+
+  useEffect(() => {
+    const manageBars = async () => {
+      try {
+        if (phase === GamePhase.SETUP || phase === GamePhase.GAME_OVER) {
+          await StatusBar.show();
+        } else {
+          await StatusBar.hide();
+        }
+      } catch (e) {
+        // Ignored in web
+      }
+    };
+    manageBars();
+  }, [phase]);
 
   // --- HELPERS ---
 
@@ -1512,12 +1574,14 @@ const App: React.FC = () => {
     confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
   };
 
-  const handleQuitGame = () => {
+  const handleQuitGame = async () => {
     setShowQuitConfirm(false);
+    await showLeaderboardInterstitial();
     setPhase(GamePhase.SETUP);
     setFeedback(null);
     setLastDrawnCard(null);
     setShowConfetti(false);
+    playSound('stopDisco');
     setIsDiscoActive(false);
   };
 
@@ -1556,6 +1620,7 @@ const App: React.FC = () => {
     setFeedback(null);
     setLastDrawnCard(null);
     setShowConfetti(false);
+    playSound('stopDisco');
     setIsDiscoActive(false); // <--- Add this line
 
     const dealerIndex = currentDealerIndex;
@@ -2068,7 +2133,19 @@ const App: React.FC = () => {
     playSound('busEnter');
 
     const needed = settings.busLength;
-    const freshBusDeck = shuffleDeck(createDeck());
+    
+    // Only subtract rotated/played cards from bus pakje
+    // We do this by taking the remaining deck and adding back unrevealed pyramid cards and unplayed player cards.
+    const unrevealedPyramidCards = pyramid
+      .flat()
+      .filter((c): c is Card => c !== null && !revealedPyramidCards.has(c.id));
+    const unplayedPlayerCards = players.flatMap(p => p.hand.filter(c => !c.isPlayed));
+    
+    const combinedDeck = [...deck, ...unrevealedPyramidCards, ...unplayedPlayerCards];
+    
+    // If somehow we don't have enough cards to even start the bus, add a fresh deck
+    const freshBusDeck = shuffleDeck(combinedDeck.length >= needed ? combinedDeck : [...combinedDeck, ...createDeck()]);
+    
     const newBusCards = freshBusDeck.slice(0, needed);
     setBusDeck(freshBusDeck.slice(needed));
     setBusCards(newBusCards);
@@ -2351,6 +2428,15 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
+          <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex-none shrink-0">
+            <Shield size={20} className="text-yellow-400 shrink-0" />
+            <p className="text-yellow-200/80 text-[10px] sm:text-xs font-bold uppercase tracking-wider leading-tight">
+              <span className="text-white">{players.find(p => p.id === immunePlayerId)?.name}</span> {t("is immuun voor de bus, ging vorige ronde al.")}
+            </p>
+          </div>
+        )}
+
         <div className="flex-none space-y-3">
           <div className="flex gap-2 h-14">
             <input type="file" ref={fileInputCameraRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
@@ -2522,18 +2608,26 @@ const App: React.FC = () => {
                     {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON].map((style) => (
                       <button
                         key={style}
-                        onClick={() => {
+                        onClick={async () => {
                           if (settings.cardStyle === style) {
                             setPreviewDeckStyle(style);
                           } else {
-                            const n = { ...settings, cardStyle: style };
-                            setSettings(n);
-                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            const played = await showRewardedAd();
+                            if (played) {
+                                const n = { ...settings, cardStyle: style };
+                                setSettings(n);
+                                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            }
                           }
                           triggerHaptic('light');
                         }}
-                        className={`py-4 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-all ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
+                        className={`py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
                       >
+                        {settings.cardStyle !== style && (
+                            <div className="absolute top-2 right-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center gap-1">
+                                <Video size={12} className="text-amber-400" />
+                            </div>
+                        )}
                         <div className="scale-[0.55] h-16 flex items-center justify-center">
                           <PlayingCard card={PREVIEW_CARD} size="base" style={style} className="shadow-2xl" />
                         </div>
@@ -2876,7 +2970,7 @@ const App: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative">
             <div className="text-center mb-6 relative z-10">
               <span className="px-3 py-1 rounded-full bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 text-[10px] text-slate-300 font-bold uppercase tracking-widest shadow-lg">
-                {t("Ronde ")}{roundStep} / 4
+                {t("Ronde")} {roundStep} / 4
               </span>
               <h2 className="text-3xl font-black text-white mt-3 drop-shadow-xl neon-text">
                 {roundStep === 1 && t("Rood of Zwart?")}
@@ -3034,7 +3128,7 @@ const App: React.FC = () => {
         <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid">
           {manualBusSelectionOverlay}
           {/* Quit button */}
-          <div className="fixed top-4 right-4 z-[96]">
+          <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
             {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
 
@@ -3160,7 +3254,7 @@ const App: React.FC = () => {
       <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop>
         {manualBusSelectionOverlay}
         {/* Quit button */}
-        <div className="fixed top-4 right-4 z-[96]">
+        <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
           {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
         </div>
 
@@ -3353,8 +3447,8 @@ const App: React.FC = () => {
                     );
                   })}
                   {/* Row Indicator */}
-                  <div className="absolute -left-10 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 w-8 text-right opacity-50">
-                    {`${settings.pyramidRows - rowIndex}x`}
+                  <div className="absolute -left-16 sm:-left-24 top-1/2 -translate-y-1/2 text-[12px] sm:text-[14px] w-14 sm:w-20 text-right whitespace-nowrap drop-shadow-lg opacity-80 transition-all">
+                    {Array(settings.pyramidRows - rowIndex).fill('🍺').join('')}
                   </div>
                 </div>
               ));
@@ -3399,11 +3493,11 @@ const App: React.FC = () => {
     return (
       <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false} disableSafeTop>
         <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ ...((resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-          <div className="absolute top-4 right-4 z-[96]">
+          <div className="absolute z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
             {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
           </div>
           {renderQuitModal()}
-          <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 animate-bounce overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
+          <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
           <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">{t("Gedeelde Bus")}</h2>
@@ -3460,14 +3554,22 @@ const App: React.FC = () => {
       return (
         <RootContainer className="items-center justify-center" disableBaseBg showTexture={false} disableSafeTop>
           <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out p-4" style={{ ...((busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-            <h1 className="text-3xl font-black text-red-600 mb-8 animate-[pulse_0.2s_ease-in-out_infinite] text-center uppercase tracking-tighter">{t("Samen in de bus!")}</h1>
+            <h1 className="text-5xl font-black text-white mb-2 text-center uppercase tracking-tighter drop-shadow-xl">{t("Samen in de bus!")}</h1>
+            
+            {busPassengers.length >= 2 && (
+              <p className="text-red-300 font-bold text-lg mb-12 text-center uppercase tracking-widest px-4">
+                <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[0].name}</span> & <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[1].name}</span> {t("gaan samen in de bus.")}
+              </p>
+            )}
+
             <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
-              {busPassengers.map(p => (
-                <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-1000">
-                  <div className="w-32 h-32 rounded-full border-4 border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden mb-4 grayscale contrast-125">
-                    {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-4xl font-black">{p.name.charAt(0)}</div>}
+              {busPassengers.map((p, i) => (
+                <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
+                  <span className="text-amber-400 font-black text-sm uppercase tracking-widest mb-3 opacity-90">{t("Speler")} {i + 1}</span>
+                  <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5 animate-pulse transition-all">
+                    {p.image ? <img src={p.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-5xl font-black animate-[spin_8s_linear_infinite]">{p.name.charAt(0)}</div>}
                   </div>
-                  <div className="text-4xl font-black text-white uppercase tracking-widest">{p.name}</div>
+                  <div className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-md">{p.name}</div>
                 </div>
               ))}
             </div>
@@ -3505,11 +3607,10 @@ const App: React.FC = () => {
             <div className="w-full max-w-4xl mx-auto space-y-6 relative z-10">
               <div className={busPanelClasses}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
-                  <div className="space-y-1 text-center md:text-left">
+                  <div className="space-y-1 text-center md:text-left mr-10">
                     <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">{t("Fysieke bus")}</p>
                     <div className="flex items-center justify-center md:justify-start gap-2">
                       <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t("De Busrit")}</h2>
-                      {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90")}
                     </div>
                     <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                   </div>
@@ -3517,6 +3618,12 @@ const App: React.FC = () => {
                     {t("Kaart")} {physicalBusPosition} / {settings.busLength}
                   </div>
                 </div>
+
+                {!isBusWon && (
+                  <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
+                    {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+                  </div>
+                )}
 
                 <div className="bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)] animate-in fade-in duration-500 space-y-4">
                   <div className="flex items-center justify-between text-[11px] uppercase font-black tracking-[0.25em] text-amber-200 flex-wrap gap-2">
@@ -3612,14 +3719,14 @@ const App: React.FC = () => {
             <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
               <button
                 onClick={() => { prepareAdInterstitial(); setPhase(GamePhase.GAME_OVER); }}
-                className="pointer-events-auto w-full sm:w-auto text-white text-lg sm:text-xl font-black px-6 sm:px-12 py-4 rounded-2xl border border-amber-300/60 shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
+                className="pointer-events-auto w-full sm:w-auto text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95"
                 style={{
-                  background: 'linear-gradient(90deg, #dd8e17ff, #bb9517ff, #f59e0b, #fd9947ff)',
-                  backgroundSize: '300% 300%',
-                  animation: 'end-gradient 3s ease-in-out infinite',
+                  background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
+                  backgroundSize: '200% 200%',
+                  animation: 'end-gradient 3s linear infinite',
                 }}
               >
-                {t("Naar het Einde")} <ArrowRight size={24} strokeWidth={3} />
+                {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
               </button>
             </div>
           )}
@@ -3652,15 +3759,20 @@ const App: React.FC = () => {
                 <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
               </div>
             )}
-            <div className="text-right">
+            <div className="text-right mr-10">
               <span className="text-[10px] text-slate-500 uppercase font-bold block">
                 {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}
               </span>
               <span className="text-white text-sm font-black">{passengerNames}</span>
             </div>
-            {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-400 hover:bg-slate-800/60 transition-all active:scale-90 border border-white/5")}
           </div>
         </div>
+
+        {!isBusWon && (
+          <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
+            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+          </div>
+        )}
 
         {renderQuitModal()}
 
@@ -3747,14 +3859,14 @@ const App: React.FC = () => {
             ) : isBusWon ? (
               <button
                 onClick={() => { prepareAdInterstitial(); setPhase(GamePhase.GAME_OVER); }}
-                className="w-full text-white text-xl font-black px-12 py-4 rounded-2xl border border-amber-300/60 shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center justify-center gap-3 hover:scale-105 transition-transform active:scale-95"
+                className="w-full text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle"
                 style={{
-                  background: 'linear-gradient(90deg, #fde047, #f1f5f9, #f59e0b, #fde047)',
-                  backgroundSize: '300% 300%',
-                  animation: 'end-gradient 3s ease-in-out infinite',
+                  background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
+                  backgroundSize: '200% 200%',
+                  animation: 'end-gradient 3s linear infinite',
                 }}
               >
-                {t("Naar het Einde")} <ArrowRight size={24} strokeWidth={3} />
+                {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
               </button>
             ) : (
               <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
