@@ -2429,10 +2429,10 @@ const App: React.FC = () => {
         </div>
 
         {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
-          <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex-none shrink-0">
+          <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex-none shrink-0 mb-4">
             <Shield size={20} className="text-yellow-400 shrink-0" />
             <p className="text-yellow-200/80 text-[10px] sm:text-xs font-bold uppercase tracking-wider leading-tight">
-              <span className="text-white">{players.find(p => p.id === immunePlayerId)?.name}</span> {t("is immuun voor de bus, ging vorige ronde al.")}
+              <span className="text-white">{players.find(p => p.id === immunePlayerId)?.name}</span> {t("is immuun voor de bus deze ronde")}
             </p>
           </div>
         )}
