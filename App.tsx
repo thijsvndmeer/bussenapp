@@ -2,29 +2,19 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle } from './types';
 import PlayingCard from './components/PlayingCard';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
 const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
-const ADMOB_INTERSTITIAL_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
-const ADMOB_REWARDED_UNIT_ID = 'ca-app-pub-7627297114391750/8931215264'; // Add correct ID later
+const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = 'ca-app-pub-7627297114391750/6867442667';
+const ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
+const ADMOB_REWARDED_UNIT_ID = 'ca-app-pub-7627297114391750/9512575855';
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
-
-type AdMobPlugin = {
-  initialize?: (options: { appId?: string; requestTrackingAuthorization?: boolean }) => Promise<void>;
-  prepareInterstitial?: (options: { adId: string; adName?: string }) => Promise<void>;
-  showInterstitial?: () => Promise<void>;
-  prepareRewardVideoAd?: (options: { adId: string; adName?: string }) => Promise<void>;
-  showRewardVideoAd?: () => Promise<{ type: string; amount: number } | void>;
-};
-const getAdMobPlugin = (): AdMobPlugin | null => {
-  const plugin = (Capacitor as any).Plugins?.AdMob as AdMobPlugin | undefined;
-  return plugin ?? null;
-};
 
 // --- HELPERS ---
 
@@ -619,6 +609,64 @@ const App: React.FC = () => {
     return defaultSettings;
   });
 
+  const renderStyleUnlockModal = () => {
+    if (!styleToUnlock) return null;
+
+    return (
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setStyleToUnlock(null)}>
+        <div 
+          className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col items-center text-center relative"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="pt-10 pb-6 px-8 flex flex-col items-center">
+            {/* Reward Icon / Graphic */}
+            <div className="relative mb-6">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-xl relative z-10 border border-amber-200/50">
+                <Clapperboard size={48} className="text-amber-950" />
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
+              {t("Stijl Wisselen")}
+            </h3>
+            
+            <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
+              {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : "Neon")}</span> {t("stijl!")}
+            </p>
+
+            <div className="w-full flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  const style = styleToUnlock;
+                  setStyleToUnlock(null);
+                  const played = await showRewardedAd();
+                  if (played) {
+                    const n = { ...settings, cardStyle: style };
+                    setSettings(n);
+                    queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                    triggerHaptic('heavy');
+                  }
+                }}
+                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3"
+              >
+                <Play size={22} fill="currentColor" /> {t("Video Kijken")}
+              </button>
+              
+              <button
+                onClick={() => setStyleToUnlock(null)}
+                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
+              >
+                {t("Nee bedankt")}
+              </button>
+            </div>
+          </div>
+          
+          <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+        </div>
+      </div>
+    );
+  };
+
   const renderDeckPreview = () => {
     if (!previewDeckStyle) return null;
 
@@ -680,6 +728,7 @@ const App: React.FC = () => {
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
   const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
+  const [styleToUnlock, setStyleToUnlock] = useState<CardStyle | null>(null);
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -884,14 +933,12 @@ const App: React.FC = () => {
     setFeedback(null);
   }, []);
 
-  const initializeAdMob = useCallback(async () => {
-    const adMob = getAdMobPlugin();
-    if (!adMob || adMobReadyRef.current || typeof adMob.initialize !== 'function') return;
+const initializeAdMob = useCallback(async () => {
+    if (!Capacitor.isNativePlatform() || adMobReadyRef.current) return;
 
     try {
-      await adMob.initialize({
-        appId: ADMOB_APP_ID,
-        requestTrackingAuthorization: true,
+      await AdMob.initialize({
+        initializeForTesting: false,
       });
       adMobReadyRef.current = true;
     } catch (error) {
@@ -900,7 +947,7 @@ const App: React.FC = () => {
   }, []);
 
   // Pre-load an interstitial ad so it's ready to display instantly
-  const prepareAdInterstitial = useCallback(() => {
+  const prepareAdInterstitial = useCallback((adId: string) => {
     // If we're already loading or have loaded an ad, just return that Promise
     if (adInterstitialPromiseRef.current) return adInterstitialPromiseRef.current;
 
@@ -910,20 +957,18 @@ const App: React.FC = () => {
       adRetryTimeoutRef.current = null;
     }
 
-    const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.prepareInterstitial !== 'function') return Promise.resolve();
+    if (!Capacitor.isNativePlatform()) return Promise.resolve();
 
     const loadAd = async () => {
       try {
-        if (!adMobReadyRef.current && typeof adMob.initialize === 'function') {
-          await adMob.initialize({
-            appId: ADMOB_APP_ID,
-            requestTrackingAuthorization: true,
+        if (!adMobReadyRef.current) {
+          await AdMob.initialize({
+            initializeForTesting: false,
           });
           adMobReadyRef.current = true;
         }
 
-        await adMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_UNIT_ID, adName: INTERSTITIAL_PLACEMENT });
+        await AdMob.prepareInterstitial({ adId });
       } catch (error) {
         console.warn('Interstitial voorbereiden mislukt', error);
         adInterstitialPromiseRef.current = null; // Clear so we can try again later
@@ -932,7 +977,7 @@ const App: React.FC = () => {
         if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
         adRetryTimeoutRef.current = setTimeout(() => {
           adRetryTimeoutRef.current = null;
-          prepareAdInterstitial();
+          prepareAdInterstitial(adId);
         }, 15_000);
       }
     };
@@ -951,47 +996,46 @@ const App: React.FC = () => {
   }, []);
 
   const prepareRewardedAd = useCallback(async () => {
-    const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.prepareRewardVideoAd !== 'function') return Promise.resolve();
+    if (!Capacitor.isNativePlatform()) return;
 
     try {
-      await adMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
+      await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
     } catch (error) {
       console.warn('AdMob rewarded preload failed', error);
     }
   }, []);
 
   const showRewardedAd = useCallback(async () => {
-    const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.showRewardVideoAd !== 'function') return false;
+    if (!Capacitor.isNativePlatform()) return true; // Always success on web for testing
 
     try {
       await prepareRewardedAd();
-      await adMob.showRewardVideoAd();
-      return true;
+      const reward = await AdMob.showRewardVideoAd();
+      return !!reward;
     } catch (error) {
       console.warn('AdMob rewarded show failed', error);
       return false;
     }
   }, [prepareRewardedAd]);
 
-  // Interstitial ad: type=interstitial, format=full-screen, placement=leaderboard exit
+  // Interstitial ad
   // Includes 1-minute cooldown to prevent multiple ads from stacking
-  const showLeaderboardInterstitial = useCallback(async () => {
+  const showInterstitialAd = useCallback(async (type: 'QUIT' | 'LEADERBOARD') => {
+    if (!Capacitor.isNativePlatform()) return;
+
     const now = Date.now();
     if (now - lastAdShownRef.current < AD_COOLDOWN_MS) {
       console.log('Ad cooldown actief, overgeslagen');
       return;
     }
 
-    const adMob = getAdMobPlugin();
-    if (!adMob || typeof adMob.showInterstitial !== 'function') return;
+    const adId = type === 'QUIT' ? ADMOB_INTERSTITIAL_QUIT_UNIT_ID : ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID;
 
     try {
       // Ensure it is prepared (this will wait if a background preload is still running)
-      await prepareAdInterstitial();
+      await prepareAdInterstitial(adId);
 
-      await adMob.showInterstitial();
+      await AdMob.showInterstitial();
       lastAdShownRef.current = Date.now();
       adInterstitialPromiseRef.current = null; // Reset – force fresh preload for next time
     } catch (error) {
@@ -1376,7 +1420,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isBusWon) {
       setBusWinBurst(true);
-      prepareAdInterstitial(); // Pre-cook ad as soon as bus is won
+      prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); // Pre-cook ad as soon as bus is won
       const t = setTimeout(() => setBusWinBurst(false), 1800);
       return () => clearTimeout(t);
     }
@@ -1549,7 +1593,7 @@ const App: React.FC = () => {
   }, [dragPlayerIndex, handleDragMove, handleDragEnd]);
 
   const handleGameOverContinue = async () => {
-    await showLeaderboardInterstitial();
+    await showInterstitialAd('LEADERBOARD');
     setPhase(GamePhase.SETUP);
   };
 
@@ -1561,7 +1605,7 @@ const App: React.FC = () => {
 
   const handleQuitGame = async () => {
     setShowQuitConfirm(false);
-    await showLeaderboardInterstitial();
+    await showInterstitialAd('QUIT');
     setPhase(GamePhase.SETUP);
     setFeedback(null);
     setLastDrawnCard(null);
@@ -2428,13 +2472,12 @@ const App: React.FC = () => {
             })}
             {players.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
-                <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center animate-bounce">
+                <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
                   <Users size={24} />
                 </div>
                 <span className="font-bold text-sm uppercase tracking-widest">{t("Start met toevoegen")}</span>
               </div>
-            )}
-          </div>
+            )}          </div>
         </div>
 
         {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
@@ -2641,12 +2684,7 @@ const App: React.FC = () => {
                         }}
                         onClick={async () => {
                           if (settings.cardStyle === style) return;
-                          const played = await showRewardedAd();
-                          if (played) {
-                            const n = { ...settings, cardStyle: style };
-                            setSettings(n);
-                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                          }
+                          setStyleToUnlock(style);
                           triggerHaptic('light');
                         }}
                         className={`py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
@@ -2849,6 +2887,7 @@ const App: React.FC = () => {
           </div>
         )}
         {renderDeckPreview()}
+        {renderStyleUnlockModal()}
       </RootContainer>
     );
   }
@@ -3792,7 +3831,7 @@ const App: React.FC = () => {
           {isBusWon && (
             <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
               <button
-                onClick={() => { prepareAdInterstitial(); setPhase(GamePhase.GAME_OVER); }}
+                onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
                 className="pointer-events-auto w-full sm:w-auto text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95"
                 style={{
                   background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
@@ -3932,7 +3971,7 @@ const App: React.FC = () => {
               </div>
             ) : isBusWon ? (
               <button
-                onClick={() => { prepareAdInterstitial(); setPhase(GamePhase.GAME_OVER); }}
+                onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
                 className="w-full text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle"
                 style={{
                   background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',

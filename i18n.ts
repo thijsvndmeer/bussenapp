@@ -21,7 +21,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kies een kaart per niveau voor dubbele slokken": "Kies een kaart per niveau voor dubbele slokken",
         "Niveau": "Niveau",
         "Matches op deze kaart tellen dubbel": "Matches op deze kaart tellen dubbel",
-        "Deze kaart kan nog niet!": "Deze kaart kan nog niet!"
+        "Deze kaart kan nog niet!": "Deze kaart kan nog niet!",
+        "Stijl Wisselen": "Stijl Wisselen",
+        "Kijk een korte video om direct over te schakelen naar de": "Kijk een korte video om direct over te schakelen naar de",
+        "stijl!": "stijl!",
+        "Video Kijken": "Video Kijken",
+        "Nee bedankt": "Nee bedankt"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -308,7 +313,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kies een kaart per niveau voor dubbele slokken": "Choose one card per level for double sips",
         "Niveau": "Level",
         "Matches op deze kaart tellen dubbel": "Matches on this card count double",
-        "Deze kaart kan nog niet!": "This card isn't available yet!"
+        "Deze kaart kan nog niet!": "This card isn't available yet!",
+        "Stijl Wisselen": "Style Switch",
+        "Kijk een korte video om direct over te schakelen naar de": "Watch a short video to instantly switch to the",
+        "stijl!": "style!",
+        "Video Kijken": "Watch Video",
+        "Nee bedankt": "No thanks"
     }
 };
 
