@@ -63,11 +63,19 @@ export enum RoundStep {
   SUIT = 4,
 }
 
+export enum UITheme {
+  CLASSIC = 'classic',
+  METRO = 'metro',
+  CALM = 'calm',
+  BEER = 'beer',
+}
+
 export enum CardStyle {
   MODERN = 'MODERN',
   DARK = 'DARK',
   CLASSIC = 'CLASSIC',
   NEON = 'NEON',
+  BEER = 'BEER',
 }
 
 export interface GameSettings {
@@ -79,4 +87,6 @@ export interface GameSettings {
   busDecks: number; // Max number of decks for the bus ride
   cardStyle: CardStyle;
   doublePyramidCards: boolean; // Enable double sip cards in pyramid phase
+  theme: UITheme;
 }
+
