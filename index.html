@@ -8,7 +8,7 @@
   <title>Bussen Companion</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
     html,
     body {
@@ -168,6 +168,93 @@
 
     .neon-text {
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3);
+    }
+
+    /* ==========================================
+       THEME OVERRIDES (COLORS & FONTS ONLY)
+       ========================================== */
+    .theme-classic {
+      --theme-bg: #020617;
+      --theme-card-bg: rgba(15, 23, 42, 0.6);
+      --theme-card-border: 1px solid rgba(255, 255, 255, 0.1);
+      --theme-font: 'Inter', sans-serif;
+      --theme-text: #f3f4f6;
+      --theme-text-secondary: #94a3b8;
+      --theme-accent: #fb7185;
+      --theme-accent-glow: rgba(251, 113, 133, 0.4);
+      --theme-btn-bg: #fb7185;
+      --theme-btn-text: #ffffff;
+      --theme-btn-sec-bg: rgba(255, 255, 255, 0.1);
+      --theme-btn-sec-text: #f3f4f6;
+      --theme-border-radius: 1.5rem;
+    }
+
+    .theme-metro {
+      --theme-bg: #0d0d0d;
+      --theme-card-bg: #161616;
+      --theme-card-border: 1.5px solid #ffcc00;
+      --theme-font: 'Inter', sans-serif;
+      --theme-text: #ffffff;
+      --theme-text-secondary: #a3a3a3;
+      --theme-accent: #ffcc00;
+      --theme-accent-glow: rgba(255, 204, 0, 0.2);
+      --theme-btn-bg: #ffcc00;
+      --theme-btn-text: #0d0d0d;
+      --theme-btn-sec-bg: transparent;
+      --theme-btn-sec-text: #ffcc00;
+      --theme-border-radius: 6px;
+    }
+
+    .theme-calm {
+      --theme-bg: #0b0d19;
+      --theme-card-bg: rgba(22, 27, 51, 0.65);
+      --theme-card-border: 1px solid rgba(229, 169, 59, 0.25);
+      --theme-font: 'Playfair Display', Georgia, serif;
+      --theme-text: #ffffff;
+      --theme-text-secondary: #94a3b8;
+      --theme-accent: #e5a93b;
+      --theme-accent-glow: rgba(229, 169, 59, 0.35);
+      --theme-btn-bg: #e5a93b;
+      --theme-btn-text: #0b0d19;
+      --theme-btn-sec-bg: transparent;
+      --theme-btn-sec-text: #e5a93b;
+      --theme-border-radius: 20px;
+    }
+
+    .theme-beer {
+      --theme-bg: #032b12;
+      --theme-card-bg: rgba(2, 43, 18, 0.85);
+      --theme-card-border: 1px solid rgba(226, 232, 240, 0.2);
+      --theme-font: 'Inter', sans-serif;
+      --theme-text: #ffffff;
+      --theme-text-secondary: #9edc9e;
+      --theme-accent: #dc2626;
+      --theme-accent-glow: rgba(220, 38, 38, 0.4);
+      --theme-btn-bg: #008200;
+      --theme-btn-text: #ffffff;
+      --theme-btn-sec-bg: #dc2626;
+      --theme-btn-sec-text: #ffffff;
+      --theme-border-radius: 12px;
+    }
+
+    /* Ambient and transition styles */
+    .theme-transition {
+      transition: background-color 0.5s ease, background-image 0.5s ease, border-color 0.5s ease, color 0.3s ease;
+    }
+
+    @keyframes rise-bubbles {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      10% { opacity: 0.5; }
+      90% { opacity: 0.5; }
+      100% { transform: translateY(-500px) scale(1.5); opacity: 0; }
+    }
+
+    .bubble-elem {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      bottom: -20px;
+      animation: rise-bubbles 6s infinite ease-in;
     }
   </style>
   <style>
