@@ -44,3 +44,4 @@ yarn-error.log*
 /extracted-dictionary.json
 /metadata.json
 .superpowers/
+.codegraph/
