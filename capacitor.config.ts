@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.bussen.app',
-  appName: 'Bussen Companion',
+  appName: 'Bussen',
   webDir: 'dist',
   server: {
     androidScheme: 'https'
