@@ -256,6 +256,120 @@
       bottom: -20px;
       animation: rise-bubbles 6s infinite ease-in;
     }
+
+    /* Theme background overrides */
+    .theme-metro .bg-animated-gradient,
+    .theme-metro .from-slate-800 {
+      background: #0d0d0d !important;
+      background-image: none !important;
+      animation: none !important;
+    }
+    .theme-calm .bg-animated-gradient,
+    .theme-calm .from-slate-800 {
+      background: linear-gradient(to bottom, #0b0d19, #161b33) !important;
+      background-image: linear-gradient(to bottom, #0b0d19, #161b33) !important;
+      animation: none !important;
+    }
+    .theme-beer .bg-animated-gradient,
+    .theme-beer .from-slate-800 {
+      background: radial-gradient(circle at center, #0a4f22 0%, #032b12 100%) !important;
+      background-image: radial-gradient(circle at center, #0a4f22 0%, #032b12 100%) !important;
+      animation: none !important;
+    }
+
+    /* Font overrides */
+    .theme-metro * { font-family: 'Inter', sans-serif !important; }
+    .theme-calm * { font-family: 'Playfair Display', Georgia, serif !important; }
+    .theme-beer * { font-family: 'Inter', sans-serif !important; }
+
+    /* Card & Panel Overrides */
+    .theme-metro .glass-panel, .theme-calm .glass-panel, .theme-beer .glass-panel,
+    .theme-metro .bg-slate-900, .theme-calm .bg-slate-900, .theme-beer .bg-slate-900,
+    .theme-metro .bg-slate-950, .theme-calm .bg-slate-950, .theme-beer .bg-slate-950,
+    .theme-metro .bg-slate-900\/60, .theme-calm .bg-slate-900\/60, .theme-beer .bg-slate-900\/60,
+    .theme-metro .bg-slate-800\/40, .theme-calm .bg-slate-800\/40, .theme-beer .bg-slate-800\/40,
+    .theme-metro .bg-slate-800\/70, .theme-calm .bg-slate-800\/70, .theme-beer .bg-slate-800\/70,
+    .theme-metro .bg-slate-900\/50, .theme-calm .bg-slate-900\/50, .theme-beer .bg-slate-900\/50,
+    .theme-metro .bg-slate-800\/50, .theme-calm .bg-slate-800\/50, .theme-beer .bg-slate-800\/50,
+    .theme-metro .bg-slate-900\/30, .theme-calm .bg-slate-900\/30, .theme-beer .bg-slate-900\/30 {
+      background: var(--theme-card-bg) !important;
+      border: var(--theme-card-border) !important;
+      border-radius: var(--theme-border-radius) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+
+    /* Input elements */
+    .theme-metro input, .theme-calm input, .theme-beer input {
+      background-color: var(--theme-card-bg) !important;
+      border: var(--theme-card-border) !important;
+      color: var(--theme-text) !important;
+      border-radius: var(--theme-border-radius) !important;
+    }
+
+    /* Text colors */
+    .theme-metro .text-white, .theme-calm .text-white, .theme-beer .text-white,
+    .theme-metro .text-slate-100, .theme-calm .text-slate-100, .theme-beer .text-slate-100 {
+      color: var(--theme-text) !important;
+    }
+    .theme-metro .text-slate-400, .theme-calm .text-slate-400, .theme-beer .text-slate-400,
+    .theme-metro .text-slate-500, .theme-calm .text-slate-500, .theme-beer .text-slate-500 {
+      color: var(--theme-text-secondary) !important;
+    }
+
+    /* Accent color overrides (icons and headers) */
+    .theme-metro .text-red-500, .theme-metro .text-red-400,
+    .theme-metro .bg-red-500, .theme-metro .bg-red-600 {
+      color: var(--theme-accent) !important;
+      border-color: var(--theme-accent) !important;
+    }
+    .theme-calm .text-red-500, .theme-calm .text-red-400,
+    .theme-calm .bg-red-500, .theme-calm .bg-red-600 {
+      color: var(--theme-accent) !important;
+      border-color: var(--theme-accent) !important;
+    }
+    .theme-beer .text-red-500, .theme-beer .text-red-400,
+    .theme-beer .bg-red-500, .theme-beer .bg-red-600 {
+      color: var(--theme-accent) !important;
+      border-color: var(--theme-accent) !important;
+    }
+
+    /* Primary Action Buttons */
+    .theme-metro button.bg-gradient-to-r.from-red-600,
+    .theme-metro button.bg-white:not(.bg-white\/10),
+    .theme-metro button.bg-gradient-to-b.from-emerald-500,
+    .theme-metro button.bg-gradient-to-b.from-red-600,
+    .theme-metro button.bg-gradient-to-r.from-emerald-500,
+    .theme-calm button.bg-gradient-to-r.from-red-600,
+    .theme-calm button.bg-white:not(.bg-white\/10),
+    .theme-calm button.bg-gradient-to-b.from-emerald-500,
+    .theme-calm button.bg-gradient-to-b.from-red-600,
+    .theme-calm button.bg-gradient-to-r.from-emerald-500,
+    .theme-beer button.bg-gradient-to-r.from-red-600,
+    .theme-beer button.bg-white:not(.bg-white\/10),
+    .theme-beer button.bg-gradient-to-b.from-emerald-500,
+    .theme-beer button.bg-gradient-to-b.from-red-600,
+    .theme-beer button.bg-gradient-to-r.from-emerald-500 {
+      background: var(--theme-btn-bg) !important;
+      background-image: none !important;
+      color: var(--theme-btn-text) !important;
+      border: none !important;
+      border-radius: var(--theme-border-radius) !important;
+      box-shadow: 0 4px 15px var(--theme-accent-glow) !important;
+    }
+
+    /* Secondary Action Buttons */
+    .theme-metro button.bg-slate-800,
+    .theme-metro button.bg-slate-800\/80,
+    .theme-calm button.bg-slate-800,
+    .theme-calm button.bg-slate-800\/80,
+    .theme-beer button.bg-slate-800,
+    .theme-beer button.bg-slate-800\/80 {
+      background: var(--theme-btn-sec-bg) !important;
+      color: var(--theme-btn-sec-text) !important;
+      border: var(--theme-card-border) !important;
+      border-radius: var(--theme-border-radius) !important;
+    }
   </style>
   <style>
     /* --- Loading Screen Styles --- */
