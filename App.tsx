@@ -823,6 +823,31 @@ const App: React.FC = () => {
     [players]
   );
 
+  // Screenshot / Automation Helpers
+  useEffect(() => {
+    (window as any).__screenshotHelpers = {
+      setPhase,
+      setRoundStep,
+      setActivePlayerIndex,
+      setPlayers,
+      setDeck,
+      setPyramid,
+      setRevealedPyramidCards,
+      setBusCards,
+      setCurrentBusIndex,
+      setIsWaitingForNextPlayer,
+      setImmunePlayerId,
+      setFeedback,
+      setLastDrawnCard,
+      setSettings,
+      setBusPassengers,
+      setBusDriver,
+      setBusMode,
+      setIsBusEntrance,
+      setIsBusWon
+    };
+  }, []);
+
   // Audio FX
   const audioCtxRef = useRef<AudioContext | null>(null);
   const discoAudioRef = useRef<HTMLAudioElement | null>(null);
