@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle } from './types';
+import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
@@ -367,6 +367,7 @@ interface RootContainerProps {
   showTexture?: boolean;
   disableSafeTop?: boolean;
   showChest?: boolean;
+  theme?: UITheme; // Added theme
 }
 
 interface PersistedPlayerState {
@@ -456,7 +457,46 @@ const GlobalAnimations = () => (
 
 
 
-const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false }) => {
+// --- AMBIENT BACKGROUND COMPONENTS ---
+
+const CalmBackground: React.FC = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute w-[250px] h-[250px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(236,72,153,0.15),_transparent_70%)] blur-[30px] -top-10 -right-10 animate-pulse" style={{ animationDuration: '10s' }} />
+    <div className="absolute w-[280px] h-[280px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.1),_transparent_70%)] blur-[35px] -bottom-12 -left-10 animate-pulse" style={{ animationDuration: '7s' }} />
+  </div>
+);
+
+const BeerBackground: React.FC = () => {
+  const bubbles = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    size: `${Math.random() * 5 + 3}px`,
+    duration: `${Math.random() * 4 + 4}s`,
+    delay: `${Math.random() * 5}s`
+  })), []);
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {bubbles.map(b => (
+        <div 
+          key={b.id} 
+          className="bubble-elem" 
+          style={{ left: b.left, width: b.size, height: b.size, animationDuration: b.duration, animationDelay: b.delay }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const MetroBackground: React.FC = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-15">
+    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      <path d="M -20,100 L 150,100 L 220,170 L 360,170" stroke="#FFCC00" strokeWidth="2" fill="none" strokeDasharray="4 4"/>
+      <path d="M 120,-20 L 120,150 L 180,210 L 180,640" stroke="#DC2626" strokeWidth={1.5} fill="none"/>
+    </svg>
+  </div>
+);
+
+const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false, theme = UITheme.CLASSIC }) => {
   const [showPatchChest, setShowPatchChest] = useState(() => {
     if (!storageAvailable) return true;
     try {
@@ -508,6 +548,11 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   return (
     <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
+
+      {/* Ambient background visual effects based on theme */}
+      {theme === UITheme.CALM && <CalmBackground />}
+      {theme === UITheme.BEER && <BeerBackground />}
+      {theme === UITheme.METRO && <MetroBackground />}
 
       {showChest && showPatchChest && (
         <button
@@ -586,6 +631,7 @@ const App: React.FC = () => {
       busDecks: 1,
       cardStyle: CardStyle.CLASSIC,
       doublePyramidCards: true,
+      theme: UITheme.CLASSIC,
     };
 
     if (!storageAvailable) return defaultSettings;
@@ -631,7 +677,7 @@ const App: React.FC = () => {
             </h3>
             
             <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
-              {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : "Neon")}</span> {t("stijl!")}
+              {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : styleToUnlock === CardStyle.BEER ? "Bier" : "Neon")}</span> {t("stijl!")}
             </p>
 
             <div className="w-full flex flex-col gap-3">
@@ -686,7 +732,8 @@ const App: React.FC = () => {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
                 {t(previewDeckStyle === CardStyle.MODERN ? "Modern" : 
                    previewDeckStyle === CardStyle.DARK ? "Donker" : 
-                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" : "Neon")} {t("Stijl")}
+                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" :
+                   previewDeckStyle === CardStyle.BEER ? "Bier" : "Neon")} {t("Stijl")}
               </h3>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{t("Volledig Deck Voorbeeld")}</p>
             </div>
@@ -822,6 +869,8 @@ const App: React.FC = () => {
     () => [...players].sort((a, b) => (b.drinksTaken + b.adtjes * 5) - (a.drinksTaken + a.adtjes * 5)),
     [players]
   );
+
+
 
   // Audio FX
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -1068,6 +1117,12 @@ const initializeAdMob = useCallback(async () => {
       localStorage.removeItem(PLAYER_DATA_KEY);
     }
   }, [storageAvailable, setPlayers, setNewPlayerName, setNewPlayerImage]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer');
+    root.classList.add(`theme-${settings.theme}`, 'theme-transition');
+  }, [settings.theme]);
 
   // Main hydration effect on component mount
   useEffect(() => {
@@ -2422,7 +2477,7 @@ const initializeAdMob = useCallback(async () => {
   // 1. SETUP
   if (phase === GamePhase.SETUP) {
     return (
-      <RootContainer className="p-4" showChest={true}>
+      <RootContainer className="p-4" showChest={true} theme={settings.theme}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
           <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text">
             {t("Bussen")}
@@ -2645,6 +2700,26 @@ const initializeAdMob = useCallback(async () => {
                 </div>
 
                 <div className="flex flex-col gap-3 w-full pt-2">
+                  <h4 className="text-white font-medium">{t("Thema")}</h4>
+                  <div className="flex bg-slate-800/70 p-1 rounded-2xl gap-1 border border-slate-700/50">
+                    {[UITheme.CLASSIC, UITheme.METRO, UITheme.CALM, UITheme.BEER].map(tName => (
+                      <button 
+                        key={tName}
+                        onClick={() => {
+                          const n = { ...settings, theme: tName };
+                          setSettings(n);
+                          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                          triggerHaptic('light');
+                        }}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-xl capitalize transition-all ${settings.theme === tName ? 'bg-red-500 text-white shadow-md font-black' : 'text-slate-400 hover:text-slate-200'}`}
+                      >
+                        {t(tName)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
                   <button
                     onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}
@@ -2657,7 +2732,7 @@ const initializeAdMob = useCallback(async () => {
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
                   <div className="grid grid-cols-2 gap-3">
-                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON].map((style) => (
+                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON, CardStyle.BEER].map((style) => (
                       <button
                         key={style}
                         onPointerDown={() => {
@@ -2712,7 +2787,8 @@ const initializeAdMob = useCallback(async () => {
                         <span className={`text-xs font-black uppercase tracking-widest ${settings.cardStyle === style ? 'text-white' : 'text-slate-400'}`}>
                           {t(style === CardStyle.MODERN ? "Modern" :
                             style === CardStyle.DARK ? "Donker" :
-                            style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
+                            style === CardStyle.CLASSIC ? "Klassiek" :
+                            style === CardStyle.BEER ? "Bier" : "Neon")}
                         </span>
                       </button>
                     ))}
@@ -2898,7 +2974,7 @@ const initializeAdMob = useCallback(async () => {
 
     if (isWaitingForNextPlayer) {
       return (
-        <RootContainer className="items-center justify-center p-6">
+        <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
             <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">{t("Aan de beurt")}</p>
             <div className="w-32 h-32 rounded-full mb-6 bg-gradient-to-b from-slate-800 to-black border-4 border-red-500 flex items-center justify-center overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.4)] relative">
@@ -2922,7 +2998,7 @@ const initializeAdMob = useCallback(async () => {
     }
 
     return (
-      <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive}>
+      <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {showConfetti && <Confetti />}
         <div className="flex-none flex items-center justify-between p-2.5 bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1">
           <div className="flex items-center gap-3">
@@ -3199,7 +3275,7 @@ const initializeAdMob = useCallback(async () => {
 
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       return (
-        <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid">
+        <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid" theme={settings.theme}>
           {manualBusSelectionOverlay}
         {renderQuitModal()}
 
@@ -3320,7 +3396,7 @@ const initializeAdMob = useCallback(async () => {
       );
     }
     return (
-      <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop>
+      <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderQuitModal()}
 
@@ -3605,7 +3681,7 @@ const initializeAdMob = useCallback(async () => {
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0];
     return (
-      <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false} disableSafeTop>
+      <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
         <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ ...((resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="absolute z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
             {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
@@ -3666,7 +3742,7 @@ const initializeAdMob = useCallback(async () => {
   if (phase === GamePhase.THE_BUS) {
     if (isBusEntrance) {
       return (
-        <RootContainer className="items-center justify-center" disableBaseBg showTexture={false} disableSafeTop>
+        <RootContainer className="items-center justify-center" disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
           <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out p-4" style={{ ...((busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <h1 className="text-5xl font-black text-white mb-2 text-center uppercase tracking-tighter drop-shadow-xl">{t("Samen in de bus!")}</h1>
             
@@ -3707,7 +3783,7 @@ const initializeAdMob = useCallback(async () => {
         } backdrop-blur-xl rounded-3xl p-4 sm:p-6 space-y-6 transition-[background,box-shadow,border-color] duration-700 ease-out`;
 
       return (
-        <RootContainer disableBaseBg showTexture={false} disableSafeTop>
+        <RootContainer disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <div
               className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
@@ -3852,7 +3928,7 @@ const initializeAdMob = useCallback(async () => {
     const remainingBusCards = busDeck.length;
 
     return (
-      <RootContainer className="p-0 relative" shake={screenShake} disableBaseBg showTexture={false} disableSafeTop>
+      <RootContainer className="p-0 relative" shake={screenShake} disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
         <div className="absolute inset-0 -z-10" style={digitalBusBackgroundStyle}></div>
         {isBusWon && <Confetti />}
 
@@ -3994,7 +4070,7 @@ const initializeAdMob = useCallback(async () => {
   // 7. GAME OVER
   if (phase === GamePhase.GAME_OVER) {
     return (
-      <RootContainer className="p-0">
+      <RootContainer className="p-0" theme={settings.theme}>
         <Confetti />
         <div className="flex-1 overflow-y-auto p-6 relative z-10">
           <div className="text-center mb-10 mt-8">
