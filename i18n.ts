@@ -124,6 +124,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "over": "remaining",
         "Pakje": "Deck",
         "Pakje leeg – pak een nieuw deck om verder te gaan": "Deck empty - grab a new deck to continue",
+        "Kaarten van pakje zijn toegevoegd": "Cards of deck have been added",
         "Hoger": "Higher",
         "Lager": "Lower",
         "Uitslag": "Results",
