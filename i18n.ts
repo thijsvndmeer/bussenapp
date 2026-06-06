@@ -34,7 +34,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "classic": "Klassiek",
         "metro": "Metro",
         "calm": "Rustig",
-        "beer": "Bier"
+        "beer": "Bier",
+        "De bus is gecrasht!": "De bus is gecrasht!",
+        "Het spel is herstart om de fout op te lossen.": "Het spel is herstart om de fout op te lossen."
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -337,7 +339,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "beer": "Beer",
         "Thema": "Theme",
         "Rustig": "Calm",
-        "Bier": "Beer"
+        "Bier": "Beer",
+        "De bus is gecrasht!": "The bus has crashed!",
+        "Het spel is herstart om de fout op te lossen.": "The game has been restarted to resolve the error."
     }
 };
 
