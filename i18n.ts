@@ -382,8 +382,9 @@ export const useTranslation = () => {
         };
     }, []);
 
-    const t = (text: string): string => {
+    const t = (text: any): any => {
         if (!text) return text;
+        if (typeof text !== 'string') return text;
         const trimmed = text.trim();
         if (lang === 'nl') {
             return dictionaries.nl[text] || dictionaries.nl[trimmed] || text;
