@@ -8,27 +8,22 @@
   <title>Bussen Companion</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
 
     @property --theme-accent {
       syntax: '<color>';
       inherits: true;
-      initial-value: hsl(0, 60%, 40%);
+      initial-value: hsl(180, 65%, 45%);
     }
     @property --theme-accent-glow {
       syntax: '<color>';
       inherits: true;
-      initial-value: hsla(0, 60%, 40%, 0.15);
+      initial-value: hsla(180, 65%, 45%, 0.15);
     }
     @property --theme-btn-bg {
       syntax: '<color>';
       inherits: true;
-      initial-value: hsl(0, 60%, 40%);
-    }
-    @property --theme-btn-sec-text {
-      syntax: '<color>';
-      inherits: true;
-      initial-value: hsl(0, 60%, 40%);
+      initial-value: hsl(180, 65%, 45%);
     }
 
 
@@ -213,34 +208,29 @@
 
     @keyframes metro-color-cycle {
       0%, 100% {
-        --theme-accent: hsl(0, 60%, 40%);
-        --theme-accent-glow: hsla(0, 60%, 40%, 0.15);
-        --theme-btn-bg: hsl(0, 60%, 40%);
+        --theme-accent: hsl(180, 65%, 45%);
+        --theme-accent-glow: hsla(180, 65%, 45%, 0.15);
+        --theme-btn-bg: hsl(180, 65%, 45%);
       }
-      16.6% {
-        --theme-accent: hsl(60, 60%, 40%);
-        --theme-accent-glow: hsla(60, 60%, 40%, 0.15);
-        --theme-btn-bg: hsl(60, 60%, 40%);
+      20% {
+        --theme-accent: hsl(205, 70%, 45%);
+        --theme-accent-glow: hsla(205, 70%, 45%, 0.15);
+        --theme-btn-bg: hsl(205, 70%, 45%);
       }
-      33.3% {
-        --theme-accent: hsl(120, 60%, 40%);
-        --theme-accent-glow: hsla(120, 60%, 40%, 0.15);
-        --theme-btn-bg: hsl(120, 60%, 40%);
+      40% {
+        --theme-accent: hsl(235, 65%, 45%);
+        --theme-accent-glow: hsla(235, 65%, 45%, 0.15);
+        --theme-btn-bg: hsl(235, 65%, 45%);
       }
-      50% {
-        --theme-accent: hsl(180, 60%, 40%);
-        --theme-accent-glow: hsla(180, 60%, 40%, 0.15);
-        --theme-btn-bg: hsl(180, 60%, 40%);
+      60% {
+        --theme-accent: hsl(280, 65%, 45%);
+        --theme-accent-glow: hsla(280, 65%, 45%, 0.15);
+        --theme-btn-bg: hsl(280, 65%, 45%);
       }
-      66.6% {
-        --theme-accent: hsl(240, 60%, 40%);
-        --theme-accent-glow: hsla(240, 60%, 40%, 0.15);
-        --theme-btn-bg: hsl(240, 60%, 40%);
-      }
-      83.3% {
-        --theme-accent: hsl(300, 60%, 40%);
-        --theme-accent-glow: hsla(300, 60%, 40%, 0.15);
-        --theme-btn-bg: hsl(300, 60%, 40%);
+      80% {
+        --theme-accent: hsl(340, 70%, 45%);
+        --theme-accent-glow: hsla(340, 70%, 45%, 0.15);
+        --theme-btn-bg: hsl(340, 70%, 45%);
       }
     }
 
@@ -252,20 +242,20 @@
       --theme-text-secondary: #a3a3a3;
       --theme-btn-text: #ffffff;
       --theme-btn-sec-bg: transparent;
-      --theme-accent: hsl(0, 60%, 40%);
-      --theme-accent-glow: hsla(0, 60%, 40%, 0.15);
-      --theme-btn-bg: hsl(0, 60%, 40%);
+      --theme-accent: hsl(180, 65%, 45%);
+      --theme-accent-glow: hsla(180, 65%, 45%, 0.15);
+      --theme-btn-bg: hsl(180, 65%, 45%);
       --theme-btn-sec-text: #a3a3a3;
       --theme-card-border: 1.5px solid #27272a;
       --theme-border-radius: 6px;
-      animation: metro-color-cycle 600s linear infinite;
+      animation: metro-color-cycle 900s linear infinite;
     }
 
     .theme-calm {
       --theme-bg: #0b0d19;
       --theme-card-bg: rgba(22, 27, 51, 0.65);
       --theme-card-border: 1px solid rgba(229, 169, 59, 0.25);
-      --theme-font: 'Playfair Display', Georgia, serif;
+      --theme-font: 'Outfit', sans-serif;
       --theme-text: #ffffff;
       --theme-text-secondary: #94a3b8;
       --theme-accent: #e5a93b;
@@ -335,7 +325,7 @@
 
     /* Font overrides */
     .theme-metro * { font-family: 'Inter', sans-serif !important; }
-    .theme-calm * { font-family: 'Playfair Display', Georgia, serif !important; }
+    .theme-calm * { font-family: 'Outfit', sans-serif !important; }
     .theme-beer * { font-family: 'Inter', sans-serif !important; }
 
     /* Card & Panel Overrides */
