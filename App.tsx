@@ -250,14 +250,10 @@ const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const UPDATE_1_3_PATCH_NOTES = [
-  '🎨 Nieuwe UI Thema\'s (Metro, Calm, Beer) toegevoegd voor een verbluffende uitstraling!',
-  '🚇 Dynamische geanimeerde metro-achtergrond toegevoegd bij het Metro-thema!',
-  '🎬 Dramatische fullscreen transitie en animaties wanneer spelers de bus in gaan!',
-  '🃏 Interactief kaartenoverzicht: klik op de kaarten-pil om alle 52 kaarten in het actieve pakje te bekijken!',
-  '🔢 Nauwkeurigere kaarten-teller: telt correct af naar 0 en toont het exacte aantal overgebleven kaarten!',
-  '➕ Automatisch kaarten aanvullen uit het volgende pakje als de busrit langer is dan de resterende kaarten!',
-  '💬 Duidelijkere melding "Kaarten van pakje zijn toegevoegd" bij het wisselen van pakje!',
-  '📲 AdMob advertentie-ID\'s zijn nu flexibel configureerbaar via omgevingsvariabelen!',
+  '🍺 Algemene performance- en UI-verbeteringen en bugfixes.',
+  '🎨 Nieuwe UI thema\'s (Metro, Calm, Beer) toegevoegd voor een nieuwe uitstraling!',
+  '🚇 Dynamische geanimeerde achtergrond toegevoegd bij de thema\'s!',
+  '🃏 Klikbare kaarten badge in het bus scherm: bekijk alle 52 kaarten in het actieve pakje!',
 ];
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
