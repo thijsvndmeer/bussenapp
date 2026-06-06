@@ -2717,12 +2717,12 @@ const initializeAdMob = useCallback(async () => {
                       if (isActive) {
                         if (tName === UITheme.CLASSIC) btnStyle = "bg-rose-500 text-white font-bold rounded-xl shadow-md border border-rose-400/20 shadow-rose-500/25";
                         else if (tName === UITheme.METRO) btnStyle = "bg-[var(--theme-accent)] text-white font-black font-mono border-2 border-black rounded-none shadow-[2px_2px_0_0_rgba(0,0,0,1)]";
-                        else if (tName === UITheme.CALM) btnStyle = "bg-[#e5a93b] text-slate-950 font-black font-serif italic rounded-3xl border border-[#f5b94b]/30 shadow-[0_0_15px_rgba(229,169,59,0.35)]";
+                        else if (tName === UITheme.CALM) btnStyle = "bg-[#e5a93b] text-slate-950 font-bold rounded-3xl border border-[#f5b94b]/30 shadow-[0_0_15px_rgba(229,169,59,0.35)]";
                         else if (tName === UITheme.BEER) btnStyle = "bg-gradient-to-b from-[#ffffff] via-[#ffde6a] to-[#f59e0b] text-[#02200c] font-black rounded-xl border-2 border-[#ffcc00] shadow-[inset_0_0_6px_rgba(255,204,0,0.5),_0_4px_12px_rgba(245,158,11,0.4)]";
                       } else {
                         if (tName === UITheme.CLASSIC) btnStyle = "bg-slate-800/40 text-slate-400 border border-slate-700/50 hover:bg-slate-800/80 hover:text-slate-200 rounded-xl";
                         else if (tName === UITheme.METRO) btnStyle = "bg-zinc-900 text-zinc-400 font-mono border border-zinc-700/80 rounded-none hover:bg-zinc-800 hover:text-zinc-200";
-                        else if (tName === UITheme.CALM) btnStyle = "bg-slate-900/40 text-[#e5a93b]/70 border border-[#e5a93b]/30 font-serif italic rounded-3xl hover:bg-slate-900 hover:text-[#e5a93b]";
+                        else if (tName === UITheme.CALM) btnStyle = "bg-slate-900/40 text-[#e5a93b]/70 border border-[#e5a93b]/30 rounded-3xl hover:bg-slate-900 hover:text-[#e5a93b]";
                         else if (tName === UITheme.BEER) btnStyle = "bg-[#02200c]/80 text-[#9edc9e] border border-emerald-800/60 rounded-xl hover:bg-emerald-950 hover:text-[#ffffff]";
                       }
                       return (
