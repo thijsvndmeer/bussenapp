@@ -588,7 +588,7 @@ const MetroBackground: React.FC = () => {
   }, [dimensions, generateNextLine]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 opacity-[0.35]">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.35]">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
