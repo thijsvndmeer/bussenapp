@@ -490,7 +490,7 @@ const BeerBackground: React.FC = () => {
 const MetroBackground: React.FC = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-15">
     <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-      <path d="M -20,100 L 150,100 L 220,170 L 360,170" stroke="#FFCC00" strokeWidth="2" fill="none" strokeDasharray="4 4"/>
+      <path d="M -20,100 L 150,100 L 220,170 L 360,170" stroke="var(--theme-accent)" strokeWidth="2" fill="none" strokeDasharray="4 4"/>
       <path d="M 120,-20 L 120,150 L 180,210 L 180,640" stroke="#DC2626" strokeWidth={1.5} fill="none"/>
     </svg>
   </div>
@@ -677,7 +677,7 @@ const App: React.FC = () => {
             </h3>
             
             <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
-              {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : styleToUnlock === CardStyle.BEER ? "Bier" : "Neon")}</span> {t("stijl!")}
+              {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : "Neon")}</span> {t("stijl!")}
             </p>
 
             <div className="w-full flex flex-col gap-3">
@@ -732,8 +732,7 @@ const App: React.FC = () => {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
                 {t(previewDeckStyle === CardStyle.MODERN ? "Modern" : 
                    previewDeckStyle === CardStyle.DARK ? "Donker" : 
-                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" :
-                   previewDeckStyle === CardStyle.BEER ? "Bier" : "Neon")} {t("Stijl")}
+                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" : "Neon")} {t("Stijl")}
               </h3>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{t("Volledig Deck Voorbeeld")}</p>
             </div>
@@ -2700,26 +2699,6 @@ const initializeAdMob = useCallback(async () => {
                 </div>
 
                 <div className="flex flex-col gap-3 w-full pt-2">
-                  <h4 className="text-white font-medium">{t("Thema")}</h4>
-                  <div className="flex bg-slate-800/70 p-1 rounded-2xl gap-1 border border-slate-700/50">
-                    {[UITheme.CLASSIC, UITheme.METRO, UITheme.CALM, UITheme.BEER].map(tName => (
-                      <button 
-                        key={tName}
-                        onClick={() => {
-                          const n = { ...settings, theme: tName };
-                          setSettings(n);
-                          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                          triggerHaptic('light');
-                        }}
-                        className={`flex-1 py-1.5 text-xs font-bold rounded-xl capitalize transition-all ${settings.theme === tName ? 'bg-red-500 text-white shadow-md font-black' : 'text-slate-400 hover:text-slate-200'}`}
-                      >
-                        {t(tName)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
                   <button
                     onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}
@@ -2730,9 +2709,44 @@ const initializeAdMob = useCallback(async () => {
                 </div>
 
                 <div className="flex flex-col gap-3 w-full pt-2">
+                  <h4 className="text-white font-medium">{t("Thema")}</h4>
+                  <div className="flex bg-slate-800/70 p-1 rounded-2xl gap-1 border border-slate-700/50">
+                    {[UITheme.CLASSIC, UITheme.METRO, UITheme.CALM, UITheme.BEER].map(tName => {
+                      const isActive = settings.theme === tName;
+                      let btnStyle = "";
+                      if (isActive) {
+                        if (tName === UITheme.CLASSIC) btnStyle = "bg-rose-500 text-white font-bold rounded-xl shadow-md border border-rose-400/20 shadow-rose-500/25";
+                        else if (tName === UITheme.METRO) btnStyle = "bg-[var(--theme-accent)] text-white font-black font-mono border-2 border-black rounded-none shadow-[2px_2px_0_0_rgba(0,0,0,1)]";
+                        else if (tName === UITheme.CALM) btnStyle = "bg-[#e5a93b] text-slate-950 font-black font-serif italic rounded-3xl border border-[#f5b94b]/30 shadow-[0_0_15px_rgba(229,169,59,0.35)]";
+                        else if (tName === UITheme.BEER) btnStyle = "bg-gradient-to-b from-[#ffffff] via-[#ffde6a] to-[#f59e0b] text-[#02200c] font-black rounded-xl border-2 border-[#ffcc00] shadow-[inset_0_0_6px_rgba(255,204,0,0.5),_0_4px_12px_rgba(245,158,11,0.4)]";
+                      } else {
+                        if (tName === UITheme.CLASSIC) btnStyle = "bg-slate-800/40 text-slate-400 border border-slate-700/50 hover:bg-slate-800/80 hover:text-slate-200 rounded-xl";
+                        else if (tName === UITheme.METRO) btnStyle = "bg-zinc-900 text-zinc-400 font-mono border border-zinc-700/80 rounded-none hover:bg-zinc-800 hover:text-zinc-200";
+                        else if (tName === UITheme.CALM) btnStyle = "bg-slate-900/40 text-[#e5a93b]/70 border border-[#e5a93b]/30 font-serif italic rounded-3xl hover:bg-slate-900 hover:text-[#e5a93b]";
+                        else if (tName === UITheme.BEER) btnStyle = "bg-[#02200c]/80 text-[#9edc9e] border border-emerald-800/60 rounded-xl hover:bg-emerald-950 hover:text-[#ffffff]";
+                      }
+                      return (
+                        <button 
+                          key={tName}
+                          onClick={() => {
+                            const n = { ...settings, theme: tName };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            triggerHaptic('light');
+                          }}
+                          className={`flex-1 py-1.5 text-xs capitalize transition-all ${btnStyle}`}
+                        >
+                          {t(tName)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
                   <div className="grid grid-cols-2 gap-3">
-                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON, CardStyle.BEER].map((style) => (
+                    {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON].map((style) => (
                       <button
                         key={style}
                         onPointerDown={() => {
@@ -2787,8 +2801,7 @@ const initializeAdMob = useCallback(async () => {
                         <span className={`text-xs font-black uppercase tracking-widest ${settings.cardStyle === style ? 'text-white' : 'text-slate-400'}`}>
                           {t(style === CardStyle.MODERN ? "Modern" :
                             style === CardStyle.DARK ? "Donker" :
-                            style === CardStyle.CLASSIC ? "Klassiek" :
-                            style === CardStyle.BEER ? "Bier" : "Neon")}
+                            style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
                         </span>
                       </button>
                     ))}
@@ -3117,7 +3130,7 @@ const initializeAdMob = useCallback(async () => {
           </div>
 
           {/* STAGE */}
-          <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative">
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative z-0">
             <div className="text-center mb-6 relative z-10">
               <span className="px-3 py-1 rounded-full bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 text-[10px] text-slate-300 font-bold uppercase tracking-widest shadow-lg">
                 {t("Ronde")} {roundStep} / 4
@@ -3130,7 +3143,7 @@ const initializeAdMob = useCallback(async () => {
               </h2>
             </div>
 
-            <div className="relative h-64 w-full flex items-center justify-center perspective-1000">
+            <div className="relative h-64 w-full flex items-center justify-center perspective-1000 z-0">
               {lastDrawnCard ? (
                 <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" style={settings.cardStyle} />
               ) : (
@@ -3149,7 +3162,7 @@ const initializeAdMob = useCallback(async () => {
         </div>
 
         {/* CONTROLS */}
-        <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2">
+        <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2 relative z-20">
           {feedback ? (
             <div className="space-y-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
               <div

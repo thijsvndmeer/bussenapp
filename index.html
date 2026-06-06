@@ -10,6 +10,28 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 
+    @property --theme-accent {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: hsl(0, 60%, 40%);
+    }
+    @property --theme-accent-glow {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: hsla(0, 60%, 40%, 0.15);
+    }
+    @property --theme-btn-bg {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: hsl(0, 60%, 40%);
+    }
+    @property --theme-btn-sec-text {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: hsl(0, 60%, 40%);
+    }
+
+
     html,
     body {
       font-family: 'Inter', sans-serif;
@@ -189,20 +211,54 @@
       --theme-border-radius: 1.5rem;
     }
 
+    @keyframes metro-color-cycle {
+      0%, 100% {
+        --theme-accent: hsl(0, 60%, 40%);
+        --theme-accent-glow: hsla(0, 60%, 40%, 0.15);
+        --theme-btn-bg: hsl(0, 60%, 40%);
+      }
+      16.6% {
+        --theme-accent: hsl(60, 60%, 40%);
+        --theme-accent-glow: hsla(60, 60%, 40%, 0.15);
+        --theme-btn-bg: hsl(60, 60%, 40%);
+      }
+      33.3% {
+        --theme-accent: hsl(120, 60%, 40%);
+        --theme-accent-glow: hsla(120, 60%, 40%, 0.15);
+        --theme-btn-bg: hsl(120, 60%, 40%);
+      }
+      50% {
+        --theme-accent: hsl(180, 60%, 40%);
+        --theme-accent-glow: hsla(180, 60%, 40%, 0.15);
+        --theme-btn-bg: hsl(180, 60%, 40%);
+      }
+      66.6% {
+        --theme-accent: hsl(240, 60%, 40%);
+        --theme-accent-glow: hsla(240, 60%, 40%, 0.15);
+        --theme-btn-bg: hsl(240, 60%, 40%);
+      }
+      83.3% {
+        --theme-accent: hsl(300, 60%, 40%);
+        --theme-accent-glow: hsla(300, 60%, 40%, 0.15);
+        --theme-btn-bg: hsl(300, 60%, 40%);
+      }
+    }
+
     .theme-metro {
       --theme-bg: #0d0d0d;
       --theme-card-bg: #161616;
-      --theme-card-border: 1.5px solid #ffcc00;
       --theme-font: 'Inter', sans-serif;
       --theme-text: #ffffff;
       --theme-text-secondary: #a3a3a3;
-      --theme-accent: #ffcc00;
-      --theme-accent-glow: rgba(255, 204, 0, 0.2);
-      --theme-btn-bg: #ffcc00;
-      --theme-btn-text: #0d0d0d;
+      --theme-btn-text: #ffffff;
       --theme-btn-sec-bg: transparent;
-      --theme-btn-sec-text: #ffcc00;
+      --theme-accent: hsl(0, 60%, 40%);
+      --theme-accent-glow: hsla(0, 60%, 40%, 0.15);
+      --theme-btn-bg: hsl(0, 60%, 40%);
+      --theme-btn-sec-text: #a3a3a3;
+      --theme-card-border: 1.5px solid #27272a;
       --theme-border-radius: 6px;
+      animation: metro-color-cycle 600s linear infinite;
     }
 
     .theme-calm {
@@ -317,12 +373,7 @@
       color: var(--theme-text-secondary) !important;
     }
 
-    /* Accent color overrides (icons and headers) */
-    .theme-metro .text-red-500, .theme-metro .text-red-400,
-    .theme-metro .bg-red-500, .theme-metro .bg-red-600 {
-      color: var(--theme-accent) !important;
-      border-color: var(--theme-accent) !important;
-    }
+
     .theme-calm .text-red-500, .theme-calm .text-red-400,
     .theme-calm .bg-red-500, .theme-calm .bg-red-600 {
       color: var(--theme-accent) !important;
@@ -360,7 +411,20 @@
 
     /* Secondary Action Buttons */
     .theme-metro button.bg-slate-800,
-    .theme-metro button.bg-slate-800\/80,
+    .theme-metro button.bg-slate-800\/80 {
+      background: transparent !important;
+      color: #a3a3a3 !important;
+      border: 1.5px solid #27272a !important;
+      border-radius: var(--theme-border-radius) !important;
+    }
+
+    .theme-metro button.bg-slate-800:hover,
+    .theme-metro button.bg-slate-800\/80:hover {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #ffffff !important;
+      border-color: #52525b !important;
+    }
+
     .theme-calm button.bg-slate-800,
     .theme-calm button.bg-slate-800\/80,
     .theme-beer button.bg-slate-800,

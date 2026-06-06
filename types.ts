@@ -75,7 +75,6 @@ export enum CardStyle {
   DARK = 'DARK',
   CLASSIC = 'CLASSIC',
   NEON = 'NEON',
-  BEER = 'BEER',
 }
 
 export interface GameSettings {
