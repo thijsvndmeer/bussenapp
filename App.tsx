@@ -19,6 +19,51 @@ const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after 
 
 // --- HELPERS ---
 
+const PlayingCardIcon: React.FC<{ className?: string; size?: number }> = ({ className = "", size = 14 }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={size}
+    height={size}
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="7" y="7" width="13" height="14" rx="1.5" className="opacity-60" />
+    <rect x="4" y="4" width="13" height="14" rx="1.5" fill="currentColor" stroke="none" />
+    <rect x="4" y="4" width="13" height="14" rx="1.5" />
+  </svg>
+);
+
+const getSuitSymbol = (suit: Suit) => {
+  switch (suit) {
+    case Suit.HEARTS: return '♥';
+    case Suit.DIAMONDS: return '♦';
+    case Suit.CLUBS: return '♣';
+    case Suit.SPADES: return '♠';
+  }
+};
+
+const getRankChar = (rank: Rank) => {
+  switch (rank) {
+    case Rank.TWO: return '2';
+    case Rank.THREE: return '3';
+    case Rank.FOUR: return '4';
+    case Rank.FIVE: return '5';
+    case Rank.SIX: return '6';
+    case Rank.SEVEN: return '7';
+    case Rank.EIGHT: return '8';
+    case Rank.NINE: return '9';
+    case Rank.TEN: return '10';
+    case Rank.JACK: return 'J';
+    case Rank.QUEEN: return 'Q';
+    case Rank.KING: return 'K';
+    case Rank.ACE: return 'A';
+  }
+};
+
 const getRankString = (rank: Rank) => {
   switch (rank) {
     case Rank.JACK: return 'J';
@@ -1250,6 +1295,8 @@ const App: React.FC = () => {
   const [extraDecks, setExtraDecks] = useState<Card[][]>([]);
   const [oldCardsInLayoutCount, setOldCardsInLayoutCount] = useState(0);
   const [discardedCardsCount, setDiscardedCardsCount] = useState(0);
+  const [currentPackCards, setCurrentPackCards] = useState<Card[]>([]);
+  const [isCardOverviewOpen, setIsCardOverviewOpen] = useState(false);
   const [busDeck, setBusDeck] = useState<Card[]>([]);
   const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
   const [busFocusIndex, setBusFocusIndex] = useState<number | null>(null);
@@ -1385,6 +1432,8 @@ const App: React.FC = () => {
     setExtraDecks([]);
     setOldCardsInLayoutCount(0);
     setDiscardedCardsCount(0);
+    setCurrentPackCards([]);
+    setIsCardOverviewOpen(false);
     setShowReshuffleBanner(false);
   }, []);
 
@@ -2669,6 +2718,7 @@ const initializeAdMob = useCallback(async () => {
     setExtraDecks(extra);
     setOldCardsInLayoutCount(0); // Reset to 0
     setDiscardedCardsCount(0); // Reset to 0
+    setCurrentPackCards(firstDeck);
     
     const newBusCards = firstDeck.slice(0, needed);
     setBusDeck(firstDeck.slice(needed));
@@ -2747,16 +2797,21 @@ const initializeAdMob = useCallback(async () => {
     // If the current deck is exhausted or has less than configuredBusLength cards left
     if (tempAvailableDeck.length < configuredBusLength) {
       if (newDecksUsed >= settings.busDecks || newExtraDecks.length === 0) {
-        // Win condition: if remaining cards in the active deck are less than configuredBusLength, they win!
-        setIsBusWon(true);
-        playSound('celebrate');
-        setImmunePlayerId(busPassengers[0].id);
-        setFeedback({ text: t('Geen kaarten meer! Je bent vrij!'), type: 'success' });
-        return;
+        // Win condition: if remaining cards in the active deck are less than 2, they win!
+        if (tempAvailableDeck.length < 2) {
+          setIsBusWon(true);
+          playSound('celebrate');
+          setImmunePlayerId(busPassengers[0].id);
+          setFeedback({ text: t('Geen kaarten meer! Je bent vrij!'), type: 'success' });
+          setBusCards([]); // Clear the layout
+          setBusDeck([]);
+          return;
+        }
       } else {
         // Load a new deck from extraDecks
         const nextDeck = newExtraDecks.shift()!;
         setExtraDecks(newExtraDecks);
+        setCurrentPackCards(nextDeck);
         
         // Track how many cards from the old deck are being put in the layout
         newOldCardsCount = tempAvailableDeck.length;
@@ -4431,12 +4486,13 @@ const initializeAdMob = useCallback(async () => {
   }
 
     const passengerNames = busPassengers.map(p => p.name).join(' & ');
-    const remainingBusCards = (() => {
-      const revealedInLayout = busWrongCardIndex !== null
-        ? Math.max(0, currentBusIndex + 1 - oldCardsInLayoutCount)
-        : Math.max(0, currentBusIndex - oldCardsInLayoutCount);
+    const remainingBusCards = isBusWon ? 0 : (() => {
+      const currentReveal = busWrongCardIndex !== null ? currentBusIndex + 1 : currentBusIndex;
+      const revealedInLayout = Math.max(0, currentReveal - oldCardsInLayoutCount);
       const usedCards = discardedCardsCount + revealedInLayout;
-      return Math.max(0, Math.min(52, 53 - usedCards));
+      const remainingCurrentPack = Math.max(0, 52 - usedCards);
+      const remainingOldCards = Math.max(0, oldCardsInLayoutCount - currentReveal);
+      return remainingOldCards + remainingCurrentPack;
     })();
 
     return (
@@ -4456,7 +4512,7 @@ const initializeAdMob = useCallback(async () => {
             <div className="flex items-center gap-3 px-6 py-3 bg-slate-900/95 border border-red-500/50 text-white rounded-2xl shadow-[0_0_40px_rgba(239,68,68,0.5)] backdrop-blur-xl flex-row animate-[bounce-subtle_2s_ease-in-out_infinite]">
               <RefreshCw size={20} className="animate-spin text-red-500 shrink-0" strokeWidth={3} />
               <div className="flex flex-col text-left">
-                <span className="text-[10px] text-red-400 uppercase font-black tracking-widest leading-none mb-1">{t("Pakje gewisseld")}</span>
+                <span className="text-[10px] text-red-400 uppercase font-black tracking-widest leading-none mb-1">{t("Kaarten van pakje zijn toegevoegd")}</span>
                 <span className="text-sm font-black uppercase tracking-wider leading-none text-white">
                   {t("Pakje")} {busDecksUsed}/{settings.busDecks}
                 </span>
@@ -4471,10 +4527,13 @@ const initializeAdMob = useCallback(async () => {
             <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-end">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-              <BusFront size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
+            <button 
+              onClick={() => setIsCardOverviewOpen(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}
+            >
+              <PlayingCardIcon size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
               <span>{remainingBusCards} {t("kaarten")}</span>
-            </div>
+            </button>
             {settings.busDecks > 1 && (
               <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
                 <span>{t("Pakje")}</span>
@@ -4596,6 +4655,114 @@ const initializeAdMob = useCallback(async () => {
             )}
           </div>
         </div>
+
+        {isCardOverviewOpen && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in" onClick={() => setIsCardOverviewOpen(false)}>
+            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => setIsCardOverviewOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <div className="mb-6 pr-8">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  <PlayingCardIcon size={22} className="text-red-500" />
+                  {t("Kaarten in dit pakje")} ({busDecksUsed}/{settings.busDecks})
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  {t("Overzicht van alle 52 kaarten in het huidige actieve pakje.")}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
+                {/* Legend */}
+                <div className="flex items-center gap-4 flex-wrap text-[10px] uppercase font-black tracking-wider border-b border-slate-800/60 pb-3 text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-4 bg-slate-800 border border-slate-700 rounded-sm"></div>
+                    <span>{t("In pakje")}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-4 bg-amber-950/20 border border-amber-900/40 border-dashed rounded-sm"></div>
+                    <span>{t("Layout (Dicht)")}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-4 bg-emerald-950/40 border border-emerald-500/50 rounded-sm"></div>
+                    <span>{t("Layout (Open)")}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-4 bg-slate-950 border border-slate-900 opacity-45 rounded-sm line-through"></div>
+                    <span>{t("Gedraaid")}</span>
+                  </div>
+                </div>
+
+                {/* Cards Grid */}
+                <div className="space-y-4">
+                  {[Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES].map(suit => {
+                    const isRed = suit === Suit.HEARTS || suit === Suit.DIAMONDS;
+                    const suitSymbol = getSuitSymbol(suit);
+                    const suitColor = isRed ? 'text-red-500' : 'text-slate-400';
+                    
+                    return (
+                      <div key={suit} className="space-y-1.5">
+                        <div className={`text-xs font-black uppercase tracking-widest ${suitColor} flex items-center gap-1`}>
+                          <span>{suitSymbol}</span>
+                          <span className="text-[10px] text-slate-500">{t(suit)}</span>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {[Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE].map(rank => {
+                            const card = currentPackCards.find(c => c.suit === suit && c.rank === rank);
+                            const rankChar = getRankChar(rank);
+                            
+                            if (!card) return null;
+                            
+                            const isInLayout = busCards.some(bc => bc.id === card.id);
+                            const isInDeck = busDeck.some(bd => bd.id === card.id);
+                            const isDiscarded = !isInLayout && !isInDeck;
+                            
+                            let cardStyle = "bg-slate-800 border-slate-700 text-white";
+                            
+                            if (isDiscarded) {
+                              cardStyle = "bg-slate-950/40 border-slate-900/50 text-slate-600 line-through opacity-45";
+                            } else if (isInLayout) {
+                              const layoutIdx = busCards.findIndex(bc => bc.id === card.id);
+                              const isRevealed = layoutIdx < currentBusIndex || (busWrongCardIndex !== null && layoutIdx === busWrongCardIndex);
+                              if (isRevealed) {
+                                cardStyle = "bg-emerald-950/40 border-emerald-500/50 text-emerald-200";
+                              } else {
+                                cardStyle = "bg-amber-950/20 border-amber-900/40 border-dashed text-amber-500";
+                              }
+                            }
+
+                            const displayColor = isDiscarded ? 'text-slate-600' : (isRed ? 'text-red-500' : 'text-slate-200');
+                            
+                            return (
+                              <div 
+                                key={rank}
+                                className={`h-9 flex flex-col items-center justify-center rounded-lg border text-xs font-bold transition-all ${cardStyle}`}
+                                title={`${t(rank)} ${t(suit)}`}
+                              >
+                                <span className={displayColor}>{rankChar}</span>
+                                <span className={`text-[8px] leading-none ${isDiscarded ? 'text-slate-600' : suitColor}`}>{suitSymbol}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsCardOverviewOpen(false)}
+                className="mt-6 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shrink-0 shadow-lg shadow-red-900/30 border border-red-500/30"
+              >
+                {t("Sluiten")}
+              </button>
+            </div>
+          </div>
+        )}
       </RootContainer>
       </>
       );
