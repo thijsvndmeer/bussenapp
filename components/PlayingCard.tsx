@@ -147,7 +147,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
-          ${isDark ? 'bg-slate-950 border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-b from-[#fdfdfd] to-[#f3f4f6] border-white/80'}
+          ${isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-b from-[#fdfdfd] to-[#f3f4f6] border-white/80'}
           ${sizeConfig.radius}
           border
           ${!isNeon ? 'ring-1 ring-black/5 shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]' : 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]'}
@@ -191,7 +191,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                 {/* FACE CARDS */}
                 {isFaceCard && (
                   <div className="w-[65%] h-[75%] relative flex items-center justify-center overflow-visible">
-                    <div className={`w-full h-full border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} rounded-lg flex flex-col justify-between relative overflow-hidden ${isDark ? 'bg-slate-800/40' : isClassic ? 'bg-slate-50/50' : isNeon ? 'bg-white/5' : 'bg-gradient-to-br from-white via-white/80 to-slate-50'} shadow-inner`}>
+                    <div className={`w-full h-full border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} rounded-lg flex flex-col justify-between relative overflow-hidden ${isDark ? 'bg-[#1e293b]/40' : isClassic ? 'bg-slate-50/50' : isNeon ? 'bg-white/5' : 'bg-gradient-to-br from-white via-white/80 to-slate-50'} shadow-inner`}>
                       {/* Damask Royal Pattern */}
                       {!isClassic && !isNeon && (
                         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40l20-20 20 20H0z' fill='%23000' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
@@ -258,7 +258,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- BACK --- */}
         <div className={`
           absolute inset-0 backface-hidden rotate-y-180
-          ${isDark ? 'bg-slate-950' : isClassic ? 'bg-red-700' : isNeon ? 'bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-xl' : 'bg-[#1e40af]'}
+          ${isDark ? 'bg-[#020617]' : isClassic ? 'bg-red-700' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl' : 'bg-[#1e40af]'}
           ${sizeConfig.radius}
           ${(isNeon || isDark) ? 'border border-white/20' : (isClassic ? 'border-[4px]' : 'border-[6px]') + ' border-white'}
           ring-1 ring-black/10

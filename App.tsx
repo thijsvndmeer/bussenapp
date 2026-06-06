@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -417,8 +417,8 @@ const GlobalAnimations = () => (
 
   <style>{`
     @keyframes disco-gradient {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 100% 50%; }
+      0% { background-position: 0% 0%; }
+      100% { background-position: 200% 200%; }
     }
 
     @keyframes end-gradient {
@@ -457,8 +457,8 @@ const CalmBackground: React.FC = () => {
     // Ensure hue2 is opposite/distinct (at least 120 degrees apart)
     const hue2 = (hue1 + 120 + Math.floor(Math.random() * 120)) % 360;
     return {
-      color1: `radial-gradient(circle at center, hsla(${hue1}, 95%, 55%, 0.45), transparent 70%)`,
-      color2: `radial-gradient(circle at center, hsla(${hue2}, 95%, 55%, 0.35), transparent 70%)`
+      color1: `radial-gradient(circle at center, hsla(${hue1}, 80%, 55%, 0.5), transparent 70%)`,
+      color2: `radial-gradient(circle at center, hsla(${hue2}, 80%, 55%, 0.4), transparent 70%)`
     };
   }, []);
 
@@ -506,12 +506,12 @@ const CalmBackground: React.FC = () => {
 
   return (
     <div 
-      className="absolute inset-0 overflow-hidden pointer-events-none -z-10"
+      className="absolute inset-0 overflow-hidden pointer-events-none"
       style={{ animation: 'slow-hue-rotate 120s linear infinite' }}
     >
       {/* Upper Right Glow Spot */}
       <div 
-        className="absolute w-[350px] h-[350px] rounded-full blur-[45px] transition-all duration-[10000ms] ease-in-out" 
+        className="absolute w-[800px] h-[800px] rounded-full blur-[100px] transition-all duration-[10000ms] ease-in-out opacity-60" 
         style={{ 
           backgroundImage: color1,
           left: `${pos1.x}%`,
@@ -521,7 +521,7 @@ const CalmBackground: React.FC = () => {
       />
       {/* Bottom Left Glow Spot */}
       <div 
-        className="absolute w-[400px] h-[400px] rounded-full blur-[50px] transition-all duration-[10000ms] ease-in-out" 
+        className="absolute w-[900px] h-[900px] rounded-full blur-[120px] transition-all duration-[10000ms] ease-in-out opacity-50" 
         style={{ 
           backgroundImage: color2,
           left: `${pos2.x}%`,
@@ -542,7 +542,7 @@ const BeerBackground: React.FC = () => {
     delay: `${Math.random() * 5}s`
   })), []);
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {bubbles.map(b => (
         <div 
           key={b.id} 
@@ -730,6 +730,130 @@ const ThemeHeader: React.FC<{
 
 const MetroBackground = MetroBackgroundAnimated;
 
+/** Dramatic transition overlay for when someone goes to the bus */
+const BusTransitionOverlay: React.FC<{
+  loserReveal: { player: Player; title: string } | null;
+  isBusEntrance: boolean;
+  busPassengers: Player[];
+  t: (key: string) => string;
+}> = ({ loserReveal, isBusEntrance, busPassengers, t }) => {
+  if (!loserReveal && !isBusEntrance) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 overflow-hidden" 
+    >
+      {/* Dramatic Opaque Background — Different from normal persistent theme */}
+      <div className="absolute inset-0 bg-[#050505] animate-in fade-in duration-700">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 via-transparent to-transparent opacity-60 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-red-950/40 via-black to-black"></div>
+        {/* Intense strobe for high stakes */}
+        <div className="absolute inset-0 bg-white/[0.03] animate-[pulse_0.1s_ease-in-out_infinite]"></div>
+      </div>
+
+      {loserReveal && (
+        <div className="relative z-10 flex flex-col items-center animate-in zoom-in duration-500">
+          <h2 className="text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center text-white">
+            {loserReveal.title}
+          </h2>
+
+          <div className="relative w-48 h-48 mb-8">
+            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
+            <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
+            <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
+              {loserReveal.player.image ? (
+                <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" alt="" />
+              ) : (
+                <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
+              )}
+            </div>
+          </div>
+
+          <h1 className="text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">
+            {loserReveal.player.name}
+          </h1>
+          <div className="bg-red-600 text-white font-black text-xl px-10 py-3 rounded-full uppercase tracking-widest shadow-[0_0_40px_rgba(220,38,38,0.8)]">
+            {t("Naar de Bus!")}
+          </div>
+        </div>
+      )}
+
+      {!loserReveal && isBusEntrance && (
+        <div className="relative z-10 flex flex-col items-center animate-in zoom-in duration-500">
+          <h1 className="text-5xl font-black text-white mb-4 text-center uppercase tracking-tighter drop-shadow-xl">
+            {t("Samen in de bus!")}
+          </h1>
+          
+          {busPassengers.length >= 2 && (
+            <p className="text-red-300 font-bold text-lg mb-12 text-center uppercase tracking-widest px-4">
+              <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[0].name}</span> & <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[1].name}</span> {t("gaan samen in de bus.")}
+            </p>
+          )}
+
+          <div className="flex flex-row gap-8 items-center justify-center flex-wrap">
+            {busPassengers.map((p, i) => (
+              <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
+                <span className="text-amber-400 font-black text-sm uppercase tracking-widest mb-3 opacity-90">{t("Speler")} {i + 1}</span>
+                <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5">
+                  {p.image ? (
+                    <img src={p.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" alt="" />
+                  ) : (
+                    <div className="w-full h-full bg-slate-800 flex items-center justify-center text-5xl font-black animate-[spin_8s_linear_infinite]">{p.name.charAt(0)}</div>
+                  )}
+                </div>
+                <div className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-md">{p.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PersistentBackground: React.FC<{ 
+  theme: UITheme; 
+  style?: React.CSSProperties; 
+  isDiscoActive?: boolean;
+  showTexture?: boolean;
+}> = ({ theme, style, isDiscoActive, showTexture = true }) => {
+  let bgClass = 'bg-animated-gradient';
+  let additionalStyles: React.CSSProperties = {};
+
+  if (isDiscoActive) {
+    bgClass = '';
+    additionalStyles = {
+      background: 'linear-gradient(135deg, #a855f7, #6366f1, #3b82f6, #10b981, #f59e0b, #ef4444, #a855f7)',
+      animation: 'slow-hue-rotate 5s linear infinite',
+      opacity: 1,
+    };
+  }
+
+  const finalStyle = { ...additionalStyles, ...style };
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden isolate">
+      {/* 1. Base Color Layer */}
+      <div className={`absolute inset-0 transition-all duration-100 ${bgClass}`} style={finalStyle} />
+      
+      {/* 2. Theme Specific Elements (Metro Map, etc) - Hidden during Disco */}
+      <div className={`absolute inset-0 transition-opacity duration-100 ${isDiscoActive ? 'opacity-0' : 'opacity-100'}`}>
+        {theme === UITheme.CALM && <CalmBackground />}
+        {theme === UITheme.BEER && <BeerBackground />}
+        {theme === UITheme.METRO && <MetroBackground />}
+      </div>
+
+      {/* 3. Global Texture Overlay */}
+      {showTexture && (
+        <div 
+          className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay"
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
+    </div>
+  );
+};
+
 const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false, theme = UITheme.CLASSIC }) => {
   const [showPatchChest, setShowPatchChest] = useState(() => {
     if (!storageAvailable) return true;
@@ -753,21 +877,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
     }
   }, []);
 
-  let bgClass = disableBaseBg ? '' : 'bg-animated-gradient';
-  let additionalStyles: React.CSSProperties = {};
-
-  if (variant === 'pyramid') bgClass = 'bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black';
-
-  if (isDiscoActive) {
-    bgClass = ''; // Clear default bgClass
-    additionalStyles = {
-      background: 'linear-gradient(120deg, #ff3a7f, #ffb347, #5ac8fa, #7c3aed, #0ea5e9, #22d3ee, #f472b6)',
-      backgroundSize: '400% 400%',
-      animation: 'disco-gradient 3s ease infinite',
-    };
-  }
-
-  const combinedStyles = { ...additionalStyles, ...style };
+  const combinedStyles = { ...style }; // Remove additionalStyles here as they moved to PersistentBackground
 
   const isAndroid = Capacitor.getPlatform() === 'android';
   const safeTopPadding = isAndroid ? 'max(env(safe-area-inset-top, 0px), 16px)' : 'env(safe-area-inset-top, 0px)';
@@ -780,13 +890,8 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   } as React.CSSProperties;
 
   return (
-    <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative isolate ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
+    <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative isolate bg-transparent ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
-
-      {/* Ambient background visual effects based on theme */}
-      {theme === UITheme.CALM && <CalmBackground />}
-      {theme === UITheme.BEER && <BeerBackground />}
-      {theme === UITheme.METRO && <MetroBackground />}
 
       {showChest && showPatchChest && (
         <button
@@ -806,9 +911,6 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
           </svg>
         </button>
       )}
-
-      {/* Scanlines / Overlay effect */}
-      {showTexture && <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>}
 
       {isPatchNotesOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in" onClick={() => setIsPatchNotesOpen(false)}>
@@ -1144,6 +1246,10 @@ const App: React.FC = () => {
   const [isBusEntrance, setIsBusEntrance] = useState(false);
   const [isBusWon, setIsBusWon] = useState(false);
   const [busDecksUsed, setBusDecksUsed] = useState(1);
+  const [showReshuffleBanner, setShowReshuffleBanner] = useState(false);
+  const [extraDecks, setExtraDecks] = useState<Card[][]>([]);
+  const [oldCardsInLayoutCount, setOldCardsInLayoutCount] = useState(0);
+  const [discardedCardsCount, setDiscardedCardsCount] = useState(0);
   const [busDeck, setBusDeck] = useState<Card[]>([]);
   const [isBusDeckExhausted, setIsBusDeckExhausted] = useState(false);
   const [busFocusIndex, setBusFocusIndex] = useState<number | null>(null);
@@ -1276,7 +1382,16 @@ const App: React.FC = () => {
     setCurrentBusIndex(1);
     setPhysicalBusPosition(1);
     setFeedback(null);
+    setExtraDecks([]);
+    setOldCardsInLayoutCount(0);
+    setDiscardedCardsCount(0);
+    setShowReshuffleBanner(false);
   }, []);
+
+    const dismissTransitions = useCallback(() => {
+    setLoserReveal(null);
+    setIsBusEntrance(false);
+    }, []);
 
 const initializeAdMob = useCallback(async () => {
     if (!Capacitor.isNativePlatform() || adMobReadyRef.current) return;
@@ -1487,6 +1602,11 @@ const initializeAdMob = useCallback(async () => {
       console.warn('Kon instellingen niet opslaan', error);
     }
   }, [settings, storageAvailable]);
+
+  useEffect(() => {
+    if (!storageAvailable) return;
+    persistPlayers();
+  }, [persistPlayers, storageAvailable]);
 
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
@@ -1963,6 +2083,7 @@ const initializeAdMob = useCallback(async () => {
     setShowConfetti(false);
     playSound('stopDisco');
     setIsDiscoActive(false);
+    setImmunePlayerId(null);
   };
 
   const confirmStart = (mode: GameMode) => {
@@ -2440,6 +2561,10 @@ const initializeAdMob = useCallback(async () => {
     setBusPassengers([victim]);
     setLoserReveal({ player: victim, title: title });
 
+    setTimeout(() => {
+      setLoserReveal(null);
+    }, 2500);
+
     if (settings.sharedBus) setPhase(GamePhase.BUS_TEAM_SELECTION);
     else startBus([victim]);
   };
@@ -2460,6 +2585,7 @@ const initializeAdMob = useCallback(async () => {
     setLoserReveal({ player: victim, title: title });
 
     setTimeout(() => {
+      setLoserReveal(null);
       if (settings.sharedBus) {
         setBusMode(settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
         setPhase(GamePhase.BUS_TEAM_SELECTION);
@@ -2487,6 +2613,7 @@ const initializeAdMob = useCallback(async () => {
     setIsSelectingBusPlayer(false);
 
     setTimeout(() => {
+      setLoserReveal(null);
       if (settings.sharedBus) {
         setPhase(GamePhase.BUS_TEAM_SELECTION);
       } else {
@@ -2532,20 +2659,19 @@ const initializeAdMob = useCallback(async () => {
 
     const needed = settings.busLength;
     
-    // Only subtract rotated/played cards from bus pakje
-    // We do this by taking the remaining deck and adding back unrevealed pyramid cards and unplayed player cards.
-    const unrevealedPyramidCards = pyramid
-      .flat()
-      .filter((c): c is Card => c !== null && !revealedPyramidCards.has(c.id));
-    const unplayedPlayerCards = players.flatMap(p => p.hand.filter(c => !c.isPlayed));
+    // Create decks
+    const firstDeck = shuffleDeck(createDeck());
+    const extra: Card[][] = [];
+    for (let i = 1; i < settings.busDecks; i++) {
+      extra.push(shuffleDeck(createDeck()));
+    }
     
-    const combinedDeck = [...deck, ...unrevealedPyramidCards, ...unplayedPlayerCards];
+    setExtraDecks(extra);
+    setOldCardsInLayoutCount(0); // Reset to 0
+    setDiscardedCardsCount(0); // Reset to 0
     
-    // If somehow we don't have enough cards to even start the bus, add a fresh deck
-    const freshBusDeck = shuffleDeck(combinedDeck.length >= needed ? combinedDeck : [...combinedDeck, ...createDeck()]);
-    
-    const newBusCards = freshBusDeck.slice(0, needed);
-    setBusDeck(freshBusDeck.slice(needed));
+    const newBusCards = firstDeck.slice(0, needed);
+    setBusDeck(firstDeck.slice(needed));
     setBusCards(newBusCards);
     setCurrentBusIndex(1);
     setBusWrongCardIndex(null);
@@ -2608,41 +2734,55 @@ const initializeAdMob = useCallback(async () => {
     const configuredBusLength = settings.busLength;
 
     // Recycle unrevealed cards from the previous failed attempt
-    // These are cards that were laid out but never flipped/seen
     const unrevealed = busCards.slice(currentBusIndex + 1);
-    const recycledDeck = shuffleDeck([...busDeck, ...unrevealed]);
+    let tempAvailableDeck = shuffleDeck([...busDeck, ...unrevealed]);
+    let newOldCardsCount = 0;
+    let newDecksUsed = busDecksUsed;
+    let newExtraDecks = [...extraDecks];
 
-    let tempAvailableDeck = recycledDeck;
-    let infoFeedback: Feedback | null = null;
-
-    let actualBusDecksUsed = busDecksUsed; // Use temp variable for current count
+    // Calculate how many cards of the current pack were discarded in this failed attempt
+    const discardedInThisRun = Math.max(0, currentBusIndex + 1 - oldCardsInLayoutCount);
+    let nextDiscardedCardsCount = discardedCardsCount + discardedInThisRun;
 
     // If the current deck is exhausted or has less than configuredBusLength cards left
-    if (tempAvailableDeck.length < configuredBusLength) { // This condition determines if a new deck is needed
-      if (busDecksUsed >= settings.busDecks) {
+    if (tempAvailableDeck.length < configuredBusLength) {
+      if (newDecksUsed >= settings.busDecks || newExtraDecks.length === 0) {
+        // Win condition: if remaining cards in the active deck are less than configuredBusLength, they win!
         setIsBusWon(true);
         playSound('celebrate');
         setImmunePlayerId(busPassengers[0].id);
         setFeedback({ text: t('Geen kaarten meer! Je bent vrij!'), type: 'success' });
         return;
       } else {
-        tempAvailableDeck = shuffleDeck(createDeck()); // Shuffle new deck
-        actualBusDecksUsed = busDecksUsed + 1; // Increment counter
-        setBusDecksUsed(actualBusDecksUsed);
+        // Load a new deck from extraDecks
+        const nextDeck = newExtraDecks.shift()!;
+        setExtraDecks(newExtraDecks);
+        
+        // Track how many cards from the old deck are being put in the layout
+        newOldCardsCount = tempAvailableDeck.length;
+        
+        // Combine the remaining cards of the old deck with the new deck
+        // Put the old deck cards at the FRONT of the tempAvailableDeck so they are drawn first!
+        tempAvailableDeck = [...tempAvailableDeck, ...nextDeck];
+        
+        newDecksUsed = newDecksUsed + 1;
+        setBusDecksUsed(newDecksUsed);
+        nextDiscardedCardsCount = 0; // Reset discarded count for the new pack
         playSound('reshuffle');
-        infoFeedback = { text: `${t("Pakje")} ${actualBusDecksUsed} / ${settings.busDecks}. ${t("Hoger of lager?")}`, type: 'info' };
+        setShowReshuffleBanner(true);
+        setTimeout(() => setShowReshuffleBanner(false), 2500);
       }
     }
 
-    // Determine how many cards to draw for this round of the bus
-    // This ensures we draw all remaining cards if less than configuredBusLength
-    const cardsToDraw = Math.min(configuredBusLength, tempAvailableDeck.length);
+    setDiscardedCardsCount(nextDiscardedCardsCount);
+    setOldCardsInLayoutCount(newOldCardsCount);
 
+    const cardsToDraw = Math.min(configuredBusLength, tempAvailableDeck.length);
     const newBusCards = tempAvailableDeck.slice(0, cardsToDraw);
     setBusDeck(tempAvailableDeck.slice(cardsToDraw));
     setBusCards(newBusCards);
     setCurrentBusIndex(1);
-    setFeedback(infoFeedback);
+    setFeedback(null); // No pop-up feedback message
     setIsBusDeckExhausted(false);
   };
 
@@ -2773,7 +2913,10 @@ const initializeAdMob = useCallback(async () => {
   // 1. SETUP
   if (phase === GamePhase.SETUP) {
     return (
-      <RootContainer className="p-4" showChest={true} theme={settings.theme}>
+      <>
+        <PersistentBackground theme={settings.theme} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer className="p-4" showChest={true} theme={settings.theme}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
           <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text">
             {t("Bussen")}
@@ -3064,8 +3207,10 @@ const initializeAdMob = useCallback(async () => {
                   <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
                   <div className="grid grid-cols-2 gap-3">
                     {[CardStyle.MODERN, CardStyle.DARK, CardStyle.CLASSIC, CardStyle.NEON].map((style) => (
-                      <button
+                      <div
                         key={style}
+                        role="button"
+                        tabIndex={0}
                         onPointerDown={() => {
                           if (settings.cardStyle === style) return;
                           longPressTimerRef.current = setTimeout(() => {
@@ -3093,7 +3238,13 @@ const initializeAdMob = useCallback(async () => {
                           setStyleToUnlock(style);
                           triggerHaptic('light');
                         }}
-                        className={`py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setStyleToUnlock(style);
+                            triggerHaptic('light');
+                          }
+                        }}
+                        className={`py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all cursor-pointer ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
                       >
                         {/* Preview eye button */}
                         <button
@@ -3120,8 +3271,8 @@ const initializeAdMob = useCallback(async () => {
                             style === CardStyle.DARK ? "Donker" :
                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
                         </span>
-                      </button>
-                    ))}
+                        </div>
+                        ))}
                   </div>
                 </div>
 
@@ -3296,6 +3447,7 @@ const initializeAdMob = useCallback(async () => {
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
       </RootContainer>
+      </>
     );
   }
   if (phase === GamePhase.ROUNDS_1_4) {
@@ -3305,7 +3457,10 @@ const initializeAdMob = useCallback(async () => {
 
     if (isWaitingForNextPlayer) {
       return (
-        <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
+        <>
+          <PersistentBackground theme={settings.theme} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+          <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
             <div className="mb-4"><ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" /></div>
             <PlayerAvatar player={activePlayer} size="xl" glow className="mb-6" />
@@ -3318,35 +3473,38 @@ const initializeAdMob = useCallback(async () => {
             </button>
           </div>
         </RootContainer>
-      );
-    }
+      </>
+    );
+  }
 
     const getHeaderClasses = () => {
+      const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
       if (settings.theme === UITheme.METRO) {
-        return "bg-[#0d0d0d] rounded-none border-b-2 border-[var(--theme-accent)] mb-4 z-20 mx-0";
+        return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-2xl mx-1' : 'rounded-none mx-0'} border-b-2 border-[var(--theme-accent)] mb-4 z-20`;
       }
       if (settings.theme === UITheme.CALM) {
-        return "bg-white/5 backdrop-blur-md rounded-[2.5rem] border border-white/5 mb-4 z-20 shadow-lg mx-2";
+        return `${transitionClass} bg-white/5 backdrop-blur-md rounded-[2.5rem] border border-white/5 mb-4 z-20 shadow-lg mx-2`;
       }
       if (settings.theme === UITheme.BEER) {
-        return "bg-amber-950/40 backdrop-blur-sm rounded-xl border-2 border-amber-900/50 mb-3 z-20 shadow-md mx-1";
+        return `${transitionClass} bg-amber-950/40 backdrop-blur-sm rounded-xl border-2 border-amber-900/50 mb-3 z-20 shadow-md mx-1`;
       }
       // Classic
-      return "bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1";
+      return `${transitionClass} bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1`;
     };
 
     const getHandContainerClasses = () => {
+      const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
       if (settings.theme === UITheme.METRO) {
-        return "bg-[#0d0d0d] rounded-none p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner";
+        return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-3xl' : 'rounded-none'} p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
       }
       if (settings.theme === UITheme.CALM) {
-        return "bg-white/5 rounded-[2rem] p-3 mb-6 border border-white/5 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner";
+        return `${transitionClass} bg-[var(--theme-accent)]/5 rounded-3xl p-3 mb-6 border border-[var(--theme-accent)]/10 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
       }
       if (settings.theme === UITheme.BEER) {
-        return "bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner";
+        return `${transitionClass} bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
       }
       // Classic
-      return "bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center";
+      return `${transitionClass} bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
     };
 
     const renderActiveSlot = (idx: number) => {
@@ -3354,7 +3512,7 @@ const initializeAdMob = useCallback(async () => {
       
       if (settings.theme === UITheme.METRO) {
         return (
-          <div key={`current-${idx}`} className={`${commonClasses} rounded-none border-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[4px_4px_0_rgba(0,0,0,0.5)]`} style={{ zIndex: idx }}>
+          <div key={`current-${idx}`} className={`${commonClasses} ${isDiscoActive ? 'rounded-xl' : 'rounded-none'} border-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[4px_4px_0_rgba(0,0,0,0.5)]`} style={{ zIndex: idx }}>
             <div className="text-[var(--theme-accent)] opacity-80 mb-1">
               {roundStep === 1 && <Sparkles size={18} />}
               {roundStep === 2 && <ArrowUpDown size={18} />}
@@ -3368,14 +3526,14 @@ const initializeAdMob = useCallback(async () => {
       
       if (settings.theme === UITheme.CALM) {
         return (
-          <div key={`current-${idx}`} className={`${commonClasses} rounded-[2rem] border-2 border-[var(--theme-accent)]/40 bg-[var(--theme-accent)]/5 shadow-inner`} style={{ zIndex: idx }}>
-            <div className="text-[var(--theme-accent)] opacity-60 mb-1">
+          <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border border-[var(--theme-accent)]/10 bg-[var(--theme-accent)]/[0.03]`} style={{ zIndex: idx }}>
+            <div className="text-[var(--theme-accent)] opacity-30 mb-1">
               {roundStep === 1 && <Sparkles size={18} />}
               {roundStep === 2 && <ArrowUpDown size={18} />}
               {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
               {roundStep === 4 && <Zap size={18} />}
             </div>
-            <span className="text-[var(--theme-accent)] font-light italic text-xl">?</span>
+            <span className="text-[var(--theme-accent)] font-light italic text-xl opacity-60">?</span>
           </div>
         );
       }
@@ -3409,7 +3567,10 @@ const initializeAdMob = useCallback(async () => {
     };
 
     return (
-      <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
+      <>
+        <PersistentBackground theme={settings.theme} isDiscoActive={isDiscoActive} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {showConfetti && <Confetti />}
         <div className={`flex-none flex items-center justify-between p-2.5 ${getHeaderClasses()}`}>
           <div className="flex items-center gap-3">
@@ -3604,13 +3765,14 @@ const initializeAdMob = useCallback(async () => {
           )}
         </div>
       </RootContainer>
-    );
-  }
+      </>
+      );
+      }
 
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
     const manualBusSelectionOverlay = isSelectingBusPlayer ? (
-      <div className="absolute inset-0 z-[95] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6" onClick={(e) => { if (e.target === e.currentTarget) setIsSelectingBusPlayer(false); }}>
+      <div className="absolute inset-0 z-[95] bg-black/40 backdrop-blur-xl flex flex-col items-center justify-center p-6" onClick={(e) => { if (e.target === e.currentTarget) setIsSelectingBusPlayer(false); }}>
         <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
           <div className="text-center space-y-2">
             <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">{t("de bus in jij")}</p>
@@ -3662,37 +3824,12 @@ const initializeAdMob = useCallback(async () => {
 
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       return (
-        <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" variant="pyramid" theme={settings.theme}>
+        <>
+          <PersistentBackground theme={settings.theme} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+          <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
         {renderQuitModal()}
-
-        {loserReveal && (
-            <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
-
-              {/* Strobe effect overlay */}
-              <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
-
-              <h2 className="relative z-10 text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center always-white">{loserReveal.title}</h2>
-
-              <div className="relative z-10 w-48 h-48 mb-8">
-                <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
-                <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
-                <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
-                  {loserReveal.player.image ? (
-                    <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" />
-                  ) : (
-                    <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
-                  )}
-                </div>
-              </div>
-
-              <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-              <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl always-white always-bg-red">
-                {t("Naar de Bus!")}
-              </div>
-            </div>
-          )}
 
           <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
             <div className="space-y-4 text-left">
@@ -3780,43 +3917,19 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         </RootContainer>
-      );
-    }
+      </>
+    );
+  }
     return (
-      <RootContainer className="p-0" variant="pyramid" shake={screenShake} disableSafeTop theme={settings.theme}>
+      <>
+        <PersistentBackground theme={settings.theme} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer className="p-0" shake={screenShake} disableSafeTop theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderQuitModal()}
-
-        {loserReveal && (
-          <div className="absolute inset-0 z-[90] bg-red-950 flex flex-col items-center justify-center p-6 overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 to-black animate-pulse"></div>
-
-            {/* Strobe effect overlay */}
-            <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
-
-            <h2 className="relative z-10 text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center always-white">{loserReveal.title}</h2>
-
-            <div className="relative z-10 w-48 h-48 mb-8">
-              <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
-              <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
-              <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
-                {loserReveal.player.image ? (
-                  <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" />
-                ) : (
-                  <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
-                )}
-              </div>
-            </div>
-
-            <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-            <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl always-white always-bg-red">
-              {t("Naar de Bus!")}
-            </div>
-          </div>
-        )}
         {/* Match Modal */}
         {pendingMatches && (
-          <div className="absolute inset-0 z-[80] bg-black/90 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
+          <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
             {/* Card Reveal for Match */}
             <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] animate-pop">
               <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
@@ -3868,10 +3981,22 @@ const initializeAdMob = useCallback(async () => {
             <div className="flex items-center gap-2 py-1">
               {(() => {
                 const victim = findLoser();
-                return players.map(p => {
+                // Show top 5 players likely to go in the bus
+                // Sort by hand length (descending) but keep victim always at the front if they exist
+                const displayedPlayers = [...players]
+                  .sort((a, b) => {
+                    if (victim) {
+                      if (a.id === victim.id) return -1;
+                      if (b.id === victim.id) return 1;
+                    }
+                    return b.hand.length - a.hand.length;
+                  })
+                  .slice(0, 4);
+
+                  return displayedPlayers.map(p => {
                   const isLoser = victim && p.id === victim.id;
                   const hasCards = p.hand.length > 0;
-                  
+
                   return (
                     <div key={p.id} className="flex flex-col items-center shrink-0">
                       <div className={`w-8 h-8 rounded-full border-2 transition-all relative ${isLoser ? 'border-transparent' : hasCards ? 'border-amber-500' : 'border-white/10 opacity-50'} bg-slate-800`}>
@@ -3905,8 +4030,16 @@ const initializeAdMob = useCallback(async () => {
                       </div>
                     </div>
                   );
-                });
-              })()}
+                  });
+                  })()}
+                  {players.length > 4 && (
+                  <div className="flex flex-col items-center justify-center shrink-0 ml-1">
+                  <div className="w-8 h-8 rounded-full bg-slate-800/50 border border-white/5 flex items-center justify-center">
+                    <span className="text-[10px] font-black text-slate-500">+{players.length - 4}</span>
+                  </div>
+                  <div className="mt-1 h-[15px]" /> {/* Spacer to match name height */}
+                </div>
+              )}
             </div>
           </div>
 
@@ -4031,8 +4164,9 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
       </RootContainer>
-    );
-  }
+      </>
+      );
+      }
 
   // 5. BUS TEAM SELECT
   const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
@@ -4065,9 +4199,18 @@ const initializeAdMob = useCallback(async () => {
 
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0];
+    const baseStyle = resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle;
+
     return (
-      <RootContainer className="items-center justify-center text-center border-0 outline-0" disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
-        <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ ...((resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
+      <>
+        <PersistentBackground theme={settings.theme} style={baseStyle as React.CSSProperties} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer 
+          className="items-center justify-center text-center border-0 outline-0" 
+          disableSafeTop 
+          theme={settings.theme}
+        >
+        <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="absolute z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
             {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
           </div>
@@ -4120,38 +4263,12 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
       </RootContainer>
-    );
-  }
+      </>
+      );
+      }
 
   // 6. THE BUS
   if (phase === GamePhase.THE_BUS) {
-    if (isBusEntrance) {
-      return (
-        <RootContainer className="items-center justify-center" disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
-          <div className="flex-1 w-full h-full flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm transition-[background,filter] duration-2000 ease-out p-4" style={{ ...((busMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle) as any), paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-            <h1 className="text-5xl font-black text-white mb-2 text-center uppercase tracking-tighter drop-shadow-xl">{t("Samen in de bus!")}</h1>
-            
-            {busPassengers.length >= 2 && (
-              <p className="text-red-300 font-bold text-lg mb-12 text-center uppercase tracking-widest px-4">
-                <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[0].name}</span> & <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[1].name}</span> {t("gaan samen in de bus.")}
-              </p>
-            )}
-
-            <div className="flex flex-row gap-8 items-center justify-center z-10 flex-wrap">
-              {busPassengers.map((p, i) => (
-                <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
-                  <span className="text-amber-400 font-black text-sm uppercase tracking-widest mb-3 opacity-90">{t("Speler")} {i + 1}</span>
-                  <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5 transition-all">                    {p.image ? <img src={p.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" /> : <div className="w-full h-full bg-slate-800 flex items-center justify-center text-5xl font-black animate-[spin_8s_linear_infinite]">{p.name.charAt(0)}</div>}
-                  </div>
-                  <div className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-md">{p.name}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </RootContainer>
-      );
-    }
-
     if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
       const passengerNames = busPassengers.map(p => p.name).join(' & ');
       const completedCards = isBusWon ? settings.busLength : Math.max(1, Math.min(settings.busLength, physicalBusPosition));
@@ -4168,7 +4285,10 @@ const initializeAdMob = useCallback(async () => {
         } backdrop-blur-xl rounded-3xl p-4 sm:p-6 space-y-6 transition-[background,box-shadow,border-color] duration-700 ease-out`;
 
       return (
-        <RootContainer disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
+        <>
+          <PersistentBackground theme={settings.theme} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+          <RootContainer theme={settings.theme}>
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <div
               className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
@@ -4306,19 +4426,47 @@ const initializeAdMob = useCallback(async () => {
           )}
           {renderQuitModal()}
         </RootContainer>
-      );
-    }
+      </>
+    );
+  }
 
     const passengerNames = busPassengers.map(p => p.name).join(' & ');
-    const remainingBusCards = busDeck.length;
+    const remainingBusCards = (() => {
+      const revealedInLayout = busWrongCardIndex !== null
+        ? Math.max(0, currentBusIndex + 1 - oldCardsInLayoutCount)
+        : Math.max(0, currentBusIndex - oldCardsInLayoutCount);
+      const usedCards = discardedCardsCount + revealedInLayout;
+      return Math.max(0, Math.min(52, 53 - usedCards));
+    })();
 
     return (
-      <RootContainer className="p-0 relative" shake={screenShake} disableBaseBg showTexture={false} disableSafeTop theme={settings.theme}>
-        <div className="absolute inset-0 -z-10" style={digitalBusBackgroundStyle}></div>
+      <>
+        <PersistentBackground theme={settings.theme} style={digitalBusBackgroundStyle} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer 
+          className="p-0 relative" 
+          shake={screenShake} 
+          disableSafeTop 
+          theme={settings.theme}
+        >
         {isBusWon && <Confetti />}
 
+        {showReshuffleBanner && (
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none animate-in fade-in zoom-in duration-300">
+            <div className="flex items-center gap-3 px-6 py-3 bg-slate-900/95 border border-red-500/50 text-white rounded-2xl shadow-[0_0_40px_rgba(239,68,68,0.5)] backdrop-blur-xl flex-row animate-[bounce-subtle_2s_ease-in-out_infinite]">
+              <RefreshCw size={20} className="animate-spin text-red-500 shrink-0" strokeWidth={3} />
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] text-red-400 uppercase font-black tracking-widest leading-none mb-1">{t("Pakje gewisseld")}</span>
+                <span className="text-sm font-black uppercase tracking-wider leading-none text-white">
+                  {t("Pakje")} {busDecksUsed}/{settings.busDecks}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header - Redesigned */}
-        <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
+        <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
           <div>
             <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
           </div>
@@ -4352,10 +4500,10 @@ const initializeAdMob = useCallback(async () => {
 
 
         {/* Bus Cards */}
-        <div className="flex-1 relative flex items-center bg-black/90 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/40 to-transparent pointer-events-none"></div>
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black via-black/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black via-black/40 to-transparent pointer-events-none" />
+        <div className="flex-1 relative flex items-center bg-transparent overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/20 to-transparent pointer-events-none"></div>
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black/60 via-black/20 to-transparent pointer-events-none" />
           <div
             ref={busScrollRef}
             className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
@@ -4378,7 +4526,7 @@ const initializeAdMob = useCallback(async () => {
                     isBusWon
                       ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
                       : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
-                />
+                  />
 
                 {/* Icons */}
                 {isHistory && index > 0 && !isReference && !isBusWon && (
@@ -4402,7 +4550,7 @@ const initializeAdMob = useCallback(async () => {
         </div>
 
         {/* Controls */}
-        <div className="flex-none bg-black border-t border-white/10 p-4 pb-8 z-20">
+        <div className="flex-none bg-black/40 border-t border-white/10 p-4 pb-8 z-20 backdrop-blur-md">
           {feedback && (
             <div className="mb-6 flex justify-center pointer-events-none">
               <div className={`px-8 py-3 rounded-2xl font-black text-lg shadow-2xl border-2 transition-all animate-pop ${feedback.type === 'error' ? 'bg-red-600 text-white border-red-400' : feedback.type === 'success' ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-800 text-white border-slate-600'}`}>
@@ -4449,13 +4597,17 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
       </RootContainer>
-    );
-  }
+      </>
+      );
+      }
 
   // 7. GAME OVER
   if (phase === GamePhase.GAME_OVER) {
     return (
-      <RootContainer className="p-0" theme={settings.theme}>
+      <>
+        <PersistentBackground theme={settings.theme} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer className="p-0" theme={settings.theme}>
         <Confetti />
         <div className="flex-1 overflow-y-auto p-6 relative z-10">
           <div className="text-center mb-10 mt-8">
@@ -4499,12 +4651,14 @@ const initializeAdMob = useCallback(async () => {
           </button>
         </div>
       </RootContainer>
-    );
-  }
+      </>
+      );
+      }
 
   // This fallthrough renders when in results or other unhandled states
   return (
     <>
+      <PersistentBackground theme={settings.theme} />
       {renderQuitModal()}
       {renderDeckPreview()}
     </>
