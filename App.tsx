@@ -4522,13 +4522,15 @@ const initializeAdMob = useCallback(async () => {
             <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-end">
-            <button 
-              onClick={() => setIsCardOverviewOpen(true)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}
-            >
-              <PlayingCardIcon size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
-              <span>{remainingBusCards} {t("kaarten")}</span>
-            </button>
+            {remainingBusCards > 0 && (
+              <button 
+                onClick={() => setIsCardOverviewOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-red-900/40 bg-red-900/10 text-slate-200"
+              >
+                <PlayingCardIcon size={14} className="text-red-500" />
+                <span>{remainingBusCards} {t("kaarten")}</span>
+              </button>
+            )}
             {settings.busDecks > 1 && (
               <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
                 <span>{t("Pakje")}</span>
