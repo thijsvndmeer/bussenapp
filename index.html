@@ -206,34 +206,6 @@
       --theme-border-radius: 1.5rem;
     }
 
-    @keyframes metro-color-cycle {
-      0%, 100% {
-        --theme-accent: hsl(180, 65%, 45%);
-        --theme-accent-glow: hsla(180, 65%, 45%, 0.15);
-        --theme-btn-bg: hsl(180, 65%, 45%);
-      }
-      20% {
-        --theme-accent: hsl(205, 70%, 45%);
-        --theme-accent-glow: hsla(205, 70%, 45%, 0.15);
-        --theme-btn-bg: hsl(205, 70%, 45%);
-      }
-      40% {
-        --theme-accent: hsl(235, 65%, 45%);
-        --theme-accent-glow: hsla(235, 65%, 45%, 0.15);
-        --theme-btn-bg: hsl(235, 65%, 45%);
-      }
-      60% {
-        --theme-accent: hsl(280, 65%, 45%);
-        --theme-accent-glow: hsla(280, 65%, 45%, 0.15);
-        --theme-btn-bg: hsl(280, 65%, 45%);
-      }
-      80% {
-        --theme-accent: hsl(340, 70%, 45%);
-        --theme-accent-glow: hsla(340, 70%, 45%, 0.15);
-        --theme-btn-bg: hsl(340, 70%, 45%);
-      }
-    }
-
     .theme-metro {
       --theme-bg: #0d0d0d;
       --theme-card-bg: #161616;
@@ -242,13 +214,12 @@
       --theme-text-secondary: #a3a3a3;
       --theme-btn-text: #ffffff;
       --theme-btn-sec-bg: transparent;
-      --theme-accent: hsl(180, 65%, 45%);
-      --theme-accent-glow: hsla(180, 65%, 45%, 0.15);
-      --theme-btn-bg: hsl(180, 65%, 45%);
+      --theme-accent: #fb7185;
+      --theme-accent-glow: rgba(251, 113, 133, 0.15);
+      --theme-btn-bg: #fb7185;
       --theme-btn-sec-text: #a3a3a3;
       --theme-card-border: 1.5px solid #27272a;
       --theme-border-radius: 6px;
-      animation: metro-color-cycle 900s linear infinite;
     }
 
     .theme-calm {
@@ -364,14 +335,19 @@
     }
 
 
-    .theme-calm .text-red-500, .theme-calm .text-red-400,
-    .theme-calm .bg-red-500, .theme-calm .bg-red-600 {
+    .theme-calm .text-red-500, .theme-calm .text-red-400 {
       color: var(--theme-accent) !important;
+    }
+    .theme-calm .bg-red-500, .theme-calm .bg-red-600 {
+      background-color: var(--theme-accent) !important;
       border-color: var(--theme-accent) !important;
     }
-    .theme-beer .text-red-500, .theme-beer .text-red-400,
-    .theme-beer .bg-red-500, .theme-beer .bg-red-600 {
+
+    .theme-beer .text-red-500, .theme-beer .text-red-400 {
       color: var(--theme-accent) !important;
+    }
+    .theme-beer .bg-red-500, .theme-beer .bg-red-600 {
+      background-color: var(--theme-accent) !important;
       border-color: var(--theme-accent) !important;
     }
 
@@ -423,6 +399,22 @@
       color: var(--theme-btn-sec-text) !important;
       border: var(--theme-card-border) !important;
       border-radius: var(--theme-border-radius) !important;
+    }
+
+    .theme-classic .always-white,
+    .theme-metro .always-white,
+    .theme-calm .always-white,
+    .theme-beer .always-white,
+    .always-white {
+      color: #ffffff !important;
+    }
+    .theme-classic .always-bg-red,
+    .theme-metro .always-bg-red,
+    .theme-calm .always-bg-red,
+    .theme-beer .always-bg-red,
+    .always-bg-red {
+      background-color: #dc2626 !important;
+      background-image: none !important;
     }
   </style>
   <style>
@@ -558,17 +550,6 @@
 <body>
   <!-- Static Loading Screen (Instant removal by React) -->
   <div id="loader-portal" class="loader-container">
-    <!-- Background Buses -->
-    <div class="loader-bus bus-slow">
-      <svg class="bus-svg" style="width:120px; height:120px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4C2.9 6 1.9 6.8 1.6 7.8l-1.4 5c-.1.4-.2.8-.2 1.2 0 .4.1.8.2 1.2C.5 16.3 1 18 1 18h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h6"/><circle cx="17" cy="18" r="2"/></svg>
-    </div>
-    <div class="loader-bus bus-medium-rev">
-      <svg class="bus-svg" style="width:80px; height:80px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4C2.9 6 1.9 6.8 1.6 7.8l-1.4 5c-.1.4-.2.8-.2 1.2 0 .4.1.8.2 1.2C.5 16.3 1 18 1 18h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h6"/><circle cx="17" cy="18" r="2"/></svg>
-    </div>
-    <div class="loader-bus bus-fast">
-      <svg class="bus-svg" style="width:60px; height:60px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4C2.9 6 1.9 6.8 1.6 7.8l-1.4 5c-.1.4-.2.8-.2 1.2 0 .4.1.8.2 1.2C.5 16.3 1 18 1 18h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h6"/><circle cx="17" cy="18" r="2"/></svg>
-    </div>
-
     <!-- Main Loader -->
     <div class="loader-content">
       <div class="lead-bus">

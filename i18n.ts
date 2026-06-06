@@ -17,6 +17,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Stijl": "Stijl",
         "Volledig Deck Voorbeeld": "Volledig Deck Voorbeeld",
         "Dubbele kaarten in de piramide": "Dubbele kaarten in de piramide",
+        "kaarten": "kaarten",
         "Kies een kaart per niveau": "Kies een kaart per niveau",
         "Kies een kaart per niveau voor dubbele slokken": "Kies een kaart per niveau voor dubbele slokken",
         "Niveau": "Niveau",
@@ -25,6 +26,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Stijl Wisselen": "Stijl Wisselen",
         "Kijk een korte video om direct over te schakelen naar de": "Kijk een korte video om direct over te schakelen naar de",
         "stijl!": "stijl!",
+        "Thema Wisselen": "Thema Wisselen",
+        "Kijk een korte video om direct over te schakelen naar het": "Kijk een korte video om direct over te schakelen naar het",
+        "thema!": "thema!",
         "Video Kijken": "Video Kijken",
         "Nee bedankt": "Nee bedankt"
     },
@@ -56,9 +60,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Aan de beurt": "This player's turn",
         "Op": "Took",
         "Uit": "Gave",
+        "kaarten": "cards",
         "Huidige Hand": "Current Hand",
         "Nog geen kaarten": "No cards yet",
-        "kaarten": "cards",
         "Ronde": "Round",
         "Pak een kaart van de stapel...": "Draw a card from the deck...",
         "Volgende": "Next",
@@ -317,6 +321,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Stijl Wisselen": "Style Switch",
         "Kijk een korte video om direct over te schakelen naar de": "Watch a short video to instantly switch to the",
         "stijl!": "style!",
+        "Thema Wisselen": "Theme Switch",
+        "Kijk een korte video om direct over te schakelen naar het": "Watch a short video to instantly switch to the",
+        "thema!": "theme!",
         "Video Kijken": "Watch Video",
         "Nee bedankt": "No thanks"
     }
