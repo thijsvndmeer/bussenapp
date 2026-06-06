@@ -245,20 +245,19 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
-const PATCH_NOTES_VERSION = '1.2';
+const PATCH_NOTES_VERSION = '1.3';
 const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
-const UPDATE_1_2_PATCH_NOTES = [
-  '🚌 Gedeelde bus animaties en UI vernieuwd voor nóg meer plezier!',
-  '🃏 De busrit gebruikt nu alleen nog ongespeelde kaarten van de piramide',
-  '🍻 Nieuwe, beter zichtbare biertjes (🍺) als slok-indicatoren',
-  '✨ De "Naar het Einde" knop ziet er spectaculairder uit',
-  '🌍 Volledige Engelse vertaling toegevoegd',
-  '🔇 Automatisch verbergen van de statusbalk voor een full-screen ervaring',
-  '🎵 Disco geluid stopt nu netjes als je verder speelt',
-  '🛡️ Duidelijkere tekst voor spelers die immuun zijn (Ging vorige ronde al in de bus)',
-  '📺 Mogelijkheid toegevoegd om (vrijwillig) een ad te kijken voor nieuwe kaartstijlen!',
+const UPDATE_1_3_PATCH_NOTES = [
+  '🎨 Nieuwe UI Thema\'s (Metro, Calm, Beer) toegevoegd voor een verbluffende uitstraling!',
+  '🚇 Dynamische geanimeerde metro-achtergrond toegevoegd bij het Metro-thema!',
+  '🎬 Dramatische fullscreen transitie en animaties wanneer spelers de bus in gaan!',
+  '🃏 Interactief kaartenoverzicht: klik op de kaarten-pil om alle 52 kaarten in het actieve pakje te bekijken!',
+  '🔢 Nauwkeurigere kaarten-teller: telt correct af naar 0 en toont het exacte aantal overgebleven kaarten!',
+  '➕ Automatisch kaarten aanvullen uit het volgende pakje als de busrit langer is dan de resterende kaarten!',
+  '💬 Duidelijkere melding "Kaarten van pakje zijn toegevoegd" bij het wisselen van pakje!',
+  '📲 AdMob advertentie-ID\'s zijn nu flexibel configureerbaar via omgevingsvariabelen!',
 ];
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -973,7 +972,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
             </div>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
-                {UPDATE_1_2_PATCH_NOTES.map((note, index) => (
+                {UPDATE_1_3_PATCH_NOTES.map((note, index) => (
                   <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
                     <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
                     <span className="flex-1">{note.substring(note.indexOf(' ') + 1)}</span>
