@@ -1094,7 +1094,7 @@ const App: React.FC = () => {
 
     const themeName = themeToUnlock === UITheme.CLASSIC ? "Klassiek" :
                       themeToUnlock === UITheme.METRO ? "Metro" :
-                      themeToUnlock === UITheme.CALM ? "Kalm" : "Bier";
+                      themeToUnlock === UITheme.CALM ? "Rustig" : "Bier";
 
     return (
       <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setThemeToUnlock(null)}>

@@ -30,7 +30,11 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kijk een korte video om direct over te schakelen naar het": "Kijk een korte video om direct over te schakelen naar het",
         "thema!": "thema!",
         "Video Kijken": "Video Kijken",
-        "Nee bedankt": "Nee bedankt"
+        "Nee bedankt": "Nee bedankt",
+        "classic": "Klassiek",
+        "metro": "Metro",
+        "calm": "Rustig",
+        "beer": "Bier"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -326,7 +330,14 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kijk een korte video om direct over te schakelen naar het": "Watch a short video to instantly switch to the",
         "thema!": "theme!",
         "Video Kijken": "Watch Video",
-        "Nee bedankt": "No thanks"
+        "Nee bedankt": "No thanks",
+        "classic": "Classic",
+        "metro": "Metro",
+        "calm": "Calm",
+        "beer": "Beer",
+        "Thema": "Theme",
+        "Rustig": "Calm",
+        "Bier": "Beer"
     }
 };
 
@@ -373,9 +384,10 @@ export const useTranslation = () => {
 
     const t = (text: string): string => {
         if (!text) return text;
-        if (lang === 'nl') return text;
         const trimmed = text.trim();
-        // Check exact match, then trimmed match
+        if (lang === 'nl') {
+            return dictionaries.nl[text] || dictionaries.nl[trimmed] || text;
+        }
         return dictionaries.en[text] || dictionaries.en[trimmed] || text;
     };
 
