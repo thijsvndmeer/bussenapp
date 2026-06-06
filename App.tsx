@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
+import MetroBackgroundAnimated from './components/MetroBackground';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
@@ -10,10 +11,10 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
-const ADMOB_APP_ID = 'ca-app-pub-7627297114391750~5463450367';
-const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = 'ca-app-pub-7627297114391750/6867442667';
-const ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID = 'ca-app-pub-7627297114391750/7299276212';
-const ADMOB_REWARDED_UNIT_ID = 'ca-app-pub-7627297114391750/9512575855';
+const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
+const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
+const ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
+const ADMOB_REWARDED_UNIT_ID = import.meta.env.VITE_ADMOB_REWARDED_UNIT_ID || 'ca-app-pub-3940256099942544/5224354917';
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
 
 // --- HELPERS ---
@@ -415,9 +416,6 @@ const GlobalAnimations = () => (
 
 
   <style>{`
-
-
-
     @keyframes disco-gradient {
       0% { background-position: 0% 50%; }
       100% { background-position: 100% 50%; }
@@ -430,21 +428,14 @@ const GlobalAnimations = () => (
     }
 
     @keyframes bounce-subtle {
-
-
-
       0%, 100% { transform: translateY(0); }
-
-
-
       50% { transform: translateY(-5px); }
-
-
-
     }
 
-
-
+    @keyframes slow-hue-rotate {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
   `}</style>
 
 
@@ -459,12 +450,88 @@ const GlobalAnimations = () => (
 
 // --- AMBIENT BACKGROUND COMPONENTS ---
 
-const CalmBackground: React.FC = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-    <div className="absolute w-[250px] h-[250px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(236,72,153,0.15),_transparent_70%)] blur-[30px] -top-10 -right-10 animate-pulse" style={{ animationDuration: '10s' }} />
-    <div className="absolute w-[280px] h-[280px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.1),_transparent_70%)] blur-[35px] -bottom-12 -left-10 animate-pulse" style={{ animationDuration: '7s' }} />
-  </div>
-);
+const CalmBackground: React.FC = () => {
+  // Generate two bright, highly distinct random colors once per session
+  const { color1, color2 } = useMemo(() => {
+    const hue1 = Math.floor(Math.random() * 360);
+    // Ensure hue2 is opposite/distinct (at least 120 degrees apart)
+    const hue2 = (hue1 + 120 + Math.floor(Math.random() * 120)) % 360;
+    return {
+      color1: `radial-gradient(circle at center, hsla(${hue1}, 95%, 55%, 0.45), transparent 70%)`,
+      color2: `radial-gradient(circle at center, hsla(${hue2}, 95%, 55%, 0.35), transparent 70%)`
+    };
+  }, []);
+
+  const isInBufferZone = (x: number, y: number) => {
+    // Buffer zone: X in [20, 80], Y in [15, 75]
+    return x >= 20 && x <= 80 && y >= 15 && y <= 75;
+  };
+
+  const getURCoords = () => {
+    let x = 0, y = 0;
+    let count = 0;
+    do {
+      // Upper Right quadrant: X: 55% to 100%, Y: 0% to 45%
+      x = Math.random() * 45 + 55;
+      y = Math.random() * 45;
+      count++;
+    } while (isInBufferZone(x, y) && count < 100);
+    return { x, y };
+  };
+
+  const getBLCoords = () => {
+    let x = 0, y = 0;
+    let count = 0;
+    do {
+      // Bottom Left quadrant: X: 0% to 45%, Y: 55% to 100%
+      x = Math.random() * 45;
+      y = Math.random() * 45 + 55;
+      count++;
+    } while (isInBufferZone(x, y) && count < 100);
+    return { x, y };
+  };
+
+  const [pos1, setPos1] = useState(() => getURCoords());
+  const [pos2, setPos2] = useState(() => getBLCoords());
+
+  useEffect(() => {
+    const updatePositions = () => {
+      setPos1(getURCoords());
+      setPos2(getBLCoords());
+    };
+
+    const interval = setInterval(updatePositions, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div 
+      className="absolute inset-0 overflow-hidden pointer-events-none -z-10"
+      style={{ animation: 'slow-hue-rotate 120s linear infinite' }}
+    >
+      {/* Upper Right Glow Spot */}
+      <div 
+        className="absolute w-[350px] h-[350px] rounded-full blur-[45px] transition-all duration-[10000ms] ease-in-out" 
+        style={{ 
+          backgroundImage: color1,
+          left: `${pos1.x}%`,
+          top: `${pos1.y}%`,
+          transform: 'translate(-50%, -50%)',
+        }} 
+      />
+      {/* Bottom Left Glow Spot */}
+      <div 
+        className="absolute w-[400px] h-[400px] rounded-full blur-[50px] transition-all duration-[10000ms] ease-in-out" 
+        style={{ 
+          backgroundImage: color2,
+          left: `${pos2.x}%`,
+          top: `${pos2.y}%`,
+          transform: 'translate(-50%, -50%)',
+        }} 
+      />
+    </div>
+  );
+};
 
 const BeerBackground: React.FC = () => {
   const bubbles = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
@@ -475,7 +542,7 @@ const BeerBackground: React.FC = () => {
     delay: `${Math.random() * 5}s`
   })), []);
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
       {bubbles.map(b => (
         <div 
           key={b.id} 
@@ -487,14 +554,181 @@ const BeerBackground: React.FC = () => {
   );
 };
 
-const MetroBackground: React.FC = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-15">
-    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-      <path d="M -20,100 L 150,100 L 220,170 L 360,170" stroke="var(--theme-accent)" strokeWidth="2" fill="none" strokeDasharray="4 4"/>
-      <path d="M 120,-20 L 120,150 L 180,210 L 180,640" stroke="#DC2626" strokeWidth={1.5} fill="none"/>
-    </svg>
-  </div>
-);
+/** Unified Player Avatar component */
+const PlayerAvatar: React.FC<{ 
+  player?: Player; 
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  glow?: boolean;
+  className?: string;
+}> = ({ player, size = 'md', glow = false, className = "" }) => {
+  const sizeClasses = {
+    sm: 'w-8 h-8 text-[10px]',
+    md: 'w-10 h-10 text-base',
+    lg: 'w-11 h-11 text-lg',
+    xl: 'w-32 h-32 text-5xl',
+  };
+
+  const borderClasses = size === 'xl' ? 'border-4' : 'border-2';
+  const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
+  
+  // Use red border for the waiting screen (when glow is true) or default slate
+  const borderColor = glow ? 'border-red-500' : 'border-slate-600/50';
+  const shadowEffect = glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md';
+  const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
+
+  return (
+    <div 
+      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center overflow-hidden relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${className}`}
+    >
+      {player?.image ? (
+        <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
+      ) : (
+        <span className="font-black text-white">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
+      )}
+      <div className={`absolute inset-0 rounded-full ${ringClasses} ring-red-500/20 animate-pulse`}></div>
+    </div>
+  );
+};
+
+/** Per-theme section label — genuinely different design per theme */
+const ThemeLabel: React.FC<{ 
+  text: string; 
+  theme: UITheme; 
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'simple' | 'fancy';
+}> = ({ text, theme, size = 'sm', variant = 'fancy' }) => {
+  const isLg = size === 'lg';
+  const isSm = size === 'sm';
+  const isSimple = variant === 'simple';
+  
+  // Base text sizes
+  const textSizeClass = isLg ? 'text-2xl sm:text-3xl' : isSm ? 'text-[10px]' : 'text-sm';
+
+  if (theme === UITheme.METRO) {
+    return (
+      <div className={`relative flex flex-col items-start ${isLg ? 'gap-3' : 'gap-1.5'}`}>
+        <div 
+          className={`relative z-10 font-mono font-black uppercase tracking-[0.2em] ${textSizeClass}`} 
+          style={{ color: 'var(--theme-accent)' }}
+        >
+          <span className="opacity-40 mr-1.5">{isLg ? '>>' : '>'}</span>
+          {text}
+          {isLg && <span className="inline-block ml-4 w-3 h-6 bg-[var(--theme-accent)] animate-pulse" />}
+        </div>
+        {!isSimple && (
+          <div className="flex w-full items-center gap-1">
+            <div className={`h-px bg-[var(--theme-accent)] opacity-40 ${isLg ? 'w-24' : 'w-8'}`} />
+            <div className="w-1 h-1 bg-[var(--theme-accent)] rounded-full opacity-60" />
+            <div className="flex-1 h-px bg-[var(--theme-accent)] opacity-10" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (theme === UITheme.CALM) {
+    return (
+      <div className="flex flex-col items-center">
+        <div 
+          className={`${textSizeClass} font-light italic uppercase`}
+          style={{ 
+            color: 'var(--theme-accent)',
+            fontFamily: "'Outfit', sans-serif"
+          }}
+        >
+          {text}
+        </div>
+      </div>
+    );
+  }
+
+  if (theme === UITheme.BEER) {
+    if (isSimple) {
+      return (
+        <div 
+          className={`${textSizeClass} font-black uppercase tracking-[0.15em]`}
+          style={{ color: 'var(--theme-accent)' }}
+        >
+          {text}
+        </div>
+      );
+    }
+    return (
+      <div className="relative inline-flex flex-col items-center">
+        <div 
+          className={`px-6 py-1 bg-[var(--theme-accent)] ${textSizeClass} font-black uppercase tracking-[0.15em] shadow-[4px_4px_0_rgba(0,0,0,0.3)]`}
+          style={{ color: '#fff', transform: 'rotate(-1deg)' }}
+        >
+          {text}
+        </div>
+      </div>
+    );
+  }
+
+  // Classic default: glowing floating text
+  return (
+    <div className={`relative z-[60] ${isLg ? 'py-4' : 'py-2'}`}>
+      <div 
+        className={`${textSizeClass} font-black uppercase tracking-[0.3em]`}
+        style={{ 
+          color: 'var(--theme-accent)',
+          textShadow: '0 0 12px var(--theme-accent-glow), 0 0 20px rgba(251,113,133,0.3)'
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
+
+/** Main header/title — genuinely different typography per theme */
+const ThemeHeader: React.FC<{ 
+  text: string; 
+  theme: UITheme; 
+  className?: string; 
+  as?: 'h1' | 'h2' | 'p' 
+}> = ({ text, theme, className = "", as: Component = 'h2' }) => {
+  if (theme === UITheme.METRO) {
+    return (
+      <Component 
+        className={`font-mono font-black uppercase tracking-tighter border-l-4 border-[var(--theme-accent)] pl-4 ${className}`}
+        style={{ color: 'var(--theme-text)' }}
+      >
+        {text}
+      </Component>
+    );
+  }
+  if (theme === UITheme.CALM) {
+    return (
+      <Component 
+        className={`font-light italic tracking-[0.15em] uppercase ${className}`}
+        style={{ color: 'var(--theme-text)', fontFamily: "'Outfit', sans-serif" }}
+      >
+        {text}
+      </Component>
+    );
+  }
+  if (theme === UITheme.BEER) {
+    return (
+      <Component 
+        className={`font-black uppercase tracking-tight ${className}`}
+        style={{ color: 'var(--theme-text)', textShadow: '3px 3px 0 var(--theme-accent)' }}
+      >
+        {text}
+      </Component>
+    );
+  }
+  // Classic
+  return (
+    <Component 
+      className={`font-black text-white drop-shadow-2xl neon-text ${className}`}
+    >
+      {text}
+    </Component>
+  );
+};
+
+const MetroBackground = MetroBackgroundAnimated;
 
 const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false, theme = UITheme.CLASSIC }) => {
   const [showPatchChest, setShowPatchChest] = useState(() => {
@@ -546,7 +780,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   } as React.CSSProperties;
 
   return (
-    <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
+    <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative isolate ${bgClass} ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
 
       {/* Ambient background visual effects based on theme */}
@@ -713,6 +947,68 @@ const App: React.FC = () => {
     );
   };
 
+  const renderThemeUnlockModal = () => {
+    if (!themeToUnlock) return null;
+
+    const themeName = themeToUnlock === UITheme.CLASSIC ? "Klassiek" :
+                      themeToUnlock === UITheme.METRO ? "Metro" :
+                      themeToUnlock === UITheme.CALM ? "Kalm" : "Bier";
+
+    return (
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setThemeToUnlock(null)}>
+        <div 
+          className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col items-center text-center relative"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="pt-10 pb-6 px-8 flex flex-col items-center">
+            {/* Reward Icon / Graphic */}
+            <div className="relative mb-6">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-xl relative z-10 border border-amber-200/50">
+                <Clapperboard size={48} className="text-amber-950" />
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
+              {t("Thema Wisselen")}
+            </h3>
+            
+            <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
+              {t("Kijk een korte video om direct over te schakelen naar het")} <span className="text-amber-400 font-bold">{t(themeName)}</span> {t("thema!")}
+            </p>
+
+            <div className="w-full flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  const theme = themeToUnlock;
+                  setThemeToUnlock(null);
+                  const played = await showRewardedAd();
+                  if (played) {
+                    const n = { ...settings, theme };
+                    setSettings(n);
+                    queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                    triggerHaptic('heavy');
+                  }
+                }}
+                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3"
+              >
+                <Play size={22} fill="currentColor" /> {t("Video Kijken")}
+              </button>
+              
+              <button
+                onClick={() => setThemeToUnlock(null)}
+                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
+              >
+                {t("Nee bedankt")}
+              </button>
+            </div>
+          </div>
+          
+          <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+        </div>
+      </div>
+    );
+  };
+
   const renderDeckPreview = () => {
     if (!previewDeckStyle) return null;
 
@@ -775,6 +1071,7 @@ const App: React.FC = () => {
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
   const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
   const [styleToUnlock, setStyleToUnlock] = useState<CardStyle | null>(null);
+  const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -2501,9 +2798,7 @@ const initializeAdMob = useCallback(async () => {
                   )}
                   <div className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center border-2 border-slate-600/50 font-bold text-white shadow-md overflow-hidden shrink-0">
-                        {p.image ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" /> : p.name.charAt(0).toUpperCase()}
-                      </div>
+                      <PlayerAvatar player={p} size="md" />
                       <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{p.name}</span>
                       {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
                     </div>
@@ -2728,15 +3023,37 @@ const initializeAdMob = useCallback(async () => {
                       return (
                         <button 
                           key={tName}
+                          onPointerDown={() => {
+                            if (settings.theme === tName) return;
+                            longPressTimerRef.current = setTimeout(() => {
+                              const n = { ...settings, theme: tName };
+                              setSettings(n);
+                              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                              triggerHaptic('heavy');
+                              longPressTimerRef.current = null;
+                            }, 3000);
+                          }}
+                          onPointerUp={() => {
+                            if (longPressTimerRef.current) {
+                              clearTimeout(longPressTimerRef.current);
+                              longPressTimerRef.current = null;
+                            }
+                          }}
+                          onPointerLeave={() => {
+                            if (longPressTimerRef.current) {
+                              clearTimeout(longPressTimerRef.current);
+                              longPressTimerRef.current = null;
+                            }
+                          }}
                           onClick={() => {
-                            const n = { ...settings, theme: tName };
-                            setSettings(n);
-                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            if (settings.theme === tName) return;
+                            setThemeToUnlock(tName);
                             triggerHaptic('light');
                           }}
-                          className={`flex-1 py-1.5 text-xs capitalize transition-all ${btnStyle}`}
+                          className={`flex-1 py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 ${btnStyle}`}
                         >
                           {t(tName)}
+                          {!isActive && <Video size={10} className="text-amber-400 shrink-0" />}
                         </button>
                       );
                     })}
@@ -2977,6 +3294,7 @@ const initializeAdMob = useCallback(async () => {
         )}
         {renderDeckPreview()}
         {renderStyleUnlockModal()}
+        {renderThemeUnlockModal()}
       </RootContainer>
     );
   }
@@ -2989,15 +3307,8 @@ const initializeAdMob = useCallback(async () => {
       return (
         <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
-            <p className="text-slate-400 text-xs mb-4 font-bold uppercase tracking-[0.3em]">{t("Aan de beurt")}</p>
-            <div className="w-32 h-32 rounded-full mb-6 bg-gradient-to-b from-slate-800 to-black border-4 border-red-500 flex items-center justify-center overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.4)] relative">
-              {activePlayer.image ? (
-                <img src={activePlayer.image} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-5xl font-black text-white">{activePlayer.name.charAt(0).toUpperCase()}</span>
-              )}
-              <div className="absolute inset-0 rounded-full ring-4 ring-red-500/20 animate-pulse"></div>
-            </div>
+            <div className="mb-4"><ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" /></div>
+            <PlayerAvatar player={activePlayer} size="xl" glow className="mb-6" />
             <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{activePlayer.name}</h1>
             <button
               onClick={() => setIsWaitingForNextPlayer(false)}
@@ -3010,16 +3321,101 @@ const initializeAdMob = useCallback(async () => {
       );
     }
 
+    const getHeaderClasses = () => {
+      if (settings.theme === UITheme.METRO) {
+        return "bg-[#0d0d0d] rounded-none border-b-2 border-[var(--theme-accent)] mb-4 z-20 mx-0";
+      }
+      if (settings.theme === UITheme.CALM) {
+        return "bg-white/5 backdrop-blur-md rounded-[2.5rem] border border-white/5 mb-4 z-20 shadow-lg mx-2";
+      }
+      if (settings.theme === UITheme.BEER) {
+        return "bg-amber-950/40 backdrop-blur-sm rounded-xl border-2 border-amber-900/50 mb-3 z-20 shadow-md mx-1";
+      }
+      // Classic
+      return "bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1";
+    };
+
+    const getHandContainerClasses = () => {
+      if (settings.theme === UITheme.METRO) {
+        return "bg-[#0d0d0d] rounded-none p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner";
+      }
+      if (settings.theme === UITheme.CALM) {
+        return "bg-white/5 rounded-[2rem] p-3 mb-6 border border-white/5 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner";
+      }
+      if (settings.theme === UITheme.BEER) {
+        return "bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner";
+      }
+      // Classic
+      return "bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center";
+    };
+
+    const renderActiveSlot = (idx: number) => {
+      const commonClasses = "w-20 h-28 flex flex-col items-center justify-center flex-none transition-all duration-300";
+      
+      if (settings.theme === UITheme.METRO) {
+        return (
+          <div key={`current-${idx}`} className={`${commonClasses} rounded-none border-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[4px_4px_0_rgba(0,0,0,0.5)]`} style={{ zIndex: idx }}>
+            <div className="text-[var(--theme-accent)] opacity-80 mb-1">
+              {roundStep === 1 && <Sparkles size={18} />}
+              {roundStep === 2 && <ArrowUpDown size={18} />}
+              {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
+              {roundStep === 4 && <Zap size={18} />}
+            </div>
+            <span className="text-[var(--theme-accent)] font-mono font-black text-xl">_?</span>
+          </div>
+        );
+      }
+      
+      if (settings.theme === UITheme.CALM) {
+        return (
+          <div key={`current-${idx}`} className={`${commonClasses} rounded-[2rem] border-2 border-[var(--theme-accent)]/40 bg-[var(--theme-accent)]/5 shadow-inner`} style={{ zIndex: idx }}>
+            <div className="text-[var(--theme-accent)] opacity-60 mb-1">
+              {roundStep === 1 && <Sparkles size={18} />}
+              {roundStep === 2 && <ArrowUpDown size={18} />}
+              {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
+              {roundStep === 4 && <Zap size={18} />}
+            </div>
+            <span className="text-[var(--theme-accent)] font-light italic text-xl">?</span>
+          </div>
+        );
+      }
+
+      if (settings.theme === UITheme.BEER) {
+        return (
+          <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border-2 border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]`} style={{ zIndex: idx }}>
+            <div className="text-amber-500 opacity-80 mb-1">
+              {roundStep === 1 && <Sparkles size={20} />}
+              {roundStep === 2 && <ArrowUpDown size={20} />}
+              {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
+              {roundStep === 4 && <Zap size={20} />}
+            </div>
+            <span className="text-amber-500 font-black text-xl">?</span>
+          </div>
+        );
+      }
+
+      // Classic
+      return (
+        <div key={`current-${idx}`} className={`${commonClasses} rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]`} style={{ zIndex: idx }}>
+          <div className="text-green-500 opacity-60 mb-1">
+            {roundStep === 1 && <Sparkles size={20} />}
+            {roundStep === 2 && <ArrowUpDown size={20} />}
+            {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
+            {roundStep === 4 && <Zap size={20} />}
+          </div>
+          <span className="text-green-500 font-black text-xl drop-shadow-md">?</span>
+        </div>
+      );
+    };
+
     return (
       <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {showConfetti && <Confetti />}
-        <div className="flex-none flex items-center justify-between p-2.5 bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1">
+        <div className={`flex-none flex items-center justify-between p-2.5 ${getHeaderClasses()}`}>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-red-600 to-red-800 flex items-center justify-center font-black text-lg text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] ring-2 ring-red-500/20 overflow-hidden">
-              {activePlayer?.image ? <img src={activePlayer.image} className="w-full h-full object-cover" /> : activePlayer?.name.charAt(0).toUpperCase()}
-            </div>
+            <PlayerAvatar player={activePlayer} size="lg" />
             <div className="overflow-hidden">
-              <p className="text-[10px] text-red-400 font-black uppercase tracking-widest mb-0.5">{t("Aan de beurt")}</p>
+              <ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" />
               <div className="flex items-center gap-1.5">
                 <p className="font-bold text-white text-lg leading-none truncate max-w-[120px] drop-shadow-md">{activePlayer?.name}</p>
                 {activePlayer?.isImmune && <Shield size={14} className="text-yellow-400 shrink-0" />}
@@ -3047,9 +3443,9 @@ const initializeAdMob = useCallback(async () => {
 
         <div className="flex-1 flex flex-col min-h-0">
           {/* HAND - Fixed Size */}
-          <div className="flex-none bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center">
+          <div className={getHandContainerClasses()}>
             {/* Table Felt Texture */}
-            <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>
+            {settings.theme === UITheme.CLASSIC && <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>}
 
             <p className="relative text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">{t("Huidige Hand")}</p>
 
@@ -3072,17 +3468,7 @@ const initializeAdMob = useCallback(async () => {
                       </div>
                     );
                   } else if (isCurrent) {
-                    return (
-                      <div key={`current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex flex-col items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
-                        <div className="text-green-500 opacity-60 mb-1">
-                          {roundStep === 1 && <Sparkles size={20} />}
-                          {roundStep === 2 && <ArrowUpDown size={20} />}
-                          {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
-                          {roundStep === 4 && <Zap size={20} />}
-                        </div>
-                        <span className="text-green-500 font-black text-xl drop-shadow-md">?</span>
-                      </div>
-                    );
+                    return renderActiveSlot(idx);
                   } else {
                     return null;
                   }
@@ -3109,17 +3495,7 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                       );
                     } else if (isCurrent) {
-                      return (
-                        <div key={`phys-current-${idx}`} className="w-20 h-28 rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] flex flex-col items-center justify-center animate-pulse flex-none" style={{ zIndex: idx }}>
-                          <div className="text-green-500 opacity-60 mb-1">
-                            {roundStep === 1 && <Sparkles size={20} />}
-                            {roundStep === 2 && <ArrowUpDown size={20} />}
-                            {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
-                            {roundStep === 4 && <Zap size={20} />}
-                          </div>
-                          <span className="text-green-500 font-bold text-2xl drop-shadow-md">?</span>
-                        </div>
-                      );
+                      return renderActiveSlot(idx);
                     } else {
                       return null;
                     }
@@ -3131,10 +3507,8 @@ const initializeAdMob = useCallback(async () => {
 
           {/* STAGE */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative z-0">
-            <div className="text-center mb-6 relative z-10">
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 text-[10px] text-slate-300 font-bold uppercase tracking-widest shadow-lg">
-                {t("Ronde")} {roundStep} / 4
-              </span>
+            <div className="text-center mb-6 relative z-10 flex flex-col items-center">
+              <ThemeLabel text={`${t("Ronde")} ${roundStep} / 4`} theme={settings.theme} size="sm" />
               <h2 className="text-3xl font-black text-white mt-3 drop-shadow-xl neon-text">
                 {roundStep === 1 && t("Rood of Zwart?")}
                 {roundStep === 2 && t("Hoger of Lager?")}
@@ -3148,7 +3522,7 @@ const initializeAdMob = useCallback(async () => {
                 <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" style={settings.cardStyle} />
               ) : (
                 settings.mode === GameMode.DIGITAL ? (
-                  <div className="w-48 h-64 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30 animate-pulse">
+                  <div className="w-48 h-64 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30">
                     <span className="text-slate-700 font-serif font-black text-6xl opacity-30">?</span>
                   </div>
                 ) : (
@@ -3299,7 +3673,7 @@ const initializeAdMob = useCallback(async () => {
               {/* Strobe effect overlay */}
               <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
 
-              <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center">{loserReveal.title}</h2>
+              <h2 className="relative z-10 text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center always-white">{loserReveal.title}</h2>
 
               <div className="relative z-10 w-48 h-48 mb-8">
                 <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
@@ -3314,7 +3688,7 @@ const initializeAdMob = useCallback(async () => {
               </div>
 
               <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-              <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl">
+              <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl always-white always-bg-red">
                 {t("Naar de Bus!")}
               </div>
             </div>
@@ -3322,7 +3696,7 @@ const initializeAdMob = useCallback(async () => {
 
           <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
             <div className="space-y-4 text-left">
-              <p className="text-[11px] uppercase font-black tracking-[0.25em] text-amber-300 text-center">{t("een echte piramide")}</p>
+              <div className="flex justify-center"><ThemeLabel text={t("een echte piramide")} theme={settings.theme} size="sm" /></div>
               <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">{t("Bouw deze piramide op tafel")}</h2>
 
               <div className="w-full flex flex-col items-center gap-2 mt-2">
@@ -3420,7 +3794,7 @@ const initializeAdMob = useCallback(async () => {
             {/* Strobe effect overlay */}
             <div className="absolute inset-0 bg-white/5 animate-[pulse_0.1s_ease-in-out_infinite]"></div>
 
-            <h2 className="relative z-10 text-3xl font-black text-red-500 uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center">{loserReveal.title}</h2>
+            <h2 className="relative z-10 text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center always-white">{loserReveal.title}</h2>
 
             <div className="relative z-10 w-48 h-48 mb-8">
               <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
@@ -3435,7 +3809,7 @@ const initializeAdMob = useCallback(async () => {
             </div>
 
             <h1 className="relative z-10 text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">{loserReveal.player.name}</h1>
-            <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl">
+            <div className="relative z-10 bg-red-600 text-white font-black text-xl px-8 py-2 rounded-full uppercase tracking-widest shadow-xl always-white always-bg-red">
               {t("Naar de Bus!")}
             </div>
           </div>
@@ -3485,10 +3859,8 @@ const initializeAdMob = useCallback(async () => {
         <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl gap-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="flex items-center gap-6 overflow-hidden">
             <div className="shrink-0">
-              <h2 className="text-2xl font-black text-amber-500 uppercase tracking-tighter drop-shadow-md">
-                {isPyramidDoubleSetup ? t("Dubbele kaarten in de piramide") : t("Piramide")}
-              </h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              <ThemeLabel text={t("Piramide")} theme={settings.theme} size="md" />
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                 {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
               </p>
             </div>
@@ -3560,7 +3932,7 @@ const initializeAdMob = useCallback(async () => {
                   <Sparkles size={20} />
                 </div>
                 <div>
-                  <h3 className="text-white font-black text-lg uppercase tracking-tight leading-none">{t("Dubbele kaarten in de piramide")}</h3>
+                  <h3 className="font-black text-lg uppercase tracking-tight leading-none" style={{ color: 'var(--theme-accent)' }}>{t("Piramide")}</h3>
                   <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                     {t("Niveau")} {settings.pyramidRows - pyramidDoubleSetupRow}
                   </p>
@@ -3703,7 +4075,7 @@ const initializeAdMob = useCallback(async () => {
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
-          <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-xl">{t("Gedeelde Bus")}</h2>
+          <div className="mb-4"><ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" /></div>
           <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
             <span className="text-white border-b-2 border-red-500">{victim.name}</span>{t(", Wie neem je mee de bus in?")}
           </p>
@@ -3948,12 +4320,12 @@ const initializeAdMob = useCallback(async () => {
         {/* Header - Redesigned */}
         <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black/80 border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
           <div>
-            <h2 className="text-3xl font-black text-red-600 italic tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">{t("De Bus")}</h2>
+            <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <div className={`flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${remainingBusCards === 0 ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
               <BusFront size={14} className={remainingBusCards === 0 ? 'text-red-400' : 'text-red-500'} />
-              <span>{remainingBusCards} {t(" over")}</span>
+              <span>{remainingBusCards} {t("kaarten")}</span>
             </div>
             {settings.busDecks > 1 && (
               <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>

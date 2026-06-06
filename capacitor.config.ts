@@ -1,15 +1,19 @@
 import { CapacitorConfig } from '@capacitor/cli';
+import { loadEnv } from 'vite';
+
+// Load environment variables using Vite helper
+const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), 'VITE_');
 
 const config: CapacitorConfig = {
   appId: 'com.bussen.app',
-  appName: 'Bussen Companion',
+  appName: 'Bussen',
   webDir: 'dist',
   server: {
     androidScheme: 'https'
   },
   plugins: {
     AdMob: {
-      initializeOnId: 'ca-app-pub-7627297114391750~5463450367',
+      initializeOnId: env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713',
       appOpen: {
         enabled: true
       },
