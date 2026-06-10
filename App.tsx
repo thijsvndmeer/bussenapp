@@ -1713,11 +1713,7 @@ const initializeAdMob = useCallback(async () => {
   useEffect(() => {
     const manageBars = async () => {
       try {
-        if (phase === GamePhase.SETUP || phase === GamePhase.GAME_OVER) {
-          await StatusBar.show();
-        } else {
-          await StatusBar.hide();
-        }
+        await StatusBar.hide();
       } catch (e) {
         // Ignored in web
       }
