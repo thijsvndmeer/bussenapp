@@ -103,6 +103,9 @@ const Root = () => {
 
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  state: { hasError: boolean };
+  props: { children: React.ReactNode };
+
   constructor(props: any) {
     super(props);
     this.state = { hasError: false };
