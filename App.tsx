@@ -2,6 +2,15 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
+import FeedbackOverlay from './components/FeedbackOverlay';
+import PlayerCard from './components/PlayerCard';
+import SettingsPanel from './components/SettingsPanel';
+import BusScreen from './components/BusScreen';
+import PyramidScreen from './components/PyramidScreen';
+import PlayerList from './components/PlayerList';
+import { useAudio } from './hooks/useAudio';
+import { useSettings, GAME_SETTINGS_KEY } from './hooks/useSettings';
+import { triggerHaptic } from './hooks/useHaptics';
 import MetroBackgroundAnimated from './components/MetroBackground';
 import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
@@ -153,98 +162,11 @@ const PYRAMID_WARNING_PHRASES = [
 
 // --- UTILS & FX ---
 
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-
-const triggerHaptic = async (
-  type:
-    | 'light'
-    | 'medium'
-    | 'heavy'
-    | 'success'
-    | 'warning'
-    | 'error'
-    | 'majorLoss'
-) => {
-  try {
-    switch (type) {
-      case 'light': await Haptics.impact({ style: ImpactStyle.Light }); break;
-      case 'medium': await Haptics.impact({ style: ImpactStyle.Medium }); break;
-      case 'heavy': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
-      case 'success': await Haptics.notification({ type: NotificationType.Success }); break;
-      case 'warning': await Haptics.notification({ type: NotificationType.Warning }); break;
-      case 'error': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
-      case 'majorLoss': await Haptics.vibrate({ duration: 650 }); break;
-    }
-  } catch (e) {
-    // Fallback to web API if native fails or is unavailable
-    if (navigator.vibrate) {
-      switch (type) {
-        case 'light': navigator.vibrate(10); break;
-        case 'medium': navigator.vibrate(40); break;
-        case 'heavy': navigator.vibrate(80); break;
-        case 'success': navigator.vibrate([25, 30, 25]); break;
-        case 'warning': navigator.vibrate([50, 30, 50]); break;
-        case 'error': navigator.vibrate([90, 40, 90]); break;
-        case 'majorLoss': navigator.vibrate([200, 150, 200, 150, 300]); break;
-      }
-    }
-  }
-};
-
-type SoundEffect =
-  | 'draw'
-  | 'success'
-  | 'fail'
-  | 'playerAdd'
-  | 'playerRemove'
-  | 'celebrate'
-  | 'busEnter'
-  | 'busStep'
-  | 'busFail'
-  | 'reshuffle'
-  | 'disco'
-  | 'stopDisco';
-
-const createOscillatorSound = (
-  ctx: AudioContext,
-  {
-    frequency,
-    duration = 0.15,
-    type = 'sine',
-    volume = 0.12,
-    attack = 0.01,
-    decay = 0.12,
-  }: {
-    frequency: number;
-    duration?: number;
-    type?: OscillatorType;
-    volume?: number;
-    attack?: number;
-    decay?: number;
-  }
-) => {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = type;
-  osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-
-  const now = ctx.currentTime;
-  const start = now + 0.001;
-  gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(volume, start + attack);
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration + decay);
-
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(start);
-  osc.stop(start + duration + decay + 0.05);
-};
 
 const PLAYER_DATA_KEY = 'bus-app-player-data-v1';
 const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
-const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const PATCH_NOTES_VERSION = '1.3';
 const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
@@ -595,7 +517,9 @@ const BeerBackground: React.FC = () => {
 };
 
 /** Unified Player Avatar component */
-const PlayerAvatar: React.FC<{ 
+const PlayerAvatar = PlayerCard;
+/* moved to components/PlayerCard.tsx */
+const LegacyPlayerAvatar: React.FC<{ 
   player?: Player; 
   size?: 'sm' | 'md' | 'lg' | 'xl';
   glow?: boolean;
@@ -997,39 +921,7 @@ const App: React.FC = () => {
   const { t, lang, setLanguage } = useTranslation();
   const getSipsText = (count: number) => `${count} ${count === 1 ? t('slok') : t('slokken')}`;
   // --- STATE ---
-  const [settings, setSettings] = useState<GameSettings>(() => {
-    const defaultSettings: GameSettings = {
-      mode: GameMode.DIGITAL,
-      physicalMode: false,
-      pyramidRows: 4,
-      sharedBus: false,
-      busLength: 6,
-      busDecks: 1,
-      cardStyle: CardStyle.CLASSIC,
-      doublePyramidCards: true,
-      theme: UITheme.CLASSIC,
-    };
-
-    if (!storageAvailable) return defaultSettings;
-
-    try {
-      const saved = localStorage.getItem(GAME_SETTINGS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Migration: CREATIVE/NEON_GLASS -> NEON
-        if (parsed.cardStyle === 'CREATIVE' || parsed.cardStyle === 'NEON_GLASS') {
-          parsed.cardStyle = CardStyle.NEON;
-        }
-        // Merge to ensure new settings get defaults
-        return { ...defaultSettings, ...parsed };
-      }
-    } catch (e) {
-      console.warn("Kon instellingen niet laden, gebruik standaardinstellingen", e);
-      localStorage.removeItem(GAME_SETTINGS_KEY);
-    }
-
-    return defaultSettings;
-  });
+  const [settings, setSettings] = useSettings(storageAvailable);
 
   const renderStyleUnlockModal = () => {
     if (!styleToUnlock) return null;
@@ -1317,97 +1209,7 @@ const App: React.FC = () => {
 
 
   // Audio FX
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const discoAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  const ensureAudioContext = useCallback(() => {
-    if (typeof window === 'undefined') return null;
-    if (!audioCtxRef.current) {
-      const AudioCtor = (window as typeof window & { webkitAudioContext?: typeof AudioContext }).AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtor) return null;
-      audioCtxRef.current = new AudioCtor();
-    }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
-    return audioCtxRef.current;
-  }, []);
-
-  const playTone = useCallback(
-    (opts: Parameters<typeof createOscillatorSound>[1]) => {
-      const ctx = ensureAudioContext();
-      if (!ctx) return;
-      createOscillatorSound(ctx, opts);
-    },
-    [ensureAudioContext]
-  );
-
-  const playSound = useCallback(
-    (sound: SoundEffect) => {
-      switch (sound) {
-        case 'draw':
-          playTone({ frequency: 180, duration: 0.08, type: 'triangle', volume: 0.08 });
-          playTone({ frequency: 260, duration: 0.08, type: 'triangle', volume: 0.08, attack: 0.02 });
-          break;
-        case 'success':
-          playTone({ frequency: 540, duration: 0.12, type: 'sine', volume: 0.12 });
-          setTimeout(() => playTone({ frequency: 720, duration: 0.14, type: 'triangle', volume: 0.1 }), 60);
-          break;
-        case 'fail':
-          playTone({ frequency: 220, duration: 0.16, type: 'sawtooth', volume: 0.12 });
-          setTimeout(() => playTone({ frequency: 140, duration: 0.2, type: 'sine', volume: 0.08 }), 70);
-          break;
-        case 'playerAdd':
-          playTone({ frequency: 420, duration: 0.12, type: 'square', volume: 0.1 });
-          setTimeout(() => playTone({ frequency: 620, duration: 0.1, type: 'triangle', volume: 0.08 }), 50);
-          break;
-        case 'playerRemove':
-          playTone({ frequency: 160, duration: 0.14, type: 'square', volume: 0.09 });
-          break;
-        case 'celebrate':
-          playTone({ frequency: 620, duration: 0.12, type: 'triangle', volume: 0.12 });
-          setTimeout(() => playTone({ frequency: 780, duration: 0.16, type: 'sine', volume: 0.1 }), 70);
-          setTimeout(() => playTone({ frequency: 980, duration: 0.18, type: 'sine', volume: 0.08 }), 140);
-          break;
-        case 'busEnter':
-          playTone({ frequency: 110, duration: 0.18, type: 'sawtooth', volume: 0.12 });
-          setTimeout(() => playTone({ frequency: 220, duration: 0.22, type: 'triangle', volume: 0.09 }), 90);
-          break;
-        case 'busStep':
-          playTone({ frequency: 320 + Math.random() * 80, duration: 0.1, type: 'triangle', volume: 0.1 });
-          break;
-        case 'busFail':
-          playTone({ frequency: 200, duration: 0.14, type: 'sine', volume: 0.12 });
-          setTimeout(() => playTone({ frequency: 120, duration: 0.16, type: 'sawtooth', volume: 0.1 }), 80);
-          break;
-        case 'reshuffle':
-          playTone({ frequency: 260, duration: 0.08, type: 'triangle', volume: 0.08 });
-          setTimeout(() => playTone({ frequency: 310, duration: 0.08, type: 'triangle', volume: 0.08 }), 40);
-          setTimeout(() => playTone({ frequency: 360, duration: 0.08, type: 'triangle', volume: 0.08 }), 80);
-          break;
-        case 'disco': {
-          if (discoAudioRef.current) {
-            discoAudioRef.current.pause();
-            discoAudioRef.current.currentTime = 0;
-          }
-          const audio = new Audio('/assets/sounds/danger_alarm.m4a');
-          audio.volume = 1.0; 
-          audio.play().catch(e => console.warn('Disco sound failed', e));
-          discoAudioRef.current = audio;
-          break;
-        }
-        case 'stopDisco': {
-          if (discoAudioRef.current) {
-            discoAudioRef.current.pause();
-            discoAudioRef.current.currentTime = 0;
-            discoAudioRef.current = null;
-          }
-          break;
-        }
-      }
-    },
-    [playTone]
-  );
+  const { playSound, ensureAudioContext } = useAudio();
 
   const resetBusState = useCallback(() => {
     setBusMode(null);
@@ -4603,13 +4405,7 @@ const initializeAdMob = useCallback(async () => {
 
         {/* Controls */}
         <div className="flex-none bg-black/40 border-t border-white/10 p-4 pb-8 z-20 backdrop-blur-md">
-          {feedback && (
-            <div className="mb-6 flex justify-center pointer-events-none">
-              <div className={`px-8 py-3 rounded-2xl font-black text-lg shadow-2xl border-2 transition-all animate-pop ${feedback.type === 'error' ? 'bg-red-600 text-white border-red-400' : feedback.type === 'success' ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-800 text-white border-slate-600'}`}>
-                {feedback.text}
-              </div>
-            </div>
-          )}
+          <FeedbackOverlay feedback={feedback} />
 
           <div className="flex items-center justify-center gap-4">
             {isBusDeckExhausted ? (
