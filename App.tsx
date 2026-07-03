@@ -8,6 +8,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { triggerHaptic } from './services/haptics';
 import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 
@@ -152,44 +153,6 @@ const PYRAMID_WARNING_PHRASES = [
 ];
 
 // --- UTILS & FX ---
-
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-
-const triggerHaptic = async (
-  type:
-    | 'light'
-    | 'medium'
-    | 'heavy'
-    | 'success'
-    | 'warning'
-    | 'error'
-    | 'majorLoss'
-) => {
-  try {
-    switch (type) {
-      case 'light': await Haptics.impact({ style: ImpactStyle.Light }); break;
-      case 'medium': await Haptics.impact({ style: ImpactStyle.Medium }); break;
-      case 'heavy': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
-      case 'success': await Haptics.notification({ type: NotificationType.Success }); break;
-      case 'warning': await Haptics.notification({ type: NotificationType.Warning }); break;
-      case 'error': await Haptics.impact({ style: ImpactStyle.Heavy }); break;
-      case 'majorLoss': await Haptics.vibrate({ duration: 650 }); break;
-    }
-  } catch (e) {
-    // Fallback to web API if native fails or is unavailable
-    if (navigator.vibrate) {
-      switch (type) {
-        case 'light': navigator.vibrate(10); break;
-        case 'medium': navigator.vibrate(40); break;
-        case 'heavy': navigator.vibrate(80); break;
-        case 'success': navigator.vibrate([25, 30, 25]); break;
-        case 'warning': navigator.vibrate([50, 30, 50]); break;
-        case 'error': navigator.vibrate([90, 40, 90]); break;
-        case 'majorLoss': navigator.vibrate([200, 150, 200, 150, 300]); break;
-      }
-    }
-  }
-};
 
 type SoundEffect =
   | 'draw'
