@@ -2,8 +2,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
+import { PlayerList } from './components/PlayerList';
+import { useGameEngine } from './hooks/useGameEngine';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -1216,7 +1218,7 @@ const App: React.FC = () => {
   const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
 
   const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const { players, setPlayers, addPlayer: addPlayerToEngine, removePlayer: removePlayerFromEngine, updatePlayer, updatePlayers, reorderPlayers } = useGameEngine();
   const [deck, setDeck] = useState<Card[]>([]);
   const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
 
@@ -2016,11 +2018,11 @@ const initializeAdMob = useCallback(async () => {
     }
   };
 
-  const addPlayer = () => {
+  const addPlayer = useCallback(() => {
     if (newPlayerName.trim() && players.length < 12) {
       triggerHaptic('success');
       playSound('playerAdd');
-      setPlayers([...players, {
+      addPlayerToEngine({
         id: Date.now().toString(),
         name: newPlayerName.trim(),
         hand: [],
@@ -2030,18 +2032,22 @@ const initializeAdMob = useCallback(async () => {
         isDealer: false,
         isImmune: false,
         image: newPlayerImage || undefined
-      }]);
+      });
       setNewPlayerName('');
       setNewPlayerImage(null);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
-  };
+  }, [addPlayerToEngine, newPlayerImage, newPlayerName, playSound, players.length, triggerHaptic]);
 
-  const removePlayer = (id: string) => {
+  const removePlayer = useCallback((id: string) => {
     triggerHaptic('light');
     playSound('playerRemove');
-    setPlayers(players.filter(p => p.id !== id));
-  };
+    removePlayerFromEngine(id);
+  }, [playSound, removePlayerFromEngine, triggerHaptic]);
+
+  const renderPlayerListAvatar = useCallback((player: Player) => (
+    <PlayerAvatar player={player} size="md" />
+  ), []);
 
   // --- DRAG-AND-DROP PLAYER REORDER ---
   const [dragPlayerIndex, setDragPlayerIndex] = useState<number | null>(null);
@@ -2051,7 +2057,7 @@ const initializeAdMob = useCallback(async () => {
   const dragItemHeightRef = useRef<number>(0);
   const playerListRef = useRef<HTMLDivElement | null>(null);
 
-  const handleDragStart = (e: React.TouchEvent | React.MouseEvent, index: number) => {
+  const handleDragStart = useCallback((e: React.TouchEvent | React.MouseEvent, index: number) => {
     e.stopPropagation();
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     setDragPlayerIndex(index);
@@ -2063,7 +2069,7 @@ const initializeAdMob = useCallback(async () => {
       dragItemHeightRef.current = target.getBoundingClientRect().height + 8; // height + gap
     }
     triggerHaptic('light');
-  };
+  }, [triggerHaptic]);
 
   const handleDragMove = useCallback((e: TouchEvent | MouseEvent) => {
     if (dragPlayerIndex === null) return;
@@ -2077,15 +2083,12 @@ const initializeAdMob = useCallback(async () => {
 
   const handleDragEnd = useCallback(() => {
     if (dragPlayerIndex !== null && dragOverIndex !== null && dragPlayerIndex !== dragOverIndex) {
-      const newPlayers = [...players];
-      const [movedPlayer] = newPlayers.splice(dragPlayerIndex, 1);
-      newPlayers.splice(dragOverIndex, 0, movedPlayer);
-      setPlayers(newPlayers);
+      reorderPlayers(dragPlayerIndex, dragOverIndex);
       triggerHaptic('medium');
     }
     setDragPlayerIndex(null);
     setDragOverIndex(null);
-  }, [dragPlayerIndex, dragOverIndex, players]);
+  }, [dragPlayerIndex, dragOverIndex, reorderPlayers]);
 
   useEffect(() => {
     if (dragPlayerIndex === null) return;
@@ -2183,11 +2186,8 @@ const initializeAdMob = useCallback(async () => {
 
   const handlePhysicalGuess = (correct: boolean) => {
     const sips = roundStep;
-    const newPlayers = [...players];
-    const currentPlayer = newPlayers[activePlayerIndex];
-
+    const currentPlayer = activePlayer;
     const placeholderCard: Card = { suit: Suit.SPADES, rank: Rank.ACE, id: `physical-${Date.now()}` };
-    currentPlayer.hand.push(placeholderCard);
 
     if (correct) {
       triggerHaptic('success');
@@ -2202,9 +2202,13 @@ const initializeAdMob = useCallback(async () => {
       playSound('fail');
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
-      currentPlayer.drinksTaken += sips;
     }
-    setPlayers(newPlayers);
+
+    updatePlayer(currentPlayer.id, player => ({
+      ...player,
+      hand: [...player.hand, placeholderCard],
+      drinksTaken: correct ? player.drinksTaken : player.drinksTaken + sips,
+    }));
   };
 
   const handleDigitalGuess = (guess: string) => {
@@ -2240,8 +2244,7 @@ const initializeAdMob = useCallback(async () => {
       correct = (guess === 'MATCH' && hasSuit) || (guess === 'NO_MATCH' && !hasSuit);
     }
 
-    const newPlayers = [...players];
-    const currentPlayer = newPlayers[activePlayerIndex];
+    const currentPlayer = activePlayer;
 
     if (correct) {
       triggerHaptic('success');
@@ -2256,11 +2259,13 @@ const initializeAdMob = useCallback(async () => {
       playSound('fail');
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
-      currentPlayer.drinksTaken += sips;
     }
 
-    currentPlayer.hand.push(card);
-    setPlayers(newPlayers);
+    updatePlayer(currentPlayer.id, player => ({
+      ...player,
+      hand: [...player.hand, card],
+      drinksTaken: correct ? player.drinksTaken : player.drinksTaken + sips,
+    }));
   };
 
   const handleDiscoAttempt = () => {
@@ -2275,8 +2280,7 @@ const initializeAdMob = useCallback(async () => {
     playSound('draw');
     setLastDrawnCard(card);
 
-    const newPlayers = [...players];
-    const currentPlayer = newPlayers[activePlayerIndex];
+    const currentPlayer = activePlayer;
 
     if (missingSuit && card.suit === missingSuit) {
       triggerHaptic('success');
@@ -2285,10 +2289,13 @@ const initializeAdMob = useCallback(async () => {
       setIsDiscoActive(true);
       setFeedback({ text: `${t("DISCO! Iedereen behalve")} ${currentPlayer.name} ${t("drinkt 1 slok.")}`, type: 'success' });
 
-      newPlayers.forEach((p, idx) => {
-        if (idx !== activePlayerIndex) p.drinksTaken += 1;
-      });
-      currentPlayer.drinksDistributed += Math.max(0, newPlayers.length - 1);
+      const updates = players.reduce<Record<string, (player: Player) => Player>>((acc, player, idx) => {
+        acc[player.id] = idx === activePlayerIndex
+          ? current => ({ ...current, drinksDistributed: current.drinksDistributed + Math.max(0, players.length - 1) })
+          : current => ({ ...current, drinksTaken: current.drinksTaken + 1 });
+        return acc;
+      }, {});
+      updatePlayers(updates);
     } else {
       triggerHaptic('error');
       triggerShake();
@@ -2296,11 +2303,16 @@ const initializeAdMob = useCallback(async () => {
       const sips = roundStep;
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("Jammer! Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
-      currentPlayer.drinksTaken += sips;
+      updatePlayer(currentPlayer.id, player => ({
+        ...player,
+        drinksTaken: player.drinksTaken + sips,
+      }));
     }
 
-    currentPlayer.hand.push(card);
-    setPlayers(newPlayers);
+    updatePlayer(currentPlayer.id, player => ({
+      ...player,
+      hand: [...player.hand, card],
+    }));
   };
 
   // --- PYRAMID LOGIC ---
@@ -2517,19 +2529,19 @@ const initializeAdMob = useCallback(async () => {
   const resolveMatch = (playerId: string) => {
     if (!pendingMatches) return;
     triggerHaptic('light');
-    const newPlayers = [...players];
-    const pIndex = newPlayers.findIndex(p => p.id === playerId);
-    if (pIndex === -1) return;
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
 
-    const player = newPlayers[pIndex];
     const handIndex = player.hand.findIndex(c => c.rank === pendingMatches.card.rank);
 
     if (handIndex !== -1) {
-      player.hand.splice(handIndex, 1);
-      player.drinksDistributed += pendingMatches.sips;
+      updatePlayer(playerId, currentPlayer => ({
+        ...currentPlayer,
+        hand: currentPlayer.hand.filter((_, index) => index !== handIndex),
+        drinksDistributed: currentPlayer.drinksDistributed + pendingMatches.sips,
+      }));
     }
 
-    setPlayers(newPlayers);
     const remainingMatches = pendingMatches.matches.filter(m => m.player.id !== playerId);
 
     if (remainingMatches.length === 0) {
@@ -2864,12 +2876,9 @@ const initializeAdMob = useCallback(async () => {
       setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
 
-      const newPlayers = [...players];
-      busPassengers.forEach(bp => {
-        const p = newPlayers.find(p => p.id === bp.id);
-        if (p) p.drinksTaken += sips;
-      });
-      setPlayers(newPlayers);
+      updatePlayers(Object.fromEntries(
+        busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
+      ));
       setTimeout(restartBus, 2500);
     }
   };
@@ -2905,12 +2914,9 @@ const initializeAdMob = useCallback(async () => {
     const phrase = getUniquePhrase('failure');
     setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("opnieuw!")}`, type: 'error' });
 
-    const newPlayers = [...players];
-    busPassengers.forEach(bp => {
-      const p = newPlayers.find(p => p.id === bp.id);
-      if (p) p.drinksTaken += sips;
-    });
-    setPlayers(newPlayers);
+    updatePlayers(Object.fromEntries(
+      busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
+    ));
     setPhysicalBusPosition(2);
     setIsBusWon(false);
   };
@@ -2976,46 +2982,16 @@ const initializeAdMob = useCallback(async () => {
             <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
           </div>
 
-          <div ref={playerListRef} className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
-            {players.map((p, index) => {
-              const isDragging = dragPlayerIndex === index;
-              const isOver = dragOverIndex === index && dragPlayerIndex !== null && dragPlayerIndex !== index;
-              return (
-                <div key={p.id} data-player-item className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''}`}>
-                  {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
-                    <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
-                  )}
-                  <div className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <PlayerAvatar player={p} size="md" />
-                      <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{p.name}</span>
-                      {p.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                      <div
-                        onTouchStart={(e) => handleDragStart(e, index)}
-                        onMouseDown={(e) => handleDragStart(e, index)}
-                        className="text-slate-600 hover:text-slate-400 p-2 cursor-grab active:cursor-grabbing transition-colors touch-none select-none"
-                      >
-                        <GripVertical size={18} />
-                      </div>
-                      <button onClick={() => removePlayer(p.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18} /></button>
-                    </div>
-                  </div>
-                  {isOver && dragPlayerIndex !== null && dragPlayerIndex < index && (
-                    <div className="absolute -bottom-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
-                  )}
-                </div>
-              );
-            })}
-            {players.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
-                <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
-                  <Users size={24} />
-                </div>
-                <span className="font-bold text-sm uppercase tracking-widest">{t("Start met toevoegen")}</span>
-              </div>
-            )}          </div>
+          <PlayerList
+            players={players}
+            dragPlayerIndex={dragPlayerIndex}
+            dragOverIndex={dragOverIndex}
+            listRef={playerListRef}
+            onDragStart={handleDragStart}
+            onRemovePlayer={removePlayer}
+            renderAvatar={renderPlayerListAvatar}
+            t={t}
+          />
         </div>
 
         {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
