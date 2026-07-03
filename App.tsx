@@ -2,8 +2,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
+import SettingsPanel from './components/SettingsPanel';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
+import { Users, Beer, Play, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -1640,15 +1641,6 @@ const initializeAdMob = useCallback(async () => {
 
   useEffect(() => {
     if (!storageAvailable) return;
-    try {
-      queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(settings), 'instellingen');
-    } catch (error) {
-      console.warn('Kon instellingen niet opslaan', error);
-    }
-  }, [settings, storageAvailable]);
-
-  useEffect(() => {
-    if (!storageAvailable) return;
     persistPlayers();
   }, [persistPlayers, storageAvailable]);
 
@@ -3061,67 +3053,15 @@ const initializeAdMob = useCallback(async () => {
             <Play fill="currentColor" size={24} /> {t("START SPEL")}
           </button>
 
-          <div className="glass-panel rounded-2xl border-slate-800 overflow-hidden transition-all duration-300">
-            <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="w-full flex items-center justify-between p-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-                <Settings size={14} /> {t("Instellingen")}
-              </div>
-              <div className={`transform transition-transform duration-300 ${isSettingsOpen ? 'rotate-180' : 'rotate-0'}`}>
-                <ChevronDown size={14} />
-              </div>
-            </button>
-
-            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSettingsOpen ? 'max-h-96' : 'max-h-0'}`}>
-              <div className="p-4 space-y-4 bg-black/20 border-t border-slate-800">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Piramide Hoogte")}</label>
-                    <span className="text-red-500 font-bold text-sm">{settings.pyramidRows}</span>
-                  </div>
-                  <input type="range" min="3" max="7" step="1" value={settings.pyramidRows} onChange={(e) => setSettings({ ...settings, pyramidRows: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Bus Kaarten")}</label>
-                    <span className="text-red-500 font-bold text-sm">{settings.busLength}</span>
-                  </div>
-                  <input type="range" min="3" max="12" step="1" value={settings.busLength} onChange={(e) => setSettings({ ...settings, busLength: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Bus Pakjes")}</label>
-                    <span className="text-red-500 font-bold text-sm">{settings.busDecks}</span>
-                  </div>
-                  <input type="range" min="1" max="5" step="1" value={settings.busDecks} onChange={(e) => setSettings({ ...settings, busDecks: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Gedeelde Bus")}</label>
-                  <button onClick={() => { const n = { ...settings, sharedBus: !settings.sharedBus }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.sharedBus ? 'left-7' : 'left-1'}`}></div>
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Dubbele kaarten in de piramide")}</label>
-                  <button onClick={() => { const n = { ...settings, doublePyramidCards: !settings.doublePyramidCards }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-12 h-6 rounded-full relative transition-all ${settings.doublePyramidCards ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.doublePyramidCards ? 'left-7' : 'left-1'}`}></div>
-                  </button>
-                </div>
-
-
-
-                <button
-                  onClick={() => setIsMoreSettingsOpen(true)}
-                  className="w-full mt-4 py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 active:scale-95"
-                >
-                  {t("Meer Instellingen")}
-                </button>
-              </div>
-            </div>
-          </div>
+          <SettingsPanel
+            isOpen={isSettingsOpen}
+            settings={settings}
+            t={t}
+            onToggleOpen={() => setIsSettingsOpen(!isSettingsOpen)}
+            onOpenMoreSettings={() => setIsMoreSettingsOpen(true)}
+            onSettingsChange={setSettings}
+            onCommitSettings={(nextSettings) => queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(nextSettings), 'instellingen')}
+          />
         </div>
 
         {/* Photo Options Modal */}
