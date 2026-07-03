@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useGameEngine, GameEngineEvent } from './hooks/useGameEngine';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
 import MetroBackgroundAnimated from './components/MetroBackground';
@@ -1215,7 +1216,7 @@ const App: React.FC = () => {
   const [styleToUnlock, setStyleToUnlock] = useState<CardStyle | null>(null);
   const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
 
-  const [phase, setPhase] = useState<GamePhase>(GamePhase.SETUP);
+  const { phase, transitionToPhase: setPhase, dispatch: dispatchGameEvent, registerEventHandler: registerGameEventHandler, schedule: scheduleGameEvent } = useGameEngine(GamePhase.SETUP);
   const [players, setPlayers] = useState<Player[]>([]);
   const [deck, setDeck] = useState<Card[]>([]);
   const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
@@ -1725,7 +1726,7 @@ const initializeAdMob = useCallback(async () => {
 
   const triggerShake = () => {
     setScreenShake(true);
-    setTimeout(() => setScreenShake(false), 500);
+    scheduleGameEvent('screen-shake', 500, { type: 'SCREEN_SHAKE_DONE' });
   };
 
   const triggerFileCapture = (mode: 'camera' | 'gallery' = 'camera') => {
@@ -1932,10 +1933,9 @@ const initializeAdMob = useCallback(async () => {
     if (isBusWon) {
       setBusWinBurst(true);
       prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); // Pre-cook ad as soon as bus is won
-      const t = setTimeout(() => setBusWinBurst(false), 1800);
-      return () => clearTimeout(t);
+      scheduleGameEvent('bus-win-burst', 1800, { type: 'BUS_WIN_BURST_DONE' });
     }
-  }, [isBusWon, prepareAdInterstitial]);
+  }, [isBusWon, prepareAdInterstitial, scheduleGameEvent]);
 
 
 
@@ -2380,14 +2380,8 @@ const initializeAdMob = useCallback(async () => {
     setPulseValidCards(true);
     setWarningCooldown(true);
 
-    setTimeout(() => {
-      setFeedback(null);
-      setPulseValidCards(false);
-    }, 1500);
-
-    setTimeout(() => {
-      setWarningCooldown(false);
-    }, 2000);
+    scheduleGameEvent('pyramid-warning-feedback', 1500, { type: 'PYRAMID_WARNING_FEEDBACK_DONE' });
+    scheduleGameEvent('pyramid-warning-cooldown', 2000, { type: 'PYRAMID_WARNING_COOLDOWN_DONE' });
   };
 
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
@@ -2601,12 +2595,12 @@ const initializeAdMob = useCallback(async () => {
     setBusPassengers([victim]);
     setLoserReveal({ player: victim, title: title });
 
-    setTimeout(() => {
-      setLoserReveal(null);
-    }, 2500);
-
-    if (settings.sharedBus) setPhase(GamePhase.BUS_TEAM_SELECTION);
-    else startBus([victim]);
+    if (settings.sharedBus) {
+      setPhase(GamePhase.BUS_TEAM_SELECTION);
+      scheduleGameEvent('loser-reveal', 2500, { type: 'LOSER_REVEAL_DONE' });
+    } else {
+      dispatchGameEvent({ type: 'START_BUS', passengers: [victim] });
+    }
   };
 
   const determineLoserAndAnimate = () => {
@@ -2624,14 +2618,7 @@ const initializeAdMob = useCallback(async () => {
     setBusPassengers([victim]);
     setLoserReveal({ player: victim, title: title });
 
-    setTimeout(() => {
-      setLoserReveal(null);
-      if (settings.sharedBus) {
-        setBusMode(settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
-        setPhase(GamePhase.BUS_TEAM_SELECTION);
-      }
-      else startBus([victim]);
-    }, 2500);
+    scheduleGameEvent('loser-reveal', 2500, { type: 'START_BUS', passengers: [victim] });
   };
 
   const proceedToBus = () => {
@@ -2652,14 +2639,7 @@ const initializeAdMob = useCallback(async () => {
     setBusMode('physical');
     setIsSelectingBusPlayer(false);
 
-    setTimeout(() => {
-      setLoserReveal(null);
-      if (settings.sharedBus) {
-        setPhase(GamePhase.BUS_TEAM_SELECTION);
-      } else {
-        startBus([passenger]);
-      }
-    }, 2500);
+    scheduleGameEvent('loser-reveal', 2500, { type: 'START_BUS', passengers: [passenger] });
   };
 
   const handleSharedBusSelection = (partner: Player | null) => {
@@ -2667,7 +2647,7 @@ const initializeAdMob = useCallback(async () => {
     const currentPassengers = busPassengers.length ? busPassengers : [];
     const updatedPassengers = partner ? [...currentPassengers, partner] : currentPassengers;
     setBusPassengers(updatedPassengers);
-    startBus(updatedPassengers, { showEntrance: !!partner });
+    dispatchGameEvent({ type: 'START_BUS', passengers: updatedPassengers, showEntrance: !!partner });
   };
 
   // --- BUS LOGIC ---
@@ -2685,7 +2665,7 @@ const initializeAdMob = useCallback(async () => {
     if (shouldShowEntrance) {
       setIsBusEntrance(true);
       setPhase(GamePhase.THE_BUS);
-      setTimeout(() => startDigitalBus(selectedPassengers, { skipEntrance: true }), 3000);
+      scheduleGameEvent('bus-entrance', 3000, { type: 'BUS_ENTRANCE_DONE', passengers: selectedPassengers, mode: 'digital' });
       return;
     }
 
@@ -2741,7 +2721,7 @@ const initializeAdMob = useCallback(async () => {
     if (shouldShowEntrance) {
       setIsBusEntrance(true);
       setPhase(GamePhase.THE_BUS);
-      setTimeout(() => startPhysicalBus(passengers, { skipEntrance: true }), 3000);
+      scheduleGameEvent('bus-entrance', 3000, { type: 'BUS_ENTRANCE_DONE', passengers, mode: 'physical' });
       return;
     }
 
@@ -2816,7 +2796,7 @@ const initializeAdMob = useCallback(async () => {
         nextDiscardedCardsCount = 0; // Reset discarded count for the new pack
         playSound('reshuffle');
         setShowReshuffleBanner(true);
-        setTimeout(() => setShowReshuffleBanner(false), 2500);
+        scheduleGameEvent('reshuffle-banner', 2500, { type: 'RESHUFFLE_DONE' });
       }
     }
 
@@ -2870,7 +2850,7 @@ const initializeAdMob = useCallback(async () => {
         if (p) p.drinksTaken += sips;
       });
       setPlayers(newPlayers);
-      setTimeout(restartBus, 2500);
+      scheduleGameEvent('bus-fail-restart', 2500, { type: 'BUS_FAIL' });
     }
   };
 
@@ -2914,6 +2894,59 @@ const initializeAdMob = useCallback(async () => {
     setPhysicalBusPosition(2);
     setIsBusWon(false);
   };
+
+  useEffect(() => {
+    const handleGameEvent = (event: GameEngineEvent) => {
+      switch (event.type) {
+        case 'START_BUS':
+          setLoserReveal(null);
+          if (settings.sharedBus && phase !== GamePhase.BUS_TEAM_SELECTION) {
+            setBusMode(settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
+            setPhase(GamePhase.BUS_TEAM_SELECTION);
+            return;
+          }
+          startBus(event.passengers, { showEntrance: event.showEntrance });
+          return;
+        case 'BUS_ENTRANCE_DONE':
+          if (event.mode === 'physical') {
+            startPhysicalBus(event.passengers, { skipEntrance: true });
+          } else {
+            startDigitalBus(event.passengers, { skipEntrance: true });
+          }
+          return;
+        case 'BUS_FAIL':
+          restartBus();
+          return;
+        case 'RESHUFFLE_DONE':
+          setShowReshuffleBanner(false);
+          return;
+        case 'PYRAMID_REVEAL':
+          revealPyramidCard(event.rowIndex, event.cardIndex);
+          return;
+        case 'NEXT_PLAYER':
+          nextPlayerTurn();
+          return;
+        case 'LOSER_REVEAL_DONE':
+          setLoserReveal(null);
+          return;
+        case 'SCREEN_SHAKE_DONE':
+          setScreenShake(false);
+          return;
+        case 'BUS_WIN_BURST_DONE':
+          setBusWinBurst(false);
+          return;
+        case 'PYRAMID_WARNING_FEEDBACK_DONE':
+          setFeedback(null);
+          setPulseValidCards(false);
+          return;
+        case 'PYRAMID_WARNING_COOLDOWN_DONE':
+          setWarningCooldown(false);
+          return;
+      }
+    };
+
+    registerGameEventHandler(handleGameEvent);
+  });
 
   // --- RENDERING HELPERS ---
 
@@ -3752,7 +3785,7 @@ const initializeAdMob = useCallback(async () => {
               >
                 {feedback.text}
               </div>
-              <button onClick={nextPlayerTurn} className="w-full bg-white hover:bg-slate-200 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+              <button onClick={() => dispatchGameEvent({ type: 'NEXT_PLAYER' })} className="w-full bg-white hover:bg-slate-200 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
                 {t("Volgende")} <ArrowRight size={20} strokeWidth={3} />
               </button>
             </div>
@@ -4178,7 +4211,7 @@ const initializeAdMob = useCallback(async () => {
                               return;
                             }
                             if (!isRevealed) {
-                              revealPyramidCard(rowIndex, cardIndex);
+                              dispatchGameEvent({ type: 'PYRAMID_REVEAL', rowIndex, cardIndex });
                             } else if (hasMatch && card) {
                               const isDoubled = doubledPyramidCardIds.has(card.id);
                               const sips = (settings.pyramidRows - rowIndex) * (isDoubled ? 2 : 1);
@@ -4446,7 +4479,7 @@ const initializeAdMob = useCallback(async () => {
 
                 <div className="flex flex-col sm:flex-row items-center sm:justify-end gap-3 min-h-[40px]">
                   <button
-                    onClick={() => startDigitalBus(busPassengers)}
+                    onClick={() => dispatchGameEvent({ type: 'START_BUS', passengers: busPassengers })}
                     className={`w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-opacity duration-300 underline underline-offset-4 decoration-slate-500/70 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                   >
                     {t("Toch een Digitale Bus")}
