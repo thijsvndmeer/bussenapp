@@ -141,8 +141,26 @@ function weightedRandom<T>(items: T[], weights: number[]): T {
 
 function buildWeightedGrid(grid: GridConfig): WeightedGrid {
   const points: GridPoint[] = [];
-function pickRoutePoints(grid: GridConfig) {
-  return [pickPoint(grid), pickPoint(grid), pickPoint(grid), pickPoint(grid)];
+  const weights: number[] = [];
+
+  for (let c = 0; c < grid.cols; c++) {
+    for (let r = 0; r < grid.rows; r++) {
+      const p = getPoint(c, r, grid);
+      const penalty = centerPenalty(p.x, p.y, grid);
+      const weight = Math.max(
+        MIN_EDGE_WEIGHT,
+        Math.pow(Math.max(0, penalty - CENTER_AVOID_RADIUS), CENTER_WEIGHT_EXPONENT)
+      );
+      points.push({ ...p, col: c, row: r });
+      weights.push(weight);
+    }
+  }
+  return { points, weights };
+}
+
+function pickPoint(weightedGrid: WeightedGrid) {
+  const { points, weights } = weightedGrid;
+  return weightedRandom(points, weights);
 }
 
 function pickEdgePoint(grid: GridConfig, forcedSide = Math.floor(Math.random() * 4)) {
@@ -153,24 +171,11 @@ function pickEdgePoint(grid: GridConfig, forcedSide = Math.floor(Math.random() *
   let row = 0;
 
   switch (side) {
-    case 0:
-      col = Math.floor(Math.random() * grid.cols);
-      row = 0;
-      break;
-    case 1:
-      col = lastCol;
-      row = Math.floor(Math.random() * grid.rows);
-      break;
-    case 2:
-      col = Math.floor(Math.random() * grid.cols);
-      row = lastRow;
-      break;
-    default:
-      col = 0;
-      row = Math.floor(Math.random() * grid.rows);
-      break;
+    case 0: col = Math.floor(Math.random() * grid.cols); row = 0; break;
+    case 1: col = lastCol; row = Math.floor(Math.random() * grid.rows); break;
+    case 2: col = Math.floor(Math.random() * grid.cols); row = lastRow; break;
+    default: col = 0; row = Math.floor(Math.random() * grid.rows); break;
   }
-
   return { ...getPoint(col, row, grid), col, row };
 }
 
@@ -184,31 +189,6 @@ function pickEdgeRoute(grid: GridConfig) {
   ];
 }
 
-function pickPoint(grid: GridConfig) {
-  const points: { x: number; y: number; col: number; row: number }[] = [];
-  const weights: number[] = [];
-
-  for (let c = 0; c < grid.cols; c++) {
-    for (let r = 0; r < grid.rows; r++) {
-      const p = getPoint(c, r, grid);
-      const penalty = centerPenalty(p.x, p.y, grid);
-      const weight = Math.max(
-        MIN_EDGE_WEIGHT,
-        Math.pow(Math.max(0, penalty - CENTER_AVOID_RADIUS), CENTER_WEIGHT_EXPONENT),
-      );
-      points.push({ ...p, col: c, row: r });
-      weights.push(weight);
-    }
-  }
-
-  return { points, weights };
-}
-
-function pickPoint(weightedGrid: WeightedGrid) {
-  const { points, weights } = weightedGrid;
-  return weightedRandom(points, weights);
-}
-
 function routeKey(point: GridPoint) {
   return `${point.col}:${point.row}`;
 }
@@ -217,7 +197,6 @@ function routesAreTooSimilar(route: GridPoint[], recentRoute: GridPoint[]) {
   const sameDirectionMatches = route.filter((point, index) => routeKey(point) === routeKey(recentRoute[index])).length;
   const reverseDirectionMatches = route.filter((point, index) => routeKey(point) === routeKey(recentRoute[recentRoute.length - 1 - index])).length;
   const matchThreshold = Math.ceil(route.length * 0.75);
-
   return sameDirectionMatches >= matchThreshold || reverseDirectionMatches >= matchThreshold;
 }
 
@@ -225,38 +204,34 @@ function routeIsRecent(route: GridPoint[], recentRoutes: GridPoint[][]) {
   return recentRoutes.some((recentRoute) => routesAreTooSimilar(route, recentRoute));
 }
 
-function createRoute(weightedGrid: WeightedGrid, recentRoutes: GridPoint[][]) {
+function createRoute(weightedGrid: WeightedGrid, recentRoutes: GridPoint[][], grid: GridConfig) {
   let fallbackRoute: GridPoint[] | null = null;
 
-  for (let attempt = 0; attempt < ROUTE_ATTEMPTS; attempt++) {
-    const route = [pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid)];
-    fallbackRoute ??= route;
-
-    if (!routeIsRecent(route, recentRoutes)) return route;
+  for (let attempt = 0; attempt < MAX_ROUTE_ATTEMPTS; attempt++) {
+    const route = [
+      pickPoint(weightedGrid),
+      pickPoint(weightedGrid),
+      pickPoint(weightedGrid),
+      pickPoint(weightedGrid),
+    ];
+    fallbackRoute = fallbackRoute ?? route;
+    
+    if (routeAvoidsCenter(route, grid) && !routeIsRecent(route, recentRoutes)) {
+      return route;
+    }
+  }
+  
+  if (fallbackRoute && !routeAvoidsCenter(fallbackRoute, grid)) {
+     return pickEdgeRoute(grid);
   }
 
-  return fallbackRoute ?? [pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid)];
+  return fallbackRoute ?? pickEdgeRoute(grid);
 }
 
-function createLineObject(color: string, weightedGrid: WeightedGrid, recentRoutes: GridPoint[][]): LineObject {
-  const route = createRoute(weightedGrid, recentRoutes);
+function createLineObject(color: string, weightedGrid: WeightedGrid, recentRoutes: GridPoint[][], grid: GridConfig): LineObject {
+  const route = createRoute(weightedGrid, recentRoutes, grid);
   const [start, mid1, mid2, end] = route;
-function createLineObject(color: string, grid: GridConfig) {
-  let route = pickRoutePoints(grid);
-
-  for (
-    let attempt = 1;
-    attempt < MAX_ROUTE_ATTEMPTS && !routeAvoidsCenter(route, grid);
-    attempt++
-  ) {
-    route = pickRoutePoints(grid);
-  }
-
-  if (!routeAvoidsCenter(route, grid)) {
-    route = pickEdgeRoute(grid);
-  }
-
-  const [start, mid1, mid2, end] = route;
+  
   const d = `M ${start.x} ${start.y} L ${mid1.x} ${mid1.y} L ${mid2.x} ${mid2.y} L ${end.x} ${end.y}`;
 
   return {
@@ -327,7 +302,7 @@ export default function MetroBackground() {
     if (state.current.lines.length >= MAX_ACTIVE_LINES) return;
 
     const color = CONFIG.colors[state.current.colorIndex++ % CONFIG.colors.length];
-    const line = createLineObject(color, weightedGrid, state.current.recentRoutes);
+    const line = createLineObject(color, weightedGrid, state.current.recentRoutes, grid);
 
     const el = acquirePathElement(lines);
     el.setAttribute('d', line.d);
