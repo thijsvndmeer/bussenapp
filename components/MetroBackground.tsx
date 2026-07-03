@@ -8,6 +8,11 @@ const CONFIG = {
   colors: ['#2b7a78', '#9a3652', '#bda15d', '#3d7254', '#8a624a', '#5068a8'],
 };
 
+const MAX_ACTIVE_LINES = 4;
+const MAX_RECENT_ROUTES = 8;
+const ROUTE_ATTEMPTS = 10;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
 interface GridConfig {
   spacing: number;
   offsetX: number;
@@ -18,6 +23,30 @@ interface GridConfig {
   height: number;
   centerX: number;
   centerY: number;
+}
+
+interface GridPoint {
+  x: number;
+  y: number;
+  col: number;
+  row: number;
+}
+
+interface WeightedGrid {
+  points: GridPoint[];
+  weights: number[];
+}
+
+interface LineObject {
+  d: string;
+  color: string;
+  stations: never[];
+  totalLength: number;
+  unitSegments: never[];
+  pathEl: SVGPathElement | null;
+  pathLength: number;
+  route: GridPoint[];
+  _p?: number;
 }
 
 function getGridConfig(width: number, height: number): GridConfig {
@@ -63,8 +92,8 @@ function weightedRandom<T>(items: T[], weights: number[]): T {
   return items[items.length - 1];
 }
 
-function pickPoint(grid: GridConfig) {
-  const points: { x: number; y: number; col: number; row: number }[] = [];
+function buildWeightedGrid(grid: GridConfig): WeightedGrid {
+  const points: GridPoint[] = [];
   const weights: number[] = [];
 
   for (let c = 0; c < grid.cols; c++) {
@@ -77,14 +106,46 @@ function pickPoint(grid: GridConfig) {
     }
   }
 
+  return { points, weights };
+}
+
+function pickPoint(weightedGrid: WeightedGrid) {
+  const { points, weights } = weightedGrid;
   return weightedRandom(points, weights);
 }
 
-function createLineObject(color: string, grid: GridConfig) {
-  const start = pickPoint(grid);
-  const mid1 = pickPoint(grid);
-  const mid2 = pickPoint(grid);
-  const end = pickPoint(grid);
+function routeKey(point: GridPoint) {
+  return `${point.col}:${point.row}`;
+}
+
+function routesAreTooSimilar(route: GridPoint[], recentRoute: GridPoint[]) {
+  const sameDirectionMatches = route.filter((point, index) => routeKey(point) === routeKey(recentRoute[index])).length;
+  const reverseDirectionMatches = route.filter((point, index) => routeKey(point) === routeKey(recentRoute[recentRoute.length - 1 - index])).length;
+  const matchThreshold = Math.ceil(route.length * 0.75);
+
+  return sameDirectionMatches >= matchThreshold || reverseDirectionMatches >= matchThreshold;
+}
+
+function routeIsRecent(route: GridPoint[], recentRoutes: GridPoint[][]) {
+  return recentRoutes.some((recentRoute) => routesAreTooSimilar(route, recentRoute));
+}
+
+function createRoute(weightedGrid: WeightedGrid, recentRoutes: GridPoint[][]) {
+  let fallbackRoute: GridPoint[] | null = null;
+
+  for (let attempt = 0; attempt < ROUTE_ATTEMPTS; attempt++) {
+    const route = [pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid)];
+    fallbackRoute ??= route;
+
+    if (!routeIsRecent(route, recentRoutes)) return route;
+  }
+
+  return fallbackRoute ?? [pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid), pickPoint(weightedGrid)];
+}
+
+function createLineObject(color: string, weightedGrid: WeightedGrid, recentRoutes: GridPoint[][]): LineObject {
+  const route = createRoute(weightedGrid, recentRoutes);
+  const [start, mid1, mid2, end] = route;
 
   const d = `M ${start.x} ${start.y} L ${mid1.x} ${mid1.y} L ${mid2.x} ${mid2.y} L ${end.x} ${end.y}`;
 
@@ -96,6 +157,7 @@ function createLineObject(color: string, grid: GridConfig) {
     unitSegments: [],
     pathEl: null as SVGPathElement | null,
     pathLength: 0,
+    route,
   };
 }
 
@@ -103,11 +165,13 @@ export default function MetroBackground() {
   const svgRef = useRef<SVGSVGElement>(null);
   const linesRef = useRef<SVGGElement>(null);
   const animRef = useRef<number>(0);
+  const pathPoolRef = useRef<SVGPathElement[]>([]);
 
   const [dim, setDim] = useState({ width: 1000, height: 600 });
 
   const state = useRef({
-    lines: [] as any[],
+    lines: [] as LineObject[],
+    recentRoutes: [] as GridPoint[][],
     colorIndex: 0,
     last: 0,
   });
@@ -126,23 +190,42 @@ export default function MetroBackground() {
     return () => ro.disconnect();
   }, []);
 
-  const grid = useMemo(() => getGridConfig(dim.width, dim.height), [dim]);
+  const grid = useMemo(() => getGridConfig(dim.width, dim.height), [dim.width, dim.height]);
+  const weightedGrid = useMemo(() => buildWeightedGrid(grid), [grid]);
+
+  const acquirePathElement = useCallback((lines: SVGGElement) => {
+    const pooled = pathPoolRef.current.pop();
+    const el = pooled ?? document.createElementNS(SVG_NS, 'path');
+
+    el.style.display = '';
+    if (!el.parentNode) lines.appendChild(el);
+
+    return el;
+  }, []);
+
+  const releasePathElement = useCallback((el: SVGPathElement) => {
+    el.style.display = 'none';
+    el.style.strokeDasharray = '';
+    el.style.strokeDashoffset = '';
+    el.removeAttribute('d');
+    pathPoolRef.current.push(el);
+  }, []);
 
   const spawnLine = useCallback(() => {
     const lines = linesRef.current;
     if (!lines) return;
+    if (state.current.lines.length >= MAX_ACTIVE_LINES) return;
 
     const color = CONFIG.colors[state.current.colorIndex++ % CONFIG.colors.length];
-    const line = createLineObject(color, grid);
+    const line = createLineObject(color, weightedGrid, state.current.recentRoutes);
 
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const el = acquirePathElement(lines);
     el.setAttribute('d', line.d);
     el.setAttribute('stroke', line.color);
     el.setAttribute('fill', 'none');
     el.setAttribute('stroke-width', '3');
     el.setAttribute('stroke-linecap', 'round');
 
-    lines.appendChild(el);
     line.pathEl = el;
     line.pathLength = el.getTotalLength();
 
@@ -150,7 +233,8 @@ export default function MetroBackground() {
     el.style.strokeDashoffset = `${line.pathLength}`;
 
     state.current.lines.push(line);
-  }, [grid]);
+    state.current.recentRoutes = [line.route, ...state.current.recentRoutes].slice(0, MAX_RECENT_ROUTES);
+  }, [acquirePathElement, weightedGrid]);
 
   useEffect(() => {
     const loop = (t: number) => {
@@ -158,8 +242,9 @@ export default function MetroBackground() {
       const dt = t - state.current.last;
       state.current.last = t;
 
-      const line = state.current.lines[0];
-      if (line?.pathEl) {
+      state.current.lines = state.current.lines.filter((line) => {
+        if (!line.pathEl) return false;
+
         const el = line.pathEl;
         const len = line.pathLength;
         const speed = CONFIG.speed * dt;
@@ -168,19 +253,22 @@ export default function MetroBackground() {
         el.style.strokeDashoffset = `${len - current}`;
 
         if (current >= len) {
-          el.remove();
-          state.current.lines.shift();
+          releasePathElement(el);
+          line.pathEl = null;
+          return false;
         }
-      } else {
-        if (Math.random() < 0.025) spawnLine();
-      }
+
+        return true;
+      });
+
+      if (state.current.lines.length < MAX_ACTIVE_LINES && Math.random() < 0.025) spawnLine();
 
       animRef.current = requestAnimationFrame(loop);
     };
 
     animRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [spawnLine]);
+  }, [releasePathElement, spawnLine]);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.35]">
