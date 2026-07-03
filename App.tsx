@@ -10,6 +10,7 @@ import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
+import { useSettings } from './hooks/useSettings';
 
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -244,7 +245,6 @@ const PLAYER_DATA_KEY = 'bus-app-player-data-v1';
 const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
-const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const PATCH_NOTES_VERSION = '1.3';
 const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
@@ -997,39 +997,7 @@ const App: React.FC = () => {
   const { t, lang, setLanguage } = useTranslation();
   const getSipsText = (count: number) => `${count} ${count === 1 ? t('slok') : t('slokken')}`;
   // --- STATE ---
-  const [settings, setSettings] = useState<GameSettings>(() => {
-    const defaultSettings: GameSettings = {
-      mode: GameMode.DIGITAL,
-      physicalMode: false,
-      pyramidRows: 4,
-      sharedBus: false,
-      busLength: 6,
-      busDecks: 1,
-      cardStyle: CardStyle.CLASSIC,
-      doublePyramidCards: true,
-      theme: UITheme.CLASSIC,
-    };
-
-    if (!storageAvailable) return defaultSettings;
-
-    try {
-      const saved = localStorage.getItem(GAME_SETTINGS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Migration: CREATIVE/NEON_GLASS -> NEON
-        if (parsed.cardStyle === 'CREATIVE' || parsed.cardStyle === 'NEON_GLASS') {
-          parsed.cardStyle = CardStyle.NEON;
-        }
-        // Merge to ensure new settings get defaults
-        return { ...defaultSettings, ...parsed };
-      }
-    } catch (e) {
-      console.warn("Kon instellingen niet laden, gebruik standaardinstellingen", e);
-      localStorage.removeItem(GAME_SETTINGS_KEY);
-    }
-
-    return defaultSettings;
-  });
+  const [settings, setSettings] = useSettings();
 
   const renderStyleUnlockModal = () => {
     if (!styleToUnlock) return null;
@@ -1063,9 +1031,7 @@ const App: React.FC = () => {
                   setStyleToUnlock(null);
                   const played = await showRewardedAd();
                   if (played) {
-                    const n = { ...settings, cardStyle: style };
-                    setSettings(n);
-                    queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                    setSettings({ cardStyle: style });
                     triggerHaptic('heavy');
                   }
                 }}
@@ -1125,9 +1091,7 @@ const App: React.FC = () => {
                   setThemeToUnlock(null);
                   const played = await showRewardedAd();
                   if (played) {
-                    const n = { ...settings, theme };
-                    setSettings(n);
-                    queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                    setSettings({ theme });
                     triggerHaptic('heavy');
                   }
                 }}
@@ -1640,15 +1604,6 @@ const initializeAdMob = useCallback(async () => {
 
   useEffect(() => {
     if (!storageAvailable) return;
-    try {
-      queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(settings), 'instellingen');
-    } catch (error) {
-      console.warn('Kon instellingen niet opslaan', error);
-    }
-  }, [settings, storageAvailable]);
-
-  useEffect(() => {
-    if (!storageAvailable) return;
     persistPlayers();
   }, [persistPlayers, storageAvailable]);
 
@@ -2129,7 +2084,7 @@ const initializeAdMob = useCallback(async () => {
   const confirmStart = (mode: GameMode) => {
     triggerHaptic('heavy');
     resetBusState();
-    setSettings(prev => ({ ...prev, mode }));
+    setSettings({ mode });
     setPyramidMode(mode === GameMode.PHYSICAL ? 'physical' : 'digital');
     setDeck(shuffleDeck(createDeck()));
 
@@ -3081,32 +3036,32 @@ const initializeAdMob = useCallback(async () => {
                     <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Piramide Hoogte")}</label>
                     <span className="text-red-500 font-bold text-sm">{settings.pyramidRows}</span>
                   </div>
-                  <input type="range" min="3" max="7" step="1" value={settings.pyramidRows} onChange={(e) => setSettings({ ...settings, pyramidRows: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                  <input type="range" min="3" max="7" step="1" value={settings.pyramidRows} onChange={(e) => setSettings({ pyramidRows: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
                     <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Bus Kaarten")}</label>
                     <span className="text-red-500 font-bold text-sm">{settings.busLength}</span>
                   </div>
-                  <input type="range" min="3" max="12" step="1" value={settings.busLength} onChange={(e) => setSettings({ ...settings, busLength: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                  <input type="range" min="3" max="12" step="1" value={settings.busLength} onChange={(e) => setSettings({ busLength: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
                     <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Bus Pakjes")}</label>
                     <span className="text-red-500 font-bold text-sm">{settings.busDecks}</span>
                   </div>
-                  <input type="range" min="1" max="5" step="1" value={settings.busDecks} onChange={(e) => setSettings({ ...settings, busDecks: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                  <input type="range" min="1" max="5" step="1" value={settings.busDecks} onChange={(e) => setSettings({ busDecks: parseInt(e.target.value) })} className="w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div className="flex items-center justify-between pt-2">
                   <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Gedeelde Bus")}</label>
-                  <button onClick={() => { const n = { ...settings, sharedBus: !settings.sharedBus }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
+                  <button onClick={() => { setSettings(prev => ({ sharedBus: !prev.sharedBus })) }} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.sharedBus ? 'left-7' : 'left-1'}`}></div>
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
                   <label className="text-[10px] text-slate-400 font-bold uppercase">{t("Dubbele kaarten in de piramide")}</label>
-                  <button onClick={() => { const n = { ...settings, doublePyramidCards: !settings.doublePyramidCards }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-12 h-6 rounded-full relative transition-all ${settings.doublePyramidCards ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
+                  <button onClick={() => { setSettings(prev => ({ doublePyramidCards: !prev.doublePyramidCards })) }} className={`w-12 h-6 rounded-full relative transition-all ${settings.doublePyramidCards ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.doublePyramidCards ? 'left-7' : 'left-1'}`}></div>
                   </button>
                 </div>
@@ -3215,9 +3170,7 @@ const initializeAdMob = useCallback(async () => {
                           onPointerDown={() => {
                             if (settings.theme === tName) return;
                             longPressTimerRef.current = setTimeout(() => {
-                              const n = { ...settings, theme: tName };
-                              setSettings(n);
-                              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                              setSettings({ theme: tName });
                               triggerHaptic('heavy');
                               longPressTimerRef.current = null;
                             }, 3000);
@@ -3260,9 +3213,7 @@ const initializeAdMob = useCallback(async () => {
                         onPointerDown={() => {
                           if (settings.cardStyle === style) return;
                           longPressTimerRef.current = setTimeout(() => {
-                            const n = { ...settings, cardStyle: style };
-                            setSettings(n);
-                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            setSettings({ cardStyle: style });
                             triggerHaptic('heavy');
                             longPressTimerRef.current = null;
                           }, 3000);
@@ -3333,7 +3284,7 @@ const initializeAdMob = useCallback(async () => {
                         i
                       </button>
                     </div>
-                    <button onClick={() => { const n = { ...settings, physicalMode: !settings.physicalMode }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-14 h-7 rounded-full relative transition-all ${settings.physicalMode ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                    <button onClick={() => { setSettings(prev => ({ physicalMode: !prev.physicalMode })) }} className={`w-14 h-7 rounded-full relative transition-all ${settings.physicalMode ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-700 hover:bg-slate-600'}`}>
                       <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${settings.physicalMode ? 'left-8' : 'left-1'}`}></div>
                     </button>
                   </div>
