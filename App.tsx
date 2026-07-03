@@ -13,6 +13,7 @@ import { triggerHaptic } from './services/haptics';
 import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 import { useAudio } from './hooks/useAudio';
+import { useThrottledResize } from './hooks/useThrottledResize';
 
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -1308,6 +1309,7 @@ const App: React.FC = () => {
   const busProgressContainerRef = useRef<HTMLDivElement>(null);
   const busProgressContentRef = useRef<HTMLDivElement>(null);
   const busProgressItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const busProgressScaleMetricsRef = useRef({ availableWidth: 0, contentWidth: 0, scale: 1 });
   const [busProgressScale, setBusProgressScale] = useState(1);
 
   const activePlayer = useMemo(() => players[activePlayerIndex], [players, activePlayerIndex]);
@@ -1707,13 +1709,24 @@ const initializeAdMob = useCallback(async () => {
     const content = busProgressContentRef.current;
     if (!container || !content) return;
 
-    const availableWidth = container.clientWidth;
-    const contentWidth = content.scrollWidth;
+    const availableWidth = Math.round(container.clientWidth);
+    const contentWidth = Math.round(content.scrollWidth);
 
     if (!contentWidth) return;
 
-    const nextScale = Math.min(1, availableWidth / contentWidth);
-    setBusProgressScale(Math.max(0.65, nextScale));
+    const nextScale = Math.max(0.65, Math.min(1, availableWidth / contentWidth));
+    const previous = busProgressScaleMetricsRef.current;
+
+    if (
+      previous.availableWidth === availableWidth
+      && previous.contentWidth === contentWidth
+      && previous.scale === nextScale
+    ) {
+      return;
+    }
+
+    busProgressScaleMetricsRef.current = { availableWidth, contentWidth, scale: nextScale };
+    setBusProgressScale(nextScale);
   }, []);
 
   const busCardStates = useMemo(() => {
@@ -1806,15 +1819,15 @@ const initializeAdMob = useCallback(async () => {
     }
   }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
 
+  const shouldTrackBusProgressResize = phase === GamePhase.THE_BUS && settings.mode === GameMode.PHYSICAL && busMode === 'physical';
+
+  useThrottledResize(recalcBusProgressScale, shouldTrackBusProgressResize);
+
   useEffect(() => {
-    if (phase !== GamePhase.THE_BUS || settings.mode !== GameMode.PHYSICAL || busMode !== 'physical') return;
+    if (!shouldTrackBusProgressResize) return;
 
     recalcBusProgressScale();
-    const handleResize = () => recalcBusProgressScale();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [busMode, phase, recalcBusProgressScale, settings.busLength, settings.mode]);
+  }, [recalcBusProgressScale, settings.busLength, shouldTrackBusProgressResize]);
 
   useEffect(() => {
     if (phase !== GamePhase.THE_BUS || settings.mode !== GameMode.PHYSICAL || busMode !== 'physical') return;
@@ -2290,6 +2303,7 @@ const initializeAdMob = useCallback(async () => {
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
   const pyramidContentRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pyramidScaleMetricsRef = useRef({ containerWidth: 0, containerHeight: 0, contentWidth: 0, contentHeight: 0, scale: 1 });
   const [pyramidScale, setPyramidScale] = useState(1);
 
   const calculatePyramidScale = useCallback(() => {
@@ -2297,14 +2311,18 @@ const initializeAdMob = useCallback(async () => {
     const content = pyramidContentRef.current;
 
     if (container && content) {
-      const containerWidth = container.clientWidth - 40; // Subtract padding for a buffer
-      const containerHeight = container.clientHeight - 40; // Subtract padding for a buffer
-      const contentWidth = content.scrollWidth;
-      const contentHeight = content.scrollHeight;
+      const containerWidth = Math.round(container.clientWidth - 40); // Subtract padding for a buffer
+      const containerHeight = Math.round(container.clientHeight - 40); // Subtract padding for a buffer
+      const contentWidth = Math.round(content.scrollWidth);
+      const contentHeight = Math.round(content.scrollHeight);
 
       // If content dimensions are 0 (e.g., not yet rendered), use a default scale
       if (contentWidth === 0 || contentHeight === 0) {
-        setPyramidScale(1); // Or a sensible default
+        const previous = pyramidScaleMetricsRef.current;
+        if (previous.scale !== 1) {
+          pyramidScaleMetricsRef.current = { containerWidth, containerHeight, contentWidth, contentHeight, scale: 1 };
+          setPyramidScale(1); // Or a sensible default
+        }
         return;
       }
 
@@ -2316,32 +2334,38 @@ const initializeAdMob = useCallback(async () => {
       const minAbsoluteScale = 0.3; // Prevent cards from becoming tiny, adjust as needed
 
       // Prioritize fitting, but don't go below minAbsoluteScale unless absolutely necessary
-      if (fitScale < minAbsoluteScale) {
-        // If content is too large, allow it to shrink more to fit
-        setPyramidScale(fitScale);
-      } else {
-        // Otherwise, use a comfortable scale, but don't exceed 1 (original size)
-        setPyramidScale(Math.min(1, fitScale));
+      const nextScale = fitScale < minAbsoluteScale
+        ? fitScale
+        : Math.min(1, fitScale);
+      const previous = pyramidScaleMetricsRef.current;
+
+      if (
+        previous.containerWidth === containerWidth
+        && previous.containerHeight === containerHeight
+        && previous.contentWidth === contentWidth
+        && previous.contentHeight === contentHeight
+        && previous.scale === nextScale
+      ) {
+        return;
       }
+
+      pyramidScaleMetricsRef.current = { containerWidth, containerHeight, contentWidth, contentHeight, scale: nextScale };
+      setPyramidScale(nextScale);
       return;
     }
 
-    setPyramidScale(1); // Default scale if refs are not available
+    const previous = pyramidScaleMetricsRef.current;
+    if (previous.scale !== 1) {
+      pyramidScaleMetricsRef.current = { containerWidth: 0, containerHeight: 0, contentWidth: 0, contentHeight: 0, scale: 1 };
+      setPyramidScale(1); // Default scale if refs are not available
+    }
   }, []);
 
   useEffect(() => {
     calculatePyramidScale();
   }, [calculatePyramidScale, pyramid, revealedPyramidCards]);
 
-  useEffect(() => {
-    const handleResize = () => calculatePyramidScale();
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [calculatePyramidScale]);
+  useThrottledResize(calculatePyramidScale);
 
   const revealPyramidCard = (rowIndex: number, cardIndex: number) => {
     const card = pyramid[rowIndex][cardIndex];
