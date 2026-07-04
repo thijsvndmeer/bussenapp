@@ -87,5 +87,6 @@ export interface GameSettings {
   cardStyle: CardStyle;
   doublePyramidCards: boolean; // Enable double sip cards in pyramid phase
   theme: UITheme;
+  calmAccentColor?: string;
 }
 

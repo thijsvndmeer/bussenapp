@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -77,6 +77,16 @@ const getRankString = (rank: Rank) => {
     case Rank.QUEEN: return 'Q';
     case Rank.KING: return 'K';
     case Rank.ACE: return 'A';
+    default: return rank.toString();
+  }
+};
+
+const getFullRankName = (rank: Rank, t: any) => {
+  switch (rank) {
+    case Rank.JACK: return t("Boer");
+    case Rank.QUEEN: return t("Vrouw");
+    case Rank.KING: return t("Koning");
+    case Rank.ACE: return t("Aas");
     default: return rank.toString();
   }
 };
@@ -426,8 +436,8 @@ const GlobalAnimations = () => (
 
   <style>{`
     @keyframes disco-gradient {
-      0% { background-position: 0% 0%; }
-      100% { background-position: 200% 200%; }
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
     }
 
     @keyframes end-gradient {
@@ -459,17 +469,37 @@ const GlobalAnimations = () => (
 
 // --- AMBIENT BACKGROUND COMPONENTS ---
 
-const CalmBackground: React.FC = () => {
-  // Generate two bright, highly distinct random colors once per session
+const CalmBackground: React.FC<{ accentColor?: string }> = ({ accentColor }) => {
   const { color1, color2 } = useMemo(() => {
-    const hue1 = Math.floor(Math.random() * 360);
-    // Ensure hue2 is opposite/distinct (at least 120 degrees apart)
-    const hue2 = (hue1 + 120 + Math.floor(Math.random() * 120)) % 360;
+    let hue1 = 43; // Default calm hue
+    if (accentColor) {
+      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      const fullHex = accentColor.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+      if (result) {
+        const r = parseInt(result[1], 16) / 255;
+        const g = parseInt(result[2], 16) / 255;
+        const b = parseInt(result[3], 16) / 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0;
+        if (max !== min) {
+          const d = max - min;
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+        hue1 = Math.round(h * 360);
+      }
+    }
+    const hue2 = (hue1 + 180) % 360;
     return {
       color1: `radial-gradient(circle at center, hsla(${hue1}, 80%, 55%, 0.5), transparent 70%)`,
       color2: `radial-gradient(circle at center, hsla(${hue2}, 80%, 55%, 0.4), transparent 70%)`
     };
-  }, []);
+  }, [accentColor]);
 
   const isInBufferZone = (x: number, y: number) => {
     // Buffer zone: X in [20, 80], Y in [15, 75]
@@ -514,28 +544,25 @@ const CalmBackground: React.FC = () => {
   }, []);
 
   return (
-    <div 
-      className="absolute inset-0 overflow-hidden pointer-events-none"
-      style={{ animation: 'slow-hue-rotate 120s linear infinite' }}
-    >
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {/* Upper Right Glow Spot */}
       <div 
-        className="absolute w-[800px] h-[800px] rounded-full blur-[100px] transition-all duration-[10000ms] ease-in-out opacity-60" 
+        className="absolute w-[800px] h-[800px] rounded-full blur-[100px] transition-transform duration-[10000ms] ease-in-out opacity-60" 
         style={{ 
           backgroundImage: color1,
-          left: `${pos1.x}%`,
-          top: `${pos1.y}%`,
-          transform: 'translate(-50%, -50%)',
+          left: 0,
+          top: 0,
+          transform: `translate3d(calc(${pos1.x}vw - 400px), calc(${pos1.y}vh - 400px), 0)`,
         }} 
       />
       {/* Bottom Left Glow Spot */}
       <div 
-        className="absolute w-[900px] h-[900px] rounded-full blur-[120px] transition-all duration-[10000ms] ease-in-out opacity-50" 
+        className="absolute w-[900px] h-[900px] rounded-full blur-[120px] transition-transform duration-[10000ms] ease-in-out opacity-50" 
         style={{ 
           backgroundImage: color2,
-          left: `${pos2.x}%`,
-          top: `${pos2.y}%`,
-          transform: 'translate(-50%, -50%)',
+          left: 0,
+          top: 0,
+          transform: `translate3d(calc(${pos2.x}vw - 450px), calc(${pos2.y}vh - 450px), 0)`,
         }} 
       />
     </div>
@@ -569,7 +596,8 @@ const PlayerAvatar: React.FC<{
   size?: 'sm' | 'md' | 'lg' | 'xl';
   glow?: boolean;
   className?: string;
-}> = ({ player, size = 'md', glow = false, className = "" }) => {
+  theme?: UITheme;
+}> = ({ player, size = 'md', glow = false, className = "", theme = UITheme.CLASSIC }) => {
   const sizeClasses = {
     sm: 'w-8 h-8 text-[10px]',
     md: 'w-10 h-10 text-base',
@@ -580,21 +608,31 @@ const PlayerAvatar: React.FC<{
   const borderClasses = size === 'xl' ? 'border-4' : 'border-2';
   const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
   
-  // Use red border for the waiting screen (when glow is true) or default slate
-  const borderColor = glow ? 'border-red-500' : 'border-slate-600/50';
-  const shadowEffect = glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md';
+  const isCalmGlow = glow && theme === UITheme.CALM;
+
+  const borderColor = isCalmGlow ? '' : (glow ? 'border-red-500' : 'border-slate-600/50');
+  const shadowEffect = isCalmGlow ? '' : (glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md');
   const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
+
+  const calmStyle = isCalmGlow ? {
+    borderColor: 'var(--theme-accent)',
+    boxShadow: '0 0 40px var(--theme-accent-glow)'
+  } : undefined;
 
   return (
     <div 
       className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center overflow-hidden relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${className}`}
+      style={calmStyle}
     >
       {player?.image ? (
         <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
       ) : (
         <span className="font-black text-white">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
       )}
-      <div className={`absolute inset-0 rounded-full ${ringClasses} ring-red-500/20 animate-pulse`}></div>
+      <div 
+        className={`absolute inset-0 rounded-full ${ringClasses} ${glow ? (isCalmGlow ? 'animate-pulse' : 'ring-red-500/20 animate-pulse') : 'border-transparent'}`}
+        style={isCalmGlow ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
+      ></div>
     </div>
   );
 };
@@ -781,7 +819,7 @@ const BusTransitionOverlay: React.FC<{
           <h1 className="text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">
             {loserReveal.player.name}
           </h1>
-          <div className="bg-red-600 text-white font-black text-xl px-10 py-3 rounded-full uppercase tracking-widest shadow-[0_0_40px_rgba(220,38,38,0.8)]">
+          <div className="bg-red-600 text-white font-black text-xl px-10 py-3 rounded-full uppercase tracking-widest shadow-[0_0_40px_rgba(220,38,38,0.8)] no-calm-override">
             {t("Naar de Bus!")}
           </div>
         </div>
@@ -825,7 +863,8 @@ const PersistentBackground: React.FC<{
   style?: React.CSSProperties; 
   isDiscoActive?: boolean;
   showTexture?: boolean;
-}> = ({ theme, style, isDiscoActive, showTexture = true }) => {
+  calmAccentColor?: string;
+}> = ({ theme, style, isDiscoActive, showTexture = true, calmAccentColor }) => {
   let bgClass = 'bg-animated-gradient';
   let additionalStyles: React.CSSProperties = {};
 
@@ -847,7 +886,7 @@ const PersistentBackground: React.FC<{
       
       {/* 2. Theme Specific Elements (Metro Map, etc) - Hidden during Disco */}
       <div className={`absolute inset-0 transition-opacity duration-100 ${isDiscoActive ? 'opacity-0' : 'opacity-100'}`}>
-        {theme === UITheme.CALM && <CalmBackground />}
+        {theme === UITheme.CALM && <CalmBackground accentColor={calmAccentColor} />}
         {theme === UITheme.BEER && <BeerBackground />}
         {theme === UITheme.METRO && <MetroBackground />}
       </div>
@@ -960,6 +999,73 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   );
 };
 
+const hexToHue = (hex: string): number => {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  if (!result) return 43; // Default gold hue
+  
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+  
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0;
+  
+  if (max !== min) {
+    const d = max - min;
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return Math.round(h * 360);
+};
+
+const hexToHsl = (hex: string) => {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  if (!result) return { h: 43, s: 95, l: 65 };
+  
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+  
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100)
+  };
+};
+
+const hslToHex = (h: number, s: number, l: number): string => {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+};
+
 // --- APP COMPONENT ---
 
 const App: React.FC = () => {
@@ -977,6 +1083,7 @@ const App: React.FC = () => {
       cardStyle: CardStyle.CLASSIC,
       doublePyramidCards: true,
       theme: UITheme.CLASSIC,
+      calmAccentColor: '#fbcd53',
     };
 
     if (!storageAvailable) return defaultSettings;
@@ -1038,7 +1145,7 @@ const App: React.FC = () => {
                     triggerHaptic('heavy');
                   }
                 }}
-                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3"
+                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override"
               >
                 <Play size={22} fill="currentColor" /> {t("Video Kijken")}
               </button>
@@ -1100,7 +1207,7 @@ const App: React.FC = () => {
                     triggerHaptic('heavy');
                   }
                 }}
-                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3"
+                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override"
               >
                 <Play size={22} fill="currentColor" /> {t("Video Kijken")}
               </button>
@@ -1178,6 +1285,9 @@ const App: React.FC = () => {
 
   // Quit confirmation state
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [isAdLoading, setIsAdLoading] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [tempColor, setTempColor] = useState('#fbcd53');
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
   const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
@@ -1417,14 +1527,17 @@ const initializeAdMob = useCallback(async () => {
     const adId = type === 'QUIT' ? ADMOB_INTERSTITIAL_QUIT_UNIT_ID : ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID;
 
     try {
+      setIsAdLoading(true);
       // Ensure it is prepared (this will wait if a background preload is still running)
       await prepareAdInterstitial(adId);
+      setIsAdLoading(false);
 
       await AdMob.showInterstitial();
       lastAdShownRef.current = Date.now();
       adInterstitialPromiseRef.current = null; // Reset – force fresh preload for next time
     } catch (error) {
       console.warn('Interstitial tonen mislukt', error);
+      setIsAdLoading(false);
       adInterstitialPromiseRef.current = null; // Reset on failure too
     }
   }, [prepareAdInterstitial]);
@@ -1458,7 +1571,34 @@ const initializeAdMob = useCallback(async () => {
     const root = document.documentElement;
     root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer');
     root.classList.add(`theme-${settings.theme}`, 'theme-transition');
-  }, [settings.theme]);
+
+    if (settings.theme === UITheme.CALM) {
+      const accentHex = settings.calmAccentColor || '#fbcd53'; // Default soft yellow/gold
+      
+      // Parse Hex to RGB
+      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      const fullHex = accentHex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+      const rgb = result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 251, g: 205, b: 83 };
+      
+      root.style.setProperty('--theme-accent', accentHex);
+      root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`);
+      root.style.setProperty('--theme-btn-bg', accentHex);
+      root.style.setProperty('--theme-btn-sec-text', accentHex);
+      root.style.setProperty('--theme-card-border', `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+    } else {
+      // Clean up variables when switching theme
+      root.style.removeProperty('--theme-accent');
+      root.style.removeProperty('--theme-accent-glow');
+      root.style.removeProperty('--theme-btn-bg');
+      root.style.removeProperty('--theme-btn-sec-text');
+      root.style.removeProperty('--theme-card-border');
+    }
+  }, [settings.theme, settings.calmAccentColor]);
 
   // Main hydration effect on component mount
   useEffect(() => {
@@ -1920,7 +2060,7 @@ const initializeAdMob = useCallback(async () => {
   }, [playSound, removePlayerFromEngine, triggerHaptic]);
 
   const renderPlayerListAvatar = useCallback((player: Player) => (
-    <PlayerAvatar player={player} size="md" />
+    <PlayerAvatar player={player} size="md" theme={settings.theme} />
   ), []);
 
   // --- DRAG-AND-DROP PLAYER REORDER ---
@@ -2281,55 +2421,69 @@ const initializeAdMob = useCallback(async () => {
     const content = pyramidContentRef.current;
 
     if (container && content) {
-      const containerWidth = Math.round(container.clientWidth - 40); // Subtract padding for a buffer
-      const containerHeight = Math.round(container.clientHeight - 40); // Subtract padding for a buffer
-      const contentWidth = Math.round(content.scrollWidth);
-      const contentHeight = Math.round(content.scrollHeight);
+      // Small 24px buffer (12px per side) for a tight fit
+      const containerWidth = Math.round(container.clientWidth - 24); 
+      const containerHeight = Math.round(container.clientHeight - 24); 
+      
+      let contentWidth = Math.round(content.scrollWidth);
+      let contentHeight = Math.round(content.scrollHeight);
 
-      // If content dimensions are 0 (e.g., not yet rendered), use a default scale
+      // Add a static buffer to the content width based on the longest row's sip emojis
+      // The longest sip emoji string is on the top row (pyramidRows - 1 emojis).
+      const maxEmojis = settings.pyramidRows - 1;
+      const emojiBuffer = maxEmojis > 0 ? (maxEmojis * 16) + 20 : 0;
+      
+      // We only need to zoom out if the bottom row (which is the widest) actually widens beyond its bounds.
+      // Because CSS transform rotate-90 doesn't push adjacent cards, the row ONLY visually widens if the 
+      // edge cards on the bottom row rotate!
+      const bottomRowIndex = settings.pyramidRows - 1;
+      const bottomRow = pyramid[bottomRowIndex] || [];
+      let doubledBump = 0;
+      
+      if (bottomRow.length > 0) {
+        const leftEdgeCard = bottomRow[0];
+        const rightEdgeCard = bottomRow[bottomRow.length - 1];
+        
+        if (leftEdgeCard && doubledPyramidCardIds.has(leftEdgeCard.id)) doubledBump += 16;
+        if (rightEdgeCard && doubledPyramidCardIds.has(rightEdgeCard.id)) doubledBump += 16;
+      }
+
+      contentWidth += emojiBuffer + doubledBump;
+
       if (contentWidth === 0 || contentHeight === 0) {
         const previous = pyramidScaleMetricsRef.current;
         if (previous.scale !== 1) {
           pyramidScaleMetricsRef.current = { containerWidth, containerHeight, contentWidth, contentHeight, scale: 1 };
-          setPyramidScale(1); // Or a sensible default
+          setPyramidScale(1);
         }
         return;
       }
 
       const widthScale = containerWidth / contentWidth;
       const heightScale = containerHeight / contentHeight;
-      let fitScale = Math.min(widthScale, heightScale);
+      let fitScale = Math.min(widthScale, heightScale, 1);
 
-      // Ensure a reasonable minimum scale, but allow smaller if necessary to fit
-      const minAbsoluteScale = 0.3; // Prevent cards from becoming tiny, adjust as needed
-
-      // Prioritize fitting, but don't go below minAbsoluteScale unless absolutely necessary
-      const nextScale = fitScale < minAbsoluteScale
-        ? fitScale
-        : Math.min(1, fitScale);
       const previous = pyramidScaleMetricsRef.current;
-
       if (
         previous.containerWidth === containerWidth
         && previous.containerHeight === containerHeight
         && previous.contentWidth === contentWidth
         && previous.contentHeight === contentHeight
-        && previous.scale === nextScale
+        && previous.scale === fitScale
       ) {
         return;
       }
 
-      pyramidScaleMetricsRef.current = { containerWidth, containerHeight, contentWidth, contentHeight, scale: nextScale };
-      setPyramidScale(nextScale);
-      return;
+      pyramidScaleMetricsRef.current = { containerWidth, containerHeight, contentWidth, contentHeight, scale: fitScale };
+      setPyramidScale(fitScale);
+    } else {
+      const previous = pyramidScaleMetricsRef.current;
+      if (previous.scale !== 1) {
+        pyramidScaleMetricsRef.current = { containerWidth: 0, containerHeight: 0, contentWidth: 0, contentHeight: 0, scale: 1 };
+        setPyramidScale(1);
+      }
     }
-
-    const previous = pyramidScaleMetricsRef.current;
-    if (previous.scale !== 1) {
-      pyramidScaleMetricsRef.current = { containerWidth: 0, containerHeight: 0, contentWidth: 0, contentHeight: 0, scale: 1 };
-      setPyramidScale(1); // Default scale if refs are not available
-    }
-  }, []);
+  }, [settings.pyramidRows, doubledPyramidCardIds.size]);
 
   useEffect(() => {
     calculatePyramidScale();
@@ -2848,6 +3002,146 @@ const initializeAdMob = useCallback(async () => {
 
   // --- RENDERING HELPERS ---
 
+  const renderAdLoadingModal = () => {
+    if (!isAdLoading) return null;
+    return (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-slate-900 border border-white/10 shadow-2xl rounded-2xl p-8 flex flex-col items-center gap-5 animate-in zoom-in-95 duration-300 ring-1 ring-white/5 max-w-[80vw]">
+          <div className="relative w-16 h-16 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-t-2 border-amber-500 animate-spin"></div>
+            <div className="absolute inset-1 rounded-full border-r-2 border-emerald-500 animate-[spin_1.5s_linear_infinite_reverse]"></div>
+            <Clapperboard size={24} className="text-white animate-pulse" />
+          </div>
+          <div className="text-center space-y-1">
+            <h3 className="text-white font-black text-lg tracking-tight uppercase">{t("Video laden")}...</h3>
+            <p className="text-slate-400 text-sm">{t("Een moment geduld")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderColorPickerModal = () => {
+    if (!isColorPickerOpen) return null;
+    
+    const hsl = hexToHsl(tempColor);
+    // CSS angle is 0 at Top. Math angle is 0 at Right.
+    // To convert CSS angle to Math angle for positioning the pin:
+    const mathAngleDeg = hsl.h - 90;
+    const mathAngleRad = (mathAngleDeg * Math.PI) / 180;
+    const pinX = 50 + 37 * Math.cos(mathAngleRad);
+    const pinY = 50 + 37 * Math.sin(mathAngleRad);
+
+    const handleWheelTouch = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent) => {
+      const target = document.getElementById('calm-popup-wheel');
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+      const x = clientX - rect.left - rect.width / 2;
+      const y = clientY - rect.top - rect.height / 2;
+      
+      // Math.atan2 gives 0 at right, -90 at top, 180 at left, 90 at bottom.
+      let angleDeg = Math.round(Math.atan2(y, x) * (180 / Math.PI));
+      // Convert to CSS angle where 0 is top
+      angleDeg = (angleDeg + 90 + 360) % 360;
+      
+      const hex = hslToHex(angleDeg, 80, 75); // Muted pastel colors
+      setTempColor(hex);
+    };
+
+    return (
+      <div 
+        className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+        onClick={(e) => { if (e.target === e.currentTarget) setIsColorPickerOpen(false); }}
+      >
+        <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl w-full max-w-xs m-4 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
+          <div className="text-center space-y-1.5 w-full">
+            <h3 className="text-lg font-black text-white uppercase tracking-wider">{t("Kleur Kiezer")}</h3>
+            <p className="text-slate-400 text-xs">{t("Sleep op het wiel om een kleur te kiezen")}</p>
+          </div>
+
+          {/* Color Wheel Container */}
+          <div 
+            id="calm-popup-wheel"
+            className="relative w-48 h-48 cursor-crosshair select-none touch-none rounded-full"
+            onMouseDown={(e) => {
+              handleWheelTouch(e);
+              const onMouseMove = (moveEvent: MouseEvent) => handleWheelTouch(moveEvent);
+              const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+              };
+              window.addEventListener('mousemove', onMouseMove);
+              window.addEventListener('mouseup', onMouseUp);
+            }}
+            onTouchStart={(e) => {
+              handleWheelTouch(e);
+              const onTouchMove = (moveEvent: TouchEvent) => handleWheelTouch(moveEvent);
+              const onTouchEnd = () => {
+                window.removeEventListener('touchmove', onTouchMove);
+                window.removeEventListener('touchend', onTouchEnd);
+              };
+              window.addEventListener('touchmove', onTouchMove, { passive: false });
+              window.addEventListener('touchend', onTouchEnd);
+            }}
+          >
+            {/* The actual donut gradient */}
+            <div 
+              className="absolute inset-0 rounded-full"
+              style={{ 
+                background: 'conic-gradient(from 0deg, hsl(0,80%,75%), hsl(60,80%,75%), hsl(120,80%,75%), hsl(180,80%,75%), hsl(240,80%,75%), hsl(300,80%,75%), hsl(360,80%,75%))',
+                WebkitMaskImage: 'radial-gradient(circle, transparent 48%, black 49%)',
+                maskImage: 'radial-gradient(circle, transparent 48%, black 49%)'
+              }}
+            />
+
+            {/* Color Wheel selector Pin */}
+            <div 
+              className="absolute w-5 h-5 rounded-full border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.6)] pointer-events-none -translate-x-1/2 -translate-y-1/2"
+              style={{ 
+                left: `${pinX}%`,
+                top: `${pinY}%`,
+                backgroundColor: tempColor
+              }}
+            />
+          </div>
+
+          {/* Color Preview */}
+          <div className="flex items-center gap-4 w-full bg-slate-800/40 p-3 rounded-2xl border border-slate-700/30">
+            <div 
+              className="w-12 h-12 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center transition-colors shrink-0"
+              style={{ backgroundColor: tempColor }}
+            />
+            <span className="text-sm text-slate-300 font-bold uppercase tracking-wider">{t("Geselecteerde Kleur")}</span>
+          </div>
+
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+            <button
+              onClick={() => setIsColorPickerOpen(false)}
+              className="py-3 rounded-2xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors text-sm active:scale-95 transition-transform"
+            >
+              {t("Annuleren")}
+            </button>
+            <button
+              onClick={() => {
+                const n = { ...settings, calmAccentColor: tempColor };
+                setSettings(n);
+                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                setIsColorPickerOpen(false);
+                triggerHaptic('medium');
+              }}
+              className="py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm active:scale-95 transition-transform"
+            >
+              {t("Opslaan")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderQuitModal = () => showQuitConfirm && (
     <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in">
       <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl w-full max-w-sm mx-4 space-y-4 animate-in zoom-in-95 duration-300">
@@ -2891,7 +3185,7 @@ const initializeAdMob = useCallback(async () => {
   if (phase === GamePhase.SETUP) {
     return (
       <>
-        <PersistentBackground theme={settings.theme} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer className="p-4" showChest={true} theme={settings.theme}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
@@ -3097,6 +3391,65 @@ const initializeAdMob = useCallback(async () => {
                     })}
                   </div>
                 </div>
+
+                {settings.theme === UITheme.CALM && (
+                  <div className="flex flex-col gap-3 w-full pt-2 animate-in slide-in-from-top-2 duration-300">
+                    <h4 className="text-white font-medium">{t("Calm Accent Kleur")}</h4>
+                    <div className="flex bg-slate-800/70 p-2 rounded-2xl gap-3 border border-slate-700/50 justify-between items-center">
+                      {[
+                        { name: t('Goud'), value: '#fbcd53' },
+                        { name: t('Periwinkle'), value: '#818cf8' },
+                        { name: t('Munt'), value: '#2dd4bf' },
+                        { name: t('Roze'), value: '#f472b6' },
+                      ].map(colorOpt => {
+                        const isColorActive = (settings.calmAccentColor || '#fbcd53') === colorOpt.value;
+                        return (
+                          <button
+                            key={colorOpt.value}
+                            onClick={() => {
+                              const n = { ...settings, calmAccentColor: colorOpt.value };
+                              setSettings(n);
+                              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                              triggerHaptic('light');
+                            }}
+                            title={colorOpt.name}
+                            className={`w-8 h-8 rounded-full relative transition-all active:scale-90 border-2 ${
+                              isColorActive ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-transparent opacity-60 hover:opacity-100'
+                            }`}
+                            style={{ backgroundColor: colorOpt.value }}
+                          >
+                            {isColorActive && (
+                              <span className="absolute inset-0 flex items-center justify-center text-slate-950 font-bold text-xs">✓</span>
+                            )}
+                          </button>
+                        );
+                      })}
+
+                      {/* Custom Color Picker Button */}
+                      {(() => {
+                        const presets = ['#fbcd53', '#818cf8', '#2dd4bf', '#f472b6'];
+                        const isCustomActive = !presets.includes(settings.calmAccentColor || '#fbcd53');
+                        const activeColor = settings.calmAccentColor || '#fbcd53';
+                        return (
+                          <button
+                            onClick={() => {
+                              setTempColor(activeColor);
+                              setIsColorPickerOpen(true);
+                              triggerHaptic('light');
+                            }}
+                            title={t('Aangepast')}
+                            className={`w-8 h-8 rounded-full relative transition-all active:scale-90 border-2 flex items-center justify-center ${
+                              isCustomActive ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-transparent opacity-60 hover:opacity-100'
+                            }`}
+                            style={{ backgroundColor: activeColor }}
+                          >
+                            <Pipette size={12} className="text-slate-950" />
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
@@ -3342,6 +3695,7 @@ const initializeAdMob = useCallback(async () => {
         {renderDeckPreview()}
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
+        {renderColorPickerModal()}
       </RootContainer>
       </>
     );
@@ -3354,12 +3708,12 @@ const initializeAdMob = useCallback(async () => {
     if (isWaitingForNextPlayer) {
       return (
         <>
-          <PersistentBackground theme={settings.theme} />
+          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
           <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
             <div className="mb-4"><ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" /></div>
-            <PlayerAvatar player={activePlayer} size="xl" glow className="mb-6" />
+            <PlayerAvatar player={activePlayer} size="xl" glow className="mb-6" theme={settings.theme} />
             <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{activePlayer.name}</h1>
             <button
               onClick={() => setIsWaitingForNextPlayer(false)}
@@ -3394,7 +3748,7 @@ const initializeAdMob = useCallback(async () => {
         return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-3xl' : 'rounded-none'} p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
       }
       if (settings.theme === UITheme.CALM) {
-        return `${transitionClass} bg-[var(--theme-accent)]/5 rounded-3xl p-3 mb-6 border border-[var(--theme-accent)]/10 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
+        return `${transitionClass} bg-white/[0.02] rounded-3xl p-3 mb-6 mx-2 border border-white/10 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
       }
       if (settings.theme === UITheme.BEER) {
         return `${transitionClass} bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
@@ -3422,7 +3776,7 @@ const initializeAdMob = useCallback(async () => {
       
       if (settings.theme === UITheme.CALM) {
         return (
-          <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border border-[var(--theme-accent)]/10 bg-[var(--theme-accent)]/[0.03]`} style={{ zIndex: idx }}>
+          <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border border-white/10 bg-white/[0.01]`} style={{ zIndex: idx }}>
             <div className="text-[var(--theme-accent)] opacity-30 mb-1">
               {roundStep === 1 && <Sparkles size={18} />}
               {roundStep === 2 && <ArrowUpDown size={18} />}
@@ -3464,13 +3818,13 @@ const initializeAdMob = useCallback(async () => {
 
     return (
       <>
-        <PersistentBackground theme={settings.theme} isDiscoActive={isDiscoActive} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {showConfetti && <Confetti />}
         <div className={`flex-none flex items-center justify-between p-2.5 ${getHeaderClasses()}`}>
           <div className="flex items-center gap-3">
-            <PlayerAvatar player={activePlayer} size="lg" />
+            <PlayerAvatar player={activePlayer} size="lg" theme={settings.theme} />
             <div className="overflow-hidden">
               <ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" />
               <div className="flex items-center gap-1.5">
@@ -3495,6 +3849,8 @@ const initializeAdMob = useCallback(async () => {
         </div>
 
         {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
 
 
 
@@ -3568,8 +3924,8 @@ const initializeAdMob = useCallback(async () => {
               <ThemeLabel text={`${t("Ronde")} ${roundStep} / 4`} theme={settings.theme} size="sm" />
               <h2 className="text-3xl font-black text-white mt-3 drop-shadow-xl neon-text">
                 {roundStep === 1 && t("Rood of Zwart?")}
-                {roundStep === 2 && t("Hoger of Lager?")}
-                {roundStep === 3 && t("Binnen of Buiten?")}
+                {roundStep === 2 && (activePlayer?.hand?.[0] ? `${t("Hoger of Lager dan")} ${getFullRankName(activePlayer.hand[0].rank, t)}?` : t("Hoger of Lager?"))}
+                {roundStep === 3 && (activePlayer?.hand?.[0] && activePlayer?.hand?.[1] ? `${t("Binnen of Buiten")} ${getFullRankName(activePlayer.hand[0].rank, t)} ${t("en")} ${getFullRankName(activePlayer.hand[1].rank, t)}?` : t("Binnen of Buiten?"))}
                 {roundStep === 4 && t("Hetzelfde Teken?")}
               </h2>
             </div>
@@ -3646,9 +4002,9 @@ const initializeAdMob = useCallback(async () => {
                         onClick={handleDiscoAttempt}
                         className="col-span-2 relative overflow-hidden border-2 border-white/20 rounded-2xl font-black text-white text-lg shadow-[0_10px_30px_rgba(236,72,153,0.35)] active:scale-95 transition-transform"
                         style={{
-                          background: 'linear-gradient(90deg, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6)',
-                          backgroundSize: '300% 300%',
-                          animation: 'disco-gradient 2.2s linear infinite'
+                          background: 'linear-gradient(90deg, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6)',
+                          backgroundSize: '200% 100%',
+                          animation: 'disco-gradient 2s linear infinite'
                         }}
                       >
                         {t("DISCO!")}
@@ -3667,6 +4023,15 @@ const initializeAdMob = useCallback(async () => {
 
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
+    
+    // Custom dark background for Classic theme during the pyramid phase
+    const pyramidBackgroundStyle = settings.theme === UITheme.CLASSIC ? {
+      background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
+      backgroundSize: '240% 240%',
+      animation: 'gradient-xy 16s ease-in-out infinite',
+      transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
+    } : undefined;
+
     const manualBusSelectionOverlay = isSelectingBusPlayer ? (
       <div className="absolute inset-0 z-[95] bg-black/40 backdrop-blur-xl flex flex-col items-center justify-center p-6" onClick={(e) => { if (e.target === e.currentTarget) setIsSelectingBusPlayer(false); }}>
         <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
@@ -3721,11 +4086,13 @@ const initializeAdMob = useCallback(async () => {
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       return (
         <>
-          <PersistentBackground theme={settings.theme} />
+          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={pyramidBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
           <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
         {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
 
           <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
             <div className="space-y-4 text-left">
@@ -3818,11 +4185,13 @@ const initializeAdMob = useCallback(async () => {
   }
     return (
       <>
-        <PersistentBackground theme={settings.theme} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} style={pyramidBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer className="p-0" shake={screenShake} disableSafeTop theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
         {/* Match Modal */}
         {pendingMatches && (
           <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
@@ -4051,9 +4420,13 @@ const initializeAdMob = useCallback(async () => {
                     );
                   })}
                   {/* Row Indicator */}
-                  <div className={`absolute top-1/2 -translate-y-1/2 text-[12px] sm:text-[14px] w-14 sm:w-20 text-right whitespace-nowrap drop-shadow-lg opacity-80 transition-all ${row.some(card => card && doubledPyramidCardIds.has(card.id)) ? '-left-20 sm:-left-32' : '-left-16 sm:-left-24'}`}>
-                    {Array(settings.pyramidRows - rowIndex).fill('🍺').join('')}
-                  </div>
+                  {rowIndex !== settings.pyramidRows - 1 && (
+                    <div className={`absolute top-1/2 -translate-y-1/2 right-full text-[12px] sm:text-[14px] text-right whitespace-nowrap drop-shadow-lg opacity-80 transition-all ${
+                      row[0] && doubledPyramidCardIds.has(row[0].id) ? 'mr-12 sm:mr-16' : 'mr-4 sm:mr-6'
+                    }`}>
+                      {Array(settings.pyramidRows - rowIndex).fill('🍺').join('')}
+                    </div>
+                  )}
                 </div>
               ));
             })()}
@@ -4099,7 +4472,7 @@ const initializeAdMob = useCallback(async () => {
 
     return (
       <>
-        <PersistentBackground theme={settings.theme} style={baseStyle as React.CSSProperties} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={baseStyle as React.CSSProperties} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
           className="items-center justify-center text-center border-0 outline-0" 
@@ -4111,6 +4484,8 @@ const initializeAdMob = useCallback(async () => {
             {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
           </div>
           {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
@@ -4182,7 +4557,7 @@ const initializeAdMob = useCallback(async () => {
 
       return (
         <>
-          <PersistentBackground theme={settings.theme} />
+          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
           <RootContainer theme={settings.theme}>
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
@@ -4321,6 +4696,8 @@ const initializeAdMob = useCallback(async () => {
             </div>
           )}
           {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
         </RootContainer>
       </>
     );
@@ -4338,7 +4715,7 @@ const initializeAdMob = useCallback(async () => {
 
     return (
       <>
-        <PersistentBackground theme={settings.theme} style={digitalBusBackgroundStyle} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={digitalBusBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
           className="p-0 relative" 
@@ -4399,6 +4776,8 @@ const initializeAdMob = useCallback(async () => {
         )}
 
         {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
 
 
         {/* Bus Cards */}
@@ -4437,8 +4816,10 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 )}
                 {isWrong && !isBusWon && (
-                  <div className="absolute -bottom-4 bg-red-600 rounded-full p-1.5 shadow-lg animate-ping z-20 border-2 border-black">
-                    <X size={16} className="text-white" strokeWidth={4} />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                    <div className="bg-red-600 rounded-full p-2.5 shadow-2xl animate-stamp border-4 border-black no-calm-override">
+                      <X size={36} className="text-white" strokeWidth={5} />
+                    </div>
                   </div>
                 )}
                 {isBusWon && (
@@ -4615,7 +4996,7 @@ const initializeAdMob = useCallback(async () => {
   if (phase === GamePhase.GAME_OVER) {
     return (
       <>
-        <PersistentBackground theme={settings.theme} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer className="p-0" theme={settings.theme}>
         <Confetti />
@@ -4668,8 +5049,10 @@ const initializeAdMob = useCallback(async () => {
   // This fallthrough renders when in results or other unhandled states
   return (
     <>
-      <PersistentBackground theme={settings.theme} />
+      <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
       {renderQuitModal()}
+{renderAdLoadingModal()}
+{renderColorPickerModal()}
       {renderDeckPreview()}
     </>
   );
