@@ -1284,7 +1284,9 @@ const App: React.FC = () => {
     [players]
   );
 
-
+  useEffect(() => {
+    setScreenShake(false);
+  }, [phase, activePlayerIndex]);
 
   const { playSound } = useAudio();
 
@@ -2393,7 +2395,7 @@ const initializeAdMob = useCallback(async () => {
       const isDoubled = card && doubledPyramidCardIds.has(card.id);
       setPendingMatches({
         card: card,
-        sips: (isTop ? 5 : sips) * (isDoubled ? 2 : 1),
+        sips: sips * (isDoubled ? 2 : 1),
         matches: matches
       });
     } else {
@@ -3161,7 +3163,7 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                         <span className={`text-xs font-black uppercase tracking-widest ${settings.cardStyle === style ? 'text-white' : 'text-slate-400'}`}>
                           {t(style === CardStyle.MODERN ? "Modern" :
-                            style === CardStyle.DARK ? "Donker" :
+            style === CardStyle.DARK ? "Donker" :
                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
                         </span>
                         </div>
@@ -3169,7 +3171,8 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4 w-full pt-4 border-t border-slate-800/50">
+                {/* Fysieke Modus toggle disabled temporarily */}
+                <div className="flex flex-col gap-4 w-full pt-4 border-t border-slate-800/50 hidden">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-white font-medium">{t("Fysieke Modus")}</h4>
@@ -4039,7 +4042,7 @@ const initializeAdMob = useCallback(async () => {
                               });
                               if (matches.length > 0) {
                                 triggerHaptic('medium');
-                                setPendingMatches({ card, sips: isTop ? 5 : sips, matches });
+                                setPendingMatches({ card, sips, matches });
                               }
                             }
                           }}
