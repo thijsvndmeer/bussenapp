@@ -147,19 +147,19 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
-          ${isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-b from-[#fdfdfd] to-[#f3f4f6] border-white/80'}
+          ${isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-br from-white to-slate-100 border-white/80'}
           ${sizeConfig.radius}
           border
           ${!isNeon ? 'ring-1 ring-black/5 shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]' : 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]'}
           overflow-hidden
         `}>
-          {/* Texture Overlay */}
-          {!isClassic && !isNeon && (
-            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")` }}></div>
+          {/* Texture Overlay - Only for Dark now, modern is clean */}
+          {isDark && (
+            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")` }}></div>
           )}
 
           {/* Safe Area / Border Helper */}
-          <div className={`absolute inset-0 rounded-[inherit] border ${isDark ? 'border-white/5' : 'border-slate-200/50'} pointer-events-none`}></div>
+          <div className={`absolute inset-0 rounded-[inherit] border ${isDark ? 'border-white/5' : isNeon ? 'border-white/10' : 'border-slate-200/50'} pointer-events-none`}></div>
 
           {/* --- FRONT UI --- */}
           {card && (
@@ -258,9 +258,9 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- BACK --- */}
         <div className={`
           absolute inset-0 backface-hidden rotate-y-180
-          ${isDark ? 'bg-[#020617]' : isClassic ? 'bg-red-700' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl' : 'bg-[#1e40af]'}
+          ${isDark ? 'bg-[#020617]' : isClassic ? 'bg-red-700' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl' : 'bg-gradient-to-br from-indigo-500 via-blue-600 to-indigo-900'}
           ${sizeConfig.radius}
-          ${(isNeon || isDark) ? 'border border-white/20' : (isClassic ? 'border-[4px]' : 'border-[6px]') + ' border-white'}
+          ${(isNeon || isDark) ? 'border border-white/20' : (isClassic ? 'border-[4px]' : 'border-[3px]') + ' border-white'}
           ring-1 ring-black/10
           shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]
           overflow-hidden
@@ -278,12 +278,12 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
           {/* Realistic Back Pattern (CSS Pattern) - For other styles */}
           {!isNeon && !isDark && (
-            <div className="w-full h-full opacity-60" style={{
+            <div className={`w-full h-full ${isClassic ? 'opacity-60' : 'opacity-100'}`} style={{
               backgroundImage: isClassic 
                 ? `linear-gradient(45deg, #ffffff 25%, transparent 25%), linear-gradient(-45deg, #ffffff 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ffffff 75%), linear-gradient(-45deg, transparent 75%, #ffffff 75%)`
-                : `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
-              backgroundSize: isClassic ? '10px 10px' : '8px 8px',
-              backgroundPosition: isClassic ? '0 0, 0 5px, 5px 5px, 5px 0' : '0 0, 4px 4px'
+                : `linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+              backgroundSize: isClassic ? '10px 10px' : '16px 16px',
+              backgroundPosition: isClassic ? '0 0, 0 5px, 5px 5px, 5px 0' : 'center center'
             }}></div>
           )}
 

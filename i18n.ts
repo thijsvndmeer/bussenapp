@@ -44,7 +44,17 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Opnieuw!": "Opnieuw!",
         "opnieuw!": "opnieuw!",
         "Goed! Kaart": "Goed! Kaart",
-        "klaar.": "klaar."
+        "klaar.": "klaar.",
+        "Calm Accent Kleur": "Accent Kleur",
+        "Goud": "Goud",
+        "Periwinkle": "Periwinkle",
+        "Munt": "Munt",
+        "Lavendel": "Lavendel",
+        "Roze": "Roze",
+        "Kleur Kiezer": "Kleurkiezer",
+        "Sleep op het wiel om een kleur te kiezen": "Sleep over het wiel om een kleur te kiezen",
+        "Geselecteerde Kleur": "Geselecteerde kleur",
+        "Opslaan": "Opslaan"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -57,6 +67,16 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Bus Pakjes": "Bus Decks",
         "Gedeelde Bus": "Shared Bus",
         "Meer Instellingen": "More Settings",
+        "Calm Accent Kleur": "Accent Color",
+        "Goud": "Gold",
+        "Periwinkle": "Periwinkle",
+        "Munt": "Mint",
+        "Lavendel": "Lavender",
+        "Roze": "Pink",
+        "Kleur Kiezer": "Color Picker",
+        "Sleep op het wiel om een kleur te kiezen": "Drag on the wheel to choose a color",
+        "Geselecteerde Kleur": "Selected Color",
+        "Opslaan": "Save",
         "Profielfoto kiezen": "Choose profile picture",
         "Maak foto": "Take photo",
         "Kies uit galerij": "Choose from gallery",
@@ -218,7 +238,14 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "HARTEN": "HEARTS",
         "KLAVER": "CLUBS",
         "RUITEN": "DIAMONDS",
-        "SCHOPPEN": "SPADES"
+        "SCHOPPEN": "SPADES",
+        "Boer": "Jack",
+        "Vrouw": "Queen",
+        "Koning": "King",
+        "Aas": "Ace",
+        "Hoger of Lager dan": "Higher or Lower than",
+        "Binnen of Buiten": "Between or Outside",
+        "en": "and"
     }
 };
 

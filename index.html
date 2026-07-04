@@ -71,6 +71,18 @@
     }
 
     /* --- Animations --- */
+    @keyframes stamp {
+      0% { opacity: 0; transform: scale(8) rotate(-45deg); }
+      15% { opacity: 1; transform: scale(0.6) rotate(15deg); }
+      35% { transform: scale(1.4) rotate(-10deg); }
+      55% { transform: scale(0.85) rotate(5deg); }
+      75% { transform: scale(1.1) rotate(-2deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    .animate-stamp {
+      animation: stamp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.4s both;
+    }
+
     @keyframes confetti-fall {
       0% {
         transform: translateY(-10vh) rotate(0deg);
@@ -255,16 +267,16 @@
     .theme-calm {
       --theme-bg: #0b0d19;
       --theme-card-bg: rgba(22, 27, 51, 0.65);
-      --theme-card-border: 1px solid rgba(229, 169, 59, 0.25);
+      --theme-card-border: 1px solid rgba(251, 205, 83, 0.15);
       --theme-font: 'Outfit', sans-serif;
       --theme-text: #e2e8f0;
       --theme-text-secondary: #94a3b8;
-      --theme-accent: #e5a93b;
-      --theme-accent-glow: rgba(229, 169, 59, 0.35);
-      --theme-btn-bg: #e5a93b;
+      --theme-accent: #fbcd53;
+      --theme-accent-glow: rgba(251, 205, 83, 0.25);
+      --theme-btn-bg: #fbcd53;
       --theme-btn-text: #0b0d19;
       --theme-btn-sec-bg: transparent;
-      --theme-btn-sec-text: #e5a93b;
+      --theme-btn-sec-text: #fbcd53;
       --theme-border-radius: 20px;
     }
 
@@ -317,6 +329,49 @@
       background-image: linear-gradient(to bottom, #0b0d19, #161b33) !important;
       animation: none !important;
     }
+
+    /* Calm Theme - Soft Gameplay Buttons */
+    .theme-calm button[class*="bg-gradient-to"]:not([class*="from-[#ffffff]"]):not(.no-calm-override),
+    .theme-calm button[class*="bg-white"]:not(.w-5):not(.w-10):not(.w-12):not(.no-calm-override) {
+      background-image: none !important;
+      box-shadow: none !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+
+    .theme-calm button[class*="bg-white"]:not(.w-5):not(.w-10):not(.w-12):not(.no-calm-override) {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      color: rgba(255, 255, 255, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    .theme-calm button[class*="bg-white"]:not(.w-5):not(.w-10):not(.w-12):not(.no-calm-override):hover {
+      background-color: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    .theme-calm button[class*="from-emerald"]:not([class*="from-[#ffffff]"]) { background-color: rgba(6, 78, 59, 0.5) !important; border: 1px solid rgba(16, 185, 129, 0.3) !important; color: #d1fae5 !important; }
+    .theme-calm button[class*="from-emerald"]:not([class*="from-[#ffffff]"]):hover { background-color: rgba(6, 78, 59, 0.7) !important; }
+
+    .theme-calm button[class*="from-red"] { background-color: rgba(127, 29, 29, 0.5) !important; border: 1px solid rgba(239, 68, 68, 0.3) !important; color: #fee2e2 !important; }
+    .theme-calm button[class*="from-red"]:hover { background-color: rgba(127, 29, 29, 0.7) !important; }
+
+    .theme-calm button[class*="from-blue"] { background-color: rgba(30, 58, 138, 0.5) !important; border: 1px solid rgba(59, 130, 246, 0.3) !important; color: #dbeafe !important; }
+    .theme-calm button[class*="from-blue"]:hover { background-color: rgba(30, 58, 138, 0.7) !important; }
+
+    .theme-calm button[class*="from-indigo"] { background-color: rgba(49, 46, 129, 0.5) !important; border: 1px solid rgba(99, 102, 241, 0.3) !important; color: #e0e7ff !important; }
+    .theme-calm button[class*="from-indigo"]:hover { background-color: rgba(49, 46, 129, 0.7) !important; }
+
+    .theme-calm button[class*="from-orange"] { background-color: rgba(124, 45, 18, 0.5) !important; border: 1px solid rgba(249, 115, 22, 0.3) !important; color: #ffedd5 !important; }
+    .theme-calm button[class*="from-orange"]:hover { background-color: rgba(124, 45, 18, 0.7) !important; }
+
+    .theme-calm button[class*="from-purple"] { background-color: rgba(88, 28, 135, 0.5) !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; color: #f3e8ff !important; }
+    .theme-calm button[class*="from-purple"]:hover { background-color: rgba(88, 28, 135, 0.7) !important; }
+
+    .theme-calm button[class*="from-pink"] { background-color: rgba(131, 24, 67, 0.5) !important; border: 1px solid rgba(236, 72, 153, 0.3) !important; color: #fce7f3 !important; }
+    .theme-calm button[class*="from-pink"]:hover { background-color: rgba(131, 24, 67, 0.7) !important; }
+
+    .theme-calm button[class*="from-slate"] { background-color: rgba(15, 23, 42, 0.6) !important; border: 1px solid rgba(71, 85, 105, 0.4) !important; color: #e2e8f0 !important; }
+    .theme-calm button[class*="from-slate"]:hover { background-color: rgba(15, 23, 42, 0.8) !important; }
+
     .theme-beer .bg-animated-gradient,
     .theme-beer .from-slate-800 {
       background: radial-gradient(circle at center, #0a4f22 0%, #032b12 100%) !important;
@@ -365,10 +420,10 @@
     }
 
 
-    .theme-calm .text-red-500, .theme-calm .text-red-400 {
+    .theme-calm .text-red-500:not(.no-calm-override), .theme-calm .text-red-400:not(.no-calm-override) {
       color: var(--theme-accent) !important;
     }
-    .theme-calm .bg-red-500, .theme-calm .bg-red-600 {
+    .theme-calm .bg-red-500:not(.no-calm-override), .theme-calm .bg-red-600:not(.no-calm-override) {
       background-color: var(--theme-accent) !important;
       border-color: var(--theme-accent) !important;
     }
@@ -445,6 +500,12 @@
     .always-bg-red {
       background-color: #dc2626 !important;
       background-image: none !important;
+    }
+
+    /* Calm Mode Card Outline Transparency */
+    .theme-calm .border-white,
+    .theme-calm .border-white\/80 {
+      border-color: rgba(255, 255, 255, 0.25) !important;
     }
   </style>
   <style>
