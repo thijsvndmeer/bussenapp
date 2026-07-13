@@ -1390,7 +1390,7 @@ const App: React.FC = () => {
   // Pyramid State
   const [pyramid, setPyramid] = useState<(Card | null)[][]>([]);
   const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
-  const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, cardIndex: number }[] } | null>(null);
+  const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, count: number, initialCount: number }[], isTopHalf?: boolean } | null>(null);
   const [loserReveal, setLoserReveal] = useState<{ player: Player, title: string } | null>(null);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
@@ -1398,6 +1398,8 @@ const App: React.FC = () => {
   const [isPyramidDoubleSetup, setIsPyramidDoubleSetup] = useState(false);
   const [pyramidDoubleSetupRow, setPyramidDoubleSetupRow] = useState(0);
   const [doubledPyramidCardIds, setDoubledPyramidCardIds] = useState<Set<string>>(new Set());
+  const [distributeBanner, setDistributeBanner] = useState<{resolutions: {name: string, sips: number}[], id: number, position?: 'top' | 'bottom', isFadingOut?: boolean} | null>(null);
+  const accumulatedSipsThisMatch = useRef<{name: string, sips: number}[]>([]);
   const [pulseValidCards, setPulseValidCards] = useState(false);
   const [warningCooldown, setWarningCooldown] = useState(false);
 
@@ -1714,6 +1716,16 @@ const initializeAdMob = useCallback(async () => {
     if (!storageAvailable) return;
     persistPlayers();
   }, [persistPlayers, storageAvailable]);
+
+  useEffect(() => {
+    if (distributeBanner && !distributeBanner.isFadingOut) {
+      const timer = setTimeout(() => setDistributeBanner(prev => prev ? { ...prev, isFadingOut: true } : null), 3500);
+      return () => clearTimeout(timer);
+    } else if (distributeBanner && distributeBanner.isFadingOut) {
+      const timer = setTimeout(() => setDistributeBanner(null), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [distributeBanner]);
 
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
@@ -2084,25 +2096,36 @@ const initializeAdMob = useCallback(async () => {
   };
 
   const addPlayer = useCallback(() => {
-    if (newPlayerName.trim() && players.length < 12) {
-      triggerHaptic('success');
-      playSound('playerAdd');
-      addPlayerToEngine({
-        id: Date.now().toString(),
-        name: newPlayerName.trim(),
-        hand: [],
-        drinksTaken: 0,
-        drinksDistributed: 0,
-        adtjes: 0,
-        isDealer: false,
-        isImmune: false,
-        image: newPlayerImage || undefined
-      });
-      setNewPlayerName('');
-      setNewPlayerImage(null);
-      setTimeout(() => inputRef.current?.focus(), 10);
+    const trimmedName = newPlayerName.trim();
+    if (!trimmedName) return;
+
+    if (players.length >= 12) {
+      setFeedback({ text: t("Maximum aantal spelers (12) is bereikt."), type: 'error' });
+      return;
     }
-  }, [addPlayerToEngine, newPlayerImage, newPlayerName, playSound, players.length, triggerHaptic]);
+
+    if (players.some(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
+      setFeedback({ text: t("Deze speler is al toegevoegd!"), type: 'error' });
+      return;
+    }
+
+    triggerHaptic('success');
+    playSound('playerAdd');
+    addPlayerToEngine({
+      id: Date.now().toString(),
+      name: trimmedName,
+      hand: [],
+      drinksTaken: 0,
+      drinksDistributed: 0,
+      adtjes: 0,
+      isDealer: false,
+      isImmune: false,
+      image: newPlayerImage || undefined
+    });
+    setNewPlayerName('');
+    setNewPlayerImage(null);
+    setTimeout(() => inputRef.current?.focus(), 10);
+  }, [addPlayerToEngine, newPlayerImage, newPlayerName, playSound, players, triggerHaptic, setFeedback, t]);
 
   const removePlayer = useCallback((id: string) => {
     triggerHaptic('light');
@@ -2659,11 +2682,11 @@ const initializeAdMob = useCallback(async () => {
       return;
     }
 
-    const matches: { player: Player, cardIndex: number }[] = [];
+    const matches: { player: Player, count: number, initialCount: number }[] = [];
     players.forEach(p => {
-      const matchIndex = p.hand.findIndex(h => h.rank === card.rank);
-      if (matchIndex !== -1) {
-        matches.push({ player: p, cardIndex: matchIndex });
+      const matchingCardsCount = p.hand.filter(h => h.rank === card.rank).length;
+      if (matchingCardsCount > 0) {
+        matches.push({ player: p, count: matchingCardsCount, initialCount: matchingCardsCount });
       }
     });
 
@@ -2674,7 +2697,8 @@ const initializeAdMob = useCallback(async () => {
       setPendingMatches({
         card: card,
         sips: sips * (isDoubled ? 2 : 1),
-        matches: matches
+        matches: matches,
+        isTopHalf: rowIndex < Math.ceil(settings.pyramidRows / 2)
       });
     } else {
       if (isFinished) {
@@ -2689,6 +2713,10 @@ const initializeAdMob = useCallback(async () => {
     const player = players.find(p => p.id === playerId);
     if (!player) return;
 
+    const matchIndex = pendingMatches.matches.findIndex(m => m.player.id === playerId);
+    if (matchIndex === -1) return;
+    const match = pendingMatches.matches[matchIndex];
+
     const handIndex = player.hand.findIndex(c => c.rank === pendingMatches.card.rank);
 
     if (handIndex !== -1) {
@@ -2697,22 +2725,44 @@ const initializeAdMob = useCallback(async () => {
         hand: currentPlayer.hand.filter((_, index) => index !== handIndex),
         drinksDistributed: currentPlayer.drinksDistributed + pendingMatches.sips,
       }));
+      
+      const existing = accumulatedSipsThisMatch.current.find(a => a.name === player.name);
+      if (existing) {
+        existing.sips += pendingMatches.sips;
+      } else {
+        accumulatedSipsThisMatch.current.push({ name: player.name, sips: pendingMatches.sips });
+      }
     }
 
-    const remainingMatches = pendingMatches.matches.filter(m => m.player.id !== playerId);
+    const newCount = match.count - 1;
+    let newMatches = [...pendingMatches.matches];
 
-    if (remainingMatches.length === 0) {
+    if (newCount <= 0) {
+      newMatches = newMatches.filter(m => m.player.id !== playerId);
+    } else {
+      newMatches[matchIndex] = { ...match, count: newCount };
+    }
+
+    if (newMatches.length === 0) {
+      if (accumulatedSipsThisMatch.current.length > 0) {
+        setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.isTopHalf ? 'bottom' : 'top' });
+        accumulatedSipsThisMatch.current = [];
+      }
       setPendingMatches(null);
       const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
       if (revealedPyramidCards.size === totalCards) {
         setIsPyramidComplete(true);
       }
     } else {
-      setPendingMatches({ ...pendingMatches, matches: remainingMatches });
+      setPendingMatches({ ...pendingMatches, matches: newMatches });
     }
   };
 
   const dismissMatchModal = () => {
+    if (pendingMatches && accumulatedSipsThisMatch.current.length > 0) {
+      setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.isTopHalf ? 'bottom' : 'top' });
+      accumulatedSipsThisMatch.current = [];
+    }
     setPendingMatches(null);
     const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
     if (revealedPyramidCards.size === totalCards) {
@@ -3392,7 +3442,20 @@ const initializeAdMob = useCallback(async () => {
               onChange={(e) => { 
                 e.stopPropagation();
                 if (e.target.value === '1') confirmStart(settings.mode);
-                if (e.target.value === '2') initializePyramid();
+                if (e.target.value === '2') {
+                  let currentDeck = deck.length > 0 ? [...deck] : shuffleDeck(createDeck());
+                  const updatedPlayers = players.map(p => {
+                    const cardsNeeded = 4 - p.hand.length;
+                    if (cardsNeeded > 0 && currentDeck.length >= cardsNeeded) {
+                      const newCards = currentDeck.splice(0, cardsNeeded);
+                      return { ...p, hand: [...p.hand, ...newCards] };
+                    }
+                    return p;
+                  });
+                  setPlayers(updatedPlayers);
+                  setDeck(currentDeck);
+                  initializePyramid();
+                }
                 if (e.target.value === '3') determineLoserAndAnimate();
                 setIsDevMenuOpen(false);
               }}
@@ -4533,18 +4596,44 @@ const initializeAdMob = useCallback(async () => {
               </div>
 
               <div className="p-5 grid grid-cols-2 gap-3">
-                {pendingMatches.matches.map((m) => (
-                  <button
-                    key={m.player.id}
-                    onClick={() => resolveMatch(m.player.id)}
-                    className="group relative flex flex-col items-center gap-2 bg-black/40 p-4 rounded-2xl hover:bg-emerald-900/30 border border-white/5 hover:border-emerald-500 transition-all active:scale-95"
-                  >
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ring-2 ring-white/10 group-hover:ring-emerald-500 transition-all">
-                      {m.player.image ? <img src={m.player.image} className="w-full h-full object-cover" /> : m.player.name.charAt(0)}
-                    </div>
-                    <span className="text-white font-bold text-sm truncate w-full text-center group-hover:text-emerald-400">{m.player.name}</span>
-                  </button>
-                ))}
+                {pendingMatches.matches.map((m) => {
+                  const clicks = m.initialCount - m.count;
+                  let colorClasses = 'bg-black/40 border-white/5 hover:border-emerald-500 hover:bg-emerald-900/30';
+                  let ringClass = 'ring-white/10 group-hover:ring-emerald-500';
+                  let textClass = 'group-hover:text-emerald-400 text-white';
+                  
+                  if (clicks === 1) {
+                    colorClasses = 'bg-amber-900/40 border-amber-500 hover:bg-amber-800/40';
+                    ringClass = 'ring-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]';
+                    textClass = 'text-amber-400';
+                  } else if (clicks === 2) {
+                    colorClasses = 'bg-orange-900/50 border-orange-500 hover:bg-orange-800/50';
+                    ringClass = 'ring-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]';
+                    textClass = 'text-orange-400';
+                  } else if (clicks >= 3) {
+                    colorClasses = 'bg-red-900/60 border-red-500 hover:bg-red-800/60';
+                    ringClass = 'ring-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse';
+                    textClass = 'text-red-400';
+                  }
+
+                  return (
+                    <button
+                      key={m.player.id}
+                      onClick={() => resolveMatch(m.player.id)}
+                      className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${colorClasses}`}
+                    >
+                      {m.initialCount > 1 && (
+                        <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-xs px-2 py-0.5 rounded-full shadow-lg border border-white/20 z-10">
+                          {m.count}x
+                        </div>
+                      )}
+                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ring-2 transition-all ${ringClass}`}>
+                        {m.player.image ? <img src={m.player.image} className="w-full h-full object-cover" /> : m.player.name.charAt(0)}
+                      </div>
+                      <span className={`font-bold text-sm truncate w-full text-center transition-colors ${textClass}`}>{m.player.name}</span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="bg-black/50 p-3 text-center">
                 <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
@@ -4653,6 +4742,22 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         )}
+        {distributeBanner && !pendingMatches && (
+          <div key={distributeBanner.id} className={`absolute left-0 right-0 z-50 flex flex-col items-center gap-3 pointer-events-none px-4 ${distributeBanner.position === 'bottom' ? 'bottom-16' : 'top-28'}`}>
+            <p className={`bg-slate-900/70 backdrop-blur-md border border-emerald-500/30 rounded-3xl px-6 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)] ring-1 ring-white/10 text-xl sm:text-2xl text-slate-200 font-medium drop-shadow-2xl text-center max-w-sm sm:max-w-md w-full
+              ${distributeBanner.isFadingOut 
+                ? (distributeBanner.position === 'bottom' ? 'animate-slide-out-bottom' : 'animate-slide-out-top') 
+                : (distributeBanner.position === 'bottom' ? 'animate-slide-in-bottom' : 'animate-slide-in-top')}
+            `}>
+              {distributeBanner.resolutions.map((res, idx) => (
+                <span key={idx}>
+                  <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{res.name}</span> {t("mag")} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? t("slok") : t("slokken")}
+                  {idx < distributeBanner.resolutions.length - 1 ? ", " : " " + t("uitdelen!")}
+                </span>
+              ))}
+            </p>
+          </div>
+        )}
         {isPyramidDoubleSetup && pyramidDoubleSetupRow >= settings.pyramidRows - 2 && (
           <div className="absolute top-32 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
             <div className="bg-slate-900/90 backdrop-blur-xl border-2 border-red-500/50 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-w-sm w-full animate-in slide-in-from-top-10 duration-500 ring-1 ring-red-500/20">
@@ -4733,16 +4838,16 @@ const initializeAdMob = useCallback(async () => {
                               const isDoubled = doubledPyramidCardIds.has(card.id);
                               const sips = (settings.pyramidRows - rowIndex) * (isDoubled ? 2 : 1);
                               const isTop = rowIndex === 0;
-                              const matches: { player: Player, cardIndex: number }[] = [];
+                              const matches: { player: Player, count: number, initialCount: number }[] = [];
                               players.forEach(p => {
-                                const matchIndex = p.hand.findIndex(h => h.rank === card.rank);
-                                if (matchIndex !== -1) {
-                                  matches.push({ player: p, cardIndex: matchIndex });
+                                const matchingCardsCount = p.hand.filter(h => h.rank === card.rank).length;
+                                if (matchingCardsCount > 0) {
+                                  matches.push({ player: p, count: matchingCardsCount, initialCount: matchingCardsCount });
                                 }
                               });
                               if (matches.length > 0) {
                                 triggerHaptic('medium');
-                                setPendingMatches({ card, sips, matches });
+                                setPendingMatches({ card, sips, matches, isTopHalf: rowIndex < Math.ceil(settings.pyramidRows / 2) });
                               }
                             }
                           }}
