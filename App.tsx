@@ -2185,6 +2185,8 @@ const initializeAdMob = useCallback(async () => {
 
   const handleStartPress = () => {
     if (players.length < 2) return;
+    setIsSettingsOpen(false);
+    setIsMoreSettingsOpen(false);
     triggerHaptic('medium');
     confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
   };
@@ -3336,8 +3338,11 @@ const initializeAdMob = useCallback(async () => {
           t={t}
           onToggleOpen={() => {}}
           onOpenMoreSettings={() => { setIsSettingsOpen(false); setIsMoreSettingsOpen(true); }}
-          onSettingsChange={setSettings}
-          onCommitSettings={(nextSettings) => queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(nextSettings), 'instellingen')}
+          onSettingsChange={(key, val) => setSettings(prev => ({ ...prev, [key]: val }))}
+          onCommitSettings={() => setSettings(prev => {
+            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(prev), 'instellingen');
+            return prev;
+          })}
         />
       </div>
     </div>
@@ -3366,8 +3371,7 @@ const initializeAdMob = useCallback(async () => {
     if (!isDevMenuVisible) return null;
     return (
       <div className={`relative flex items-center z-[100] ${className}`}>
-        {isDevMenuOpen && (
-          <div className="absolute top-full right-0 mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_15px_rgba(34,197,94,0.2)] animate-in slide-in-from-top-2 fade-in duration-200">
+        <div className={`absolute top-full right-0 mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_15px_rgba(34,197,94,0.2)] transition-all duration-200 origin-top-right ${isDevMenuOpen ? 'scale-100 opacity-100 pointer-events-auto translate-y-0' : 'scale-95 opacity-0 pointer-events-none -translate-y-2'}`}>
             <button 
               onClick={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, alwaysWin: !p.alwaysWin })); }}
               className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${devSettings.alwaysWin ? 'bg-green-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
@@ -3422,7 +3426,6 @@ const initializeAdMob = useCallback(async () => {
               <Settings size={14} />
             </button>
           </div>
-        )}
         <button 
           onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(!isDevMenuOpen); }}
           className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm relative z-10"
@@ -3932,8 +3935,11 @@ const initializeAdMob = useCallback(async () => {
             t={t}
             onToggleOpen={() => setIsSettingsOpen(!isSettingsOpen)}
             onOpenMoreSettings={() => setIsMoreSettingsOpen(true)}
-            onSettingsChange={setSettings}
-            onCommitSettings={(nextSettings) => queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(nextSettings), 'instellingen')}
+            onSettingsChange={(key, val) => setSettings(prev => ({ ...prev, [key]: val }))}
+            onCommitSettings={() => setSettings(prev => {
+              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(prev), 'instellingen');
+              return prev;
+            })}
           />
         </div>
 
@@ -4907,14 +4913,17 @@ const initializeAdMob = useCallback(async () => {
                     </div>
                     <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
                   </div>
-                  <div className="text-right text-slate-200 text-[11px] uppercase font-black tracking-[0.25em] bg-white/5 border border-white/10 px-3 py-2 rounded-2xl self-start md:self-center">
-                    {t("Kaart")} {physicalBusPosition} / {settings.busLength}
+                  <div className="flex items-center gap-2 self-start md:self-center">
+                    {renderDevMenu()}
+                    <div className="text-right text-slate-200 text-[11px] uppercase font-black tracking-[0.25em] bg-white/5 border border-white/10 px-3 py-2 rounded-2xl">
+                      {t("Kaart")} {physicalBusPosition} / {settings.busLength}
+                    </div>
                   </div>
                 </div>
 
                 {!isBusWon && (
                   <div className="fixed z-[96] items-center" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-                    {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+                    {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
                   </div>
                 )}
 
@@ -5104,6 +5113,7 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-end">
+            {renderDevMenu()}
             {remainingBusCards > 0 && (
               <button 
                 onClick={() => setIsCardOverviewOpen(true)}
@@ -5130,7 +5140,7 @@ const initializeAdMob = useCallback(async () => {
 
         {!isBusWon && (
           <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-            {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
         )}
 
