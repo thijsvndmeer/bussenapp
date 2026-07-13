@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -597,7 +597,10 @@ const PlayerAvatar: React.FC<{
   glow?: boolean;
   className?: string;
   theme?: UITheme;
-}> = ({ player, size = 'md', glow = false, className = "", theme = UITheme.CLASSIC }) => {
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onPointerUp?: (e: React.PointerEvent) => void;
+  onPointerLeave?: (e: React.PointerEvent) => void;
+}> = ({ player, size = 'md', glow = false, className = "", theme = UITheme.CLASSIC, onPointerDown, onPointerUp, onPointerLeave }) => {
   const sizeClasses = {
     sm: 'w-8 h-8 text-[10px]',
     md: 'w-10 h-10 text-base',
@@ -609,20 +612,26 @@ const PlayerAvatar: React.FC<{
   const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
   
   const isCalmGlow = glow && theme === UITheme.CALM;
+  const isDev = !!player?.isDev;
 
-  const borderColor = isCalmGlow ? '' : (glow ? 'border-red-500' : 'border-slate-600/50');
-  const shadowEffect = isCalmGlow ? '' : (glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md');
+  const borderColor = isDev ? 'border-green-400/30' : (isCalmGlow ? '' : (glow ? 'border-red-500' : 'border-slate-600/50'));
+  const shadowEffect = isDev ? '' : (isCalmGlow ? '' : (glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md'));
+  const animationEffect = isDev ? '' : '';
   const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
 
-  const calmStyle = isCalmGlow ? {
+  const calmStyle = (isCalmGlow && !isDev) ? {
     borderColor: 'var(--theme-accent)',
     boxShadow: '0 0 40px var(--theme-accent-glow)'
   } : undefined;
 
   return (
     <div 
-      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center overflow-hidden relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${className}`}
+      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center overflow-hidden relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
       style={calmStyle}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerLeave}
+      onContextMenu={(e) => { if (onPointerDown) e.preventDefault(); }}
     >
       {player?.image ? (
         <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
@@ -631,7 +640,7 @@ const PlayerAvatar: React.FC<{
       )}
       <div 
         className={`absolute inset-0 rounded-full ${ringClasses} ${glow ? (isCalmGlow ? 'animate-pulse' : 'ring-red-500/20 animate-pulse') : 'border-transparent'}`}
-        style={isCalmGlow ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
+        style={(isCalmGlow && !isDev) ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
       ></div>
     </div>
   );
@@ -1295,6 +1304,33 @@ const App: React.FC = () => {
   const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
 
   const { players, setPlayers, addPlayer: addPlayerToEngine, removePlayer: removePlayerFromEngine, updatePlayer, updatePlayers, reorderPlayers } = usePlayerState();
+  const [devModeArmed, setDevModeArmed] = useState(false);
+  const headerPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const avatarPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleHeaderPointerDown = useCallback(() => {
+    headerPressTimerRef.current = setTimeout(() => {
+      setDevModeArmed(true);
+      triggerHaptic('heavy');
+    }, 1500);
+  }, [triggerHaptic]);
+
+  const handleHeaderPointerUpOrLeave = useCallback(() => {
+    if (headerPressTimerRef.current) clearTimeout(headerPressTimerRef.current);
+  }, []);
+
+  const handleAvatarPointerDown = useCallback((player: Player) => {
+    if (!devModeArmed) return;
+    avatarPressTimerRef.current = setTimeout(() => {
+      updatePlayer(player.id, p => ({ ...p, isDev: !p.isDev }));
+      triggerHaptic('success');
+      setDevModeArmed(false); // Disarm after use
+    }, 1500);
+  }, [devModeArmed, updatePlayer, triggerHaptic]);
+
+  const handleAvatarPointerUpOrLeave = useCallback(() => {
+    if (avatarPressTimerRef.current) clearTimeout(avatarPressTimerRef.current);
+  }, []);
   const { phase, transitionToPhase: setPhase, dispatch: dispatchGameEvent, registerEventHandler: registerGameEventHandler, schedule: scheduleGameEvent } = useGameEngine(GamePhase.SETUP);
   const [deck, setDeck] = useState<Card[]>([]);
   const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
@@ -1304,6 +1340,15 @@ const App: React.FC = () => {
   const [newPlayerImage, setNewPlayerImage] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
+
+  // Dev Tools State
+  const [devSettings, setDevSettings] = useState({
+    alwaysWin: false,
+    forceBusPlayerId: null as string | null,
+    peekCards: false
+  });
+  const [isDevMenuOpen, setIsDevMenuOpen] = useState(false);
+  const [previewCardId, setPreviewCardId] = useState<string | null>(null);
   const [isPhotoOptionsModalOpen, setIsPhotoOptionsModalOpen] = useState(false); // New state for photo options modal
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2060,8 +2105,15 @@ const initializeAdMob = useCallback(async () => {
   }, [playSound, removePlayerFromEngine, triggerHaptic]);
 
   const renderPlayerListAvatar = useCallback((player: Player) => (
-    <PlayerAvatar player={player} size="md" theme={settings.theme} />
-  ), []);
+    <PlayerAvatar 
+      player={player} 
+      size="md" 
+      theme={settings.theme} 
+      onPointerDown={() => handleAvatarPointerDown(player)}
+      onPointerUp={handleAvatarPointerUpOrLeave}
+      onPointerLeave={handleAvatarPointerUpOrLeave}
+    />
+  ), [handleAvatarPointerDown, handleAvatarPointerUpOrLeave, settings.theme]);
 
   // --- DRAG-AND-DROP PLAYER REORDER ---
   const [dragPlayerIndex, setDragPlayerIndex] = useState<number | null>(null);
@@ -2164,6 +2216,7 @@ const initializeAdMob = useCallback(async () => {
     setPlayers(updatedPlayers);
     setActivePlayerIndex((dealerIndex + 1) % players.length);
     setUsedPhrases(new Set()); // Reset phrases for new game
+    setRoundStep(RoundStep.RED_BLACK);
 
     setPhase(GamePhase.ROUNDS_1_4);
     setRoundStep(RoundStep.RED_BLACK);
@@ -2226,8 +2279,69 @@ const initializeAdMob = useCallback(async () => {
   };
 
   const handleDigitalGuess = (guess: string) => {
-    const card = drawCard();
+    let card = drawCard();
     if (!card) return;
+
+    if (devSettings.alwaysWin && activePlayer.isDev && deck.length > 0) {
+      const r = roundStep;
+      let validIndex = deck.findIndex(c => {
+        if (r === RoundStep.RED_BLACK) {
+          const isRed = c.suit === Suit.HEARTS || c.suit === Suit.DIAMONDS;
+          return (guess === 'RED' && isRed) || (guess === 'BLACK' && !isRed);
+        } else if (r === RoundStep.HIGH_LOW) {
+          const b = activePlayer.hand[0];
+          if (!b) return false;
+          return (guess === 'HIGHER' && c.rank > b.rank) ||
+                 (guess === 'LOWER' && c.rank < b.rank) ||
+                 (guess === 'EQUAL' && c.rank === b.rank);
+        } else if (r === RoundStep.IN_OUT) {
+          const c1 = activePlayer.hand[0];
+          const c2 = activePlayer.hand[1];
+          if (!c1 || !c2) return false;
+          const low = Math.min(c1.rank, c2.rank);
+          const high = Math.max(c1.rank, c2.rank);
+          if (guess === 'BETWEEN') return c.rank > low && c.rank < high;
+          return c.rank < low || c.rank > high || c.rank === low || c.rank === high;
+        } else if (r === RoundStep.SUIT) {
+          const hasSuit = activePlayer.hand.some(h => h.suit === c.suit);
+          return (guess === 'MATCH' && hasSuit) || (guess === 'NO_MATCH' && !hasSuit);
+        }
+        return false;
+      });
+
+      if (validIndex > 0) {
+        const matchingCard = deck[validIndex];
+        setDeck(prev => {
+          const next = [...prev];
+          next.splice(validIndex - 1, 1);
+          next.push(card!);
+          return next;
+        });
+        card = matchingCard;
+      } else if (validIndex === -1) {
+        card = { ...card };
+        if (r === RoundStep.RED_BLACK) {
+          card.suit = guess === 'RED' ? Suit.HEARTS : Suit.SPADES;
+        } else if (r === RoundStep.HIGH_LOW) {
+          const b = activePlayer.hand[0];
+          card.rank = b ? (guess === 'HIGHER' ? Math.min(14, b.rank + 1) : 
+                      guess === 'LOWER' ? Math.max(2, b.rank - 1) : 
+                      b.rank) : 7;
+        } else if (r === RoundStep.IN_OUT) {
+          const c1 = activePlayer.hand[0];
+          const c2 = activePlayer.hand[1];
+          if (c1 && c2) {
+            const low = Math.min(c1.rank, c2.rank);
+            const high = Math.max(c1.rank, c2.rank);
+            card.rank = guess === 'BETWEEN' ? Math.floor((low + high) / 2) : 14;
+          } else card.rank = 14;
+        } else if (r === RoundStep.SUIT) {
+          const b = activePlayer.hand[0];
+          card.suit = b ? (guess === 'MATCH' ? b.suit : (b.suit === Suit.HEARTS ? Suit.SPADES : Suit.HEARTS)) : Suit.SPADES;
+        }
+      }
+    }
+
     playSound('draw');
     setLastDrawnCard(card);
 
@@ -2241,17 +2355,19 @@ const initializeAdMob = useCallback(async () => {
     }
     else if (roundStep === RoundStep.HIGH_LOW) {
       const baseCard = player.hand[0];
-      correct = (guess === 'HIGHER' && card.rank > baseCard.rank) ||
+      correct = baseCard && ((guess === 'HIGHER' && card.rank > baseCard.rank) ||
         (guess === 'LOWER' && card.rank < baseCard.rank) ||
-        (guess === 'EQUAL' && card.rank === baseCard.rank);
+        (guess === 'EQUAL' && card.rank === baseCard.rank));
     }
     else if (roundStep === RoundStep.IN_OUT) {
-      const c1 = player.hand[0].rank;
-      const c2 = player.hand[1].rank;
-      const low = Math.min(c1, c2);
-      const high = Math.max(c1, c2);
-      if (guess === 'BETWEEN') correct = card.rank > low && card.rank < high;
-      else correct = card.rank < low || card.rank > high || card.rank === low || card.rank === high;
+      const c1 = player.hand[0];
+      const c2 = player.hand[1];
+      if (c1 && c2) {
+        const low = Math.min(c1.rank, c2.rank);
+        const high = Math.max(c1.rank, c2.rank);
+        if (guess === 'BETWEEN') correct = card.rank > low && card.rank < high;
+        else correct = card.rank < low || card.rank > high || card.rank === low || card.rank === high;
+      }
     }
     else if (roundStep === RoundStep.SUIT) {
       const hasSuit = player.hand.some(h => h.suit === card.suit);
@@ -2597,6 +2713,10 @@ const initializeAdMob = useCallback(async () => {
   };
 
   const findLoser = () => {
+    if (devSettings.forceBusPlayerId) {
+      const forced = players.find(p => p.id === devSettings.forceBusPlayerId);
+      if (forced) return forced;
+    }
     const eligiblePlayers = players.filter(p => !p.isImmune);
     const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
 
@@ -2865,15 +2985,53 @@ const initializeAdMob = useCallback(async () => {
 
   const handleBusGuess = (guess: 'HIGHER' | 'LOWER' | 'EQUAL') => {
     const prevCard = busCards[currentBusIndex - 1];
-    const targetCard = busCards[currentBusIndex];
-    const isHigher = targetCard.rank > prevCard.rank;
-    const isLower = targetCard.rank < prevCard.rank;
-    const isEqual = targetCard.rank === prevCard.rank;
+    let targetCard = busCards[currentBusIndex];
+    let isHigher = targetCard.rank > prevCard.rank;
+    let isLower = targetCard.rank < prevCard.rank;
+    let isEqual = targetCard.rank === prevCard.rank;
 
     let correct = false;
     if (guess === 'HIGHER' && isHigher) correct = true;
     if (guess === 'LOWER' && isLower) correct = true;
     if (guess === 'EQUAL' && isEqual) correct = true;
+
+    const isDevPassenger = busPassengers.some(p => p.isDev);
+    if (devSettings.alwaysWin && isDevPassenger && !correct) {
+      const validIndex = busDeck.findIndex(c => {
+         if (guess === 'HIGHER') return c.rank > prevCard.rank;
+         if (guess === 'LOWER') return c.rank < prevCard.rank;
+         if (guess === 'EQUAL') return c.rank === prevCard.rank;
+         return false;
+      });
+      
+      if (validIndex !== -1) {
+         const matchingCard = busDeck[validIndex];
+         setBusDeck(prev => {
+           const next = [...prev];
+           next.splice(validIndex, 1);
+           next.push(targetCard);
+           return next;
+         });
+         setBusCards(prev => {
+           const next = [...prev];
+           next[currentBusIndex] = matchingCard;
+           return next;
+         });
+         targetCard = matchingCard;
+         correct = true;
+      } else {
+         targetCard = { ...targetCard };
+         targetCard.rank = guess === 'HIGHER' ? Math.min(14, prevCard.rank + 1) :
+                           guess === 'LOWER' ? Math.max(2, prevCard.rank - 1) :
+                           prevCard.rank;
+         setBusCards(prev => {
+           const next = [...prev];
+           next[currentBusIndex] = targetCard;
+           return next;
+         });
+         correct = true;
+      }
+    }
 
     if (correct) {
       triggerHaptic('success');
@@ -3143,25 +3301,38 @@ const initializeAdMob = useCallback(async () => {
   };
 
   const renderQuitModal = () => showQuitConfirm && (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl w-full max-w-sm mx-4 space-y-4 animate-in zoom-in-95 duration-300">
-        <h3 className="text-xl font-black text-white text-center">{t("Spel stoppen?")}</h3>
-        <p className="text-slate-400 text-sm text-center">{t("Weet je zeker dat je het huidige spel wilt stoppen? Alle voortgang gaat verloren.")}</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setShowQuitConfirm(false); }}>
+      <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
+        <h3 className="text-xl font-bold text-white text-center mb-4">{t("Spel Stoppen")}</h3>
+        <p className="text-slate-300 text-center mb-6">{t("Weet je zeker dat je wilt stoppen?")}</p>
         <div className="flex gap-3">
-          <button
-            onClick={() => setShowQuitConfirm(false)}
-            className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition-colors active:scale-95"
-          >
-            {t("Annuleren")}
-          </button>
-          <button
-            id="confirm-quit-btn"
-            onClick={handleQuitGame}
-            className="flex-1 py-3 bg-gradient-to-r from-red-700 to-red-900 hover:brightness-110 text-white font-bold rounded-xl border border-red-600/50 transition-all active:scale-95 shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-          >
-            {t("Stoppen")}
-          </button>
+          <button onClick={() => setShowQuitConfirm(false)} className="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-700 active:scale-95 transition-transform">{t("Annuleren")}</button>
+          <button onClick={() => { setShowQuitConfirm(false); setPhase(GamePhase.SETUP); }} className="flex-1 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform">{t("Stoppen")}</button>
         </div>
+      </div>
+    </div>
+  );
+
+  const renderSettingsModal = () => (isSettingsOpen && phase !== GamePhase.SETUP) && (
+    <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }}>
+      <div className="w-full max-w-sm m-4 relative animate-in zoom-in-50 duration-300">
+        <button 
+          onClick={() => setIsSettingsOpen(false)}
+          className="absolute -top-12 right-0 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white hover:bg-slate-700 active:scale-95 transition-all shadow-lg border border-slate-700"
+        >
+          <X size={20} />
+        </button>
+        <SettingsPanel
+          isOpen={true}
+          hideHeader={true}
+          disabled={false}
+          settings={settings}
+          t={t}
+          onToggleOpen={() => {}}
+          onOpenMoreSettings={() => { setIsSettingsOpen(false); setIsMoreSettingsOpen(true); }}
+          onSettingsChange={setSettings}
+          onCommitSettings={(nextSettings) => queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(nextSettings), 'instellingen')}
+        />
       </div>
     </div>
   );
@@ -3176,6 +3347,79 @@ const initializeAdMob = useCallback(async () => {
     </button>
   );
 
+  // Global Dev Menu logic
+  const hasDevPlayer = players.some(p => p.isDev);
+  const renderDevMenu = (className = "") => {
+    if (!hasDevPlayer) return null;
+    return (
+      <div className={`relative flex items-center z-[100] ${className}`}>
+        {isDevMenuOpen && (
+          <div className="flex items-center gap-1.5 mr-1 bg-slate-900/95 border border-green-500/40 rounded-full px-2 py-1 shadow-[0_0_15px_rgba(34,197,94,0.2)] animate-in slide-in-from-right-4 fade-in duration-200">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, alwaysWin: !p.alwaysWin })); }}
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${devSettings.alwaysWin ? 'bg-green-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
+              title={t("Altijd Winnen")}
+            >
+              <Check size={14} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, peekCards: !p.peekCards })); }}
+              className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${devSettings.peekCards ? 'bg-purple-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
+              title={t("X-Ray Visie")}
+            >
+              <Eye size={14} />
+            </button>
+            
+            <select
+              value=""
+              onChange={(e) => { 
+                e.stopPropagation();
+                if (e.target.value === '1') confirmStart(settings.mode);
+                if (e.target.value === '2') initializePyramid();
+                if (e.target.value === '3') determineLoserAndAnimate();
+                setIsDevMenuOpen(false);
+              }}
+              className="bg-slate-800 text-[10px] font-bold text-slate-200 rounded-md py-1 px-1 outline-none border border-slate-700 max-w-[55px] uppercase tracking-wider"
+              title={t("Verander Fase")}
+            >
+              <option value="" disabled>{t("Fase")}</option>
+              <option value="1">{t("Ronde")}</option>
+              <option value="2">{t("Pira")}</option>
+              <option value="3">{t("Bus")}</option>
+            </select>
+            
+            <select 
+              value={devSettings.forceBusPlayerId || ''}
+              onChange={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, forceBusPlayerId: e.target.value || null })); }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-800 text-[10px] font-bold text-slate-200 rounded-md py-1 px-1 outline-none border border-slate-700 max-w-[65px] uppercase tracking-wider"
+              title={t("Forceer Bus Speler")}
+            >
+              <option value="">{t("Auto")}</option>
+              {players.map(p => (
+                <option key={p.id} value={p.id}>{p.name.slice(0,5)}</option>
+              ))}
+            </select>
+
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(false); setIsSettingsOpen(true); }}
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-800 text-slate-400 transition-colors"
+              title={t("Instellingen")}
+            >
+              <Settings size={14} />
+            </button>
+          </div>
+        )}
+        <button 
+          onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(!isDevMenuOpen); }}
+          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm"
+        >
+          {isDevMenuOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
+      </div>
+    );
+  };
+
   // --- RENDERING ---
 
   // Global fixed quit button shown during active gameplay (not on SETUP or GAME_OVER)
@@ -3189,7 +3433,13 @@ const initializeAdMob = useCallback(async () => {
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer className="p-4" showChest={true} theme={settings.theme}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text">
+          <h1 
+            className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text cursor-pointer"
+            onPointerDown={handleHeaderPointerDown}
+            onPointerUp={handleHeaderPointerUpOrLeave}
+            onPointerLeave={handleHeaderPointerUpOrLeave}
+            onContextMenu={(e) => e.preventDefault()}
+          >
             {t("Bussen")}
           </h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
@@ -3713,7 +3963,16 @@ const initializeAdMob = useCallback(async () => {
           <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
           <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
             <div className="mb-4"><ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" /></div>
-            <PlayerAvatar player={activePlayer} size="xl" glow className="mb-6" theme={settings.theme} />
+            <PlayerAvatar 
+              player={activePlayer} 
+              size="xl" 
+              glow 
+              className="mb-6" 
+              theme={settings.theme} 
+              onPointerDown={() => activePlayer && handleAvatarPointerDown(activePlayer)}
+              onPointerUp={handleAvatarPointerUpOrLeave}
+              onPointerLeave={handleAvatarPointerUpOrLeave}
+            />
             <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{activePlayer.name}</h1>
             <button
               onClick={() => setIsWaitingForNextPlayer(false)}
@@ -3824,7 +4083,14 @@ const initializeAdMob = useCallback(async () => {
         {showConfetti && <Confetti />}
         <div className={`flex-none flex items-center justify-between p-2.5 ${getHeaderClasses()}`}>
           <div className="flex items-center gap-3">
-            <PlayerAvatar player={activePlayer} size="lg" theme={settings.theme} />
+            <PlayerAvatar 
+              player={activePlayer} 
+              size="lg" 
+              theme={settings.theme} 
+              onPointerDown={() => activePlayer && handleAvatarPointerDown(activePlayer)}
+              onPointerUp={handleAvatarPointerUpOrLeave}
+              onPointerLeave={handleAvatarPointerUpOrLeave}
+            />
             <div className="overflow-hidden">
               <ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" />
               <div className="flex items-center gap-1.5">
@@ -3834,6 +4100,7 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {renderDevMenu()}
             <div className="flex gap-3">
               <div className="flex flex-col items-end px-3 border-r border-white/10">
                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Op")}</span>
@@ -3848,7 +4115,8 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
 
-        {renderQuitModal()}
+        {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
 
@@ -3921,7 +4189,15 @@ const initializeAdMob = useCallback(async () => {
           {/* STAGE */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative z-0">
             <div className="text-center mb-6 relative z-10 flex flex-col items-center">
-              <ThemeLabel text={`${t("Ronde")} ${roundStep} / 4`} theme={settings.theme} size="sm" />
+              <div 
+                className="inline-block cursor-pointer"
+                onPointerDown={handleHeaderPointerDown}
+                onPointerUp={handleHeaderPointerUpOrLeave}
+                onPointerLeave={handleHeaderPointerUpOrLeave}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <ThemeLabel text={`${t("Ronde")} ${roundStep} / 4`} theme={settings.theme} size="sm" />
+              </div>
               <h2 className="text-3xl font-black text-white mt-3 drop-shadow-xl neon-text">
                 {roundStep === 1 && t("Rood of Zwart?")}
                 {roundStep === 2 && (activePlayer?.hand?.[0] ? `${t("Hoger of Lager dan")} ${getFullRankName(activePlayer.hand[0].rank, t)}?` : t("Hoger of Lager?"))}
@@ -4090,7 +4366,8 @@ const initializeAdMob = useCallback(async () => {
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
           <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
-        {renderQuitModal()}
+        {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
 
@@ -4186,7 +4463,8 @@ const initializeAdMob = useCallback(async () => {
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer className="p-0" shake={screenShake} disableSafeTop theme={settings.theme}>
         {manualBusSelectionOverlay}
-        {renderQuitModal()}
+        {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
         {/* Match Modal */}
@@ -4234,7 +4512,15 @@ const initializeAdMob = useCallback(async () => {
         <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl gap-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="flex items-center gap-6 overflow-hidden">
             <div className="shrink-0">
-              <ThemeLabel text={t("Piramide")} theme={settings.theme} size="md" />
+              <div 
+                className="inline-block cursor-pointer"
+                onPointerDown={handleHeaderPointerDown}
+                onPointerUp={handleHeaderPointerUpOrLeave}
+                onPointerLeave={handleHeaderPointerUpOrLeave}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <ThemeLabel text={t("Piramide")} theme={settings.theme} size="md" />
+              </div>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                 {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
               </p>
@@ -4306,7 +4592,7 @@ const initializeAdMob = useCallback(async () => {
           </div>
 
           <div className="shrink-0">
-            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+            {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
         </div>
 
@@ -4478,9 +4764,10 @@ const initializeAdMob = useCallback(async () => {
         >
         <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="absolute z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-            {renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
+            {renderDevMenu()}{renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
           </div>
-          {renderQuitModal()}
+          {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
@@ -4583,7 +4870,7 @@ const initializeAdMob = useCallback(async () => {
 
                 {!isBusWon && (
                   <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-                    {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+                    {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
                   </div>
                 )}
 
@@ -4692,7 +4979,8 @@ const initializeAdMob = useCallback(async () => {
               </button>
             </div>
           )}
-          {renderQuitModal()}
+          {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
         </RootContainer>
@@ -4760,7 +5048,15 @@ const initializeAdMob = useCallback(async () => {
         {/* Header - Redesigned */}
         <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
           <div>
-            <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+            <div 
+              className="pointer-events-auto cursor-pointer"
+              onPointerDown={handleHeaderPointerDown}
+              onPointerUp={handleHeaderPointerUpOrLeave}
+              onPointerLeave={handleHeaderPointerUpOrLeave}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+            </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-end">
             {remainingBusCards > 0 && (
@@ -4789,11 +5085,12 @@ const initializeAdMob = useCallback(async () => {
 
         {!isBusWon && (
           <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+            {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
         )}
 
-        {renderQuitModal()}
+        {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
 
@@ -4813,12 +5110,15 @@ const initializeAdMob = useCallback(async () => {
                 ref={el => busCardRefs.current[index] = el}
                 className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass} ${isBusWon ? 'animate-[fallDown_1.5s_cubic-bezier(0.55,0.085,0.68,0.53)_forwards]' : ''}`}
                 style={isBusWon ? { animationDelay: `${index * 0.15}s` } : undefined}
+                onPointerDown={() => devSettings.peekCards && setPreviewCardId(card.id)}
+                onPointerUp={() => setPreviewCardId(null)}
+                onPointerLeave={() => setPreviewCardId(null)}
               >
                 {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
 
                 <PlayingCard
                   card={card}
-                  isFaceDown={!isRevealed}
+                  isFaceDown={!isRevealed && previewCardId !== card.id}
                   size="md"
                   style={settings.cardStyle}
                   highlight={!isBusWon && (isReference || isWrong || isFocused)}
@@ -5069,7 +5369,8 @@ const initializeAdMob = useCallback(async () => {
   return (
     <>
       <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
-      {renderQuitModal()}
+      {renderSettingsModal()}
+{renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
       {renderDeckPreview()}
