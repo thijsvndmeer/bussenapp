@@ -4240,7 +4240,7 @@ const initializeAdMob = useCallback(async () => {
               ) : (
                 settings.mode === GameMode.DIGITAL ? (
                   <div className="w-48 h-64 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30">
-                    <span className="text-slate-700 font-serif font-black text-6xl opacity-30">?</span>
+                    <span className="text-slate-700 font-black text-6xl opacity-30">?</span>
                   </div>
                 ) : (
                   <div className="w-48 p-6 text-center text-slate-400 text-sm font-medium border-2 border-slate-800 rounded-2xl bg-slate-900/50">
