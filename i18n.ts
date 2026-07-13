@@ -244,7 +244,14 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Koning": "King",
         "Aas": "Ace",
         "Hoger of Lager dan": "Higher or Lower than",
-        "Binnen of Buiten": "Between or Outside",
+        "Altijd Winnen": "Always Win",
+        "X-Ray Visie": "X-Ray Vision",
+        "Verander Fase": "Change Phase",
+        "Fase": "Phase",
+        "Pira": "Pyra",
+        "Bus": "Bus",
+        "Forceer Bus Speler": "Force Bus Player",
+        "Auto": "Auto",
         "en": "and"
     }
 };
