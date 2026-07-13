@@ -805,8 +805,8 @@ const BusTransitionOverlay: React.FC<{
           </h2>
 
           <div className="relative w-48 h-48 mb-8">
-            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40"></div>
-            <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75"></div>
+            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40 no-calm-override"></div>
+            <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75 no-calm-override"></div>
             <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
               {loserReveal.player.image ? (
                 <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" alt="" />
@@ -4140,11 +4140,8 @@ const initializeAdMob = useCallback(async () => {
             <div className="flex flex-col items-center gap-2">
 
               <button
-
                 onClick={() => setIsSelectingBusPlayer(true)}
-
-                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-2xl border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
-
+                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-[var(--theme-border-radius)] border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg no-calm-override"
               >
 
                 {t("Naar de Bus")}
@@ -4288,7 +4285,7 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-0.5 mt-1">
-                        {isLoser && <BusFront size={10} className="text-red-500" />}
+                        {isLoser && <Bus size={10} className="text-red-500" />}
                         <span className={`text-[10px] font-black ${isLoser ? 'text-amber-400' : hasCards ? 'text-amber-400' : 'text-slate-500'}`}>
                           {p.hand.length}/4
                         </span>
@@ -4348,9 +4345,9 @@ const initializeAdMob = useCallback(async () => {
           <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
             <button
               onClick={proceedToBus}
-              className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-full shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
+              className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-[var(--theme-border-radius)] shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle no-calm-override"
             >
-              <BusFront size={28} /> {t(" NAAR DE BUS ")} <ArrowRight size={28} strokeWidth={3} />
+              <Bus size={28} /> {t(" NAAR DE BUS ")} <ArrowRight size={28} strokeWidth={3} />
             </button>
           </div>
         )}
@@ -4735,6 +4732,14 @@ const initializeAdMob = useCallback(async () => {
                 {t("Je mag uit de bus! 🎉")}
               </h2>
             </div>
+            
+            {busPassengers.length > 0 && (
+              <div className="absolute top-[65%] w-full text-center px-6 animate-[fadeInText_2s_ease-out_4s_forwards] opacity-0">
+                <p className="text-lg sm:text-2xl text-slate-200 font-medium drop-shadow-md mx-auto max-w-2xl leading-relaxed">
+                  {t("Controleer nog even of")} <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> {t("echt")} <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? t("slok") : t("slokken")} {busPassengers.length > 1 ? t("hebben") : t("heeft")} {t("gedronken")} <span className="text-emerald-400 font-bold">;)</span>
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -4850,7 +4855,7 @@ const initializeAdMob = useCallback(async () => {
         <div className="flex-none bg-black/40 border-t border-white/10 p-4 pb-8 z-20 backdrop-blur-md">
           {feedback && (
             <div className="mb-6 flex justify-center pointer-events-none">
-              <div className={`px-8 py-3 rounded-2xl font-black text-lg shadow-2xl border-2 transition-all animate-pop ${feedback.type === 'error' ? 'bg-red-600 text-white border-red-400' : feedback.type === 'success' ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-800 text-white border-slate-600'}`}>
+              <div className={`px-8 py-3 rounded-[var(--theme-border-radius)] font-black text-lg shadow-2xl border-2 transition-all animate-pop ${feedback.type === 'error' ? 'bg-red-600 text-white border-red-400 no-calm-override' : feedback.type === 'success' ? 'bg-emerald-600 text-white border-emerald-400 no-calm-override' : 'bg-slate-800 text-white border-slate-600'}`}>
                 {feedback.text}
               </div>
             </div>
