@@ -252,7 +252,31 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Bus": "Bus",
         "Forceer Bus Speler": "Force Bus Player",
         "Auto": "Auto",
-        "en": "and"
+        "en": "and",
+        "gaan samen in de bus.": " are riding the bus together.",
+        "is immuun voor de bus deze ronde": " is immune to the bus this round",
+        "Berichten aanpassen": "Customize Messages",
+        "Berichten bewerken": "Edit Messages",
+        "Berichten": "Messages",
+        "Goed": "Correct",
+        "Fout": "Incorrect",
+        "Bus Loser": "Bus Loser",
+        "Thema": "Theme",
+        "Nieuw bericht...": "New message...",
+        "Kaartstijl": "Card Style",
+        "Donker": "Dark",
+        "Klassiek": "Classic",
+        "Rustig": "Calm",
+        "Bier": "Beer",
+        "classic": "Classic",
+        "metro": "Metro",
+        "calm": "Calm",
+        "beer": "Beer",
+        "Dubbele kaarten in de piramide": "Double cards in the pyramid",
+        "Kies een kaart per niveau": "Choose one card per level",
+        "Kies een kaart per niveau voor dubbele slokken": "Choose one card per level for double sips",
+        "Matches op deze kaart tellen dubbel": "Matches on this card count double",
+        "Deze kaart kan nog niet!": "Cannot reveal this card yet!"
     }
 };
 
