@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -4681,7 +4681,7 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
           {isBusWon && (
-            <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 px-4">
+            <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 delay-[4000ms] fill-mode-both px-4">
               <button
                 onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
                 className="pointer-events-auto w-full sm:w-auto text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95"
@@ -4724,6 +4724,19 @@ const initializeAdMob = useCallback(async () => {
           theme={settings.theme}
         >
         {isBusWon && <Confetti />}
+
+        {isBusWon && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[90]">
+            <div className="absolute top-1/2 -translate-y-1/2 left-[-300px] animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards]">
+              <Bus size={150} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_10px_25px_rgba(52,211,153,0.5)] opacity-90" />
+            </div>
+            <div className="absolute top-[30%] w-full text-center px-4 animate-[fadeInText_2s_ease-out_2.5s_forwards] opacity-0">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg">
+                {t("Je mag uit de bus! 🎉")}
+              </h2>
+            </div>
+          </div>
+        )}
 
         {showReshuffleBanner && (
           <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none animate-in fade-in zoom-in duration-300">
@@ -4793,7 +4806,8 @@ const initializeAdMob = useCallback(async () => {
               <div
                 key={`${card.id}-${index}`}
                 ref={el => busCardRefs.current[index] = el}
-                className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass}`}
+                className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass} ${isBusWon ? 'animate-[fallDown_1.5s_cubic-bezier(0.55,0.085,0.68,0.53)_forwards]' : ''}`}
+                style={isBusWon ? { animationDelay: `${index * 0.15}s` } : undefined}
               >
                 {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
 
