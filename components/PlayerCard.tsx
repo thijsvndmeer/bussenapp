@@ -11,6 +11,7 @@ type PlayerCardProps = {
   onDragStart: (event: React.TouchEvent | React.MouseEvent, index: number) => void;
   onRemove: (playerId: string) => void;
   renderAvatar: (player: Player) => React.ReactNode;
+  isImmune?: boolean;
 };
 
 const PlayerCardComponent: React.FC<PlayerCardProps> = ({
@@ -22,6 +23,7 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
   onDragStart,
   onRemove,
   renderAvatar,
+  isImmune,
 }) => (
   <div data-player-item className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''}`}>
     {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
@@ -31,7 +33,7 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
       <div className="flex items-center gap-3 min-w-0">
         {renderAvatar(player)}
         <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{player.name}</span>
-        {player.isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
+        {isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
       </div>
       <div className="flex items-center gap-0.5">
         <div

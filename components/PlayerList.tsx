@@ -12,6 +12,7 @@ type PlayerListProps = {
   onRemovePlayer: (playerId: string) => void;
   renderAvatar: (player: Player) => React.ReactNode;
   t: (value: string) => string;
+  immunePlayerId?: string | null;
 };
 
 export const PlayerList: React.FC<PlayerListProps> = ({
@@ -23,6 +24,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
   onRemovePlayer,
   renderAvatar,
   t,
+  immunePlayerId,
 }) => (
   <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
     {players.map((player, index) => (
@@ -36,6 +38,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
         onDragStart={onDragStart}
         onRemove={onRemovePlayer}
         renderAvatar={renderAvatar}
+        isImmune={player.isImmune || player.id === immunePlayerId}
       />
     ))}
     {players.length === 0 && (

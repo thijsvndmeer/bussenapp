@@ -3883,6 +3883,7 @@ const initializeAdMob = useCallback(async () => {
             onRemovePlayer={removePlayer}
             renderAvatar={renderPlayerListAvatar}
             t={t}
+            immunePlayerId={immunePlayerId}
           />
         </div>
 
