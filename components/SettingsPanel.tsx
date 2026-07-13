@@ -1,4 +1,26 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Settings } from 'lucide-react';
 
+export type SliderSettingKey = 'pyramidRows' | 'busLength' | 'busDecks';
+
+export interface SliderConfig {
+  key: SliderSettingKey;
+  label: string;
+  min: number;
+  max: number;
+}
+
+export interface SettingsPanelProps {
+  isOpen: boolean;
+  disabled?: boolean;
+  hideHeader?: boolean;
+  settings: any;
+  t: (key: string) => string;
+  onToggleOpen: () => void;
+  onOpenMoreSettings: () => void;
+  onSettingsChange: (key: SliderSettingKey, val: number) => void;
+  onCommitSettings: () => void;
+}
 
 const sliders: SliderConfig[] = [
   { key: 'pyramidRows', label: 'Piramide Hoogte', min: 3, max: 7 },
@@ -30,88 +52,66 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     committedValuesRef.current = currentSliderValues;
   }, [settings.pyramidRows, settings.busLength, settings.busDecks]);
 
-  const commitSliderValue = (key: SliderSettingKey) => {
+  const handleSliderChange = (key: SliderSettingKey, val: number) => {
     if (disabled) return;
-    const draftValue = draftValues[key];
-    if (draftValue === committedValuesRef.current[key]) return;
-
-    committedValuesRef.current = { ...committedValuesRef.current, [key]: draftValue };
-    const nextSettings = { ...settings, [key]: draftValue };
-    onSettingsChange(nextSettings);
-    onCommitSettings(nextSettings);
+    setDraftValues(prev => ({ ...prev, [key]: val }));
+    onSettingsChange(key, val);
   };
 
-  const toggleSetting = (key: 'sharedBus' | 'doublePyramidCards') => {
+  const handleSliderCommit = () => {
     if (disabled) return;
-    const nextSettings = { ...settings, [key]: !settings[key] };
-    onSettingsChange(nextSettings);
-    onCommitSettings(nextSettings);
+    onCommitSettings();
+    committedValuesRef.current = draftValues;
   };
+
+  if (!isOpen && hideHeader) return null;
 
   return (
-    <div className="glass-panel rounded-2xl border-slate-800 overflow-hidden transition-all duration-300">
+    <div className={`mt-4 w-full ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {!hideHeader && (
-        <button
+        <button 
           onClick={onToggleOpen}
-          className="w-full flex items-center justify-between p-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          className="w-full flex items-center justify-between p-3 sm:p-4 bg-slate-900/60 rounded-2xl border border-slate-700/50 backdrop-blur-md hover:bg-slate-800/80 transition-colors shadow-lg"
         >
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-            <Settings size={14} /> {t('Instellingen')}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
+              <Settings size={16} className="text-slate-400" />
+            </div>
+            <span className="font-bold text-slate-200 text-sm sm:text-base">{t("Snelle Instellingen")}</span>
           </div>
-          <div className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
-            <ChevronDown size={14} />
-          </div>
+          {isOpen ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
         </button>
       )}
 
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen || hideHeader ? 'max-h-96' : 'max-h-0'}`}>
-        <div className="p-4 space-y-4 bg-black/20 border-t border-slate-800">
-          {sliders.map(({ key, label, min, max }) => (
-            <div key={key}>
-              <div className="flex justify-between mb-2">
-                <label className="text-[10px] text-slate-400 font-bold uppercase">{t(label)}</label>
-                <span className="text-red-500 font-bold text-sm">{draftValues[key]}</span>
+      {isOpen && (
+        <div className={`mt-2 p-3 sm:p-4 bg-slate-900/40 rounded-2xl border border-slate-700/30 backdrop-blur-sm space-y-4 shadow-inner ${hideHeader ? 'mt-0' : ''}`}>
+          {sliders.map(s => (
+            <div key={s.key}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs sm:text-sm font-bold text-slate-300 drop-shadow-md">{t(s.label)}</span>
+                <span className="text-xs sm:text-sm font-black text-white bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">{draftValues[s.key]}</span>
               </div>
-              <input
-                type="range"
-                min={min}
-                max={max}
-                step="1"
-                disabled={disabled}
-                value={draftValues[key]}
-                onChange={(e) => { if (!disabled) setDraftValues((current) => ({ ...current, [key]: parseInt(e.target.value, 10) }))}}
-                onPointerUp={() => commitSliderValue(key)}
-                onTouchEnd={() => commitSliderValue(key)}
-                onMouseUp={() => commitSliderValue(key)}
-                onBlur={() => commitSliderValue(key)}
-                className={`w-full accent-red-500 h-2 bg-slate-700 rounded-lg appearance-none ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              <input 
+                type="range" 
+                min={s.min} 
+                max={s.max} 
+                value={draftValues[s.key]}
+                onChange={(e) => handleSliderChange(s.key, parseInt(e.target.value))}
+                onMouseUp={handleSliderCommit}
+                onTouchEnd={handleSliderCommit}
+                className="w-full accent-blue-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
               />
             </div>
           ))}
 
-          <div className={`flex items-center justify-between pt-2 ${disabled ? 'opacity-50' : ''}`}>
-            <label className="text-[10px] text-slate-400 font-bold uppercase">{t('Gedeelde Bus')}</label>
-            <button disabled={disabled} onClick={() => toggleSetting('sharedBus')} className={`w-12 h-6 rounded-full relative transition-all ${settings.sharedBus ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'} ${disabled ? 'cursor-not-allowed' : ''}`}>
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.sharedBus ? 'left-7' : 'left-1'}`}></div>
-            </button>
-          </div>
-
-          <div className={`flex items-center justify-between pt-2 ${disabled ? 'opacity-50' : ''}`}>
-            <label className="text-[10px] text-slate-400 font-bold uppercase">{t('Dubbele kaarten in de piramide')}</label>
-            <button disabled={disabled} onClick={() => toggleSetting('doublePyramidCards')} className={`w-12 h-6 rounded-full relative transition-all ${settings.doublePyramidCards ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'} ${disabled ? 'cursor-not-allowed' : ''}`}>
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${settings.doublePyramidCards ? 'left-7' : 'left-1'}`}></div>
-            </button>
-          </div>
-
-          <button
-            onClick={() => { if (!disabled) onOpenMoreSettings(); }}
-            disabled={disabled}
-            className={`w-full mt-4 py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+          <button 
+            onClick={onOpenMoreSettings}
+            className="w-full mt-4 py-2.5 sm:py-3 bg-slate-800/80 hover:bg-slate-700/80 text-white rounded-xl font-bold transition-colors border border-slate-600 shadow-md text-sm sm:text-base"
           >
-            {t('Meer Instellingen')}
+            {t("Meer Instellingen")}
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -3354,13 +3354,20 @@ const initializeAdMob = useCallback(async () => {
   );
 
   // Global Dev Menu logic
-  const hasDevPlayer = players.some(p => p.isDev);
+  const isDevMenuVisible = (() => {
+    if (!players.some(p => p.isDev)) return false;
+    if (phase === GamePhase.PYRAMID) return false;
+    if (phase === GamePhase.ROUNDS_1_4) return !!activePlayer?.isDev;
+    if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) return busPassengers.some(p => p.isDev);
+    return false;
+  })();
+
   const renderDevMenu = (className = "") => {
-    if (!hasDevPlayer) return null;
+    if (!isDevMenuVisible) return null;
     return (
       <div className={`relative flex items-center z-[100] ${className}`}>
         {isDevMenuOpen && (
-          <div className="flex items-center gap-1.5 mr-1 bg-slate-900/95 border border-green-500/40 rounded-full px-2 py-1 shadow-[0_0_15px_rgba(34,197,94,0.2)] animate-in slide-in-from-right-4 fade-in duration-200">
+          <div className="absolute top-full right-0 mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_15px_rgba(34,197,94,0.2)] animate-in slide-in-from-top-2 fade-in duration-200">
             <button 
               onClick={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, alwaysWin: !p.alwaysWin })); }}
               className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${devSettings.alwaysWin ? 'bg-green-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
@@ -3418,9 +3425,9 @@ const initializeAdMob = useCallback(async () => {
         )}
         <button 
           onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(!isDevMenuOpen); }}
-          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm"
+          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm relative z-10"
         >
-          {isDevMenuOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {isDevMenuOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
       </div>
     );
@@ -4797,14 +4804,16 @@ const initializeAdMob = useCallback(async () => {
           theme={settings.theme}
         >
         <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-          <div className="absolute z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-            {renderDevMenu()}{renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
+          <div className="flex items-center justify-end mb-8 w-full">
+            <div className="flex items-center gap-2">
+              {renderDevMenu()}
+            </div>
           </div>
           {renderSettingsModal()}
-        {renderAdditionalModals()}
-{renderQuitModal()}
-{renderAdLoadingModal()}
-{renderColorPickerModal()}
+          {renderAdditionalModals()}
+          {renderQuitModal()}
+          {renderAdLoadingModal()}
+          {renderColorPickerModal()}
           <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
             {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
           </div>
@@ -4904,7 +4913,7 @@ const initializeAdMob = useCallback(async () => {
                 </div>
 
                 {!isBusWon && (
-                  <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
+                  <div className="fixed z-[96] items-center" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
                     {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
                   </div>
                 )}
