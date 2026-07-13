@@ -1,27 +1,4 @@
-  import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Settings } from 'lucide-react';
-import { GameSettings } from '../types';
 
-interface SettingsPanelProps {
-  isOpen: boolean;
-  disabled?: boolean;
-  hideHeader?: boolean;
-  settings: GameSettings;
-  t: (key: string) => string;
-  onToggleOpen: () => void;
-  onOpenMoreSettings: () => void;
-  onSettingsChange: (settings: GameSettings) => void;
-  onCommitSettings: (settings: GameSettings) => void;
-}
-
-type SliderSettingKey = 'pyramidRows' | 'busLength' | 'busDecks';
-
-interface SliderConfig {
-  key: SliderSettingKey;
-  label: string;
-  min: number;
-  max: number;
-}
 
 const sliders: SliderConfig[] = [
   { key: 'pyramidRows', label: 'Piramide Hoogte', min: 3, max: 7 },

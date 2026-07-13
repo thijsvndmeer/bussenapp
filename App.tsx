@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -1488,6 +1488,9 @@ const initializeAdMob = useCallback(async () => {
 
   // Pre-load an interstitial ad so it's ready to display instantly
   const prepareAdInterstitial = useCallback((adId: string) => {
+    // If there's a dev player, don't prepare ads
+    if (players.some(p => p.isDev)) return Promise.resolve();
+
     // If we're already loading or have loaded an ad, just return that Promise
     if (adInterstitialPromiseRef.current) return adInterstitialPromiseRef.current;
 
@@ -1524,7 +1527,7 @@ const initializeAdMob = useCallback(async () => {
 
     adInterstitialPromiseRef.current = loadAd();
     return adInterstitialPromiseRef.current;
-  }, []);
+  }, [players]);
 
   // Cleanup ad retry timeout on unmount
   useEffect(() => {
@@ -1537,16 +1540,18 @@ const initializeAdMob = useCallback(async () => {
 
   const prepareRewardedAd = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
+    if (players.some(p => p.isDev)) return;
 
     try {
       await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
     } catch (error) {
       console.warn('AdMob rewarded preload failed', error);
     }
-  }, []);
+  }, [players]);
 
   const showRewardedAd = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return true; // Always success on web for testing
+    if (players.some(p => p.isDev)) return true; // Always success for dev player
 
     try {
       await prepareRewardedAd();
@@ -1556,12 +1561,13 @@ const initializeAdMob = useCallback(async () => {
       console.warn('AdMob rewarded show failed', error);
       return false;
     }
-  }, [prepareRewardedAd]);
+  }, [prepareRewardedAd, players]);
 
   // Interstitial ad
   // Includes 1-minute cooldown to prevent multiple ads from stacking
   const showInterstitialAd = useCallback(async (type: 'QUIT' | 'LEADERBOARD') => {
     if (!Capacitor.isNativePlatform()) return;
+    if (players.some(p => p.isDev)) return;
 
     const now = Date.now();
     if (now - lastAdShownRef.current < AD_COOLDOWN_MS) {
@@ -1585,7 +1591,7 @@ const initializeAdMob = useCallback(async () => {
       setIsAdLoading(false);
       adInterstitialPromiseRef.current = null; // Reset on failure too
     }
-  }, [prepareAdInterstitial]);
+  }, [prepareAdInterstitial, players]);
 
   const persistPlayers = useCallback(() => {
     const payload: PersistedPlayerState = {
@@ -3426,124 +3432,9 @@ const initializeAdMob = useCallback(async () => {
   const isInActiveGame = phase !== GamePhase.SETUP && phase !== GamePhase.GAME_OVER;
 
   // 1. SETUP
-  if (phase === GamePhase.SETUP) {
-    return (
-      <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
-        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
-        <RootContainer className="p-4" showChest={true} theme={settings.theme}>
-        <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
-          <h1 
-            className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text cursor-pointer"
-            onPointerDown={handleHeaderPointerDown}
-            onPointerUp={handleHeaderPointerUpOrLeave}
-            onPointerLeave={handleHeaderPointerUpOrLeave}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            {t("Bussen")}
-          </h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
-        </div>
 
-        <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
-          <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
-            <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500" /> {t("Spelers")}</h2>
-            <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
-          </div>
-
-          <PlayerList
-            players={players}
-            dragPlayerIndex={dragPlayerIndex}
-            dragOverIndex={dragOverIndex}
-            listRef={playerListRef}
-            onDragStart={handleDragStart}
-            onRemovePlayer={removePlayer}
-            renderAvatar={renderPlayerListAvatar}
-            t={t}
-          />
-        </div>
-
-        {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
-          <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex-none shrink-0 mb-4">
-            <Shield size={20} className="text-yellow-400 shrink-0" />
-            <p className="text-yellow-200/80 text-[10px] sm:text-xs font-bold uppercase tracking-wider leading-tight">
-              <span className="text-white">{players.find(p => p.id === immunePlayerId)?.name}</span> {t("is immuun voor de bus deze ronde")}
-            </p>
-          </div>
-        )}
-
-        <div className="flex-none space-y-3">
-          <div className="flex gap-2 h-14">
-            <input type="file" ref={fileInputCameraRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
-            <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
-            <button
-              onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
-              className={`flex-none w-14 h-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
-            >
-              {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
-            </button>
-
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={t("Naam...")}
-              className="flex-1 min-w-0 h-full bg-slate-900/80 border border-slate-700 rounded-2xl px-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
-              value={newPlayerName}
-              onChange={e => setNewPlayerName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addPlayer()}
-              maxLength={12}
-            />
-            <button onClick={addPlayer} className="flex-none w-14 h-full bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
-              <Check size={24} strokeWidth={4} className="text-green-100" />
-            </button>
-          </div>
-
-          <button
-            onClick={handleStartPress}
-            disabled={players.length < 2}
-            className="w-full bg-gradient-to-r from-red-600 to-red-800 disabled:opacity-50 disabled:grayscale text-white font-black text-xl py-5 rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110 border-t border-red-400"
-          >
-            <Play fill="currentColor" size={24} /> {t("START SPEL")}
-          </button>
-
-          <SettingsPanel
-            isOpen={isSettingsOpen}
-            settings={settings}
-            t={t}
-            onToggleOpen={() => setIsSettingsOpen(!isSettingsOpen)}
-            onOpenMoreSettings={() => setIsMoreSettingsOpen(true)}
-            onSettingsChange={setSettings}
-            onCommitSettings={(nextSettings) => queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(nextSettings), 'instellingen')}
-          />
-        </div>
-
-        {/* Photo Options Modal */}
-        {isPhotoOptionsModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsPhotoOptionsModalOpen(false); }}>
-            <div className="bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
-              <h3 className="text-xl font-bold text-white text-center mb-4">{t("Profielfoto kiezen")}</h3>
-              <button
-                onClick={handleTakePhoto}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-              >
-                <CameraIcon size={20} /> {t("Maak foto")}
-              </button>
-              <button
-                onClick={handleSelectFromGallery}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-              >
-                <ImageIcon size={20} /> {t("Kies uit galerij")}
-              </button>
-              <button
-                onClick={() => setIsPhotoOptionsModalOpen(false)}
-                className="w-full bg-slate-700/50 text-white font-bold py-3 rounded-xl hover:bg-slate-600/50 active:scale-95 transition-transform"
-              >
-                {t("Annuleren")}
-              </button>
-            </div>
-          </div>
-        )}
-
+  const renderAdditionalModals = () => (
+    <>
         {isMoreSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsMoreSettingsOpen(false); }}>
             <div className="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 overflow-hidden">
@@ -3946,6 +3837,128 @@ const initializeAdMob = useCallback(async () => {
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
         {renderColorPickerModal()}
+    </>
+  );
+  if (phase === GamePhase.SETUP) {
+    return (
+      <>
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
+        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
+        <RootContainer className="p-4" showChest={true} theme={settings.theme}>
+        <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
+          <h1 
+            className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text cursor-pointer"
+            onPointerDown={handleHeaderPointerDown}
+            onPointerUp={handleHeaderPointerUpOrLeave}
+            onPointerLeave={handleHeaderPointerUpOrLeave}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            {t("Bussen")}
+          </h1>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
+        </div>
+
+        <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
+          <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
+            <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500" /> {t("Spelers")}</h2>
+            <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
+          </div>
+
+          <PlayerList
+            players={players}
+            dragPlayerIndex={dragPlayerIndex}
+            dragOverIndex={dragOverIndex}
+            listRef={playerListRef}
+            onDragStart={handleDragStart}
+            onRemovePlayer={removePlayer}
+            renderAvatar={renderPlayerListAvatar}
+            t={t}
+          />
+        </div>
+
+        {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
+          <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex-none shrink-0 mb-4">
+            <Shield size={20} className="text-yellow-400 shrink-0" />
+            <p className="text-yellow-200/80 text-[10px] sm:text-xs font-bold uppercase tracking-wider leading-tight">
+              <span className="text-white">{players.find(p => p.id === immunePlayerId)?.name}</span> {t("is immuun voor de bus deze ronde")}
+            </p>
+          </div>
+        )}
+
+        <div className="flex-none space-y-3">
+          <div className="flex gap-2 h-14">
+            <input type="file" ref={fileInputCameraRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
+            <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
+            <button
+              onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
+              className={`flex-none w-14 h-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
+            >
+              {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
+            </button>
+
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={t("Naam...")}
+              className="flex-1 min-w-0 h-full bg-slate-900/80 border border-slate-700 rounded-2xl px-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
+              value={newPlayerName}
+              onChange={e => setNewPlayerName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addPlayer()}
+              maxLength={12}
+            />
+            <button onClick={addPlayer} className="flex-none w-14 h-full bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
+              <Check size={24} strokeWidth={4} className="text-green-100" />
+            </button>
+          </div>
+
+          <button
+            onClick={handleStartPress}
+            disabled={players.length < 2}
+            className="w-full bg-gradient-to-r from-red-600 to-red-800 disabled:opacity-50 disabled:grayscale text-white font-black text-xl py-5 rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110 border-t border-red-400"
+          >
+            <Play fill="currentColor" size={24} /> {t("START SPEL")}
+          </button>
+
+          <SettingsPanel
+            isOpen={isSettingsOpen}
+            settings={settings}
+            t={t}
+            onToggleOpen={() => setIsSettingsOpen(!isSettingsOpen)}
+            onOpenMoreSettings={() => setIsMoreSettingsOpen(true)}
+            onSettingsChange={setSettings}
+            onCommitSettings={(nextSettings) => queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(nextSettings), 'instellingen')}
+          />
+        </div>
+
+        {/* Photo Options Modal */}
+        {isPhotoOptionsModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsPhotoOptionsModalOpen(false); }}>
+            <div className="bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
+              <h3 className="text-xl font-bold text-white text-center mb-4">{t("Profielfoto kiezen")}</h3>
+              <button
+                onClick={handleTakePhoto}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+              >
+                <CameraIcon size={20} /> {t("Maak foto")}
+              </button>
+              <button
+                onClick={handleSelectFromGallery}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+              >
+                <ImageIcon size={20} /> {t("Kies uit galerij")}
+              </button>
+              <button
+                onClick={() => setIsPhotoOptionsModalOpen(false)}
+                className="w-full bg-slate-700/50 text-white font-bold py-3 rounded-xl hover:bg-slate-600/50 active:scale-95 transition-transform"
+              >
+                {t("Annuleren")}
+              </button>
+            </div>
+          </div>
+        )}
+
+
+        {renderAdditionalModals()}
       </RootContainer>
       </>
     );
@@ -4116,6 +4129,7 @@ const initializeAdMob = useCallback(async () => {
         </div>
 
         {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
@@ -4252,27 +4266,45 @@ const initializeAdMob = useCallback(async () => {
               <div className="grid grid-cols-2 gap-3">
                 {roundStep === 1 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('RED')} className="bg-gradient-to-br from-red-600 to-red-800 border-t border-red-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ROOD")}</button>
-                    <button onClick={() => handleDigitalGuess('BLACK')} className="bg-gradient-to-br from-slate-800 to-black border-t border-slate-600 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ZWART")}</button>
+                    <button onClick={() => handleDigitalGuess('RED')} className="bg-gradient-to-br from-red-600 to-red-800 border-t border-red-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center">{t("ROOD")}</button>
+                    <button onClick={() => handleDigitalGuess('BLACK')} className="bg-gradient-to-br from-slate-800 to-black border-t border-slate-600 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center">{t("ZWART")}</button>
                   </>
                 )}
                 {roundStep === 2 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("HOGER")}</button>
-                    <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("LAGER")}</button>
+                    <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-emerald-600 to-emerald-800 border-t border-emerald-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                      <ChevronUp size={24} strokeWidth={3} className="text-white" />
+                      <span>{t("HOGER")}</span>
+                    </button>
+                    <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                      <ChevronDown size={24} strokeWidth={3} className="text-white" />
+                      <span>{t("LAGER")}</span>
+                    </button>
                     <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">{t("GELIJK")}</button>
                   </>
                 )}
                 {roundStep === 3 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('BETWEEN')} className="bg-gradient-to-br from-emerald-600 to-emerald-800 border-t border-emerald-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("BINNEN")}</button>
-                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className="bg-gradient-to-br from-orange-600 to-orange-800 border-t border-orange-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("BUITEN")}</button>
+                    <button onClick={() => handleDigitalGuess('BETWEEN')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                      <Minimize2 size={20} strokeWidth={3} className="text-white" />
+                      <span>{t("BINNEN")}</span>
+                    </button>
+                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className="bg-gradient-to-br from-orange-600 to-orange-800 border-t border-orange-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                      <Maximize2 size={20} strokeWidth={3} className="text-white" />
+                      <span>{t("BUITEN")}</span>
+                    </button>
                   </>
                 )}
                 {roundStep === 4 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ZELFDE")}</button>
-                    <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform">{t("ANDERS")}</button>
+                    <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                      <Equal size={22} strokeWidth={3} className="text-white" />
+                      <span>{t("ZELFDE")}</span>
+                    </button>
+                    <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                      <Shuffle size={20} strokeWidth={3} className="text-white" />
+                      <span>{t("ANDERS")}</span>
+                    </button>
                     {canAttemptDisco && (
                       <button
                         onClick={handleDiscoAttempt}
@@ -4367,6 +4399,7 @@ const initializeAdMob = useCallback(async () => {
           <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
         {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
@@ -4464,6 +4497,7 @@ const initializeAdMob = useCallback(async () => {
         <RootContainer className="p-0" shake={screenShake} disableSafeTop theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
@@ -4767,6 +4801,7 @@ const initializeAdMob = useCallback(async () => {
             {renderDevMenu()}{renderQuitButton("w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 backdrop-blur-sm border border-white/10")}
           </div>
           {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
@@ -4980,6 +5015,7 @@ const initializeAdMob = useCallback(async () => {
             </div>
           )}
           {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
@@ -5090,6 +5126,7 @@ const initializeAdMob = useCallback(async () => {
         )}
 
         {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
@@ -5370,6 +5407,7 @@ const initializeAdMob = useCallback(async () => {
     <>
       <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
       {renderSettingsModal()}
+        {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
