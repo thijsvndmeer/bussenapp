@@ -233,7 +233,6 @@ const UPDATE_1_4_PATCH_NOTES = [
   '🚍 Vernieuwde animaties voor in en uit de bus stappen.',
   '🎨 De "Calm" thema accentkleur is nu volledig aanpasbaar in de instellingen.',
   '🛡️ Spelers met immuniteit zijn nu duidelijker zichtbaar in de selectiemenu\'s.',
-  '🛠️ Verborgen developer mode toegevoegd (houd de titel lang ingedrukt!).',
   '🚀 Verbeterde inlaadtijd van de kaarten en diverse UI verbeteringen.',
 ];
 
