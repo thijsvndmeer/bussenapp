@@ -1178,7 +1178,7 @@ const App: React.FC = () => {
     if (!themeToUnlock) return null;
 
     const themeName = themeToUnlock === UITheme.CLASSIC ? "Klassiek" :
-                      themeToUnlock === UITheme.METRO ? "Metro" :
+                      themeToUnlock === UITheme.METRO ? "Bus" :
                       themeToUnlock === UITheme.CALM ? "Rustig" : "Bier";
 
     return (
@@ -1267,13 +1267,13 @@ const App: React.FC = () => {
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             <div className="grid grid-cols-2 gap-6 pb-10">
               {/* Back Preview (Achterkant) First */}
-              <div className="flex flex-col items-center gap-3 animate-pop">
+              <div className="flex flex-col items-center gap-3">
                 <PlayingCard card={sampleCards[0]} isFaceDown size="md" style={previewDeckStyle} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Achterkant")}</span>
               </div>
 
               {sampleCards.map(card => (
-                <div key={card.id} className="flex flex-col items-center gap-3 animate-pop">
+                <div key={card.id} className="flex flex-col items-center gap-3">
                   <PlayingCard card={card} size="md" style={previewDeckStyle} />
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t(card.suit)} {getRankString(card.rank)}</span>
                 </div>
@@ -1390,7 +1390,7 @@ const App: React.FC = () => {
   // Pyramid State
   const [pyramid, setPyramid] = useState<(Card | null)[][]>([]);
   const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
-  const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, count: number, initialCount: number }[], isTopHalf?: boolean } | null>(null);
+  const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, count: number, initialCount: number }[], bannerPosition?: 'top' | 'bottom' } | null>(null);
   const [loserReveal, setLoserReveal] = useState<{ player: Player, title: string } | null>(null);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
@@ -2291,7 +2291,7 @@ const initializeAdMob = useCallback(async () => {
       triggerHaptic('success');
       playSound('success');
       const phrase = getUniquePhrase('success');
-      setFeedback({ text: `${t(phrase)} ${t("Goed geraden!")}`, type: 'success' });
+      setFeedback({ text: `${t(phrase)} ${t("Correct!")}`, type: 'success' });
       setShowConfetti(true);
       playSound('celebrate');
     } else {
@@ -2411,7 +2411,7 @@ const initializeAdMob = useCallback(async () => {
       triggerHaptic('success');
       playSound('success');
       const phrase = getUniquePhrase('success');
-      setFeedback({ text: `${t(phrase)} ${t("Goed geraden!")}`, type: 'success' });
+      setFeedback({ text: `${t(phrase)} ${t("Correct!")}`, type: 'success' });
       setShowConfetti(true);
       playSound('celebrate');
     } else {
@@ -2698,7 +2698,7 @@ const initializeAdMob = useCallback(async () => {
         card: card,
         sips: sips * (isDoubled ? 2 : 1),
         matches: matches,
-        isTopHalf: rowIndex < Math.ceil(settings.pyramidRows / 2)
+        bannerPosition: (rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
       });
     } else {
       if (isFinished) {
@@ -2745,7 +2745,7 @@ const initializeAdMob = useCallback(async () => {
 
     if (newMatches.length === 0) {
       if (accumulatedSipsThisMatch.current.length > 0) {
-        setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.isTopHalf ? 'bottom' : 'top' });
+        setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.bannerPosition || 'top' });
         accumulatedSipsThisMatch.current = [];
       }
       setPendingMatches(null);
@@ -2760,7 +2760,7 @@ const initializeAdMob = useCallback(async () => {
 
   const dismissMatchModal = () => {
     if (pendingMatches && accumulatedSipsThisMatch.current.length > 0) {
-      setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.isTopHalf ? 'bottom' : 'top' });
+      setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.bannerPosition || 'top' });
       accumulatedSipsThisMatch.current = [];
     }
     setPendingMatches(null);
@@ -2882,6 +2882,9 @@ const initializeAdMob = useCallback(async () => {
   // --- BUS LOGIC ---
 
   const startDigitalBus = (passengers: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
+    setImmunePlayerId(null);
+    setPlayers(prev => prev.map(p => ({ ...p, isImmune: false })));
+    
     const selectedPassengers = passengers.length ? passengers : busPassengers;
     if (!options?.skipEntrance) {
       const driver = players.find(p => p.isDealer) || players[0];
@@ -2930,6 +2933,9 @@ const initializeAdMob = useCallback(async () => {
   };
 
   const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
+    setImmunePlayerId(null);
+    setPlayers(prev => prev.map(p => ({ ...p, isImmune: false })));
+    
     const passengers = passengersOverride ?? busPassengers;
     if (passengers.length === 0) {
       setFeedback({ text: t('Selecteer eerst wie de bus in gaat.'), type: 'error' });
@@ -4235,7 +4241,7 @@ const initializeAdMob = useCallback(async () => {
                   if (isObtained) {
                     const c = digitalCards[idx];
                     return (
-                      <div key={c.id} className="flex-none transition-transform hover:-translate-y-2 duration-300 origin-bottom animate-pop" style={{ zIndex: idx }}>
+                      <div key={c.id} className="flex-none transition-transform hover:-translate-y-2 duration-300 origin-bottom" style={{ zIndex: idx }}>
                         <PlayingCard card={c} size="base" className="shadow-lg" style={settings.cardStyle} />
                       </div>
                     );
@@ -4254,7 +4260,7 @@ const initializeAdMob = useCallback(async () => {
 
                     if (isObtained) {
                       return (
-                        <div key={`phys-obtained-${idx}`} className="w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none animate-pop overflow-hidden relative" style={{ zIndex: idx }}>
+                        <div key={`phys-obtained-${idx}`} className="w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none overflow-hidden relative" style={{ zIndex: idx }}>
                           {/* Back texture */}
                           <div className="absolute inset-0 opacity-60" style={{
                             backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
@@ -4582,7 +4588,7 @@ const initializeAdMob = useCallback(async () => {
         {pendingMatches && (
           <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
             {/* Card Reveal for Match */}
-            <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] animate-pop">
+            <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
               <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
             </div>
 
@@ -4751,8 +4757,18 @@ const initializeAdMob = useCallback(async () => {
             `}>
               {distributeBanner.resolutions.map((res, idx) => (
                 <span key={idx}>
-                  <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{res.name}</span> {t("mag")} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? t("slok") : t("slokken")}
-                  {idx < distributeBanner.resolutions.length - 1 ? ", " : " " + t("uitdelen!")}
+                  <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{res.name}</span>
+                  {lang === 'en' ? (
+                    <>
+                      {" may give away"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "sip" : "sips"}
+                      {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
+                    </>
+                  ) : (
+                    <>
+                      {" mag"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "slok" : "slokken"}
+                      {idx < distributeBanner.resolutions.length - 1 ? ", " : " uitdelen!"}
+                    </>
+                  )}
                 </span>
               ))}
             </p>
@@ -4847,7 +4863,7 @@ const initializeAdMob = useCallback(async () => {
                               });
                               if (matches.length > 0) {
                                 triggerHaptic('medium');
-                                setPendingMatches({ card, sips, matches, isTopHalf: rowIndex < Math.ceil(settings.pyramidRows / 2) });
+                                setPendingMatches({ card, sips, matches, bannerPosition: (rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
                               }
                             }
                           }}
@@ -5272,7 +5288,7 @@ const initializeAdMob = useCallback(async () => {
                 ref={el => busCardRefs.current[index] = el}
                 className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass} ${isBusWon ? 'animate-[fallDown_1.5s_cubic-bezier(0.55,0.085,0.68,0.53)_forwards]' : ''}`}
                 style={isBusWon ? { animationDelay: `${index * 0.15}s` } : undefined}
-                onPointerDown={() => devSettings.peekCards && setPreviewCardId(card.id)}
+                onPointerDown={() => devSettings.peekCards && busPassengers.some(p => p.isDev) && setPreviewCardId(card.id)}
                 onPointerUp={() => setPreviewCardId(null)}
                 onPointerLeave={() => setPreviewCardId(null)}
               >

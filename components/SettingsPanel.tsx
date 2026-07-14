@@ -121,7 +121,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 onChange={(e) => handleSliderChange(s.key, parseFloat(e.target.value))}
                 onMouseUp={handleSliderCommit}
                 onTouchEnd={handleSliderCommit}
-                className="w-full accent-blue-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                style={{ accentColor: 'var(--theme-accent)' }}
               />
             </div>
           ))}

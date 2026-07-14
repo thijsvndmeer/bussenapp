@@ -34,7 +34,6 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
         src={localPath} 
         alt={`${rank} of ${suit}`}
         className="w-full h-full object-cover pointer-events-none mix-blend-multiply"
-        loading="lazy"
         onError={(e) => {
           console.error(`Failed to load local asset: ${localPath}`);
           e.currentTarget.style.display = 'none';
