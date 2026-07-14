@@ -2700,7 +2700,7 @@ const initializeAdMob = useCallback(async () => {
         card: card,
         sips: sips * (isDoubled ? 2 : 1),
         matches: matches,
-        bannerPosition: (rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
+        bannerPosition: (isFinished || isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
       });
     } else {
       if (isFinished) {
@@ -4914,7 +4914,7 @@ const initializeAdMob = useCallback(async () => {
                               });
                               if (matches.length > 0) {
                                 triggerHaptic('medium');
-                                setPendingMatches({ card, sips, matches, bannerPosition: (rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
+                                setPendingMatches({ card, sips, matches, bannerPosition: (isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
                               }
                             }
                           }}
