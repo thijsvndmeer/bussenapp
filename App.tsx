@@ -1392,6 +1392,7 @@ const App: React.FC = () => {
   const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
   const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, count: number, initialCount: number }[], bannerPosition?: 'top' | 'bottom' } | null>(null);
   const [loserReveal, setLoserReveal] = useState<{ player: Player, title: string } | null>(null);
+  const [playerHandToView, setPlayerHandToView] = useState<Player | null>(null);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
   const [isPyramidInstructionsCollapsed, setIsPyramidInstructionsCollapsed] = useState(false);
@@ -3377,6 +3378,49 @@ const initializeAdMob = useCallback(async () => {
     </div>
   );
 
+  const renderDevModeOrb = () => {
+    if (!devModeArmed) return null;
+    return (
+      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
+        <div 
+          className="rounded-full animate-in fade-in zoom-in-0 duration-1000 ease-out" 
+          style={{ 
+            width: '200vmax', 
+            height: '200vmax', 
+            background: 'radial-gradient(circle at center, rgba(168, 85, 247, 0.25), transparent 50%)',
+            mixBlendMode: 'screen'
+          }}
+        />
+      </div>
+    );
+  };
+
+  const renderPlayerHandModal = () => {
+    if (!playerHandToView) return null;
+    return (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setPlayerHandToView(null)}>
+        <div className="w-full max-w-sm m-4 relative bg-slate-900 border border-white/10 rounded-3xl shadow-2xl p-6 text-center animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+          <div className="w-16 h-16 rounded-full border-2 border-amber-500 bg-slate-800 overflow-hidden mx-auto mb-4">
+            {playerHandToView.image ? <img src={playerHandToView.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white font-black text-2xl">{playerHandToView.name.charAt(0)}</div>}
+          </div>
+          <h3 className="text-2xl font-black text-white mb-2">{playerHandToView.name}</h3>
+          <p className="text-slate-400 mb-6">{t("Kaarten in hand")}: {playerHandToView.hand.length}</p>
+          <div className="grid grid-cols-4 gap-2 mb-6 max-h-[50vh] overflow-y-auto p-2 justify-items-center">
+            {playerHandToView.hand.map((card, i) => (
+              <div key={i} className="hover:scale-105 transition-transform drop-shadow-md">
+                <PlayingCard card={card} size="sm" style={settings.cardStyle} />
+              </div>
+            ))}
+            {playerHandToView.hand.length === 0 && (
+              <div className="col-span-4 text-slate-500 italic py-4">{t("Geen kaarten")}</div>
+            )}
+          </div>
+          <button onClick={() => setPlayerHandToView(null)} className="w-full bg-amber-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-amber-400 active:scale-95 transition-all uppercase tracking-widest">{t("Sluiten")}</button>
+        </div>
+      </div>
+    );
+  };
+
   const renderSettingsModal = () => (isSettingsOpen && phase !== GamePhase.SETUP) && (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }}>
       <div className="w-full max-w-sm m-4 relative animate-in zoom-in-50 duration-300">
@@ -4212,6 +4256,8 @@ const initializeAdMob = useCallback(async () => {
         </div>
 
         {renderSettingsModal()}
+        {renderPlayerHandModal()}
+        {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
@@ -4482,6 +4528,8 @@ const initializeAdMob = useCallback(async () => {
           <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
         {renderSettingsModal()}
+        {renderPlayerHandModal()}
+        {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
@@ -4580,6 +4628,8 @@ const initializeAdMob = useCallback(async () => {
         <RootContainer className="p-0" shake={screenShake} disableSafeTop theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderSettingsModal()}
+        {renderPlayerHandModal()}
+        {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
@@ -4689,7 +4739,7 @@ const initializeAdMob = useCallback(async () => {
                   const hasCards = p.hand.length > 0;
 
                   return (
-                    <div key={p.id} className="flex flex-col items-center shrink-0">
+                    <button key={p.id} onClick={() => setPlayerHandToView(p)} className="flex flex-col items-center shrink-0 hover:scale-105 active:scale-95 transition-transform">
                       <div className={`w-8 h-8 rounded-full border-2 transition-all relative ${isLoser ? 'border-transparent' : hasCards ? 'border-amber-500' : 'border-white/10 opacity-50'} bg-slate-800`}>
                         {isLoser && (
                           <div className="absolute -inset-[2px] rounded-full z-0 overflow-hidden pointer-events-none">
@@ -4719,7 +4769,7 @@ const initializeAdMob = useCallback(async () => {
                           {p.hand.length}/4
                         </span>
                       </div>
-                    </div>
+                    </button>
                   );
                   });
                   })()}
@@ -4938,6 +4988,8 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
           {renderSettingsModal()}
+          {renderPlayerHandModal()}
+          {renderDevModeOrb()}
           {renderAdditionalModals()}
           {renderQuitModal()}
           {renderAdLoadingModal()}
@@ -5155,6 +5207,8 @@ const initializeAdMob = useCallback(async () => {
             </div>
           )}
           {renderSettingsModal()}
+          {renderPlayerHandModal()}
+          {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
@@ -5267,6 +5321,8 @@ const initializeAdMob = useCallback(async () => {
         )}
 
         {renderSettingsModal()}
+        {renderPlayerHandModal()}
+        {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
@@ -5548,6 +5604,8 @@ const initializeAdMob = useCallback(async () => {
     <>
       <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
       {renderSettingsModal()}
+      {renderPlayerHandModal()}
+      {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
