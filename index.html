@@ -6,6 +6,21 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Bussen Companion</title>
+  
+  <!-- Preload Classic Face Cards -->
+  <link rel="preload" as="image" href="./assets/cards/klassiek/JC.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/JD.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/JH.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/JS.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/QC.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/QD.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/QH.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/QS.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/KC.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/KD.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/KH.svg" />
+  <link rel="preload" as="image" href="./assets/cards/klassiek/KS.svg" />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -522,6 +537,10 @@
       0% { width: 0%; }
       100% { width: 100%; }
     }
+    @keyframes drive-progress {
+      0% { left: 0%; }
+      100% { left: 100%; }
+    }
     @keyframes shimmer {
       from { transform: translateX(-100%); }
       to { transform: translateX(100%); }
@@ -563,7 +582,7 @@
       bottom: 100%;
       margin-bottom: 4px;
       color: #fb7185;
-      animation: fill-progress var(--loader-dur, 0.8s) linear forwards;
+      animation: drive-progress var(--loader-dur, 0.8s) linear forwards;
       transform: translateX(-50%);
       left: 0;
     }
