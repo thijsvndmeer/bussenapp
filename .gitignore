@@ -3,18 +3,20 @@ node_modules
 /.pnp
 .pnp.js
 
-# Testing
+# Testing & Coverage
 /coverage
 
-# Production
+# Production & Build
 /dist
 /build
+*.tsbuildinfo
 
-# Misc
+# Misc & OS
 .DS_Store
+Thumbs.db
 *.pem
 
-# Debug
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -34,14 +36,15 @@ yarn-error.log*
 *.sln
 *.sw?
 
-# Capacitor / Mobile
+# Capacitor / Mobile builds
 /android/
 /ios/
 
-# Project specific junk
+# Project specific / AI tool data
 /.claude/
 /admob data/
 /extracted-dictionary.json
 /metadata.json
 .superpowers/
 .codegraph/
+*.mjs
