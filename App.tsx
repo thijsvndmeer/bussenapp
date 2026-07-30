@@ -923,6 +923,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   });
 
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+  const { t } = useTranslation();
 
   const openPatchNotes = useCallback(() => {
     setIsPatchNotesOpen(true);
@@ -989,7 +990,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
                 {UPDATE_1_4_PATCH_NOTES.map((note, index) => (
                   <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
                     <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
-                    <span className="flex-1">{note.substring(note.indexOf(' ') + 1)}</span>
+                    <span className="flex-1">{t(note.substring(note.indexOf(' ') + 1))}</span>
                   </li>
                 ))}
               </ul>
@@ -998,7 +999,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
               onClick={() => setIsPatchNotesOpen(false)}
               className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black rounded-xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
             >
-              Sluiten
+              {t("Sluiten")}
             </button>
           </div>
         </div>
@@ -2041,8 +2042,8 @@ const initializeAdMob = useCallback(async () => {
 
     setFeedback({
       text: available
-        ? 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.'
-        : 'Camera niet beschikbaar. Kies lokaal bestand.',
+        ? t('Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.')
+        : t('Camera niet beschikbaar. Kies lokaal bestand.'),
       type: available ? 'error' : 'info'
     });
 
@@ -2068,8 +2069,8 @@ const initializeAdMob = useCallback(async () => {
 
     setFeedback({
       text: available
-        ? 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.'
-        : 'Galerij niet beschikbaar. Kies lokaal bestand.',
+        ? t('Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.')
+        : t('Galerij niet beschikbaar. Kies lokaal bestand.'),
       type: available ? 'error' : 'info'
     });
 
@@ -4287,8 +4288,14 @@ const initializeAdMob = useCallback(async () => {
 
                   if (isObtained) {
                     const c = digitalCards[idx];
+                    const isNewlyAdded = !!lastDrawnCard && c.id === lastDrawnCard.id;
+                    const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
                     return (
-                      <div key={c.id} className="flex-none transition-transform hover:-translate-y-2 duration-300 origin-bottom" style={{ zIndex: idx }}>
+                      <div
+                        key={`${activePlayer.id}-${c.id}`}
+                        className={`flex-none transition-transform hover:-translate-y-2 duration-200 origin-bottom ${animClass}`}
+                        style={{ zIndex: idx }}
+                      >
                         <PlayingCard card={c} size="base" className="shadow-lg" style={settings.cardStyle} />
                       </div>
                     );
@@ -4306,8 +4313,14 @@ const initializeAdMob = useCallback(async () => {
                     const isCurrent = idx === currentCardsCount && !feedback;
 
                     if (isObtained) {
+                      const isNewlyAdded = !!lastDrawnCard && idx === currentCardsCount - 1;
+                      const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
                       return (
-                        <div key={`phys-obtained-${idx}`} className="w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none overflow-hidden relative" style={{ zIndex: idx }}>
+                        <div
+                          key={`${activePlayer.id}-phys-${idx}`}
+                          className={`w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none overflow-hidden relative ${animClass}`}
+                          style={{ zIndex: idx }}
+                        >
                           {/* Back texture */}
                           <div className="absolute inset-0 opacity-60" style={{
                             backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
@@ -5069,6 +5082,27 @@ const initializeAdMob = useCallback(async () => {
           <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
           <RootContainer theme={settings.theme}>
+          {isBusWon && <Confetti />}
+          {isBusWon && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[90]">
+              <div className="absolute top-1/2 -translate-y-1/2 left-[-300px] animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards]">
+                <Bus size={150} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_10px_25px_rgba(52,211,153,0.5)] opacity-90" />
+              </div>
+              <div className="absolute top-[30%] w-full text-center px-4 animate-[fadeInText_2s_ease-out_2.5s_forwards] opacity-0">
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg">
+                  {t("Je mag uit de bus! 🎉")}
+                </h2>
+              </div>
+              
+              {busPassengers.length > 0 && (
+                <div className="absolute top-[65%] w-full text-center px-6 animate-[fadeInText_2s_ease-out_4s_forwards] opacity-0">
+                  <p className="text-lg sm:text-2xl text-slate-200 font-medium drop-shadow-md mx-auto max-w-2xl leading-relaxed">
+                    {t("Controleer nog even of")} <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> {t("echt")} <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? t("slok") : t("slokken")} {busPassengers.length > 1 ? t("hebben") : t("heeft")} {t("gedronken")} <span className="text-emerald-400 font-bold">;)</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <div
               className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
@@ -5531,7 +5565,6 @@ const initializeAdMob = useCallback(async () => {
                   })}
                 </div>
               </div>
-
               <button
                 onClick={() => setIsCardOverviewOpen(false)}
                 className="mt-6 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shrink-0 shadow-lg shadow-red-900/30 border border-red-500/30"
@@ -5555,7 +5588,7 @@ const initializeAdMob = useCallback(async () => {
         <RootContainer className="p-0" theme={settings.theme}>
         <Confetti />
         <div className="flex-1 overflow-y-auto p-6 relative z-10">
-          <div className="text-center mb-10 mt-8">
+          <div className="text-center mb-6 mt-6">
             <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">{t("Uitslag")}</h1>
             {immunePlayerId && (
               <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4">
@@ -5565,6 +5598,21 @@ const initializeAdMob = useCallback(async () => {
                   <p className="text-white font-bold text-lg leading-none">{players.find(p => p.id === immunePlayerId)?.name}</p>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* BUS ENDED SUMMARY CARD WITH BUS ICON & CONTROLEER SIPS TEXT REGARDLESS OF THEME */}
+          <div className="bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-8 flex flex-col items-center text-center relative overflow-hidden">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(52,211,153,0.4)] shrink-0 animate-bounce-subtle">
+              <Bus size={38} className="text-emerald-400 drop-shadow-md" strokeWidth={2} />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md mb-2">
+              {t("Je mag uit de bus! 🎉")}
+            </h2>
+            {busPassengers.length > 0 && (
+              <p className="text-base sm:text-lg text-slate-200 font-medium leading-relaxed max-w-xl mt-1">
+                {t("Controleer nog even of")} <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> {t("echt")} <span className="text-emerald-400 font-black text-2xl sm:text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? t("slok") : t("slokken")} {busPassengers.length > 1 ? t("hebben") : t("heeft")} {t("gedronken")} <span className="text-emerald-400 font-bold">;)</span>
+              </p>
             )}
           </div>
 
@@ -5597,8 +5645,8 @@ const initializeAdMob = useCallback(async () => {
         </div>
       </RootContainer>
       </>
-      );
-      }
+    );
+  }
 
   // This fallthrough renders when in results or other unhandled states
   return (

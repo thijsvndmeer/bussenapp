@@ -97,3 +97,40 @@
 .animate-slide-in-bottom { animation: slideInFromBottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 .animate-slide-out-top { animation: slideOutToTop 0.4s ease-in forwards; }
 .animate-slide-out-bottom { animation: slideOutToBottom 0.4s ease-in forwards; }
+
+@keyframes cardHandEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px) scale(1.15) rotate(-4deg);
+    filter: drop-shadow(0 14px 20px rgba(52, 211, 153, 0.4));
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(2px) scale(0.98) rotate(1deg);
+    filter: drop-shadow(0 8px 12px rgba(52, 211, 153, 0.35));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+  }
+}
+
+.animate-card-hand-enter {
+  animation: cardHandEnter 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes cardHandSubtle {
+  0% {
+    opacity: 0.3;
+    transform: translateY(-5px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-hand-subtle {
+  animation: cardHandSubtle 0.15s ease-out forwards;
+}
