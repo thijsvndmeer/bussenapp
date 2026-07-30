@@ -341,6 +341,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.": "An error occurred during photo selection. Try again or choose a local file.",
         "Camera niet beschikbaar. Kies lokaal bestand.": "Camera not available. Choose a local file.",
         "Galerij niet beschikbaar. Kies lokaal bestand.": "Gallery not available. Choose a local file.",
+        "✨ Kleine UI-verbeteringen, bug- en vertalingsfixes.": "✨ Small UI improvements, bug and translation fixes.",
         "👀 Bekijk de kaarten van medespelers in de piramide door op hun profielfoto te tikken!": "👀 View fellow players' cards in the pyramid by tapping their profile picture!",
         "🚍 Vernieuwde animaties voor in en uit de bus stappen.": "🚍 Renewed animations for getting in and out of the bus.",
         "🎨 De \"Calm\" thema accentkleur is nu volledig aanpasbaar in de instellingen.": "🎨 The \"Calm\" theme accent color is now fully customizable in settings.",

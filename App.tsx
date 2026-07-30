@@ -224,11 +224,12 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
-const PATCH_NOTES_VERSION = '1.4';
+const PATCH_NOTES_VERSION = '1.4.1';
 const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
-const UPDATE_1_4_PATCH_NOTES = [
+const UPDATE_1_4_1_PATCH_NOTES = [
+  '✨ Kleine UI-verbeteringen, bug- en vertalingsfixes.',
   '👀 Bekijk de kaarten van medespelers in de piramide door op hun profielfoto te tikken!',
   '🚍 Vernieuwde animaties voor in en uit de bus stappen.',
   '🎨 De "Calm" thema accentkleur is nu volledig aanpasbaar in de instellingen.',
@@ -987,7 +988,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
             </div>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
-                {UPDATE_1_4_PATCH_NOTES.map((note, index) => (
+                {UPDATE_1_4_1_PATCH_NOTES.map((note, index) => (
                   <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
                     <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
                     <span className="flex-1">{t(note.substring(note.indexOf(' ') + 1))}</span>
