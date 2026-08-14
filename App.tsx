@@ -91,6 +91,68 @@ const getFullRankName = (rank: Rank, t: any) => {
   }
 };
 
+
+type ThemeRippleState = {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+};
+
+const hexToRgb = (hex: string, fallback = { r: 251, g: 205, b: 83 }) => {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  } : fallback;
+};
+
+const getThemeRippleColor = (theme: UITheme, calmAccentColor?: string) => {
+  if (theme === UITheme.METRO) return '#00d9ff';
+  if (theme === UITheme.CALM) return calmAccentColor || '#fbcd53';
+  if (theme === UITheme.BEER) return '#f59e0b';
+  return '#fb7185';
+};
+
+const getPointerOrigin = (event?: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement>) => {
+  if (!event) {
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  }
+
+  return { x: event.clientX, y: event.clientY };
+};
+
+const ThemeChangeRipple: React.FC<{ ripple: ThemeRippleState | null }> = ({ ripple }) => {
+  if (!ripple) return null;
+
+  const { r, g, b } = hexToRgb(ripple.color);
+  const maxX = Math.max(ripple.x, window.innerWidth - ripple.x);
+  const maxY = Math.max(ripple.y, window.innerHeight - ripple.y);
+  const diameter = Math.ceil(Math.hypot(maxX, maxY) * 2);
+
+  return (
+    <div
+      key={ripple.id}
+      className="theme-change-ripple"
+      aria-hidden="true"
+      style={{
+        '--ripple-x': `${ripple.x}px`,
+        '--ripple-y': `${ripple.y}px`,
+        '--ripple-size': `${diameter}px`,
+        '--ripple-color': ripple.color,
+        '--ripple-glow': `rgba(${r}, ${g}, ${b}, 0.45)`,
+      } as React.CSSProperties}
+    >
+      <div className="theme-change-ripple__orb" />
+      <div className="theme-change-ripple__particles" />
+    </div>
+  );
+};
+
 // --- CONSTANTS & PHRASES ---
 
 const DEFAULT_SUCCESS_PHRASES_NL = [
@@ -1118,6 +1180,39 @@ const App: React.FC = () => {
 
     return defaultSettings;
   });
+  const [themeRipple, setThemeRipple] = useState<ThemeRippleState | null>(null);
+  const themeRippleTimerRef = useRef<number | null>(null);
+
+  const runDynamicSettingTransition = useCallback((
+    event: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement> | undefined,
+    color: string,
+    applyChange: () => void,
+  ) => {
+    const origin = getPointerOrigin(event);
+
+    if (themeRippleTimerRef.current !== null) {
+      window.clearTimeout(themeRippleTimerRef.current);
+    }
+
+    setThemeRipple({
+      id: Date.now(),
+      x: origin.x,
+      y: origin.y,
+      color,
+    });
+
+    window.setTimeout(applyChange, 110);
+    themeRippleTimerRef.current = window.setTimeout(() => {
+      setThemeRipple(null);
+      themeRippleTimerRef.current = null;
+    }, 760);
+  }, []);
+
+  useEffect(() => () => {
+    if (themeRippleTimerRef.current !== null) {
+      window.clearTimeout(themeRippleTimerRef.current);
+    }
+  }, []);
 
   const renderStyleUnlockModal = () => {
     if (!styleToUnlock) return null;
@@ -3413,10 +3508,12 @@ const initializeAdMob = useCallback(async () => {
               {t("Annuleren")}
             </button>
             <button
-              onClick={() => {
-                const n = { ...settings, calmAccentColor: tempColor };
-                setSettings(n);
-                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+              onClick={(event) => {
+                runDynamicSettingTransition(event, tempColor, () => {
+                  const n = { ...settings, calmAccentColor: tempColor };
+                  setSettings(n);
+                  queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                });
                 setIsColorPickerOpen(false);
                 triggerHaptic('medium');
               }}
@@ -3623,6 +3720,7 @@ const initializeAdMob = useCallback(async () => {
 
   const renderAdditionalModals = () => (
     <>
+        <ThemeChangeRipple ripple={themeRipple} />
         {isMoreSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsMoreSettingsOpen(false); }}>
             <div className="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 overflow-hidden">
@@ -3640,13 +3738,21 @@ const initializeAdMob = useCallback(async () => {
                   <h4 className="text-white font-medium">{t("Taal / Language")}</h4>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setLanguage('nl')}
+                      onClick={(event) => {
+                        if (lang === 'nl') return;
+                        runDynamicSettingTransition(event, getThemeRippleColor(settings.theme, settings.calmAccentColor), () => setLanguage('nl'));
+                        triggerHaptic('light');
+                      }}
                       className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'nl' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
                     >
                       <span className="text-white text-lg font-bold">🇳🇱 NL</span>
                     </button>
                     <button
-                      onClick={() => setLanguage('en')}
+                      onClick={(event) => {
+                        if (lang === 'en') return;
+                        runDynamicSettingTransition(event, getThemeRippleColor(settings.theme, settings.calmAccentColor), () => setLanguage('en'));
+                        triggerHaptic('light');
+                      }}
                       className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'en' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
                     >
                       <span className="text-white text-lg font-bold">🇬🇧 EN</span>
@@ -3684,37 +3790,18 @@ const initializeAdMob = useCallback(async () => {
                       return (
                         <button 
                           key={tName}
-                          onPointerDown={() => {
+                          onClick={(event) => {
                             if (settings.theme === tName) return;
-                            longPressTimerRef.current = setTimeout(() => {
+                            runDynamicSettingTransition(event, getThemeRippleColor(tName, settings.calmAccentColor), () => {
                               const n = { ...settings, theme: tName };
                               setSettings(n);
                               queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                              triggerHaptic('heavy');
-                              longPressTimerRef.current = null;
-                            }, 3000);
-                          }}
-                          onPointerUp={() => {
-                            if (longPressTimerRef.current) {
-                              clearTimeout(longPressTimerRef.current);
-                              longPressTimerRef.current = null;
-                            }
-                          }}
-                          onPointerLeave={() => {
-                            if (longPressTimerRef.current) {
-                              clearTimeout(longPressTimerRef.current);
-                              longPressTimerRef.current = null;
-                            }
-                          }}
-                          onClick={() => {
-                            if (settings.theme === tName) return;
-                            setThemeToUnlock(tName);
+                            });
                             triggerHaptic('light');
                           }}
                           className={`flex-1 py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 ${btnStyle}`}
                         >
                           {t(tName)}
-                          {!isActive && <Video size={10} className="text-amber-400 shrink-0" />}
                         </button>
                       );
                     })}
@@ -3735,10 +3822,13 @@ const initializeAdMob = useCallback(async () => {
                         return (
                           <button
                             key={colorOpt.value}
-                            onClick={() => {
-                              const n = { ...settings, calmAccentColor: colorOpt.value };
-                              setSettings(n);
-                              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            onClick={(event) => {
+                              if (isColorActive) return;
+                              runDynamicSettingTransition(event, colorOpt.value, () => {
+                                const n = { ...settings, calmAccentColor: colorOpt.value };
+                                setSettings(n);
+                                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                              });
                               triggerHaptic('light');
                             }}
                             title={colorOpt.name}
