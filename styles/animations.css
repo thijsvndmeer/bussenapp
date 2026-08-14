@@ -97,3 +97,152 @@
 .animate-slide-in-bottom { animation: slideInFromBottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 .animate-slide-out-top { animation: slideOutToTop 0.4s ease-in forwards; }
 .animate-slide-out-bottom { animation: slideOutToBottom 0.4s ease-in forwards; }
+
+@keyframes cardHandEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px) scale(1.15) rotate(-4deg);
+    filter: drop-shadow(0 14px 20px rgba(52, 211, 153, 0.4));
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(2px) scale(0.98) rotate(1deg);
+    filter: drop-shadow(0 8px 12px rgba(52, 211, 153, 0.35));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+  }
+}
+
+.animate-card-hand-enter {
+  animation: cardHandEnter 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes cardHandSubtle {
+  0% {
+    opacity: 0.3;
+    transform: translateY(-5px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-hand-subtle {
+  animation: cardHandSubtle 0.15s ease-out forwards;
+}
+
+@keyframes fastSubtlePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fast-subtle-pop {
+  animation: fastSubtlePop 0.15s ease-out forwards;
+}
+
+.theme-change-ripple {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+  isolation: isolate;
+}
+
+.theme-change-ripple__orb,
+.theme-change-ripple__particles {
+  position: absolute;
+  left: var(--ripple-x);
+  top: var(--ripple-y);
+  width: var(--ripple-size);
+  height: var(--ripple-size);
+  border-radius: 9999px;
+  transform: translate3d(-50%, -50%, 0) scale(0.012);
+  transform-origin: center;
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+}
+
+.theme-change-ripple__orb {
+  background:
+    radial-gradient(circle at center,
+      color-mix(in srgb, var(--ripple-color) 92%, white 8%) 0%,
+      var(--ripple-color) 45%,
+      color-mix(in srgb, var(--ripple-color) 72%, transparent) 64%,
+      transparent 72%);
+  box-shadow:
+    0 0 24px 8px var(--ripple-glow),
+    0 0 80px 24px var(--ripple-glow);
+  filter: blur(0.2px) saturate(1.2);
+  opacity: 0;
+  animation: theme-ripple-expand 720ms cubic-bezier(0.18, 0.82, 0.24, 1) forwards;
+}
+
+.theme-change-ripple__particles {
+  background:
+    radial-gradient(circle at 52% 9%, rgba(255, 255, 255, 0.85) 0 1px, transparent 2px),
+    radial-gradient(circle at 91% 45%, rgba(255, 255, 255, 0.55) 0 1px, transparent 2px),
+    radial-gradient(circle at 18% 79%, rgba(255, 255, 255, 0.6) 0 1px, transparent 2px),
+    radial-gradient(circle at 69% 84%, rgba(255, 255, 255, 0.45) 0 1px, transparent 2px),
+    radial-gradient(circle, transparent 56%, rgba(255, 255, 255, 0.44) 59%, transparent 65%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: theme-ripple-particles 720ms cubic-bezier(0.18, 0.82, 0.24, 1) forwards;
+}
+
+@keyframes theme-ripple-expand {
+  0% {
+    opacity: 0.78;
+    transform: translate3d(-50%, -50%, 0) scale(0.012);
+    filter: blur(0) saturate(1.25);
+  }
+  52% {
+    opacity: 0.9;
+    filter: blur(0.8px) saturate(1.35);
+  }
+  82% {
+    opacity: 0.58;
+    transform: translate3d(-50%, -50%, 0) scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.08);
+    filter: blur(10px) saturate(1.1);
+  }
+}
+
+@keyframes theme-ripple-particles {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.04) rotate(0deg);
+  }
+  16% {
+    opacity: 0.85;
+  }
+  72% {
+    opacity: 0.5;
+    transform: translate3d(-50%, -50%, 0) scale(0.92) rotate(22deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.05) rotate(34deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-change-ripple__orb,
+  .theme-change-ripple__particles {
+    animation-duration: 1ms;
+  }
+}

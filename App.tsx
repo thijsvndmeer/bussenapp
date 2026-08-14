@@ -91,52 +91,114 @@ const getFullRankName = (rank: Rank, t: any) => {
   }
 };
 
+
+type ThemeRippleState = {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+};
+
+const hexToRgb = (hex: string, fallback = { r: 251, g: 205, b: 83 }) => {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  } : fallback;
+};
+
+const getThemeRippleColor = (theme: UITheme, calmAccentColor?: string) => {
+  if (theme === UITheme.METRO) return '#00d9ff';
+  if (theme === UITheme.CALM) return calmAccentColor || '#fbcd53';
+  if (theme === UITheme.BEER) return '#f59e0b';
+  return '#fb7185';
+};
+
+const getPointerOrigin = (event?: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement>) => {
+  if (!event) {
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  }
+
+  return { x: event.clientX, y: event.clientY };
+};
+
+const ThemeChangeRipple: React.FC<{ ripple: ThemeRippleState | null }> = ({ ripple }) => {
+  if (!ripple) return null;
+
+  const { r, g, b } = hexToRgb(ripple.color);
+  const maxX = Math.max(ripple.x, window.innerWidth - ripple.x);
+  const maxY = Math.max(ripple.y, window.innerHeight - ripple.y);
+  const diameter = Math.ceil(Math.hypot(maxX, maxY) * 2);
+
+  return (
+    <div
+      key={ripple.id}
+      className="theme-change-ripple"
+      aria-hidden="true"
+      style={{
+        '--ripple-x': `${ripple.x}px`,
+        '--ripple-y': `${ripple.y}px`,
+        '--ripple-size': `${diameter}px`,
+        '--ripple-color': ripple.color,
+        '--ripple-glow': `rgba(${r}, ${g}, ${b}, 0.45)`,
+      } as React.CSSProperties}
+    >
+      <div className="theme-change-ripple__orb" />
+      <div className="theme-change-ripple__particles" />
+    </div>
+  );
+};
+
 // --- CONSTANTS & PHRASES ---
 
 const DEFAULT_SUCCESS_PHRASES_NL = [
-  "Lekker pik!", "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!",
-  "ez W,", "Netjes!", "dat is m!", "Biem!", "Jaja!",
+  "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!",
+  "Netjes!", "dat is m!", "Biem!", "Jaja!",
   "locked in,", "Heerlijk!", "top!", "insane!",
-  "keurig,", "Bingo!", "clean.", "bam!",
+  "keurig,", "clean.", "bam!",
   "big brain,", "slayy,"
 ];
 
 const DEFAULT_FAILURE_PHRASES_NL = [
-  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii,",
-  "zuipen kut,", "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
+  "Helaas pindakaas!", "Zuur!", "Aii,",
+  "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
   "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje,",
-  "trek gwn een bak pussy.", "lol,", "ha bier,", "maat..",
-  "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Koekoek!", "Incapabele ziel.."
+  "lol,", "ha bier,", "maat..",
+  "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Incapabele ziel.."
 ];
 
 const DEFAULT_LOSER_TITLES_NL = [
   "🍺🍺🍺", "De Lul", "L gepakt", "hahaha",
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je",
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
-  "Coma zuipen!!", "Proost!"
+  "Proost!"
 ];
 
 const DEFAULT_SUCCESS_PHRASES_EN = [
-  "Nice one!", "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
-  "ez W,", "Clean!", "that's it!", "Bam!", "Yes sir!",
+  "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
+  "Clean!", "that's it!", "Bam!", "Yes sir!",
   "locked in,", "Lovely!", "perfect!", "insane!",
-  "neat,", "Bingo!", "clean.", "bam!",
+  "neat,", "clean.", "bam!",
   "big brain,", "slayy,"
 ];
 
 const DEFAULT_FAILURE_PHRASES_EN = [
-  "Bad luck!", "Drink up!", "Ouch!", "Aii,",
-  "cheers,", "lord, again??", "why are you so bad,", "skill issue,",
+  "Bad luck!", "Ouch!", "Aii,",
+  "lord, again??", "why are you so bad,", "skill issue,",
   "Stupid!", "Out of luck!", "Oof...", "My bad,",
-  "just down it.", "lol,", "ha beer,", "mate..",
-  "Crybaby!", "so bad!", "Unbelievable!", "Cuckoo!", "Incapable soul.."
+  "lol,", "ha beer,", "mate..",
+  "Crybaby!", "so bad!", "Unbelievable!", "Incapable soul.."
 ];
 
 const DEFAULT_LOSER_TITLES_EN = [
   "🍺🍺🍺", "The Loser", "Caught the L", "hahaha",
   "🧌🧌", "Good luck friend", "ai ai ai", "there you go",
   "💀💀", "🤡🤡", "so bad", "Hopeless",
-  "Drink up!!", "Cheers!"
+  "Cheers!"
 ];
 
 type PhraseCategory = 'success' | 'failure' | 'loser';
@@ -224,15 +286,17 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
-const PATCH_NOTES_VERSION = '1.3';
+const PATCH_NOTES_VERSION = '1.4.1';
 const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
-const UPDATE_1_3_PATCH_NOTES = [
-  '🍺 Algemene performance- en UI-verbeteringen en bugfixes.',
-  '🎨 Nieuwe UI thema\'s (Metro, Calm, Beer) toegevoegd voor een nieuwe uitstraling!',
-  '🚇 Dynamische geanimeerde achtergrond toegevoegd bij de thema\'s!',
-  '🃏 Klikbare kaarten badge in het bus scherm: bekijk alle 52 kaarten in het actieve pakje!',
+const UPDATE_1_4_1_PATCH_NOTES = [
+  '✨ Kleine UI-verbeteringen, bug- en vertalingsfixes.',
+  '👀 Bekijk de kaarten van medespelers in de piramide door op hun profielfoto te tikken!',
+  '🚍 Vernieuwde animaties voor in en uit de bus stappen.',
+  '🎨 De "Calm" thema accentkleur is nu volledig aanpasbaar in de instellingen.',
+  '🛡️ Spelers met immuniteit zijn nu duidelijker zichtbaar in de selectiemenu\'s.',
+  '🚀 Verbeterde inlaadtijd van de kaarten en diverse UI verbeteringen.',
 ];
 
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -922,6 +986,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   });
 
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+  const { t } = useTranslation();
 
   const openPatchNotes = useCallback(() => {
     setIsPatchNotesOpen(true);
@@ -985,10 +1050,10 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
             </div>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
-                {UPDATE_1_3_PATCH_NOTES.map((note, index) => (
+                {UPDATE_1_4_1_PATCH_NOTES.map((note, index) => (
                   <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
                     <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
-                    <span className="flex-1">{note.substring(note.indexOf(' ') + 1)}</span>
+                    <span className="flex-1">{t(note.substring(note.indexOf(' ') + 1))}</span>
                   </li>
                 ))}
               </ul>
@@ -997,7 +1062,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
               onClick={() => setIsPatchNotesOpen(false)}
               className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black rounded-xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
             >
-              Sluiten
+              {t("Sluiten")}
             </button>
           </div>
         </div>
@@ -1115,6 +1180,39 @@ const App: React.FC = () => {
 
     return defaultSettings;
   });
+  const [themeRipple, setThemeRipple] = useState<ThemeRippleState | null>(null);
+  const themeRippleTimerRef = useRef<number | null>(null);
+
+  const runDynamicSettingTransition = useCallback((
+    event: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement> | undefined,
+    color: string,
+    applyChange: () => void,
+  ) => {
+    const origin = getPointerOrigin(event);
+
+    if (themeRippleTimerRef.current !== null) {
+      window.clearTimeout(themeRippleTimerRef.current);
+    }
+
+    setThemeRipple({
+      id: Date.now(),
+      x: origin.x,
+      y: origin.y,
+      color,
+    });
+
+    window.setTimeout(applyChange, 110);
+    themeRippleTimerRef.current = window.setTimeout(() => {
+      setThemeRipple(null);
+      themeRippleTimerRef.current = null;
+    }, 760);
+  }, []);
+
+  useEffect(() => () => {
+    if (themeRippleTimerRef.current !== null) {
+      window.clearTimeout(themeRippleTimerRef.current);
+    }
+  }, []);
 
   const renderStyleUnlockModal = () => {
     if (!styleToUnlock) return null;
@@ -2040,8 +2138,8 @@ const initializeAdMob = useCallback(async () => {
 
     setFeedback({
       text: available
-        ? 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.'
-        : 'Camera niet beschikbaar. Kies lokaal bestand.',
+        ? t('Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.')
+        : t('Camera niet beschikbaar. Kies lokaal bestand.'),
       type: available ? 'error' : 'info'
     });
 
@@ -2067,8 +2165,8 @@ const initializeAdMob = useCallback(async () => {
 
     setFeedback({
       text: available
-        ? 'Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.'
-        : 'Galerij niet beschikbaar. Kies lokaal bestand.',
+        ? t('Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.')
+        : t('Galerij niet beschikbaar. Kies lokaal bestand.'),
       type: available ? 'error' : 'info'
     });
 
@@ -2205,6 +2303,68 @@ const initializeAdMob = useCallback(async () => {
   const handleGameOverContinue = async () => {
     await showInterstitialAd('LEADERBOARD');
     setPhase(GamePhase.SETUP);
+  };
+
+  const getGuessBtnClasses = (type: string) => {
+    const isMetro = settings.theme === UITheme.METRO;
+    const isBeer = settings.theme === UITheme.BEER;
+
+    if (isMetro) {
+      const base = "py-4 rounded-none font-black text-lg border-2 shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2";
+      if (type === 'RED') return `${base} bg-red-600 text-white border-white`;
+      if (type === 'BLACK') return `${base} bg-slate-950 text-white border-slate-400`;
+      if (type === 'HIGHER' || type === 'BETWEEN' || type === 'MATCH') return `${base} bg-[var(--theme-accent)] text-slate-950 border-white`;
+      if (type === 'LOWER' || type === 'OUTSIDE' || type === 'NO_MATCH') return `${base} bg-slate-900 text-[var(--theme-accent)] border-[var(--theme-accent)]`;
+      if (type === 'EQUAL') return `col-span-2 py-3 rounded-none font-mono text-xs font-black bg-slate-900 text-slate-300 border-2 border-slate-700 shadow-[4px_4px_0_rgba(0,0,0,0.8)]`;
+    }
+
+    if (isBeer) {
+      const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
+      if (type === 'RED') return `${base} bg-gradient-to-br from-red-600 to-amber-900 border-red-400 text-white shadow-[0_6px_20px_rgba(220,38,38,0.4)]`;
+      if (type === 'BLACK') return `${base} bg-gradient-to-br from-amber-950 to-stone-900 border-amber-700 text-amber-100 shadow-[0_6px_20px_rgba(0,0,0,0.5)]`;
+      if (type === 'HIGHER') return `${base} bg-gradient-to-br from-amber-500 to-amber-700 border-amber-300 text-slate-950 font-black shadow-[0_6px_20px_rgba(245,158,11,0.4)]`;
+      if (type === 'LOWER') return `${base} bg-gradient-to-br from-stone-800 to-amber-950 border-amber-600/50 text-amber-100 shadow-[0_6px_20px_rgba(180,83,9,0.3)]`;
+      if (type === 'BETWEEN') return `${base} bg-gradient-to-br from-amber-600 to-yellow-800 border-yellow-400 text-white shadow-[0_6px_20px_rgba(245,158,11,0.35)]`;
+      if (type === 'OUTSIDE') return `${base} bg-gradient-to-br from-stone-800 to-amber-950 border-amber-600/50 text-amber-100 shadow-[0_6px_20px_rgba(120,53,15,0.3)]`;
+      if (type === 'MATCH') return `${base} bg-gradient-to-br from-amber-500 to-amber-800 border-amber-300 text-white shadow-[0_6px_20px_rgba(245,158,11,0.4)]`;
+      if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-stone-800 to-amber-950 border-amber-700/50 text-amber-100 shadow-[0_6px_20px_rgba(0,0,0,0.4)]`;
+      if (type === 'EQUAL') return `col-span-2 py-3 text-xs font-bold rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300 hover:bg-amber-900/50 transition-colors`;
+    }
+
+    // Default
+    const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
+    if (type === 'RED') return `${base} bg-gradient-to-br from-red-600 to-red-800 border-red-400 text-white`;
+    if (type === 'BLACK') return `${base} bg-gradient-to-br from-slate-800 to-black border-slate-600 text-white`;
+    if (type === 'HIGHER') return `${base} bg-gradient-to-br from-emerald-600 to-emerald-800 border-emerald-400 text-white`;
+    if (type === 'LOWER') return `${base} bg-gradient-to-br from-blue-600 to-blue-800 border-blue-400 text-white`;
+    if (type === 'BETWEEN') return `${base} bg-gradient-to-br from-indigo-600 to-indigo-800 border-indigo-400 text-white`;
+    if (type === 'OUTSIDE') return `${base} bg-gradient-to-br from-orange-600 to-orange-800 border-orange-400 text-white`;
+    if (type === 'MATCH') return `${base} bg-gradient-to-br from-purple-600 to-purple-800 border-purple-400 text-white`;
+    if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-pink-600 to-pink-800 border-pink-400 text-white`;
+    if (type === 'EQUAL') return `col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors`;
+    return base;
+  };
+
+  const getBusGuessBtnClasses = (type: 'HIGHER' | 'LOWER' | 'EQUAL') => {
+    const isMetro = settings.theme === UITheme.METRO;
+    const isBeer = settings.theme === UITheme.BEER;
+
+    if (isMetro) {
+      if (type === 'HIGHER') return "group flex-1 bg-[var(--theme-accent)] text-slate-950 py-6 rounded-none font-black border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
+      if (type === 'LOWER') return "group flex-1 bg-slate-900 text-[var(--theme-accent)] py-6 rounded-none font-black border-2 border-[var(--theme-accent)] shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
+      if (type === 'EQUAL') return "w-full bg-slate-900 text-slate-300 py-3 text-xs font-mono font-black border-2 border-slate-700 shadow-[4px_4px_0_rgba(0,0,0,0.8)] rounded-none transition-colors active:scale-95";
+    }
+
+    if (isBeer) {
+      if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-amber-500 to-amber-700 text-slate-950 py-6 rounded-2xl font-black border border-amber-300 shadow-[0_6px_20px_rgba(245,158,11,0.4)] flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-stone-800 to-amber-950 text-amber-100 py-6 rounded-2xl font-black border border-amber-700/60 shadow-[0_6px_20px_rgba(180,83,9,0.3)] flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'EQUAL') return "w-full bg-amber-950/60 border border-amber-500/30 text-amber-300 py-3 text-xs font-bold rounded-xl hover:bg-amber-900/50 transition-colors active:scale-95";
+    }
+
+    if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500";
+    if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500";
+    if (type === 'EQUAL') return "w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95";
+    return "";
   };
 
   const handleStartPress = () => {
@@ -2699,7 +2859,7 @@ const initializeAdMob = useCallback(async () => {
         card: card,
         sips: sips * (isDoubled ? 2 : 1),
         matches: matches,
-        bannerPosition: (rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
+        bannerPosition: (isFinished || isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
       });
     } else {
       if (isFinished) {
@@ -3348,10 +3508,12 @@ const initializeAdMob = useCallback(async () => {
               {t("Annuleren")}
             </button>
             <button
-              onClick={() => {
-                const n = { ...settings, calmAccentColor: tempColor };
-                setSettings(n);
-                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+              onClick={(event) => {
+                runDynamicSettingTransition(event, tempColor, () => {
+                  const n = { ...settings, calmAccentColor: tempColor };
+                  setSettings(n);
+                  queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                });
                 setIsColorPickerOpen(false);
                 triggerHaptic('medium');
               }}
@@ -3558,6 +3720,7 @@ const initializeAdMob = useCallback(async () => {
 
   const renderAdditionalModals = () => (
     <>
+        <ThemeChangeRipple ripple={themeRipple} />
         {isMoreSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsMoreSettingsOpen(false); }}>
             <div className="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 overflow-hidden">
@@ -3575,13 +3738,21 @@ const initializeAdMob = useCallback(async () => {
                   <h4 className="text-white font-medium">{t("Taal / Language")}</h4>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setLanguage('nl')}
+                      onClick={(event) => {
+                        if (lang === 'nl') return;
+                        runDynamicSettingTransition(event, getThemeRippleColor(settings.theme, settings.calmAccentColor), () => setLanguage('nl'));
+                        triggerHaptic('light');
+                      }}
                       className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'nl' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
                     >
                       <span className="text-white text-lg font-bold">🇳🇱 NL</span>
                     </button>
                     <button
-                      onClick={() => setLanguage('en')}
+                      onClick={(event) => {
+                        if (lang === 'en') return;
+                        runDynamicSettingTransition(event, getThemeRippleColor(settings.theme, settings.calmAccentColor), () => setLanguage('en'));
+                        triggerHaptic('light');
+                      }}
                       className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'en' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
                     >
                       <span className="text-white text-lg font-bold">🇬🇧 EN</span>
@@ -3619,37 +3790,18 @@ const initializeAdMob = useCallback(async () => {
                       return (
                         <button 
                           key={tName}
-                          onPointerDown={() => {
+                          onClick={(event) => {
                             if (settings.theme === tName) return;
-                            longPressTimerRef.current = setTimeout(() => {
+                            runDynamicSettingTransition(event, getThemeRippleColor(tName, settings.calmAccentColor), () => {
                               const n = { ...settings, theme: tName };
                               setSettings(n);
                               queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                              triggerHaptic('heavy');
-                              longPressTimerRef.current = null;
-                            }, 3000);
-                          }}
-                          onPointerUp={() => {
-                            if (longPressTimerRef.current) {
-                              clearTimeout(longPressTimerRef.current);
-                              longPressTimerRef.current = null;
-                            }
-                          }}
-                          onPointerLeave={() => {
-                            if (longPressTimerRef.current) {
-                              clearTimeout(longPressTimerRef.current);
-                              longPressTimerRef.current = null;
-                            }
-                          }}
-                          onClick={() => {
-                            if (settings.theme === tName) return;
-                            setThemeToUnlock(tName);
+                            });
                             triggerHaptic('light');
                           }}
                           className={`flex-1 py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 ${btnStyle}`}
                         >
                           {t(tName)}
-                          {!isActive && <Video size={10} className="text-amber-400 shrink-0" />}
                         </button>
                       );
                     })}
@@ -3670,10 +3822,13 @@ const initializeAdMob = useCallback(async () => {
                         return (
                           <button
                             key={colorOpt.value}
-                            onClick={() => {
-                              const n = { ...settings, calmAccentColor: colorOpt.value };
-                              setSettings(n);
-                              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            onClick={(event) => {
+                              if (isColorActive) return;
+                              runDynamicSettingTransition(event, colorOpt.value, () => {
+                                const n = { ...settings, calmAccentColor: colorOpt.value };
+                                setSettings(n);
+                                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                              });
                               triggerHaptic('light');
                             }}
                             title={colorOpt.name}
@@ -4286,8 +4441,14 @@ const initializeAdMob = useCallback(async () => {
 
                   if (isObtained) {
                     const c = digitalCards[idx];
+                    const isNewlyAdded = !!lastDrawnCard && c.id === lastDrawnCard.id;
+                    const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
                     return (
-                      <div key={c.id} className="flex-none transition-transform hover:-translate-y-2 duration-300 origin-bottom" style={{ zIndex: idx }}>
+                      <div
+                        key={`${activePlayer.id}-${c.id}`}
+                        className={`flex-none transition-transform hover:-translate-y-2 duration-200 origin-bottom ${animClass}`}
+                        style={{ zIndex: idx }}
+                      >
                         <PlayingCard card={c} size="base" className="shadow-lg" style={settings.cardStyle} />
                       </div>
                     );
@@ -4305,8 +4466,14 @@ const initializeAdMob = useCallback(async () => {
                     const isCurrent = idx === currentCardsCount && !feedback;
 
                     if (isObtained) {
+                      const isNewlyAdded = !!lastDrawnCard && idx === currentCardsCount - 1;
+                      const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
                       return (
-                        <div key={`phys-obtained-${idx}`} className="w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none overflow-hidden relative" style={{ zIndex: idx }}>
+                        <div
+                          key={`${activePlayer.id}-phys-${idx}`}
+                          className={`w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none overflow-hidden relative ${animClass}`}
+                          style={{ zIndex: idx }}
+                        >
                           {/* Back texture */}
                           <div className="absolute inset-0 opacity-60" style={{
                             backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
@@ -4395,49 +4562,49 @@ const initializeAdMob = useCallback(async () => {
               <div className="grid grid-cols-2 gap-3">
                 {roundStep === 1 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('RED')} className="bg-gradient-to-br from-red-600 to-red-800 border-t border-red-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center">{t("ROOD")}</button>
-                    <button onClick={() => handleDigitalGuess('BLACK')} className="bg-gradient-to-br from-slate-800 to-black border-t border-slate-600 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center">{t("ZWART")}</button>
+                    <button onClick={() => handleDigitalGuess('RED')} className={getGuessBtnClasses('RED')}>{t("ROOD")}</button>
+                    <button onClick={() => handleDigitalGuess('BLACK')} className={getGuessBtnClasses('BLACK')}>{t("ZWART")}</button>
                   </>
                 )}
                 {roundStep === 2 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('HIGHER')} className="bg-gradient-to-br from-emerald-600 to-emerald-800 border-t border-emerald-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <ChevronUp size={24} strokeWidth={3} className="text-white" />
+                    <button onClick={() => handleDigitalGuess('HIGHER')} className={getGuessBtnClasses('HIGHER')}>
+                      <ChevronUp size={24} strokeWidth={3} />
                       <span>{t("HOGER")}</span>
                     </button>
-                    <button onClick={() => handleDigitalGuess('LOWER')} className="bg-gradient-to-br from-blue-600 to-blue-800 border-t border-blue-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <ChevronDown size={24} strokeWidth={3} className="text-white" />
+                    <button onClick={() => handleDigitalGuess('LOWER')} className={getGuessBtnClasses('LOWER')}>
+                      <ChevronDown size={24} strokeWidth={3} />
                       <span>{t("LAGER")}</span>
                     </button>
-                    <button onClick={() => handleDigitalGuess('EQUAL')} className="col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">{t("GELIJK")}</button>
+                    <button onClick={() => handleDigitalGuess('EQUAL')} className={getGuessBtnClasses('EQUAL')}>{t("GELIJK")}</button>
                   </>
                 )}
                 {roundStep === 3 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('BETWEEN')} className="bg-gradient-to-br from-indigo-600 to-indigo-800 border-t border-indigo-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <Minimize2 size={20} strokeWidth={3} className="text-white" />
+                    <button onClick={() => handleDigitalGuess('BETWEEN')} className={getGuessBtnClasses('BETWEEN')}>
+                      <Minimize2 size={20} strokeWidth={3} />
                       <span>{t("BINNEN")}</span>
                     </button>
-                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className="bg-gradient-to-br from-orange-600 to-orange-800 border-t border-orange-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <Maximize2 size={20} strokeWidth={3} className="text-white" />
+                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className={getGuessBtnClasses('OUTSIDE')}>
+                      <Maximize2 size={20} strokeWidth={3} />
                       <span>{t("BUITEN")}</span>
                     </button>
                   </>
                 )}
                 {roundStep === 4 && (
                   <>
-                    <button onClick={() => handleDigitalGuess('MATCH')} className="bg-gradient-to-br from-purple-600 to-purple-800 border-t border-purple-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <Equal size={22} strokeWidth={3} className="text-white" />
+                    <button onClick={() => handleDigitalGuess('MATCH')} className={getGuessBtnClasses('MATCH')}>
+                      <Equal size={22} strokeWidth={3} />
                       <span>{t("ZELFDE")}</span>
                     </button>
-                    <button onClick={() => handleDigitalGuess('NO_MATCH')} className="bg-gradient-to-br from-pink-600 to-pink-800 border-t border-pink-400 py-4 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                      <Shuffle size={20} strokeWidth={3} className="text-white" />
+                    <button onClick={() => handleDigitalGuess('NO_MATCH')} className={getGuessBtnClasses('NO_MATCH')}>
+                      <Shuffle size={20} strokeWidth={3} />
                       <span>{t("ANDERS")}</span>
                     </button>
                     {canAttemptDisco && (
                       <button
                         onClick={handleDiscoAttempt}
-                        className="col-span-2 relative overflow-hidden border-2 border-white/20 rounded-2xl font-black text-white text-lg shadow-[0_10px_30px_rgba(236,72,153,0.35)] active:scale-95 transition-transform"
+                        className={`col-span-2 relative overflow-hidden border-2 border-white/20 rounded-2xl font-black text-white text-lg shadow-[0_10px_30px_rgba(236,72,153,0.35)] active:scale-95 transition-transform ${settings.theme === UITheme.METRO ? 'rounded-none shadow-[4px_4px_0_rgba(0,0,0,0.8)]' : ''}`}
                         style={{
                           background: 'linear-gradient(90deg, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6)',
                           backgroundSize: '200% 100%',
@@ -4636,7 +4803,7 @@ const initializeAdMob = useCallback(async () => {
 {renderColorPickerModal()}
         {/* Match Modal */}
         {pendingMatches && (
-          <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
+          <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-fast-subtle-pop" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
             {/* Card Reveal for Match */}
             <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
               <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
@@ -4913,7 +5080,7 @@ const initializeAdMob = useCallback(async () => {
                               });
                               if (matches.length > 0) {
                                 triggerHaptic('medium');
-                                setPendingMatches({ card, sips, matches, bannerPosition: (rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
+                                setPendingMatches({ card, sips, matches, bannerPosition: (isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
                               }
                             }
                           }}
@@ -5068,6 +5235,31 @@ const initializeAdMob = useCallback(async () => {
           <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
           <RootContainer theme={settings.theme}>
+          {isBusWon && <Confetti />}
+          {isBusWon && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[90]">
+              <div className="absolute top-1/2 -translate-y-1/2 left-[-300px] animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards]">
+                <Bus size={150} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_10px_25px_rgba(52,211,153,0.5)] opacity-90" />
+              </div>
+              <div className="absolute top-[30%] w-full text-center px-4 animate-[fadeInText_2s_ease-out_2.5s_forwards] opacity-0">
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg">
+                  {t("Je mag uit de bus! 🎉")}
+                </h2>
+              </div>
+              
+              {busPassengers.length > 0 && (
+                <div className="absolute top-[65%] w-full text-center px-6 animate-[fadeInText_2s_ease-out_4s_forwards] opacity-0">
+                  <p className="text-lg sm:text-2xl text-slate-200 font-medium drop-shadow-md mx-auto max-w-2xl leading-relaxed">
+                    {lang === 'en' ? (
+                      <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold">;)</span></>
+                    ) : (
+                      <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold">;)</span></>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <div
               className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
@@ -5085,7 +5277,9 @@ const initializeAdMob = useCallback(async () => {
                     <div className="flex items-center justify-center md:justify-start gap-2">
                       <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t("De Busrit")}</h2>
                     </div>
-                    <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
+                    {!isBusWon && (
+                      <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 self-start md:self-center">
                     {renderDevMenu()}
@@ -5254,7 +5448,11 @@ const initializeAdMob = useCallback(async () => {
             {busPassengers.length > 0 && (
               <div className="absolute top-[65%] w-full text-center px-6 animate-[fadeInText_2s_ease-out_4s_forwards] opacity-0">
                 <p className="text-lg sm:text-2xl text-slate-200 font-medium drop-shadow-md mx-auto max-w-2xl leading-relaxed">
-                  {t("Controleer nog even of")} <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> {t("echt")} <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? t("slok") : t("slokken")} {busPassengers.length > 1 ? t("hebben") : t("heeft")} {t("gedronken")} <span className="text-emerald-400 font-bold">;)</span>
+                  {lang === 'en' ? (
+                    <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold">;)</span></>
+                  ) : (
+                    <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold">;)</span></>
+                  )}
                 </p>
               </div>
             )}
@@ -5305,12 +5503,14 @@ const initializeAdMob = useCallback(async () => {
                 <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
               </div>
             )}
-            <div className="text-right mr-10">
-              <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}
-              </span>
-              <span className="text-white text-sm font-black">{passengerNames}</span>
-            </div>
+            {!isBusWon && (
+              <div className="text-right mr-10">
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                  {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}
+                </span>
+                <span className="text-white text-sm font-black">{passengerNames}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -5403,16 +5603,16 @@ const initializeAdMob = useCallback(async () => {
             ) : busWrongCardIndex === null && !isBusWon ? (
               <div className="flex flex-col gap-3 w-full">
                 <div className="flex items-center justify-center gap-4">
-                  <button onClick={() => handleBusGuess('HIGHER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500">
-                    <ChevronUp size={32} className="text-green-400 mb-1 group-hover:scale-125 transition-transform" />
+                  <button onClick={() => handleBusGuess('HIGHER')} className={getBusGuessBtnClasses('HIGHER')}>
+                    <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
                     <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
                   </button>
-                  <button onClick={() => handleBusGuess('LOWER')} className="group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500">
-                    <ChevronDown size={32} className="text-red-400 mb-1 group-hover:scale-125 transition-transform" />
+                  <button onClick={() => handleBusGuess('LOWER')} className={getBusGuessBtnClasses('LOWER')}>
+                    <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
                     <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
                   </button>
                 </div>
-                <button onClick={() => handleBusGuess('EQUAL')} className="w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95">{t("GELIJK")}</button>
+                <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>{t("GELIJK")}</button>
               </div>
             ) : isBusWon ? (
               <button
@@ -5530,7 +5730,6 @@ const initializeAdMob = useCallback(async () => {
                   })}
                 </div>
               </div>
-
               <button
                 onClick={() => setIsCardOverviewOpen(false)}
                 className="mt-6 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shrink-0 shadow-lg shadow-red-900/30 border border-red-500/30"
@@ -5554,18 +5753,20 @@ const initializeAdMob = useCallback(async () => {
         <RootContainer className="p-0" theme={settings.theme}>
         <Confetti />
         <div className="flex-1 overflow-y-auto p-6 relative z-10">
-          <div className="text-center mb-10 mt-8">
+          <div className="text-center mb-6 mt-6">
             <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">{t("Uitslag")}</h1>
             {immunePlayerId && (
               <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 inline-flex items-center gap-3 mt-4">
                 <Shield size={20} className="text-yellow-400" />
                 <div>
-                  <p className="text-yellow-400 text-[10px] font-black uppercase leading-none tracking-widest mb-1">{t("Immuniteit")}</p>
+                  <p className="text-yellow-400 text-[10px] font-black uppercase leading-none tracking-widest mb-1">{t("Bus Immuniteit")}</p>
                   <p className="text-white font-bold text-lg leading-none">{players.find(p => p.id === immunePlayerId)?.name}</p>
                 </div>
               </div>
             )}
           </div>
+
+
 
           <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden mb-8 shadow-2xl">
             <div className="grid grid-cols-12 bg-black/40 p-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -5596,8 +5797,8 @@ const initializeAdMob = useCallback(async () => {
         </div>
       </RootContainer>
       </>
-      );
-      }
+    );
+  }
 
   // This fallthrough renders when in results or other unhandled states
   return (
