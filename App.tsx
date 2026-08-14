@@ -94,49 +94,49 @@ const getFullRankName = (rank: Rank, t: any) => {
 // --- CONSTANTS & PHRASES ---
 
 const DEFAULT_SUCCESS_PHRASES_NL = [
-  "Lekker pik!", "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!",
-  "ez W,", "Netjes!", "dat is m!", "Biem!", "Jaja!",
+  "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!",
+  "Netjes!", "dat is m!", "Biem!", "Jaja!",
   "locked in,", "Heerlijk!", "top!", "insane!",
-  "keurig,", "Bingo!", "clean.", "bam!",
+  "keurig,", "clean.", "bam!",
   "big brain,", "slayy,"
 ];
 
 const DEFAULT_FAILURE_PHRASES_NL = [
-  "Helaas pindakaas!", "Drinken pik!", "Zuur!", "Aii,",
-  "zuipen kut,", "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
+  "Helaas pindakaas!", "Zuur!", "Aii,",
+  "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
   "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje,",
-  "trek gwn een bak pussy.", "lol,", "ha bier,", "maat..",
-  "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Koekoek!", "Incapabele ziel.."
+  "lol,", "ha bier,", "maat..",
+  "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Incapabele ziel.."
 ];
 
 const DEFAULT_LOSER_TITLES_NL = [
   "🍺🍺🍺", "De Lul", "L gepakt", "hahaha",
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je",
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
-  "Coma zuipen!!", "Proost!"
+  "Proost!"
 ];
 
 const DEFAULT_SUCCESS_PHRASES_EN = [
-  "Nice one!", "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
-  "ez W,", "Clean!", "that's it!", "Bam!", "Yes sir!",
+  "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
+  "Clean!", "that's it!", "Bam!", "Yes sir!",
   "locked in,", "Lovely!", "perfect!", "insane!",
-  "neat,", "Bingo!", "clean.", "bam!",
+  "neat,", "clean.", "bam!",
   "big brain,", "slayy,"
 ];
 
 const DEFAULT_FAILURE_PHRASES_EN = [
-  "Bad luck!", "Drink up!", "Ouch!", "Aii,",
-  "cheers,", "lord, again??", "why are you so bad,", "skill issue,",
+  "Bad luck!", "Ouch!", "Aii,",
+  "lord, again??", "why are you so bad,", "skill issue,",
   "Stupid!", "Out of luck!", "Oof...", "My bad,",
-  "just down it.", "lol,", "ha beer,", "mate..",
-  "Crybaby!", "so bad!", "Unbelievable!", "Cuckoo!", "Incapable soul.."
+  "lol,", "ha beer,", "mate..",
+  "Crybaby!", "so bad!", "Unbelievable!", "Incapable soul.."
 ];
 
 const DEFAULT_LOSER_TITLES_EN = [
   "🍺🍺🍺", "The Loser", "Caught the L", "hahaha",
   "🧌🧌", "Good luck friend", "ai ai ai", "there you go",
   "💀💀", "🤡🤡", "so bad", "Hopeless",
-  "Drink up!!", "Cheers!"
+  "Cheers!"
 ];
 
 type PhraseCategory = 'success' | 'failure' | 'loser';
