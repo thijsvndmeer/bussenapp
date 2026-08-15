@@ -37,7 +37,6 @@ yarn-error.log*
 *.sw?
 
 # Capacitor / Mobile builds
-/android/
 /ios/
 
 # Project specific / AI tool data
