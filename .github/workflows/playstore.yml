@@ -61,12 +61,12 @@ jobs:
           ADMOB_APP_ID: ${{ secrets.VITE_ADMOB_APP_ID }}
         run: ./gradlew lintRelease --stacktrace
 
-      - name: Upload Lint Report on Failure
-        if: failure()
+      - name: Upload Lint Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-lint-report
-          path: android/app/build/reports/lint-results-release.html
+          name: android-lint-reports
+          path: android/app/build/reports/
           if-no-files-found: ignore
 
       - name: Build Android App Bundle (AAB)

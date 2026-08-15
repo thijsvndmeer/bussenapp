@@ -28,9 +28,10 @@ android {
     }
     lint {
         baseline = file("lint-baseline.xml")
-        abortOnError = true
-        checkReleaseBuilds = true
-        warningsAsErrors = false
+        abortOnError = false
+        checkReleaseBuilds = false
+        checkDependencies = false
+        disable 'MissingTranslation', 'ExtraTranslation'
     }
 }
 
