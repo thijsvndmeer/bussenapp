@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   build:
+    name: Build Web App
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,6 +38,7 @@ jobs:
           path: './dist'
 
   deploy:
+    name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -46,3 +48,15 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Publish Summary to Step Summary
+        if: always()
+        run: |
+          echo "## 🌐 GitHub Pages Web Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | **${{ job.status }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Web URL** | [https://thijsvndmeer.github.io/bussenapp/](https://thijsvndmeer.github.io/bussenapp/) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered By** | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY

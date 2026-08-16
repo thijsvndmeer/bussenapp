@@ -20,10 +20,147 @@ on:
 permissions:
   contents: write
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
+jobs:
+  # -------------------------------------------------------------
+  # 1. VALIDATE & RELEASE GATES
+  # -------------------------------------------------------------
+  validate:
+    name: Validate & Release Gates
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pkg.outputs.version }}
+      version_code: ${{ steps.pkg.outputs.version_code }}
+      track: ${{ steps.determine_track.outputs.track }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read package.json version
+        id: pkg
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          VERSION_CODE=$(node -p "require('./package.json').version.replace(/[^0-9]/g, '')")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: Determine Google Play Track
+        id: determine_track
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "track=${{ inputs.track }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "prod" ]; then
+            echo "track=production" >> $GITHUB_OUTPUT
+          else
+            echo "track=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate Release Version & Patch Notes (Prod only)
+        if: ${{ steps.determine_track.outputs.track == 'production' }}
+        run: |
+          git fetch --tags --force
+          CURRENT_VERSION="${{ steps.pkg.outputs.version }}"
+          LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
+
+          echo "Current package.json version: $CURRENT_VERSION"
+          echo "Latest release tag: $LATEST_TAG"
+
+          if [ -n "$LATEST_TAG" ]; then
+            # 1. Version gate: ensure version is bumped
+            PREV_VERSION=$(git show "$LATEST_TAG:package.json" 2>/dev/null | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf-8')).version } catch(e) { '' }" || echo "")
+            if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
+              echo "::error::[Release Gate Failed] package.json version ($CURRENT_VERSION) is identical to previous release tag ($LATEST_TAG). Bump version in package.json before deploying to prod."
+              exit 1
+            fi
+
+            # 2. Patch notes gate: ensure whatsnew files have changed
+            WHATSNEW_DIFF=$(git diff "$LATEST_TAG" HEAD -- distribution/whatsnew/)
+            if [ -z "$WHATSNEW_DIFF" ]; then
+              echo "::error::[Release Gate Failed] distribution/whatsnew/ has not changed since previous release ($LATEST_TAG). Update whatsnew notes before deploying to prod."
+              exit 1
+            fi
+          fi
+
+          # 3. Ensure files are non-empty
+          if [ ! -s "distribution/whatsnew/whatsnew-nl-NL" ] || [ ! -s "distribution/whatsnew/whatsnew-en-US" ]; then
+            echo "::error::[Release Gate Failed] distribution/whatsnew/ files must not be empty."
+            exit 1
+          fi
+
+          echo "Release gates passed: Version is bumped and What's New notes are updated."
+
+  # -------------------------------------------------------------
+  # 2. TYPECHECK & LINT
+  # -------------------------------------------------------------
+  typecheck:
+    name: TypeScript Typecheck
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck TypeScript
+        run: npm run typecheck
+
+  # -------------------------------------------------------------
+  # 3. BUILD WEB ASSETS
+  # -------------------------------------------------------------
+  build-web:
+    name: Build Web Assets
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web App
+        env:
+          VITE_ADMOB_APP_ID: ${{ secrets.VITE_ADMOB_APP_ID }}
+        run: npm run build
+
+      - name: Upload Web Dist Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+          retention-days: 1
+
+  # -------------------------------------------------------------
+  # 4. BUILD & SIGN ANDROID (AAB)
+  # -------------------------------------------------------------
+  build-android:
+    name: Build & Sign Android (AAB)
+    needs: [validate, typecheck, build-web]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,13 +181,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck TypeScript
-        run: npm run typecheck
-
-      - name: Build Web App
-        env:
-          VITE_ADMOB_APP_ID: ${{ secrets.VITE_ADMOB_APP_ID }}
-        run: npm run build
+      - name: Download Web Dist Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
 
       - name: Sync Capacitor Android
         run: npx cap sync android
@@ -76,7 +211,8 @@ jobs:
         working-directory: ./android
         env:
           ADMOB_APP_ID: ${{ secrets.VITE_ADMOB_APP_ID }}
-          VERSION_CODE: ${{ github.run_number }}
+          VERSION_CODE: ${{ needs.validate.outputs.version_code }}
+          VERSION_NAME: ${{ needs.validate.outputs.version }}
         run: ./gradlew bundleRelease --stacktrace
 
       - name: Sign AAB
@@ -89,25 +225,38 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Determine Google Play Track
-        id: determine_track
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "track=${{ inputs.track }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref_name }}" = "prod" ]; then
-            echo "track=production" >> $GITHUB_OUTPUT
-          else
-            echo "track=beta" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Upload Signed AAB Artifact to GitHub
+      - name: Upload Signed AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-${{ steps.determine_track.outputs.track }}-${{ github.run_number }}.aab
+          name: app-release-${{ needs.validate.outputs.track }}-v${{ needs.validate.outputs.version }}-code${{ needs.validate.outputs.version_code }}.aab
           path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
           retention-days: 14
 
-      - name: Deploy to Google Play
+      - name: Share Signed File for Deploy Job
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-aab-bundle
+          path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
+          retention-days: 1
+
+  # -------------------------------------------------------------
+  # 5. DEPLOY TO GOOGLE PLAY
+  # -------------------------------------------------------------
+  deploy-playstore:
+    name: Deploy to Google Play
+    needs: [validate, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (for patch notes)
+        uses: actions/checkout@v4
+
+      - name: Download Signed AAB Bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-aab-bundle
+          path: signed-bundle
+
+      - name: Deploy to Google Play Track
         env:
           PLAY_JSON: ${{ secrets.PLAY_CONFIG_JSON }}
         if: env.PLAY_JSON != ''
@@ -115,17 +264,59 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_CONFIG_JSON }}
           packageName: com.bussen.app
-          releaseFiles: ${{ steps.sign_aab.outputs.signedReleaseFile }}
-          track: ${{ steps.determine_track.outputs.track }}
+          releaseFiles: signed-bundle/app-release.aab
+          track: ${{ needs.validate.outputs.track }}
+          whatsNewDirectory: distribution/whatsnew
           status: completed
 
-      - name: Create GitHub Release (Production only)
-        if: ${{ steps.determine_track.outputs.track == 'production' }}
+  # -------------------------------------------------------------
+  # 6. GITHUB RELEASE (Production only)
+  # -------------------------------------------------------------
+  github-release:
+    name: Create GitHub Release
+    needs: [validate, build-android, deploy-playstore]
+    if: ${{ needs.validate.outputs.track == 'production' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Signed AAB Bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-aab-bundle
+          path: signed-bundle
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.${{ github.run_number }}
-          name: Release v1.4.${{ github.run_number }}
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: Release v${{ needs.validate.outputs.version }}
+          body_path: distribution/whatsnew/whatsnew-nl-NL
           generate_release_notes: true
-          files: ${{ steps.sign_aab.outputs.signedReleaseFile }}
+          files: signed-bundle/app-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # -------------------------------------------------------------
+  # 7. NOTIFICATION & SUMMARY
+  # -------------------------------------------------------------
+  summary:
+    name: Deployment Summary
+    needs: [validate, build-android, deploy-playstore]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish Summary to Step Summary
+        run: |
+          echo "## 🚀 Google Play Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Track** | \`${{ needs.validate.outputs.track }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | \`v${{ needs.validate.outputs.version }}\` (code: \`${{ needs.validate.outputs.version_code }}\`) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | **${{ job.status }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered By** | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Google Play Store listing: [Bussen on Google Play](https://play.google.com/store/apps/details?id=com.bussen.app)" >> $GITHUB_STEP_SUMMARY

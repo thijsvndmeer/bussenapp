@@ -17,6 +17,7 @@ import './styles/animations.css';
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 import { useAudio } from './hooks/useAudio';
 import { useThrottledResize } from './hooks/useThrottledResize';
+import { CURRENT_APP_VERSION, PATCH_NOTES_SEEN_KEY, getPatchNotesList, hasPatchNotes } from './services/patchNotes';
 
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -224,8 +225,7 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
-const PATCH_NOTES_VERSION = '1.4.1';
-const PATCH_NOTES_SEEN_KEY = 'bus-app-patch-notes-seen-version';
+const PATCH_NOTES_VERSION = CURRENT_APP_VERSION;
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 const UPDATE_1_4_1_PATCH_NOTES = [
@@ -914,7 +914,9 @@ const PersistentBackground: React.FC<{
 };
 
 const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false, theme = UITheme.CLASSIC }) => {
+  const { t, lang } = useTranslation();
   const [showPatchChest, setShowPatchChest] = useState(() => {
+    if (!hasPatchNotes(currentLanguage)) return false;
     if (!storageAvailable) return true;
     try {
       return localStorage.getItem(PATCH_NOTES_SEEN_KEY) !== PATCH_NOTES_VERSION;
@@ -924,7 +926,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
   });
 
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
-  const { t } = useTranslation();
+  const patchNotes = useMemo(() => getPatchNotesList(lang), [lang]);
 
   const openPatchNotes = useCallback(() => {
     setIsPatchNotesOpen(true);
@@ -987,14 +989,18 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
               </h1>
             </div>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
-                {UPDATE_1_4_1_PATCH_NOTES.map((note, index) => (
-                  <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
-                    <span className="mr-3 text-lg leading-none">{note.split(' ')[0]}</span>
-                    <span className="flex-1">{t(note.substring(note.indexOf(' ') + 1))}</span>
-                  </li>
-                ))}
-              </ul>
+              {patchNotes.length > 0 ? (
+                <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
+                  {patchNotes.map((note, index) => (
+                    <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
+                      <span className="mr-3 text-lg leading-none">✨</span>
+                      <span className="flex-1">{t(note)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-slate-400 text-sm text-center py-4">{t("Geen nieuwe patch notes beschikbaar.")}</p>
+              )}
             </div>
             <button
               onClick={() => setIsPatchNotesOpen(false)}
