@@ -18,6 +18,12 @@ import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 import { useAudio } from './hooks/useAudio';
 import { useThrottledResize } from './hooks/useThrottledResize';
 import { CURRENT_APP_VERSION, PATCH_NOTES_SEEN_KEY, getPatchNotesList, hasPatchNotes } from './services/patchNotes';
+import { QuitConfirmModal } from './components/modals/QuitConfirmModal';
+import { PlayerHandModal } from './components/modals/PlayerHandModal';
+import { ColorPickerModal } from './components/modals/ColorPickerModal';
+import { PhotoOptionsModal } from './components/modals/PhotoOptionsModal';
+import { PatchNotesModal } from './components/modals/PatchNotesModal';
+import { HardBusWarningModal } from './components/modals/HardBusWarningModal';
 
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -257,7 +263,7 @@ const queueStorageWrite = (key: string, value: string, label: string) => {
   }
 };
 
-const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<string> => {
+const resizeImage = (file: File, maxDimension = 128, quality = 0.75): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Kon afbeelding niet lezen'));
@@ -288,7 +294,7 @@ const resizeImage = (file: File, maxDimension = 640, quality = 0.8): Promise<str
   });
 };
 
-const cropToSquareDataUrl = (dataUrl: string, maxDimension = 640, quality = 0.8): Promise<string> => {
+const cropToSquareDataUrl = (dataUrl: string, maxDimension = 128, quality = 0.75): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
@@ -432,36 +438,7 @@ type Feedback = NonNullable<PersistedGameState['feedback']>;
 
 
 
-const GlobalAnimations = () => (
-
-
-
-  <style>{`
-    @keyframes disco-gradient {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 100% 50%; }
-    }
-
-    @keyframes end-gradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    @keyframes bounce-subtle {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-
-    @keyframes slow-hue-rotate {
-      0% { filter: hue-rotate(0deg); }
-      100% { filter: hue-rotate(360deg); }
-    }
-  `}</style>
-
-
-
-);
+const GlobalAnimations = () => null;
 
 
 
@@ -974,43 +951,13 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
         </button>
       )}
 
-      {isPatchNotesOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in" onClick={() => setIsPatchNotesOpen(false)}>
-          <div className="w-full max-w-lg p-6 flex flex-col max-h-[85vh] bg-slate-900 border border-slate-700/50 rounded-3xl shadow-2xl relative mx-4" onClick={e => e.stopPropagation()}>
-            <button
-              onClick={() => setIsPatchNotesOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-            >
-              <X size={16} />
-            </button>
-            <div className="mb-6 shrink-0 pr-8">
-              <h1 className="text-3xl font-black text-white flex items-center gap-2 mb-1 tracking-tight">
-                🪙 Update {PATCH_NOTES_VERSION}
-              </h1>
-            </div>
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {patchNotes.length > 0 ? (
-                <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
-                  {patchNotes.map((note, index) => (
-                    <li key={index} className="flex items-start p-3.5 rounded-xl border border-slate-700/30 bg-slate-800/40 shadow-sm">
-                      <span className="mr-3 text-lg leading-none">✨</span>
-                      <span className="flex-1">{t(note)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-slate-400 text-sm text-center py-4">{t("Geen nieuwe patch notes beschikbaar.")}</p>
-              )}
-            </div>
-            <button
-              onClick={() => setIsPatchNotesOpen(false)}
-              className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black rounded-xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
-            >
-              {t("Sluiten")}
-            </button>
-          </div>
-        </div>
-      )}
+      <PatchNotesModal
+        isOpen={isPatchNotesOpen}
+        version={PATCH_NOTES_VERSION}
+        patchNotes={patchNotes}
+        t={t}
+        onClose={() => setIsPatchNotesOpen(false)}
+      />
 
       {children}
     </div>
@@ -1359,6 +1306,7 @@ const App: React.FC = () => {
   const [isDevMenuOpen, setIsDevMenuOpen] = useState(false);
   const [previewCardId, setPreviewCardId] = useState<string | null>(null);
   const [isPhotoOptionsModalOpen, setIsPhotoOptionsModalOpen] = useState(false); // New state for photo options modal
+  const [showHardBusWarning, setShowHardBusWarning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputCameraRef = useRef<HTMLInputElement>(null);
@@ -1421,6 +1369,8 @@ const App: React.FC = () => {
   const [busWrongCardIndex, setBusWrongCardIndex] = useState<number | null>(null);
   const [isBusEntrance, setIsBusEntrance] = useState(false);
   const [isBusWon, setIsBusWon] = useState(false);
+  const [busSipsTaken, setBusSipsTaken] = useState(0);
+  const [busAttempts, setBusAttempts] = useState(1);
   const [busDecksUsed, setBusDecksUsed] = useState(1);
   const [showReshuffleBanner, setShowReshuffleBanner] = useState(false);
   const [extraDecks, setExtraDecks] = useState<Card[][]>([]);
@@ -1469,6 +1419,8 @@ const App: React.FC = () => {
     setIsBusWon(false);
     setIsBusEntrance(false);
     setBusWinBurst(false);
+    setBusSipsTaken(0);
+    setBusAttempts(1);
     setCurrentBusIndex(1);
     setPhysicalBusPosition(1);
     setFeedback(null);
@@ -1826,12 +1778,12 @@ const initializeAdMob = useCallback(async () => {
 
     try {
       const photo = await Camera.getPhoto({
-        quality: 90,
+        quality: 75,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: source === 'CAMERA' ? CameraSource.Camera : CameraSource.Photos,
-        width: 640,
-        height: 640,
+        width: 160,
+        height: 160,
       });
 
       return { dataUrl: photo?.dataUrl ?? null, cancelled: false, available: true };
@@ -2283,6 +2235,10 @@ const initializeAdMob = useCallback(async () => {
     setIsSettingsOpen(false);
     setIsMoreSettingsOpen(false);
     triggerHaptic('medium');
+    if (settings.busLength >= 9) {
+      setShowHardBusWarning(true);
+      return;
+    }
     confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
   };
 
@@ -3189,6 +3145,9 @@ const initializeAdMob = useCallback(async () => {
       setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
 
+      setBusSipsTaken(prev => prev + (sips * (busPassengers.length || 1)));
+      setBusAttempts(prev => prev + 1);
+
       updatePlayers(Object.fromEntries(
         busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
       ));
@@ -3233,6 +3192,9 @@ const initializeAdMob = useCallback(async () => {
     const sips = physicalBusPosition;
     const phrase = getUniquePhrase('failure');
     setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("opnieuw!")}`, type: 'error' });
+
+    setBusSipsTaken(prev => prev + (sips * (busPassengers.length || 1)));
+    setBusAttempts(prev => prev + 1);
 
     updatePlayers(Object.fromEntries(
       busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
@@ -3315,138 +3277,32 @@ const initializeAdMob = useCallback(async () => {
     );
   };
 
-  const renderColorPickerModal = () => {
-    if (!isColorPickerOpen) return null;
-    
-    const hsl = hexToHsl(tempColor);
-    // CSS angle is 0 at Top. Math angle is 0 at Right.
-    // To convert CSS angle to Math angle for positioning the pin:
-    const mathAngleDeg = hsl.h - 90;
-    const mathAngleRad = (mathAngleDeg * Math.PI) / 180;
-    const pinX = 50 + 37 * Math.cos(mathAngleRad);
-    const pinY = 50 + 37 * Math.sin(mathAngleRad);
+  const renderColorPickerModal = () => (
+    <ColorPickerModal
+      isOpen={isColorPickerOpen}
+      currentColor={settings.calmAccentColor || '#fbcd53'}
+      t={t}
+      onClose={() => setIsColorPickerOpen(false)}
+      onSave={(newColor) => {
+        const n = { ...settings, calmAccentColor: newColor };
+        setSettings(n);
+        queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+        setIsColorPickerOpen(false);
+        triggerHaptic('medium');
+      }}
+    />
+  );
 
-    const handleWheelTouch = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent) => {
-      const target = document.getElementById('calm-popup-wheel');
-      if (!target) return;
-      const rect = target.getBoundingClientRect();
-      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
-      const x = clientX - rect.left - rect.width / 2;
-      const y = clientY - rect.top - rect.height / 2;
-      
-      // Math.atan2 gives 0 at right, -90 at top, 180 at left, 90 at bottom.
-      let angleDeg = Math.round(Math.atan2(y, x) * (180 / Math.PI));
-      // Convert to CSS angle where 0 is top
-      angleDeg = (angleDeg + 90 + 360) % 360;
-      
-      const hex = hslToHex(angleDeg, 80, 75); // Muted pastel colors
-      setTempColor(hex);
-    };
-
-    return (
-      <div 
-        className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
-        onClick={(e) => { if (e.target === e.currentTarget) setIsColorPickerOpen(false); }}
-      >
-        <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl w-full max-w-xs m-4 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
-          <div className="text-center space-y-1.5 w-full">
-            <h3 className="text-lg font-black text-white uppercase tracking-wider">{t("Kleur Kiezer")}</h3>
-            <p className="text-slate-400 text-xs">{t("Sleep op het wiel om een kleur te kiezen")}</p>
-          </div>
-
-          {/* Color Wheel Container */}
-          <div 
-            id="calm-popup-wheel"
-            className="relative w-48 h-48 cursor-crosshair select-none touch-none rounded-full"
-            onMouseDown={(e) => {
-              handleWheelTouch(e);
-              const onMouseMove = (moveEvent: MouseEvent) => handleWheelTouch(moveEvent);
-              const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-              };
-              window.addEventListener('mousemove', onMouseMove);
-              window.addEventListener('mouseup', onMouseUp);
-            }}
-            onTouchStart={(e) => {
-              handleWheelTouch(e);
-              const onTouchMove = (moveEvent: TouchEvent) => handleWheelTouch(moveEvent);
-              const onTouchEnd = () => {
-                window.removeEventListener('touchmove', onTouchMove);
-                window.removeEventListener('touchend', onTouchEnd);
-              };
-              window.addEventListener('touchmove', onTouchMove, { passive: false });
-              window.addEventListener('touchend', onTouchEnd);
-            }}
-          >
-            {/* The actual donut gradient */}
-            <div 
-              className="absolute inset-0 rounded-full"
-              style={{ 
-                background: 'conic-gradient(from 0deg, hsl(0,80%,75%), hsl(60,80%,75%), hsl(120,80%,75%), hsl(180,80%,75%), hsl(240,80%,75%), hsl(300,80%,75%), hsl(360,80%,75%))',
-                WebkitMaskImage: 'radial-gradient(circle, transparent 48%, black 49%)',
-                maskImage: 'radial-gradient(circle, transparent 48%, black 49%)'
-              }}
-            />
-
-            {/* Color Wheel selector Pin */}
-            <div 
-              className="absolute w-5 h-5 rounded-full border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.6)] pointer-events-none -translate-x-1/2 -translate-y-1/2"
-              style={{ 
-                left: `${pinX}%`,
-                top: `${pinY}%`,
-                backgroundColor: tempColor
-              }}
-            />
-          </div>
-
-          {/* Color Preview */}
-          <div className="flex items-center gap-4 w-full bg-slate-800/40 p-3 rounded-2xl border border-slate-700/30">
-            <div 
-              className="w-12 h-12 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center transition-colors shrink-0"
-              style={{ backgroundColor: tempColor }}
-            />
-            <span className="text-sm text-slate-300 font-bold uppercase tracking-wider">{t("Geselecteerde Kleur")}</span>
-          </div>
-
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-3 w-full pt-2">
-            <button
-              onClick={() => setIsColorPickerOpen(false)}
-              className="py-3 rounded-2xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors text-sm active:scale-95 transition-transform"
-            >
-              {t("Annuleren")}
-            </button>
-            <button
-              onClick={() => {
-                const n = { ...settings, calmAccentColor: tempColor };
-                setSettings(n);
-                queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                setIsColorPickerOpen(false);
-                triggerHaptic('medium');
-              }}
-              className="py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm active:scale-95 transition-transform"
-            >
-              {t("Opslaan")}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderQuitModal = () => showQuitConfirm && (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setShowQuitConfirm(false); }}>
-      <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
-        <h3 className="text-xl font-bold text-white text-center mb-4">{t("Spel Stoppen")}</h3>
-        <p className="text-slate-300 text-center mb-6">{t("Weet je zeker dat je wilt stoppen?")}</p>
-        <div className="flex gap-3">
-          <button onClick={() => setShowQuitConfirm(false)} className="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-700 active:scale-95 transition-transform">{t("Annuleren")}</button>
-          <button onClick={() => { setShowQuitConfirm(false); setPhase(GamePhase.SETUP); }} className="flex-1 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform">{t("Stoppen")}</button>
-        </div>
-      </div>
-    </div>
+  const renderQuitModal = () => (
+    <QuitConfirmModal
+      isOpen={showQuitConfirm}
+      t={t}
+      onCancel={() => setShowQuitConfirm(false)}
+      onConfirm={() => {
+        setShowQuitConfirm(false);
+        setPhase(GamePhase.SETUP);
+      }}
+    />
   );
 
   const renderDevModeOrb = () => {
@@ -3466,31 +3322,14 @@ const initializeAdMob = useCallback(async () => {
     );
   };
 
-  const renderPlayerHandModal = () => {
-    if (!playerHandToView) return null;
-    return (
-      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setPlayerHandToView(null)}>
-        <div className="w-full max-w-sm m-4 relative bg-slate-900 border border-white/10 rounded-3xl shadow-2xl p-6 text-center animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-          <div className="w-16 h-16 rounded-full border-2 border-amber-500 bg-slate-800 overflow-hidden mx-auto mb-4">
-            {playerHandToView.image ? <img src={playerHandToView.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white font-black text-2xl">{playerHandToView.name.charAt(0)}</div>}
-          </div>
-          <h3 className="text-2xl font-black text-white mb-2">{playerHandToView.name}</h3>
-          <p className="text-slate-400 mb-6">{t("Kaarten in hand")}: {playerHandToView.hand.length}</p>
-          <div className="grid grid-cols-4 gap-2 mb-6 max-h-[50vh] overflow-y-auto p-2 justify-items-center">
-            {playerHandToView.hand.map((card, i) => (
-              <div key={i} className="hover:scale-105 transition-transform drop-shadow-md">
-                <PlayingCard card={card} size="sm" style={settings.cardStyle} />
-              </div>
-            ))}
-            {playerHandToView.hand.length === 0 && (
-              <div className="col-span-4 text-slate-500 italic py-4">{t("Geen kaarten")}</div>
-            )}
-          </div>
-          <button onClick={() => setPlayerHandToView(null)} className="w-full bg-amber-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-amber-400 active:scale-95 transition-all uppercase tracking-widest">{t("Sluiten")}</button>
-        </div>
-      </div>
-    );
-  };
+  const renderPlayerHandModal = () => (
+    <PlayerHandModal
+      player={playerHandToView}
+      cardStyle={settings.cardStyle}
+      t={t}
+      onClose={() => setPlayerHandToView(null)}
+    />
+  );
 
   const renderSettingsModal = () => (isSettingsOpen && phase !== GamePhase.SETUP) && (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }}>
@@ -3542,7 +3381,14 @@ const initializeAdMob = useCallback(async () => {
     if (!isDevMenuVisible) return null;
     return (
       <div className={`relative flex items-center z-[100] ${className}`}>
-        <div className={`absolute top-full right-0 mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_15px_rgba(34,197,94,0.2)] transition-all duration-200 origin-top-right ${isDevMenuOpen ? 'scale-100 opacity-100 pointer-events-auto translate-y-0' : 'scale-95 opacity-0 pointer-events-none -translate-y-2'}`}>
+        {/* Backdrop for outside click dismissal */}
+        {isDevMenuOpen && (
+          <div 
+            className="fixed inset-0 z-[105]" 
+            onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(false); }} 
+          />
+        )}
+        <div className={`fixed left-1/2 -translate-x-1/2 top-16 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:translate-x-0 sm:mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_20px_rgba(34,197,94,0.3)] backdrop-blur-xl transition-all duration-200 origin-center sm:origin-top-right z-[110] max-w-[95vw] ${isDevMenuOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}>
             <button 
               onClick={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, alwaysWin: !p.alwaysWin })); }}
               className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${devSettings.alwaysWin ? 'bg-green-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
@@ -3612,7 +3458,7 @@ const initializeAdMob = useCallback(async () => {
           </div>
         <button 
           onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(!isDevMenuOpen); }}
-          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm relative z-10"
+          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm relative z-[111]"
         >
           {isDevMenuOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
@@ -4031,6 +3877,17 @@ const initializeAdMob = useCallback(async () => {
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
         {renderColorPickerModal()}
+        <HardBusWarningModal
+          isOpen={showHardBusWarning}
+          busLength={settings.busLength}
+          t={t}
+          lang={lang}
+          onCancel={() => setShowHardBusWarning(false)}
+          onConfirm={() => {
+            setShowHardBusWarning(false);
+            confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
+          }}
+        />
     </>
   );
   if (phase === GamePhase.SETUP) {
@@ -4129,31 +3986,13 @@ const initializeAdMob = useCallback(async () => {
         </div>
 
         {/* Photo Options Modal */}
-        {isPhotoOptionsModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsPhotoOptionsModalOpen(false); }}>
-            <div className="bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/10 w-full max-w-sm m-4 space-y-4 animate-in zoom-in-50 duration-300">
-              <h3 className="text-xl font-bold text-white text-center mb-4">{t("Profielfoto kiezen")}</h3>
-              <button
-                onClick={handleTakePhoto}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-              >
-                <CameraIcon size={20} /> {t("Maak foto")}
-              </button>
-              <button
-                onClick={handleSelectFromGallery}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-              >
-                <ImageIcon size={20} /> {t("Kies uit galerij")}
-              </button>
-              <button
-                onClick={() => setIsPhotoOptionsModalOpen(false)}
-                className="w-full bg-slate-700/50 text-white font-bold py-3 rounded-xl hover:bg-slate-600/50 active:scale-95 transition-transform"
-              >
-                {t("Annuleren")}
-              </button>
-            </div>
-          </div>
-        )}
+        <PhotoOptionsModal
+          isOpen={isPhotoOptionsModalOpen}
+          t={t}
+          onTakePhoto={handleTakePhoto}
+          onSelectFromGallery={handleSelectFromGallery}
+          onClose={() => setIsPhotoOptionsModalOpen(false)}
+        />
 
 
         {renderAdditionalModals()}
@@ -5153,27 +4992,45 @@ const initializeAdMob = useCallback(async () => {
           <RootContainer theme={settings.theme}>
           {isBusWon && <Confetti />}
           {isBusWon && (
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[90]">
-              <div className="absolute top-1/2 -translate-y-1/2 left-[-300px] animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards]">
-                <Bus size={150} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_10px_25px_rgba(52,211,153,0.5)] opacity-90" />
-              </div>
-              <div className="absolute top-[30%] w-full text-center px-4 animate-[fadeInText_2s_ease-out_2.5s_forwards] opacity-0">
-                <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg">
+            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
+              {/* Top Text - Above Bus */}
+              <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_2.5s_forwards] opacity-0 shrink-0">
+                <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
                   {t("Je mag uit de bus! 🎉")}
                 </h2>
               </div>
               
-              {busPassengers.length > 0 && (
-                <div className="absolute top-[65%] w-full text-center px-6 animate-[fadeInText_2s_ease-out_4s_forwards] opacity-0">
-                  <p className="text-lg sm:text-2xl text-slate-200 font-medium drop-shadow-md mx-auto max-w-2xl leading-relaxed">
-                    {lang === 'en' ? (
-                      <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold">;)</span></>
-                    ) : (
-                      <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold">;)</span></>
-                    )}
-                  </p>
-                </div>
-              )}
+              {/* Center Animated Bus SVG - Perfectly Centered Between Texts */}
+              <div className="animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
+                <Bus size={175} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_15px_35px_rgba(52,211,153,0.5)] opacity-95" />
+              </div>
+              
+              {/* Bottom Text - Below Bus */}
+              {busPassengers.length > 0 && (() => {
+                const busCardTotal = busCards.length > 0 ? busCards.length : (settings.busLength || 5);
+                const firstTryChance = Math.round(Math.pow(0.71, Math.max(1, busCardTotal - 1)) * 100);
+                const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
+                
+                return (
+                  <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_3.8s_forwards] opacity-0 shrink-0 px-2 sm:px-4">
+                    <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-slate-100 font-bold drop-shadow-xl mx-auto max-w-2xl sm:max-w-3xl leading-snug tracking-tight">
+                      {isFirstTry ? (
+                        lang === 'en' ? (
+                          <>Well done, you got out on the first try! The chance of that happening is approximately <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                        ) : (
+                          <>Goed gedaan, je bent er in één keer uitgekomen! De kans dat dit gebeurt is ongeveer <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                        )
+                      ) : (
+                        lang === 'en' ? (
+                          <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                        ) : (
+                          <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                        )
+                      )}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
@@ -5351,27 +5208,45 @@ const initializeAdMob = useCallback(async () => {
         {isBusWon && <Confetti />}
 
         {isBusWon && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[90]">
-            <div className="absolute top-1/2 -translate-y-1/2 left-[-300px] animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards]">
-              <Bus size={150} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_10px_25px_rgba(52,211,153,0.5)] opacity-90" />
-            </div>
-            <div className="absolute top-[30%] w-full text-center px-4 animate-[fadeInText_2s_ease-out_2.5s_forwards] opacity-0">
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg">
+          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
+            {/* Top Text - Above Bus */}
+            <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_2.5s_forwards] opacity-0 shrink-0">
+              <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
                 {t("Je mag uit de bus! 🎉")}
               </h2>
             </div>
             
-            {busPassengers.length > 0 && (
-              <div className="absolute top-[65%] w-full text-center px-6 animate-[fadeInText_2s_ease-out_4s_forwards] opacity-0">
-                <p className="text-lg sm:text-2xl text-slate-200 font-medium drop-shadow-md mx-auto max-w-2xl leading-relaxed">
-                  {lang === 'en' ? (
-                    <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold">;)</span></>
-                  ) : (
-                    <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl mx-1">{busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0)}</span> {busPassengers.reduce((acc, p) => acc + p.drinksTaken, 0) === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold">;)</span></>
-                  )}
-                </p>
-              </div>
-            )}
+            {/* Center Animated Bus SVG - Perfectly Centered Between Texts */}
+            <div className="animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
+              <Bus size={175} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_15px_35px_rgba(52,211,153,0.5)] opacity-95" />
+            </div>
+            
+            {/* Bottom Text - Below Bus */}
+            {busPassengers.length > 0 && (() => {
+              const busCardTotal = busCards.length > 0 ? busCards.length : (settings.busLength || 5);
+              const firstTryChance = Math.round(Math.pow(0.71, Math.max(1, busCardTotal - 1)) * 100);
+              const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
+              
+              return (
+                <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_3.8s_forwards] opacity-0 shrink-0 px-2 sm:px-4">
+                  <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-slate-100 font-bold drop-shadow-xl mx-auto max-w-2xl sm:max-w-3xl leading-snug tracking-tight">
+                    {isFirstTry ? (
+                      lang === 'en' ? (
+                        <>Well done, you got out on the first try! The chance of that happening is approximately <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                      ) : (
+                        <>Goed gedaan, je bent er in één keer uitgekomen! De kans dat dit gebeurt is ongeveer <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                      )
+                    ) : (
+                      lang === 'en' ? (
+                        <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                      ) : (
+                        <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+                      )
+                    )}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         )}
 

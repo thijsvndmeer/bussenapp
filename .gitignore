@@ -45,5 +45,6 @@ yarn-error.log*
 /extracted-dictionary.json
 /metadata.json
 .superpowers/
+/docs/superpowers/
 .codegraph/
 *.mjs
