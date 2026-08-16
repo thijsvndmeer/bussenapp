@@ -1303,10 +1303,7 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputCameraRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
-  const adInterstitialPromiseRef = useRef<Promise<void> | null>(null);
-  const adRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAdShownRef = useRef<number>(0);
-  const AD_COOLDOWN_MS = 60_000; // 1 minute cooldown between ads
 
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
@@ -1442,57 +1439,23 @@ const initializeAdMob = useCallback(async () => {
     }
   }, []);
 
-  // Pre-load an interstitial ad so it's ready to display instantly
-  const prepareAdInterstitial = useCallback((adId: string) => {
-    // If there's a dev player, don't prepare ads
-    if (players.some(p => p.isDev)) return Promise.resolve();
+  // Pre-load an interstitial ad in background
+  const prepareAdInterstitial = useCallback(async (adId: string) => {
+    if (!Capacitor.isNativePlatform() || players.some(p => p.isDev)) return;
 
-    // If we're already loading or have loaded an ad, just return that Promise
-    if (adInterstitialPromiseRef.current) return adInterstitialPromiseRef.current;
+    try {
+      if (!adMobReadyRef.current) {
+        await AdMob.initialize({
+          initializeForTesting: false,
+        });
+        adMobReadyRef.current = true;
+      }
 
-    // Clear any existing retry timeout
-    if (adRetryTimeoutRef.current) {
-      clearTimeout(adRetryTimeoutRef.current);
-      adRetryTimeoutRef.current = null;
+      await AdMob.prepareInterstitial({ adId });
+    } catch (error) {
+      console.warn('AdMob interstitial preload failed', error);
     }
-
-    if (!Capacitor.isNativePlatform()) return Promise.resolve();
-
-    const loadAd = async () => {
-      try {
-        if (!adMobReadyRef.current) {
-          await AdMob.initialize({
-            initializeForTesting: false,
-          });
-          adMobReadyRef.current = true;
-        }
-
-        await AdMob.prepareInterstitial({ adId });
-      } catch (error) {
-        console.warn('Interstitial voorbereiden mislukt', error);
-        adInterstitialPromiseRef.current = null; // Clear so we can try again later
-
-        // Schedule a retry after 15 seconds
-        if (adRetryTimeoutRef.current) clearTimeout(adRetryTimeoutRef.current);
-        adRetryTimeoutRef.current = setTimeout(() => {
-          adRetryTimeoutRef.current = null;
-          prepareAdInterstitial(adId);
-        }, 15_000);
-      }
-    };
-
-    adInterstitialPromiseRef.current = loadAd();
-    return adInterstitialPromiseRef.current;
   }, [players]);
-
-  // Cleanup ad retry timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (adRetryTimeoutRef.current) {
-        clearTimeout(adRetryTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const prepareRewardedAd = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
@@ -1530,34 +1493,37 @@ const initializeAdMob = useCallback(async () => {
   }, [players]);
 
   // Interstitial ad
-  // Includes 1-minute cooldown to prevent multiple ads from stacking
   const showInterstitialAd = useCallback(async (type: 'QUIT' | 'LEADERBOARD') => {
-    if (!Capacitor.isNativePlatform()) return;
     if (players.some(p => p.isDev)) return;
 
-    const now = Date.now();
-    if (now - lastAdShownRef.current < AD_COOLDOWN_MS) {
-      console.log('Ad cooldown actief, overgeslagen');
+    setIsAdLoading(true);
+
+    if (!Capacitor.isNativePlatform()) {
+      // Simulate ad playback delay on web/dev to show loading popup
+      await new Promise(r => setTimeout(r, 1200));
+      setIsAdLoading(false);
       return;
     }
 
     const adId = type === 'QUIT' ? ADMOB_INTERSTITIAL_QUIT_UNIT_ID : ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID;
 
     try {
-      setIsAdLoading(true);
-      // Ensure it is prepared (this will wait if a background preload is still running)
-      await prepareAdInterstitial(adId);
-      setIsAdLoading(false);
+      if (!adMobReadyRef.current) {
+        await AdMob.initialize({
+          initializeForTesting: false,
+        });
+        adMobReadyRef.current = true;
+      }
 
+      await AdMob.prepareInterstitial({ adId });
       await AdMob.showInterstitial();
       lastAdShownRef.current = Date.now();
-      adInterstitialPromiseRef.current = null; // Reset – force fresh preload for next time
     } catch (error) {
-      console.warn('Interstitial tonen mislukt', error);
+      console.warn('AdMob interstitial failed', error);
+    } finally {
       setIsAdLoading(false);
-      adInterstitialPromiseRef.current = null; // Reset on failure too
     }
-  }, [prepareAdInterstitial, players]);
+  }, [players]);
 
   const persistPlayers = useCallback(() => {
     const payload: PersistedPlayerState = {
@@ -2283,6 +2249,7 @@ const initializeAdMob = useCallback(async () => {
     setRoundStep(RoundStep.RED_BLACK);
     setFeedback(null);
     setIsWaitingForNextPlayer(true);
+    prepareAdInterstitial(ADMOB_INTERSTITIAL_QUIT_UNIT_ID);
   };
 
   // --- ROUNDS 1-4 LOGIC ---
@@ -3289,10 +3256,7 @@ const initializeAdMob = useCallback(async () => {
       isOpen={showQuitConfirm}
       t={t}
       onCancel={() => setShowQuitConfirm(false)}
-      onConfirm={() => {
-        setShowQuitConfirm(false);
-        setPhase(GamePhase.SETUP);
-      }}
+      onConfirm={handleQuitGame}
     />
   );
 
@@ -5579,6 +5543,7 @@ const initializeAdMob = useCallback(async () => {
           </button>
         </div>
       </RootContainer>
+      {renderAdLoadingModal()}
       </>
     );
   }
