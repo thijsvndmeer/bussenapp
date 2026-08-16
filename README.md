@@ -4,8 +4,7 @@
 
 [![Latest Release](https://badgen.net/github/release/thijsvndmeer/bussenapp?icon=github&color=blue)](https://github.com/thijsvndmeer/bussenapp/releases)
 [![Deploy to Google Play](https://github.com/thijsvndmeer/bussenapp/actions/workflows/playstore.yml/badge.svg)](https://github.com/thijsvndmeer/bussenapp/actions/workflows/playstore.yml)
-[![Deploy to GitHub Pages](https://github.com/thijsvndmeer/bussenapp/actions/workflows/deploy.yml/badge.svg)](https://github.com/thijsvndmeer/bussenapp/actions/workflows/deploy.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE.md)
 
 <br/>
 
@@ -116,6 +115,7 @@ npm run android
 
 ---
 
-## License
+## Copyright & License
 
-This project is licensed under the MIT License - see the [LICENSE.md](file:///Users/thijsvandermeer/Downloads/bussenapp/LICENSE.md) file for details.
+Copyright (c) 2026 Thijs van der Meer. All Rights Reserved.
+See [LICENSE.md](file:///Users/thijsvandermeer/Downloads/bussenapp/LICENSE.md) for details.
