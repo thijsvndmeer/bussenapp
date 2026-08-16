@@ -1,4 +1,4 @@
-# 🚌 Bussen App
+# Bussen App
 
 <div align="center">
 
@@ -21,25 +21,25 @@
 
 ---
 
-## 📱 Download & Play
+## Download & Play
 
 - **Android (Google Play):** [Get Bussen on Google Play](https://play.google.com/store/apps/details?id=com.bussen.app)
 - **Web App (PWA):** [Play Online via GitHub Pages](https://thijsvndmeer.github.io/bussenapp/)
 
 ---
 
-## ✨ Features
+## Features
 
-- 🃏 **Automated Card Flow:** Handles card dealing, shuffling, and rule calculations automatically across all phases.
-- 🔺 **Phase 1: The Pyramid:** Build and climb the pyramid with custom heights, penalties, and interactive card flips.
-- 🚌 **Phase 2: Ride the Bus (Buschauffeur):** Dynamic bus ride with digital card navigation, drinking penalties, and shared bus mechanics.
-- 🎨 **Dynamic Themes:** Custom color palettes (Metro, Neon, Classic, Dark Mode) with sound and haptic effects.
-- 📳 **Native Device APIs:** Full haptic feedback and status bar integration via Capacitor.
-- ⚡ **Offline & PWA Ready:** Playable offline in the browser or as an installed Android app.
+- **Automated Card Flow:** Handles card dealing, shuffling, and rule calculations automatically across all phases.
+- **Phase 1: The Pyramid:** Build and climb the pyramid with custom heights, penalties, and interactive card flips.
+- **Phase 2: Ride the Bus (Buschauffeur):** Dynamic bus ride with digital card navigation, drinking penalties, and shared bus mechanics.
+- **Dynamic Themes:** Custom color palettes (Metro, Neon, Classic, Dark Mode) with sound and haptic effects.
+- **Native Device APIs:** Full haptic feedback and status bar integration via Capacitor.
+- **Offline & PWA Ready:** Playable offline in the browser or as an installed Android app.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - **Bundler:** [Vite](https://vitejs.dev/)
@@ -49,7 +49,7 @@
 
 ---
 
-## 🚀 CI/CD Pipeline & Branch Architecture
+## CI/CD Pipeline & Branch Architecture
 
 This repository uses a fully automated 4-stage branch promotion pipeline powered by GitHub Actions:
 
@@ -71,7 +71,7 @@ graph LR
 
 ---
 
-## 💻 Local Development
+## Local Development
 
 ### Prerequisites
 - **Node.js:** `>= 22.0.0`
@@ -110,12 +110,12 @@ npm run android
 
 ---
 
-## 👤 Author & Maintainer
+## Author & Maintainer
 
 - **Thijs van der Meer** — [@thijsvndmeer](https://github.com/thijsvndmeer)
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](file:///Users/thijsvandermeer/Downloads/bussenapp/LICENSE.md) file for details.
