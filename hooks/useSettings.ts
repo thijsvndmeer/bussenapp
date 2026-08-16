@@ -12,9 +12,10 @@ const DEFAULT_SETTINGS: GameSettings = {
   sharedBus: false,
   busLength: 6,
   busDecks: 1,
-  cardStyle: CardStyle.CLASSIC,
+  cardStyle: CardStyle.DARK,
   doublePyramidCards: true,
-  theme: UITheme.CLASSIC,
+  theme: UITheme.CALM,
+  calmAccentColor: '#fb7185',
 };
 
 type SettingsPatch = Partial<GameSettings>;

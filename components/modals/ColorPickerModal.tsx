@@ -68,11 +68,11 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = React.memo(({
   onClose,
   onSave,
 }) => {
-  const [tempColor, setTempColor] = useState(currentColor || '#fbcd53');
+  const [tempColor, setTempColor] = useState(currentColor || '#fb7185');
 
   useEffect(() => {
     if (isOpen) {
-      setTempColor(currentColor || '#fbcd53');
+      setTempColor(currentColor || '#fb7185');
     }
   }, [isOpen, currentColor]);
 

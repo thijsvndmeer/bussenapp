@@ -344,8 +344,8 @@ input:disabled,
 .theme-calm button[class*="from-emerald"]:not([class*="from-[#ffffff]"]) { background-color: rgba(6, 78, 59, 0.5) !important; border: 1px solid rgba(16, 185, 129, 0.3) !important; color: #d1fae5 !important; }
 .theme-calm button[class*="from-emerald"]:not([class*="from-[#ffffff]"]):hover { background-color: rgba(6, 78, 59, 0.7) !important; }
 
-.theme-calm button[class*="from-red"] { background-color: rgba(127, 29, 29, 0.5) !important; border: 1px solid rgba(239, 68, 68, 0.3) !important; color: #fee2e2 !important; }
-.theme-calm button[class*="from-red"]:hover { background-color: rgba(127, 29, 29, 0.7) !important; }
+.theme-calm button[class*="from-red"] { background-color: var(--theme-accent-glow, rgba(251, 113, 133, 0.25)) !important; border: 1px solid var(--theme-accent, #fb7185) !important; color: #ffffff !important; }
+.theme-calm button[class*="from-red"]:hover { background-color: var(--theme-accent-glow, rgba(251, 113, 133, 0.45)) !important; }
 
 .theme-calm button[class*="from-blue"] { background-color: rgba(30, 58, 138, 0.5) !important; border: 1px solid rgba(59, 130, 246, 0.3) !important; color: #dbeafe !important; }
 .theme-calm button[class*="from-blue"]:hover { background-color: rgba(30, 58, 138, 0.7) !important; }
