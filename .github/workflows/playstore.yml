@@ -47,7 +47,9 @@ jobs:
         id: pkg
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          VERSION_CODE=$(node -p "require('./package.json').version.replace(/[^0-9]/g, '')")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
       - name: Determine Google Play Track
         id: determine_track
@@ -129,7 +131,7 @@ jobs:
         working-directory: ./android
         env:
           ADMOB_APP_ID: ${{ secrets.VITE_ADMOB_APP_ID }}
-          VERSION_CODE: ${{ github.run_number }}
+          VERSION_CODE: ${{ steps.pkg.outputs.version_code }}
           VERSION_NAME: ${{ steps.pkg.outputs.version }}
         run: ./gradlew bundleRelease --stacktrace
 
@@ -146,7 +148,7 @@ jobs:
       - name: Upload Signed AAB Artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-${{ steps.determine_track.outputs.track }}-${{ steps.pkg.outputs.version }}-${{ github.run_number }}.aab
+          name: app-release-${{ steps.determine_track.outputs.track }}-v${{ steps.pkg.outputs.version }}-code${{ steps.pkg.outputs.version_code }}.aab
           path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
           retention-days: 14
 
