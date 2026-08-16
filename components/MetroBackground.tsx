@@ -555,11 +555,31 @@ export default function MetroBackground() {
         }
       }
 
-      animRef.current = requestAnimationFrame(loop);
+      if (!document.hidden) {
+        animRef.current = requestAnimationFrame(loop);
+      }
     };
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        if (animRef.current) {
+          cancelAnimationFrame(animRef.current);
+          animRef.current = 0;
+        }
+      } else {
+        state.current.last = 0;
+        if (!animRef.current) {
+          animRef.current = requestAnimationFrame(loop);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
     animRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animRef.current);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
   }, [releasePathElement, spawnLine]);
 
   return (

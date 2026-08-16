@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { useTranslation } from './i18n';
 import { BusFront } from 'lucide-react';
+import './styles/index.css';
 
 const Root = () => {
   const { t } = useTranslation();
@@ -166,7 +167,13 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-const root = ReactDOM.createRoot(rootElement);
+declare global {
+  interface Window {
+    __reactRoot?: ReactDOM.Root;
+  }
+}
+
+const root = window.__reactRoot ?? (window.__reactRoot = ReactDOM.createRoot(rootElement));
 root.render(
   <React.StrictMode>
     <ErrorBoundary>

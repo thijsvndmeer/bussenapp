@@ -56,7 +56,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kleur Kiezer": "Kleurkiezer",
         "Sleep op het wiel om een kleur te kiezen": "Sleep over het wiel om een kleur te kiezen",
         "Geselecteerde Kleur": "Geselecteerde kleur",
-        "Opslaan": "Opslaan"
+        "Opslaan": "Opslaan",
+        "Aanpassen": "Aanpassen",
+        "Toch Starten": "Toch Starten"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -363,7 +365,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Eerst de onderste rij!": "First the bottom row!",
         "Kom op joh...": "Come on man...",
         "Niet zo oneerlijk!": "Don't be unfair!",
-        "Hou je aan de regels!": "Stick to the rules!"
+        "Hou je aan de regels!": "Stick to the rules!",
+        "Aanpassen": "Adjust",
+        "Toch Starten": "Start Anyway"
     }
 };
 
