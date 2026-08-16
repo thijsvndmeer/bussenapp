@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Clapperboard } from 'lucide-react';
 
 interface AdLoadingModalProps {
@@ -7,11 +7,55 @@ interface AdLoadingModalProps {
   lang?: string;
 }
 
+const SUBTEXTS_NL = [
+  'Ik moet ook m\'n huur betalen...',
+  'Even geduld, hij komt zo...',
+  'sorry sorry',
+  'De barman tapt nog even een biertje',
+  'de bus komt eraan 🚌',
+  'ik betaal mn collegegeld van deze reclame inkomsten',
+  'Nog effe, bijna klaar!',
+  'Doe alvast maar een shotje',
+  'We financieren hiermee nieuwe kaarten',
+  'voor niks komt de zon op',
+  'Sponsors houden de bus rijdend',
+  'neem anders even pauze tijdens de reclame',
+  'Nog effe volhouden...',
+  'Biertje erbij?',
+  'geef kapitalisme de schuld',
+  'hoort er wel een beetje bij als de app gratis is he',
+];
+
+const SUBTEXTS_EN = [
+  'gotta pay rent somehow...',
+  'just a sec, almost there...',
+  'sorry sorry',
+  'the bartender is still pouring a beer',
+  'the bus is coming 🚌',
+  'paying tuition with this ad revenue',
+  'almost done, hang tight!',
+  'do a shot in the meantime',
+  'funding new card designs with this',
+  'nothing in life is free',
+  'sponsors keep the bus rolling',
+  'take a break during the commercial',
+  'just a liiittle longer...',
+  'beer while you wait?',
+  'blame capitalism',
+  'kinda comes with the territory when the app is free',
+];
+
 export const AdLoadingModal: React.FC<AdLoadingModalProps> = React.memo(({
   isOpen,
   t,
   lang = 'nl',
 }) => {
+  const subtext = useMemo(() => {
+    const list = lang === 'en' ? SUBTEXTS_EN : SUBTEXTS_NL;
+    return list[Math.floor(Math.random() * list.length)];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, lang]);
+
   if (!isOpen) return null;
 
   const isEn = lang === 'en';
@@ -54,8 +98,8 @@ export const AdLoadingModal: React.FC<AdLoadingModalProps> = React.memo(({
           <h3 className="text-white font-black text-xl sm:text-2xl tracking-tight uppercase leading-tight">
             {isEn ? 'Loading ad...' : 'Advertentie laden...'}
           </h3>
-          <p className="text-slate-400 text-sm font-medium">
-            {isEn ? 'Just a moment...' : 'Een moment geduld...'}
+          <p className="text-slate-400 text-sm font-medium italic">
+            {subtext}
           </p>
         </div>
 
