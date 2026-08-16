@@ -1037,10 +1037,10 @@ const App: React.FC = () => {
       sharedBus: false,
       busLength: 6,
       busDecks: 1,
-      cardStyle: CardStyle.CLASSIC,
+      cardStyle: CardStyle.DARK,
       doublePyramidCards: true,
-      theme: UITheme.CLASSIC,
-      calmAccentColor: '#fbcd53',
+      theme: UITheme.CALM,
+      calmAccentColor: '#fb7185',
     };
 
     if (!storageAvailable) return defaultSettings;
@@ -1244,7 +1244,7 @@ const App: React.FC = () => {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-  const [tempColor, setTempColor] = useState('#fbcd53');
+  const [tempColor, setTempColor] = useState('#fb7185');
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
   const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
@@ -1556,7 +1556,7 @@ const initializeAdMob = useCallback(async () => {
     root.classList.add(`theme-${settings.theme}`, 'theme-transition');
 
     if (settings.theme === UITheme.CALM) {
-      const accentHex = settings.calmAccentColor || '#fbcd53'; // Default soft yellow/gold
+      const accentHex = settings.calmAccentColor || '#fb7185'; // Default light red
       
       // Parse Hex to RGB
       const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -3238,7 +3238,7 @@ const initializeAdMob = useCallback(async () => {
   const renderColorPickerModal = () => (
     <ColorPickerModal
       isOpen={isColorPickerOpen}
-      currentColor={settings.calmAccentColor || '#fbcd53'}
+      currentColor={settings.calmAccentColor || '#fb7185'}
       t={t}
       onClose={() => setIsColorPickerOpen(false)}
       onSave={(newColor) => {
@@ -3533,12 +3533,12 @@ const initializeAdMob = useCallback(async () => {
                     <h4 className="text-white font-medium">{t("Calm Accent Kleur")}</h4>
                     <div className="flex bg-slate-800/70 p-2 rounded-2xl gap-3 border border-slate-700/50 justify-between items-center">
                       {[
+                        { name: t('Lichtrood'), value: '#fb7185' },
                         { name: t('Goud'), value: '#fbcd53' },
                         { name: t('Periwinkle'), value: '#818cf8' },
                         { name: t('Munt'), value: '#2dd4bf' },
-                        { name: t('Roze'), value: '#f472b6' },
                       ].map(colorOpt => {
-                        const isColorActive = (settings.calmAccentColor || '#fbcd53') === colorOpt.value;
+                        const isColorActive = (settings.calmAccentColor || '#fb7185') === colorOpt.value;
                         return (
                           <button
                             key={colorOpt.value}
@@ -3563,9 +3563,9 @@ const initializeAdMob = useCallback(async () => {
 
                       {/* Custom Color Picker Button */}
                       {(() => {
-                        const presets = ['#fbcd53', '#818cf8', '#2dd4bf', '#f472b6'];
-                        const isCustomActive = !presets.includes(settings.calmAccentColor || '#fbcd53');
-                        const activeColor = settings.calmAccentColor || '#fbcd53';
+                        const presets = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
+                        const isCustomActive = !presets.includes(settings.calmAccentColor || '#fb7185');
+                        const activeColor = settings.calmAccentColor || '#fb7185';
                         return (
                           <button
                             onClick={() => {
