@@ -7,8 +7,8 @@ android {
         applicationId "com.bussen.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode (System.getenv("VERSION_CODE") ? Integer.parseInt(System.getenv("VERSION_CODE")) : 152)
-        versionName (System.getenv("VERSION_NAME") ?: "1.5.2")
+        versionCode (System.getenv("VERSION_CODE") ? Integer.parseInt(System.getenv("VERSION_CODE")) : 154)
+        versionName (System.getenv("VERSION_NAME") ?: "1.5.4")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
