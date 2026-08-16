@@ -1286,6 +1286,16 @@ const App: React.FC = () => {
   // Setup State
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerImage, setNewPlayerImage] = useState<string | null>(null);
+
+  const canAddPlayer = useMemo(() => {
+    const trimmed = newPlayerName.trim();
+    return (
+      trimmed.length > 0 &&
+      players.length < 12 &&
+      !players.some(p => p.name.toLowerCase() === trimmed.toLowerCase())
+    );
+  }, [newPlayerName, players]);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
 
@@ -3914,8 +3924,16 @@ const initializeAdMob = useCallback(async () => {
               onKeyDown={e => e.key === 'Enter' && addPlayer()}
               maxLength={12}
             />
-            <button onClick={addPlayer} className="flex-none w-14 h-full bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 rounded-2xl text-white border-t border-emerald-400 transition-all shadow-lg active:scale-90 flex items-center justify-center glass-panel">
-              <Check size={24} strokeWidth={4} className="text-green-100" />
+            <button
+              onClick={addPlayer}
+              disabled={!canAddPlayer}
+              className={`flex-none w-14 h-full rounded-2xl transition-all flex items-center justify-center ${
+                canAddPlayer
+                  ? 'bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 border-t border-emerald-400 text-white shadow-lg active:scale-90 glass-panel'
+                  : 'bg-slate-800/40 border border-slate-700/50 text-slate-500 opacity-40 cursor-not-allowed'
+              }`}
+            >
+              <Check size={24} strokeWidth={4} className={canAddPlayer ? 'text-green-100' : 'text-slate-500'} />
             </button>
           </div>
 
