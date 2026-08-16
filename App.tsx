@@ -234,15 +234,6 @@ const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const PATCH_NOTES_VERSION = CURRENT_APP_VERSION;
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
-const UPDATE_1_4_1_PATCH_NOTES = [
-  '✨ Kleine UI-verbeteringen, bug- en vertalingsfixes.',
-  '👀 Bekijk de kaarten van medespelers in de piramide door op hun profielfoto te tikken!',
-  '🚍 Vernieuwde animaties voor in en uit de bus stappen.',
-  '🎨 De "Calm" thema accentkleur is nu volledig aanpasbaar in de instellingen.',
-  '🛡️ Spelers met immuniteit zijn nu duidelijker zichtbaar in de selectiemenu\'s.',
-  '🚀 Verbeterde inlaadtijd van de kaarten en diverse UI verbeteringen.',
-];
-
 const queueStorageWrite = (key: string, value: string, label: string) => {
   if (!storageAvailable) return;
 

@@ -1,4 +1,4 @@
-# 🚌 Bussen App
+# Bussen App
 
 <div align="center">
 
