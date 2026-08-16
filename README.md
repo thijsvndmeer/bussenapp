@@ -1,109 +1,121 @@
-# Bussen App
+# 🚌 Bussen App
 
-## Project Overview
--   **Purpose:** The Bussen App is a companion application for the popular card-based drinking game "Bussen". It automates card distribution, manages game phases (setup, pyramid, bus ride), and facilitates player interaction, enhancing the gameplay experience.
--   **Key Features:**
-    *   Interactive game setup and player management.
-    *   Automated card dealing for each game phase.
-    *   Intuitive UI for "Pyramid" and "Bus Ride" stages.
-    *   Support for haptic feedback for game events.
-    *   AdMob integration.
-    *   Mobile-first design, deployable on iOS and Android via Capacitor.
--   **Tech Stack:**
-    *   **Frontend:** React (with Hooks), TypeScript
-    *   **Build Tool:** Vite
-    *   **Mobile Platform:** Capacitor
-    *   **Styling:** Tailwind CSS (inferred from existing components)
-    *   **Icons:** Lucide React
-    *   **Device APIs:** Haptics
-    *   **Monetization:** AdMob (Capacitor plugin)
+<div align="center">
 
-## Installation
+[![Latest Release](https://badgen.net/github/release/thijsvndmeer/bussenapp?icon=github&color=blue)](https://github.com/thijsvndmeer/bussenapp/releases)
+[![Deploy to Google Play](https://github.com/thijsvndmeer/bussenapp/actions/workflows/playstore.yml/badge.svg)](https://github.com/thijsvndmeer/bussenapp/actions/workflows/playstore.yml)
+[![Deploy to GitHub Pages](https://github.com/thijsvndmeer/bussenapp/actions/workflows/deploy.yml/badge.svg)](https://github.com/thijsvndmeer/bussenapp/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+<br/>
+
+[![Google Play](https://img.shields.io/badge/Google_Play-Get_App-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.bussen.app)
+[![Live Web Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-22c55e?style=for-the-badge&logo=githubpages&logoColor=white)](https://thijsvndmeer.github.io/bussenapp/)
+
+<p align="center">
+  <strong>The ultimate companion app for the classic Dutch card-drinking game "Bussen" (Ride the Bus).</strong><br>
+  Built with React 19, TypeScript, Tailwind CSS, and Capacitor for Android & Web.
+</p>
+
+</div>
+
+---
+
+## 📱 Download & Play
+
+- **Android (Google Play):** [Get Bussen on Google Play](https://play.google.com/store/apps/details?id=com.bussen.app)
+- **Web App (PWA):** [Play Online via GitHub Pages](https://thijsvndmeer.github.io/bussenapp/)
+
+---
+
+## ✨ Features
+
+- 🃏 **Automated Card Flow:** Handles card dealing, shuffling, and rule calculations automatically across all phases.
+- 🔺 **Phase 1: The Pyramid:** Build and climb the pyramid with custom heights, penalties, and interactive card flips.
+- 🚌 **Phase 2: Ride the Bus (Buschauffeur):** Dynamic bus ride with digital card navigation, drinking penalties, and shared bus mechanics.
+- 🎨 **Dynamic Themes:** Custom color palettes (Metro, Neon, Classic, Dark Mode) with sound and haptic effects.
+- 📳 **Native Device APIs:** Full haptic feedback and status bar integration via Capacitor.
+- ⚡ **Offline & PWA Ready:** Playable offline in the browser or as an installed Android app.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Bundler:** [Vite](https://vitejs.dev/)
+- **Native Runtime:** [Capacitor 8](https://capacitorjs.com/) (Android & iOS)
+- **Styling:** Tailwind CSS + Lucide Icons + Tabler Icons
+- **CI/CD:** GitHub Actions (Automated Google Play Store deployment)
+
+---
+
+## 🚀 CI/CD Pipeline & Branch Architecture
+
+This repository uses a fully automated 4-stage branch promotion pipeline powered by GitHub Actions:
+
+```mermaid
+graph LR
+    A[main<br/>Dev & Features] -->|push origin main:alpha| B[alpha<br/>GitHub Pages Deploy]
+    B -->|push origin main:beta| C[beta<br/>Google Play Beta Track]
+    C -->|push origin beta:prod| D[prod<br/>Google Play Production + GitHub Release]
+```
+
+### Promotion Flow:
+
+| Branch | Target Environment | Automation / Workflow |
+|---|---|---|
+| **`main`** | Development | Working branch. Direct commits and feature branches welcome. |
+| **`alpha`** | **GitHub Pages** | Deploys instantly to [Web Demo](https://thijsvndmeer.github.io/bussenapp/) via `deploy.yml`. |
+| **`beta`** | **Google Play (Beta Track)** | Runs TypeScript typecheck, Android Lint baseline check, compiles `.aab`, signs with keystore, and uploads to Google Play Beta track. |
+| **`prod`** | **Google Play (Production) + GitHub Releases** | Deploys signed `.aab` to Google Play Production track and automatically creates a new GitHub Release with release notes and downloadable binaries. |
+
+---
+
+## 💻 Local Development
 
 ### Prerequisites
-Before you begin, ensure you have the following installed:
-*   **Node.js:** v18 or higher (includes npm)
-*   **npm:** Node Package Manager (comes with Node.js)
-*   **Git:** For cloning the repository
-*   **Android Studio:** Required for building and running on Android devices/emulators.
-*   **Xcode:** Required for building and running on iOS devices/simulators (macOS only).
+- **Node.js:** `>= 22.0.0`
+- **npm:** `>= 10.0.0`
+- **Android Studio & JDK 21:** (for local Android builds/emulation)
 
-### Steps
+### Setup
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/thijsvndmeer/bussenapp.git
-    cd bussenapp
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Build the web assets:**
-    ```bash
-    npm run build
-    ```
-4.  **Add desired mobile platforms (if not already added):**
-    ```bash
-    npx cap add android
-    npx cap add ios
-    ```
-5.  **Sync Capacitor with web assets:**
-    ```bash
-    npx cap sync
-    ```
-
-## Usage
-
-### Getting Started (Web Development)
-To run the application in your browser for development:
 ```bash
+# 1. Clone repository
+git clone https://github.com/thijsvndmeer/bussenapp.git
+cd bussenapp
+
+# 2. Install dependencies
+npm install
+
+# 3. Start local development server
 npm run dev
+
+# 4. Typecheck TypeScript
+npm run typecheck
+
+# 5. Build production web bundle
+npm run build
 ```
-This will start a local development server, usually accessible at `localhost`.
 
-### Running on Mobile Devices/Emulators
+### Running on Android locally
 
-1.  **Open the native project:**
-    *   **Android:**
-        ```bash
-        npx cap open android
-        ```
-        This will open the Android project in Android Studio. From there, you can run the app on an emulator or a connected device.
-    *   **iOS (macOS only):**
-        ```bash
-        npx cap open ios
-        ```
-        This will open the iOS project in Xcode. From there, you can run the app on a simulator or a connected device.
+```bash
+# Build web bundle and sync native assets
+npm run cap:android
 
-2.  **To apply web changes to the native app:**
-    After making changes to your React code, you must rebuild the web assets and sync them to the native project:
-    ```bash
-    npm run build
-    npx cap sync
-    ```
-    Then, re-run or redeploy from Android Studio/Xcode.
+# Open native Android project in Android Studio
+npm run android
+```
 
-## Configuration
+---
 
-### Environment Variables
-The application may utilize environment variables, especially for services like AdMob. These are typically configured within your native project settings (Android Studio / Xcode) or Capacitor's configuration.
+## 👤 Author & Maintainer
 
-*   `ADMOB_APP_ID_ANDROID`: Your AdMob App ID for Android.
-*   `ADMOB_APP_ID_IOS`: Your AdMob App ID for iOS.
-*   `ADMOB_BANNER_ID_ANDROID`: Your AdMob Banner Ad Unit ID for Android.
-*   `ADMOB_BANNER_ID_IOS`: Your AdMob Banner Ad Unit ID for iOS.
+- **Thijs van der Meer** — [@thijsvndmeer](https://github.com/thijsvndmeer)
 
-*Note: Specific environment variable handling (e.g., using `.env` files with Vite) may be implemented, but native AdMob IDs are typically configured directly in the respective platform projects.*
+---
 
-### App Settings
-In-app settings for the game (e.g., number of players, specific game rules, sound/haptic preferences) are managed directly within the application's UI.
+## 📄 License
 
-## Support
-If you encounter any issues or have questions, please use the [GitHub Issues](https://github.com/thijsvndmeer/bussenapp/issues) page to report them.
-
-## Copyright
-
-Copyright (c) 2025 Thijs van der Meer
-
-All Rights Reserved.
+This project is licensed under the MIT License - see the [LICENSE.md](file:///Users/thijsvandermeer/Downloads/bussenapp/LICENSE.md) file for details.
