@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,6 +42,57 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
           cache: 'gradle'
+
+      - name: Read package.json version
+        id: pkg
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine Google Play Track
+        id: determine_track
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "track=${{ inputs.track }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "prod" ]; then
+            echo "track=production" >> $GITHUB_OUTPUT
+          else
+            echo "track=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate Release Version & Patch Notes (Prod only)
+        if: ${{ steps.determine_track.outputs.track == 'production' }}
+        run: |
+          git fetch --tags --force
+          CURRENT_VERSION="${{ steps.pkg.outputs.version }}"
+          LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
+
+          echo "Current package.json version: $CURRENT_VERSION"
+          echo "Latest release tag: $LATEST_TAG"
+
+          if [ -n "$LATEST_TAG" ]; then
+            # 1. Version gate: ensure version is bumped
+            PREV_VERSION=$(git show "$LATEST_TAG:package.json" 2>/dev/null | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf-8')).version } catch(e) { '' }" || echo "")
+            if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
+              echo "::error::[Release Gate Failed] package.json version ($CURRENT_VERSION) is identical to previous release tag ($LATEST_TAG). Bump version in package.json before deploying to prod."
+              exit 1
+            fi
+
+            # 2. Patch notes gate: ensure whatsnew files have changed
+            WHATSNEW_DIFF=$(git diff "$LATEST_TAG" HEAD -- distribution/whatsnew/)
+            if [ -z "$WHATSNEW_DIFF" ]; then
+              echo "::error::[Release Gate Failed] distribution/whatsnew/ has not changed since previous release ($LATEST_TAG). Update whatsnew notes before deploying to prod."
+              exit 1
+            fi
+          fi
+
+          # 3. Ensure files are non-empty
+          if [ ! -s "distribution/whatsnew/whatsnew-nl-NL" ] || [ ! -s "distribution/whatsnew/whatsnew-en-US" ]; then
+            echo "::error::[Release Gate Failed] distribution/whatsnew/ files must not be empty."
+            exit 1
+          fi
+
+          echo "Release gates passed: Version is bumped and What's New notes are updated."
 
       - name: Install dependencies
         run: npm ci
@@ -77,6 +130,7 @@ jobs:
         env:
           ADMOB_APP_ID: ${{ secrets.VITE_ADMOB_APP_ID }}
           VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ steps.pkg.outputs.version }}
         run: ./gradlew bundleRelease --stacktrace
 
       - name: Sign AAB
@@ -89,21 +143,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Determine Google Play Track
-        id: determine_track
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "track=${{ inputs.track }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref_name }}" = "prod" ]; then
-            echo "track=production" >> $GITHUB_OUTPUT
-          else
-            echo "track=beta" >> $GITHUB_OUTPUT
-          fi
-
       - name: Upload Signed AAB Artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-${{ steps.determine_track.outputs.track }}-${{ github.run_number }}.aab
+          name: app-release-${{ steps.determine_track.outputs.track }}-${{ steps.pkg.outputs.version }}-${{ github.run_number }}.aab
           path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
           retention-days: 14
 
@@ -117,14 +160,16 @@ jobs:
           packageName: com.bussen.app
           releaseFiles: ${{ steps.sign_aab.outputs.signedReleaseFile }}
           track: ${{ steps.determine_track.outputs.track }}
+          whatsNewDirectory: distribution/whatsnew
           status: completed
 
       - name: Create GitHub Release (Production only)
         if: ${{ steps.determine_track.outputs.track == 'production' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.4.${{ github.run_number }}
-          name: Release v1.4.${{ github.run_number }}
+          tag_name: v${{ steps.pkg.outputs.version }}
+          name: Release v${{ steps.pkg.outputs.version }}
+          body_path: distribution/whatsnew/whatsnew-nl-NL
           generate_release_notes: true
           files: ${{ steps.sign_aab.outputs.signedReleaseFile }}
         env:
