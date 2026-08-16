@@ -24,6 +24,7 @@ import { ColorPickerModal } from './components/modals/ColorPickerModal';
 import { PhotoOptionsModal } from './components/modals/PhotoOptionsModal';
 import { PatchNotesModal } from './components/modals/PatchNotesModal';
 import { HardBusWarningModal } from './components/modals/HardBusWarningModal';
+import { AdLoadingModal } from './components/modals/AdLoadingModal';
 
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -1505,18 +1506,28 @@ const initializeAdMob = useCallback(async () => {
   }, [players]);
 
   const showRewardedAd = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) return true; // Always success on web for testing
     if (players.some(p => p.isDev)) return true; // Always success for dev player
 
+    setIsAdLoading(true);
+
+    if (!Capacitor.isNativePlatform()) {
+      // Simulate ad playback delay on web/dev to show loading popup
+      await new Promise(r => setTimeout(r, 1200));
+      setIsAdLoading(false);
+      return true;
+    }
+
     try {
-      await prepareRewardedAd();
+      await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
       const reward = await AdMob.showRewardVideoAd();
+      setIsAdLoading(false);
       return !!reward;
     } catch (error) {
       console.warn('AdMob rewarded show failed', error);
+      setIsAdLoading(false);
       return false;
     }
-  }, [prepareRewardedAd, players]);
+  }, [players]);
 
   // Interstitial ad
   // Includes 1-minute cooldown to prevent multiple ads from stacking
@@ -3249,24 +3260,13 @@ const initializeAdMob = useCallback(async () => {
 
   // --- RENDERING HELPERS ---
 
-  const renderAdLoadingModal = () => {
-    if (!isAdLoading) return null;
-    return (
-      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-slate-900 border border-white/10 shadow-2xl rounded-2xl p-8 flex flex-col items-center gap-5 animate-in zoom-in-95 duration-300 ring-1 ring-white/5 max-w-[80vw]">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-t-2 border-amber-500 animate-spin"></div>
-            <div className="absolute inset-1 rounded-full border-r-2 border-emerald-500 animate-[spin_1.5s_linear_infinite_reverse]"></div>
-            <Clapperboard size={24} className="text-white animate-pulse" />
-          </div>
-          <div className="text-center space-y-1">
-            <h3 className="text-white font-black text-lg tracking-tight uppercase">{t("Video laden")}...</h3>
-            <p className="text-slate-400 text-sm">{t("Een moment geduld")}</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const renderAdLoadingModal = () => (
+    <AdLoadingModal
+      isOpen={isAdLoading}
+      t={t}
+      lang={lang}
+    />
+  );
 
   const renderColorPickerModal = () => (
     <ColorPickerModal
@@ -3868,6 +3868,7 @@ const initializeAdMob = useCallback(async () => {
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
         {renderColorPickerModal()}
+        {renderAdLoadingModal()}
         <HardBusWarningModal
           isOpen={showHardBusWarning}
           busLength={settings.busLength}
