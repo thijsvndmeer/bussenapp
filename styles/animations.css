@@ -133,10 +133,10 @@
   animation: cardHandSubtle 0.15s ease-out forwards;
 }
 
-@keyframes fastSubtlePop {
+@keyframes fastSubtlePopIn {
   0% {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.94);
   }
   100% {
     opacity: 1;
@@ -144,8 +144,41 @@
   }
 }
 
+@keyframes fastSubtlePopOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
 .animate-fast-subtle-pop {
-  animation: fastSubtlePop 0.15s ease-out forwards;
+  animation: fastSubtlePopIn 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fast-subtle-pop-out {
+  animation: fastSubtlePopOut 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fastFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes fastFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-fast-fade-in {
+  animation: fastFadeIn 0.1s ease-out forwards;
+}
+
+.animate-fast-fade-out {
+  animation: fastFadeOut 0.1s ease-out forwards;
 }
 
 @keyframes disco-gradient {

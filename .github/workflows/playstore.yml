@@ -47,13 +47,13 @@ jobs:
         with:
           node-version: 22
 
-      - name: Read package.json version
+      - name: Resolve Version & Auto-Bump Version Code
         id: pkg
+        env:
+          PLAY_CONFIG_JSON: ${{ secrets.PLAY_CONFIG_JSON }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          VERSION_CODE=$(node -p "require('./package.json').version.replace(/[^0-9]/g, '')")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          git fetch --tags --force
+          node scripts/resolve-version-code.cjs
 
       - name: Determine Google Play Track
         id: determine_track
@@ -73,18 +73,11 @@ jobs:
           CURRENT_VERSION="${{ steps.pkg.outputs.version }}"
           LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
 
-          echo "Current package.json version: $CURRENT_VERSION"
+          echo "Current resolved version: $CURRENT_VERSION (code: ${{ steps.pkg.outputs.version_code }})"
           echo "Latest release tag: $LATEST_TAG"
 
           if [ -n "$LATEST_TAG" ]; then
-            # 1. Version gate: ensure version is bumped
-            PREV_VERSION=$(git show "$LATEST_TAG:package.json" 2>/dev/null | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf-8')).version } catch(e) { '' }" || echo "")
-            if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
-              echo "::error::[Release Gate Failed] package.json version ($CURRENT_VERSION) is identical to previous release tag ($LATEST_TAG). Bump version in package.json before deploying to prod."
-              exit 1
-            fi
-
-            # 2. Patch notes gate: ensure whatsnew files have changed
+            # 1. Patch notes gate: ensure whatsnew files have changed
             WHATSNEW_DIFF=$(git diff "$LATEST_TAG" HEAD -- distribution/whatsnew/)
             if [ -z "$WHATSNEW_DIFF" ]; then
               echo "::error::[Release Gate Failed] distribution/whatsnew/ has not changed since previous release ($LATEST_TAG). Update whatsnew notes before deploying to prod."
@@ -92,13 +85,13 @@ jobs:
             fi
           fi
 
-          # 3. Ensure files are non-empty
+          # 2. Ensure files are non-empty
           if [ ! -s "distribution/whatsnew/whatsnew-nl-NL" ] || [ ! -s "distribution/whatsnew/whatsnew-en-US" ]; then
             echo "::error::[Release Gate Failed] distribution/whatsnew/ files must not be empty."
             exit 1
           fi
 
-          echo "Release gates passed: Version is bumped and What's New notes are updated."
+          echo "Release gates passed: Version is resolved and What's New notes are updated."
 
   # -------------------------------------------------------------
   # 2. TYPECHECK & LINT

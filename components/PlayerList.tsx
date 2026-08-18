@@ -13,6 +13,7 @@ type PlayerListProps = {
   renderAvatar: (player: Player) => React.ReactNode;
   t: (value: string) => string;
   immunePlayerId?: string | null;
+  lastAddedPlayerId?: string | null;
 };
 
 export const PlayerList: React.FC<PlayerListProps> = ({
@@ -25,6 +26,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
   renderAvatar,
   t,
   immunePlayerId,
+  lastAddedPlayerId,
 }) => (
   <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
     {players.map((player, index) => (
@@ -39,6 +41,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
         onRemove={onRemovePlayer}
         renderAvatar={renderAvatar}
         isImmune={player.isImmune || player.id === immunePlayerId}
+        isNewlyAdded={!!lastAddedPlayerId && player.id === lastAddedPlayerId}
       />
     ))}
     {players.length === 0 && (

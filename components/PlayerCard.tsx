@@ -12,6 +12,7 @@ type PlayerCardProps = {
   onRemove: (playerId: string) => void;
   renderAvatar: (player: Player) => React.ReactNode;
   isImmune?: boolean;
+  isNewlyAdded?: boolean;
 };
 
 const PlayerCardComponent: React.FC<PlayerCardProps> = ({
@@ -24,12 +25,15 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
   onRemove,
   renderAvatar,
   isImmune,
-}) => (
-  <div data-player-item className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''}`}>
-    {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
-      <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
-    )}
-    <div className="flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg animate-pop">
+  isNewlyAdded = false,
+}) => {
+  const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
+  return (
+    <div data-player-item className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''}`}>
+      {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
+        <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
+      )}
+      <div className={`flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg ${animClass}`}>
       <div className="flex items-center gap-3 min-w-0">
         {renderAvatar(player)}
         <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{player.name}</span>
@@ -46,10 +50,11 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
         <button onClick={() => onRemove(player.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18} /></button>
       </div>
     </div>
-    {isOver && dragPlayerIndex !== null && dragPlayerIndex < index && (
-      <div className="absolute -bottom-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
-    )}
-  </div>
-);
+      {isOver && dragPlayerIndex !== null && dragPlayerIndex < index && (
+        <div className="absolute -bottom-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
+      )}
+    </div>
+  );
+};
 
 export const PlayerCard = React.memo(PlayerCardComponent);

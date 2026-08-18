@@ -8,6 +8,7 @@ interface HardBusWarningModalProps {
   lang?: string;
   onCancel: () => void;
   onConfirm: () => void;
+  onAdjust?: () => void;
 }
 
 export const HardBusWarningModal: React.FC<HardBusWarningModalProps> = React.memo(({
@@ -17,6 +18,7 @@ export const HardBusWarningModal: React.FC<HardBusWarningModalProps> = React.mem
   lang = 'nl',
   onCancel,
   onConfirm,
+  onAdjust,
 }) => {
   if (!isOpen) return null;
 
@@ -69,7 +71,10 @@ export const HardBusWarningModal: React.FC<HardBusWarningModalProps> = React.mem
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button
-            onClick={onCancel}
+            onClick={() => {
+              if (onAdjust) onAdjust();
+              else onCancel();
+            }}
             style={{
               backgroundColor: 'var(--theme-btn-bg, #f59e0b)',
               color: 'var(--theme-btn-text, #0b0d19)',

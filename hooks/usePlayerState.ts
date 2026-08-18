@@ -20,8 +20,26 @@ const normalizePlayers = (players: Player[]): NormalizedPlayers => ({
 const denormalizePlayers = ({ byId, order }: NormalizedPlayers): Player[] =>
   order.map(id => byId[id]).filter((player): player is Player => Boolean(player));
 
+const loadInitialPlayers = (): NormalizedPlayers => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return normalizePlayers([]);
+  }
+  try {
+    const saved = localStorage.getItem('bus-app-player-data-v1');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.players && Array.isArray(parsed.players)) {
+        return normalizePlayers(parsed.players);
+      }
+    }
+  } catch (e) {
+    console.warn('Kon spelers niet synchroon laden', e);
+  }
+  return normalizePlayers([]);
+};
+
 export const usePlayerState = () => {
-  const [playerState, setPlayerState] = useState<NormalizedPlayers>(() => normalizePlayers([]));
+  const [playerState, setPlayerState] = useState<NormalizedPlayers>(loadInitialPlayers);
 
   const players = useMemo(() => denormalizePlayers(playerState), [playerState]);
 

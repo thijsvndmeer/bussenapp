@@ -1064,6 +1064,16 @@ const App: React.FC = () => {
     return defaultSettings;
   });
 
+  // Guarantee settings are immediately persisted to localStorage on every change
+  useEffect(() => {
+    if (!storageAvailable) return;
+    try {
+      localStorage.setItem(GAME_SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.warn("Kon instellingen niet opslaan", e);
+    }
+  }, [settings]);
+
   const renderStyleUnlockModal = () => {
     if (!styleToUnlock) return null;
 
@@ -1252,36 +1262,66 @@ const App: React.FC = () => {
   const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
 
   const { players, setPlayers, addPlayer: addPlayerToEngine, removePlayer: removePlayerFromEngine, updatePlayer, updatePlayers, reorderPlayers } = usePlayerState();
+  const { phase, transitionToPhase: setPhase, dispatch: dispatchGameEvent, registerEventHandler: registerGameEventHandler, schedule: scheduleGameEvent } = useGameEngine(GamePhase.SETUP);
+  const [deck, setDeck] = useState<Card[]>([]);
+  const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
+
   const [devModeArmed, setDevModeArmed] = useState(false);
+  const [headerArmed, setHeaderArmed] = useState(false);
+  const [countArmed, setCountArmed] = useState(false);
   const headerPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const avatarPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleHeaderPointerDown = useCallback(() => {
     headerPressTimerRef.current = setTimeout(() => {
-      setDevModeArmed(true);
+      setHeaderArmed(true);
       triggerHaptic('heavy');
+      if (phase !== GamePhase.SETUP) {
+        setDevModeArmed(true);
+      }
     }, 1500);
-  }, [triggerHaptic]);
+  }, [phase, triggerHaptic]);
 
   const handleHeaderPointerUpOrLeave = useCallback(() => {
     if (headerPressTimerRef.current) clearTimeout(headerPressTimerRef.current);
   }, []);
 
+  const handleCountPointerDown = useCallback(() => {
+    countPressTimerRef.current = setTimeout(() => {
+      setCountArmed(true);
+      triggerHaptic('heavy');
+    }, 1500);
+  }, [triggerHaptic]);
+
+  const handleCountPointerUpOrLeave = useCallback(() => {
+    if (countPressTimerRef.current) clearTimeout(countPressTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (phase === GamePhase.SETUP) {
+      if (headerArmed && countArmed) {
+        setDevModeArmed(true);
+        triggerHaptic('success');
+      }
+    }
+  }, [headerArmed, countArmed, phase, triggerHaptic]);
+
   const handleAvatarPointerDown = useCallback((player: Player) => {
-    if (!devModeArmed) return;
+    const isArmed = devModeArmed || (phase === GamePhase.SETUP && headerArmed && countArmed);
+    if (!isArmed) return;
     avatarPressTimerRef.current = setTimeout(() => {
       updatePlayer(player.id, p => ({ ...p, isDev: !p.isDev }));
       triggerHaptic('success');
-      setDevModeArmed(false); // Disarm after use
+      setDevModeArmed(false);
+      setHeaderArmed(false);
+      setCountArmed(false);
     }, 1500);
-  }, [devModeArmed, updatePlayer, triggerHaptic]);
+  }, [devModeArmed, headerArmed, countArmed, phase, updatePlayer, triggerHaptic]);
 
   const handleAvatarPointerUpOrLeave = useCallback(() => {
     if (avatarPressTimerRef.current) clearTimeout(avatarPressTimerRef.current);
   }, []);
-  const { phase, transitionToPhase: setPhase, dispatch: dispatchGameEvent, registerEventHandler: registerGameEventHandler, schedule: scheduleGameEvent } = useGameEngine(GamePhase.SETUP);
-  const [deck, setDeck] = useState<Card[]>([]);
-  const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
 
   // Setup State
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -1298,6 +1338,39 @@ const App: React.FC = () => {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
+  const [isMoreSettingsClosing, setIsMoreSettingsClosing] = useState(false);
+  const [isMatchModalClosing, setIsMatchModalClosing] = useState(false);
+  const [lastAddedPlayerId, setLastAddedPlayerId] = useState<string | null>(null);
+
+  // Bus Decks Slider State (More Settings)
+  const [draftBusDecks, setDraftBusDecks] = useState<number>(settings.busDecks || 1);
+  const [isBusDecksDragging, setIsBusDecksDragging] = useState(false);
+
+  useEffect(() => {
+    if (!isBusDecksDragging) {
+      setDraftBusDecks(settings.busDecks || 1);
+    }
+  }, [settings.busDecks, isBusDecksDragging]);
+
+  const handleBusDecksChange = (val: number) => {
+    const clamped = Math.max(1, Math.min(5, val));
+    const prevRounded = Math.round(draftBusDecks);
+    const newRounded = Math.round(clamped);
+    if (newRounded !== prevRounded) {
+      triggerHaptic('tick');
+    }
+    setDraftBusDecks(clamped);
+  };
+
+  const handleBusDecksCommit = () => {
+    setIsBusDecksDragging(false);
+    const rounded = Math.round(draftBusDecks);
+    setDraftBusDecks(rounded);
+    if (rounded !== (settings.busDecks || 1)) {
+      setSettings(prev => ({ ...prev, busDecks: rounded }));
+      triggerHaptic('tick');
+    }
+  };
 
   // Dev Tools State
   const [devSettings, setDevSettings] = useState({
@@ -1525,9 +1598,17 @@ const initializeAdMob = useCallback(async () => {
         adMobReadyRef.current = true;
       }
 
-      await AdMob.prepareInterstitial({ adId });
-      await AdMob.showInterstitial();
-      lastAdShownRef.current = Date.now();
+      // Try showing directly in case it was preloaded
+      try {
+        await AdMob.showInterstitial();
+        lastAdShownRef.current = Date.now();
+      } catch (showError) {
+        console.log('Preloaded ad not available, preparing fresh interstitial...', showError);
+        // Preloaded ad wasn't available, prepare and show now
+        await AdMob.prepareInterstitial({ adId });
+        await AdMob.showInterstitial();
+        lastAdShownRef.current = Date.now();
+      }
     } catch (error) {
       console.warn('AdMob interstitial failed', error);
     } finally {
@@ -2051,8 +2132,10 @@ const initializeAdMob = useCallback(async () => {
 
     triggerHaptic('success');
     playSound('playerAdd');
+    const newId = Date.now().toString();
+    setLastAddedPlayerId(newId);
     addPlayerToEngine({
-      id: Date.now().toString(),
+      id: newId,
       name: trimmedName,
       hand: [],
       drinksTaken: 0,
@@ -2149,13 +2232,13 @@ const initializeAdMob = useCallback(async () => {
   const getGuessBtnClasses = (type: string) => {
     const isMetro = settings.theme === UITheme.METRO;
     const isBeer = settings.theme === UITheme.BEER;
+    const isCalm = settings.theme === UITheme.CALM;
+    const cardStyle = settings.cardStyle;
 
     if (isMetro) {
       const base = "py-4 rounded-none font-black text-lg border-2 shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2";
-      if (type === 'RED') return `${base} bg-red-600 text-white border-white`;
-      if (type === 'BLACK') return `${base} bg-slate-950 text-white border-slate-400`;
-      if (type === 'HIGHER' || type === 'BETWEEN' || type === 'MATCH') return `${base} bg-[var(--theme-accent)] text-slate-950 border-white`;
-      if (type === 'LOWER' || type === 'OUTSIDE' || type === 'NO_MATCH') return `${base} bg-slate-900 text-[var(--theme-accent)] border-[var(--theme-accent)]`;
+      if (type === 'RED' || type === 'HIGHER' || type === 'BETWEEN' || type === 'MATCH') return `${base} bg-[var(--theme-accent)] text-slate-950 border-white`;
+      if (type === 'BLACK' || type === 'LOWER' || type === 'OUTSIDE' || type === 'NO_MATCH') return `${base} bg-slate-900 text-[var(--theme-accent)] border-[var(--theme-accent)]`;
       if (type === 'EQUAL') return `col-span-2 py-3 rounded-none font-mono text-xs font-black bg-slate-900 text-slate-300 border-2 border-slate-700 shadow-[4px_4px_0_rgba(0,0,0,0.8)]`;
     }
 
@@ -2172,10 +2255,43 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'EQUAL') return `col-span-2 py-3 text-xs font-bold rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300 hover:bg-amber-900/50 transition-colors`;
     }
 
-    // Default
+    if (isCalm) {
+      const base = "py-4 rounded-2xl font-black text-lg backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-lg";
+      if (type === 'RED') {
+        if (cardStyle === CardStyle.NEON) return `${base} bg-rose-500/20 hover:bg-rose-500/30 border-rose-400/40 text-rose-100 shadow-[0_4px_20px_rgba(244,63,94,0.2)] no-calm-override`;
+        if (cardStyle === CardStyle.DARK) return `${base} bg-[var(--theme-accent-glow)] hover:bg-[var(--theme-accent-glow)] border-[var(--theme-accent)] text-white shadow-[0_4px_20px_var(--theme-accent-glow)] no-calm-override`;
+        if (cardStyle === CardStyle.CLASSIC) return `${base} bg-[#c21807]/20 hover:bg-[#c21807]/30 border-red-500/40 text-red-100 shadow-[0_4px_20px_rgba(194,24,7,0.2)] no-calm-override`;
+        return `${base} bg-rose-600/20 hover:bg-rose-600/30 border-rose-500/40 text-rose-100 shadow-[0_4px_20px_rgba(225,29,72,0.2)] no-calm-override`;
+      }
+      if (type === 'BLACK') {
+        if (cardStyle === CardStyle.NEON) return `${base} bg-cyan-500/20 hover:bg-cyan-500/30 border-cyan-400/40 text-cyan-100 shadow-[0_4px_20px_rgba(6,182,212,0.2)] no-calm-override`;
+        if (cardStyle === CardStyle.DARK) return `${base} bg-white/20 hover:bg-white/30 border-white/40 text-white shadow-[0_4px_20px_rgba(255,255,255,0.15)] no-calm-override`;
+        if (cardStyle === CardStyle.CLASSIC) return `${base} bg-slate-900/60 hover:bg-slate-900/80 border-slate-700/60 text-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.3)] no-calm-override`;
+        return `${base} bg-slate-800/60 hover:bg-slate-800/80 border-slate-700/60 text-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.3)] no-calm-override`;
+      }
+      if (type === 'HIGHER') return `${base} bg-emerald-950/50 hover:bg-emerald-950/70 border-emerald-500/30 text-emerald-200 shadow-[0_4px_20px_rgba(16,185,129,0.2)] no-calm-override`;
+      if (type === 'LOWER') return `${base} bg-blue-950/50 hover:bg-blue-950/70 border-blue-500/30 text-blue-200 shadow-[0_4px_20px_rgba(59,130,246,0.2)] no-calm-override`;
+      if (type === 'BETWEEN') return `${base} bg-indigo-950/50 hover:bg-indigo-950/70 border-indigo-500/30 text-indigo-200 shadow-[0_4px_20px_rgba(99,102,241,0.2)] no-calm-override`;
+      if (type === 'OUTSIDE') return `${base} bg-orange-950/50 hover:bg-orange-950/70 border-orange-500/30 text-orange-200 shadow-[0_4px_20px_rgba(249,115,22,0.2)] no-calm-override`;
+      if (type === 'MATCH') return `${base} bg-purple-950/50 hover:bg-purple-950/70 border-purple-500/30 text-purple-200 shadow-[0_4px_20px_rgba(168,85,247,0.2)] no-calm-override`;
+      if (type === 'NO_MATCH') return `${base} bg-pink-950/50 hover:bg-pink-950/70 border-pink-500/30 text-pink-200 shadow-[0_4px_20px_rgba(236,72,153,0.2)] no-calm-override`;
+      if (type === 'EQUAL') return `col-span-2 bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:text-white transition-colors no-calm-override`;
+    }
+
+    // Default (Classic)
     const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
-    if (type === 'RED') return `${base} bg-gradient-to-br from-red-600 to-red-800 border-red-400 text-white`;
-    if (type === 'BLACK') return `${base} bg-gradient-to-br from-slate-800 to-black border-slate-600 text-white`;
+    if (type === 'RED') {
+      if (cardStyle === CardStyle.NEON) return `${base} bg-gradient-to-br from-rose-600 to-rose-800 border-rose-400 text-white no-calm-override`;
+      if (cardStyle === CardStyle.DARK) return `${base} bg-gradient-to-br from-rose-600 to-rose-800 border-rose-400 text-white no-calm-override`;
+      if (cardStyle === CardStyle.CLASSIC) return `${base} bg-gradient-to-br from-[#a81c0d] to-[#701006] border-red-500/60 text-white no-calm-override`;
+      return `${base} bg-gradient-to-br from-red-600 to-red-800 border-red-400 text-white no-calm-override`;
+    }
+    if (type === 'BLACK') {
+      if (cardStyle === CardStyle.NEON) return `${base} bg-gradient-to-br from-cyan-700 to-blue-900 border-cyan-500 text-white no-calm-override`;
+      if (cardStyle === CardStyle.DARK) return `${base} bg-gradient-to-br from-slate-200 to-slate-400 border-slate-300 text-slate-900 no-calm-override`;
+      if (cardStyle === CardStyle.CLASSIC) return `${base} bg-gradient-to-br from-slate-900 to-black border-slate-700 text-white no-calm-override`;
+      return `${base} bg-gradient-to-br from-slate-800 to-slate-950 border-slate-600 text-white no-calm-override`;
+    }
     if (type === 'HIGHER') return `${base} bg-gradient-to-br from-emerald-600 to-emerald-800 border-emerald-400 text-white`;
     if (type === 'LOWER') return `${base} bg-gradient-to-br from-blue-600 to-blue-800 border-blue-400 text-white`;
     if (type === 'BETWEEN') return `${base} bg-gradient-to-br from-indigo-600 to-indigo-800 border-indigo-400 text-white`;
@@ -2189,6 +2305,7 @@ const initializeAdMob = useCallback(async () => {
   const getBusGuessBtnClasses = (type: 'HIGHER' | 'LOWER' | 'EQUAL') => {
     const isMetro = settings.theme === UITheme.METRO;
     const isBeer = settings.theme === UITheme.BEER;
+    const isCalm = settings.theme === UITheme.CALM;
 
     if (isMetro) {
       if (type === 'HIGHER') return "group flex-1 bg-[var(--theme-accent)] text-slate-950 py-6 rounded-none font-black border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
@@ -2200,6 +2317,12 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-amber-500 to-amber-700 text-slate-950 py-6 rounded-2xl font-black border border-amber-300 shadow-[0_6px_20px_rgba(245,158,11,0.4)] flex flex-col items-center active:scale-95 transition-all";
       if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-stone-800 to-amber-950 text-amber-100 py-6 rounded-2xl font-black border border-amber-700/60 shadow-[0_6px_20px_rgba(180,83,9,0.3)] flex flex-col items-center active:scale-95 transition-all";
       if (type === 'EQUAL') return "w-full bg-amber-950/60 border border-amber-500/30 text-amber-300 py-3 text-xs font-bold rounded-xl hover:bg-amber-900/50 transition-colors active:scale-95";
+    }
+
+    if (isCalm) {
+      if (type === 'HIGHER') return "group flex-1 bg-emerald-950/50 hover:bg-emerald-950/70 text-emerald-200 py-6 rounded-2xl font-black border border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.2)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'LOWER') return "group flex-1 bg-blue-950/50 hover:bg-blue-950/70 text-blue-200 py-6 rounded-2xl font-black border border-blue-500/30 shadow-[0_4px_20px_rgba(59,130,246,0.2)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'EQUAL') return "w-full bg-slate-900/60 border border-slate-700/50 text-slate-400 hover:text-white py-3 text-xs font-bold rounded-xl backdrop-blur-xl transition-colors active:scale-95";
     }
 
     if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500";
@@ -2715,7 +2838,7 @@ const initializeAdMob = useCallback(async () => {
   };
 
   const resolveMatch = (playerId: string) => {
-    if (!pendingMatches) return;
+    if (!pendingMatches || isMatchModalClosing) return;
     triggerHaptic('light');
     const player = players.find(p => p.id === playerId);
     if (!player) return;
@@ -2751,30 +2874,39 @@ const initializeAdMob = useCallback(async () => {
     }
 
     if (newMatches.length === 0) {
-      if (accumulatedSipsThisMatch.current.length > 0) {
-        setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.bannerPosition || 'top' });
-        accumulatedSipsThisMatch.current = [];
-      }
-      setPendingMatches(null);
-      const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
-      if (revealedPyramidCards.size === totalCards) {
-        setIsPyramidComplete(true);
-      }
+      setIsMatchModalClosing(true);
+      setTimeout(() => {
+        if (accumulatedSipsThisMatch.current.length > 0) {
+          setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.bannerPosition || 'top' });
+          accumulatedSipsThisMatch.current = [];
+        }
+        setPendingMatches(null);
+        setIsMatchModalClosing(false);
+        const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+        if (revealedPyramidCards.size === totalCards) {
+          setIsPyramidComplete(true);
+        }
+      }, 100);
     } else {
       setPendingMatches({ ...pendingMatches, matches: newMatches });
     }
   };
 
   const dismissMatchModal = () => {
-    if (pendingMatches && accumulatedSipsThisMatch.current.length > 0) {
-      setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.bannerPosition || 'top' });
-      accumulatedSipsThisMatch.current = [];
-    }
-    setPendingMatches(null);
-    const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
-    if (revealedPyramidCards.size === totalCards) {
-      setIsPyramidComplete(true);
-    }
+    if (isMatchModalClosing) return;
+    setIsMatchModalClosing(true);
+    setTimeout(() => {
+      if (pendingMatches && accumulatedSipsThisMatch.current.length > 0) {
+        setDistributeBanner({ resolutions: accumulatedSipsThisMatch.current, id: Date.now(), position: pendingMatches.bannerPosition || 'top' });
+        accumulatedSipsThisMatch.current = [];
+      }
+      setPendingMatches(null);
+      setIsMatchModalClosing(false);
+      const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+      if (revealedPyramidCards.size === totalCards) {
+        setIsPyramidComplete(true);
+      }
+    }, 100);
   };
 
   const findLoser = () => {
@@ -3310,14 +3442,16 @@ const initializeAdMob = useCallback(async () => {
           hideHeader={true}
           disabled={false}
           settings={settings}
+          playerCount={players.length}
           t={t}
           onToggleOpen={() => {}}
           onOpenMoreSettings={() => { setIsSettingsOpen(false); setIsMoreSettingsOpen(true); }}
           onSettingsChange={(key, val) => setSettings(prev => ({ ...prev, [key]: val }))}
-          onCommitSettings={() => setSettings(prev => {
-            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(prev), 'instellingen');
-            return prev;
-          })}
+          onCommitSettings={(newValues) => {
+            if (newValues) {
+              setSettings(prev => ({ ...prev, ...newValues }));
+            }
+          }}
         />
       </div>
     </div>
@@ -3436,17 +3570,24 @@ const initializeAdMob = useCallback(async () => {
   // Global fixed quit button shown during active gameplay (not on SETUP or GAME_OVER)
   const isInActiveGame = phase !== GamePhase.SETUP && phase !== GamePhase.GAME_OVER;
 
-  // 1. SETUP
+  const closeMoreSettings = () => {
+    if (isMoreSettingsClosing) return;
+    setIsMoreSettingsClosing(true);
+    setTimeout(() => {
+      setIsMoreSettingsOpen(false);
+      setIsMoreSettingsClosing(false);
+    }, 100);
+  };
 
   const renderAdditionalModals = () => (
     <>
         {isMoreSettingsOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsMoreSettingsOpen(false); }}>
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 overflow-hidden">
+          <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md ${isMoreSettingsClosing ? 'animate-fast-fade-out' : 'animate-fast-fade-in'}`} onClick={(e) => { if (e.target === e.currentTarget) closeMoreSettings(); }}>
+            <div className={`bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] overflow-hidden ${isMoreSettingsClosing ? 'animate-fast-subtle-pop-out' : 'animate-fast-subtle-pop'}`}>
               {/* Header */}
               <div className="flex justify-between items-center border-b border-slate-800 p-6 shrink-0">
                 <h3 className="text-xl font-black text-white uppercase tracking-wider">{t("Meer Instellingen")}</h3>
-                <button onClick={() => setIsMoreSettingsOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                <button onClick={closeMoreSettings} className="text-slate-500 hover:text-white transition-colors">
                   <X size={24} />
                 </button>
               </div>
@@ -3670,21 +3811,81 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 </div>
 
-                {/* Fysieke Modus toggle disabled temporarily */}
-                <div className="flex flex-col gap-4 w-full pt-4 border-t border-slate-800/50 hidden">
+                {/* Bus Pakjes / Decks Slider */}
+                <div className="flex flex-col gap-2 w-full pt-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="text-white font-medium">{t("Fysieke Modus")}</h4>
-                      <button
-                        onClick={() => setShowPhysicalModeInfo(true)}
-                        className="w-5 h-5 rounded-full border border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 flex items-center justify-center transition-colors text-[12px] font-black leading-none"
-                      >
-                        i
-                      </button>
-                    </div>
-                    <button onClick={() => { const n = { ...settings, physicalMode: !settings.physicalMode }; setSettings(n); queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen'); }} className={`w-14 h-7 rounded-full relative transition-all ${settings.physicalMode ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${settings.physicalMode ? 'left-8' : 'left-1'}`}></div>
+                    <h4 className="text-white font-medium text-sm sm:text-base">{t("Bus Pakjes")}</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = ((Math.round(draftBusDecks)) % 5) + 1;
+                        setDraftBusDecks(next);
+                        setSettings(prev => ({ ...prev, busDecks: next }));
+                        triggerHaptic('tick');
+                      }}
+                      className="text-xs sm:text-sm font-black text-white px-2 py-0.5 rounded-lg border bg-slate-800 border-slate-700 active:scale-95 transition-all cursor-pointer"
+                    >
+                      {Math.round(draftBusDecks)}
                     </button>
+                  </div>
+                  <div className="relative w-full h-5 flex items-center">
+                    {/* Track background */}
+                    <div className="absolute inset-x-0 h-2 bg-slate-800 rounded-lg overflow-hidden flex items-center border border-white/10">
+                      {/* Active fill */}
+                      <div 
+                        className={`slider-active-fill absolute left-0 top-0 bottom-0 pointer-events-none z-0 ${
+                          isBusDecksDragging ? '' : 'transition-all duration-300 ease-out'
+                        }`}
+                        style={{
+                          width: `calc(8px + (100% - 16px) * ${(draftBusDecks - 1) / 4})`,
+                          backgroundColor: 'var(--theme-accent, #ef4444)',
+                          opacity: 0.85
+                        }}
+                      />
+                    </div>
+                    {/* Threshold marks */}
+                    <div className="absolute inset-x-0 h-3 flex items-center pointer-events-none z-10">
+                      {[1.5, 2.5, 3.5, 4.5].map(thresh => {
+                        const threshFraction = (thresh - 1) / 4;
+                        const isPast = draftBusDecks >= thresh;
+                        return (
+                          <div 
+                            key={thresh} 
+                            className={`absolute w-[1.5px] h-2.5 rounded-full -translate-x-1/2 transition-all duration-300 ease-out ${
+                              isPast ? 'bg-white/60 shadow-[0_0_3px_rgba(255,255,255,0.6)]' : 'bg-slate-600/70'
+                            }`} 
+                            style={{
+                              left: `calc(8px + (100% - 16px) * ${threshFraction})`
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                    {/* Custom Animated Thumb Knob linked with fill */}
+                    <div 
+                      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white pointer-events-none z-30 shadow-[0_0_10px_rgba(0,0,0,0.5),0_0_4px_var(--theme-accent)] ${
+                        isBusDecksDragging ? 'scale-115' : 'transition-all duration-300 ease-out'
+                      }`}
+                      style={{
+                        left: `calc(8px + (100% - 16px) * ${(draftBusDecks - 1) / 4})`,
+                        backgroundColor: 'var(--theme-accent, #ef4444)'
+                      }}
+                    />
+                    {/* Invisible Range Input for Drag & Touch Interaction */}
+                    <input 
+                      type="range" 
+                      min={1} 
+                      max={5} 
+                      step="any"
+                      value={draftBusDecks}
+                      onMouseDown={() => setIsBusDecksDragging(true)}
+                      onTouchStart={() => setIsBusDecksDragging(true)}
+                      onChange={(e) => handleBusDecksChange(parseFloat(e.target.value))}
+                      onInput={(e) => handleBusDecksChange(parseFloat((e.target as HTMLInputElement).value))}
+                      onMouseUp={handleBusDecksCommit}
+                      onTouchEnd={handleBusDecksCommit}
+                      className="custom-slider-invisible absolute inset-0 z-40 cursor-grab active:cursor-grabbing"
+                    />
                   </div>
                 </div>
               </div>
@@ -3692,7 +3893,7 @@ const initializeAdMob = useCallback(async () => {
               {/* Footer */}
               <div className="p-6 border-t border-slate-800 shrink-0">
                 <button
-                  onClick={() => setIsMoreSettingsOpen(false)}
+                  onClick={closeMoreSettings}
                   className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-transform uppercase tracking-widest"
                 >
                   {t("Sluiten")}
@@ -3849,6 +4050,10 @@ const initializeAdMob = useCallback(async () => {
           t={t}
           lang={lang}
           onCancel={() => setShowHardBusWarning(false)}
+          onAdjust={() => {
+            setShowHardBusWarning(false);
+            setIsSettingsOpen(true);
+          }}
           onConfirm={() => {
             setShowHardBusWarning(false);
             confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
@@ -3864,7 +4069,11 @@ const initializeAdMob = useCallback(async () => {
         <RootContainer className="p-4" showChest={true} theme={settings.theme}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
           <h1 
-            className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-tighter uppercase drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text cursor-pointer"
+            className={`text-5xl font-black tracking-tighter uppercase cursor-pointer select-none transition-all duration-300 ${
+              headerArmed || devModeArmed
+                ? 'text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 drop-shadow-[0_2px_15px_rgba(59,130,246,0.7)]'
+                : 'text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text'
+            }`}
             onPointerDown={handleHeaderPointerDown}
             onPointerUp={handleHeaderPointerUpOrLeave}
             onPointerLeave={handleHeaderPointerUpOrLeave}
@@ -3878,7 +4087,19 @@ const initializeAdMob = useCallback(async () => {
         <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
           <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
             <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500" /> {t("Spelers")}</h2>
-            <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">{players.length}/12</span>
+            <span 
+              className={`text-[10px] font-bold px-2 py-1 rounded-lg border cursor-pointer select-none transition-all duration-300 ${
+                countArmed || devModeArmed
+                  ? 'bg-blue-500/20 border-blue-400 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
+                  : 'text-slate-300 bg-slate-800 border-slate-700'
+              }`}
+              onPointerDown={handleCountPointerDown}
+              onPointerUp={handleCountPointerUpOrLeave}
+              onPointerLeave={handleCountPointerUpOrLeave}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              {players.length}/12
+            </span>
           </div>
 
           <PlayerList
@@ -3891,6 +4112,7 @@ const initializeAdMob = useCallback(async () => {
             renderAvatar={renderPlayerListAvatar}
             t={t}
             immunePlayerId={immunePlayerId}
+            lastAddedPlayerId={lastAddedPlayerId}
           />
         </div>
 
@@ -3948,14 +4170,16 @@ const initializeAdMob = useCallback(async () => {
           <SettingsPanel
             isOpen={isSettingsOpen}
             settings={settings}
+            playerCount={players.length}
             t={t}
             onToggleOpen={() => setIsSettingsOpen(!isSettingsOpen)}
             onOpenMoreSettings={() => setIsMoreSettingsOpen(true)}
             onSettingsChange={(key, val) => setSettings(prev => ({ ...prev, [key]: val }))}
-            onCommitSettings={() => setSettings(prev => {
-              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(prev), 'instellingen');
-              return prev;
-            })}
+            onCommitSettings={(newValues) => {
+              if (newValues) {
+                setSettings(prev => ({ ...prev, ...newValues }));
+              }
+            }}
           />
         </div>
 
@@ -4106,7 +4330,7 @@ const initializeAdMob = useCallback(async () => {
         <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {showConfetti && <Confetti />}
         <div className={`flex-none flex items-center justify-between p-2.5 ${getHeaderClasses()}`}>
-          <div className="flex items-center gap-3">
+          <div key={activePlayer?.id} className="flex items-center gap-3 animate-card-hand-subtle">
             <PlayerAvatar 
               player={activePlayer} 
               size="lg" 
@@ -4532,65 +4756,70 @@ const initializeAdMob = useCallback(async () => {
 {renderColorPickerModal()}
         {/* Match Modal */}
         {pendingMatches && (
-          <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-fast-subtle-pop" onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}>
-            {/* Card Reveal for Match */}
-            <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
-              <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
-            </div>
-
-            <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 animate-pulse"></div>
-              <button onClick={dismissMatchModal} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
-
-              <div className="p-6 text-center border-b border-white/5">
-                <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">{t("MATCH!")}</h3>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">{t("Wie legt op?")}</p>
+          <div
+            className={`absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 ${isMatchModalClosing ? 'animate-fast-fade-out' : 'animate-fast-fade-in'}`}
+            onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}
+          >
+            <div className={`flex flex-col items-center justify-center w-full max-w-xs ${isMatchModalClosing ? 'animate-fast-subtle-pop-out' : 'animate-fast-subtle-pop'}`}>
+              {/* Card Reveal for Match */}
+              <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
+                <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
               </div>
 
-              <div className="p-5 grid grid-cols-2 gap-3">
-                {pendingMatches.matches.map((m) => {
-                  const clicks = m.initialCount - m.count;
-                  let colorClasses = 'bg-black/40 border-white/5 hover:border-emerald-500 hover:bg-emerald-900/30';
-                  let ringClass = 'ring-white/10 group-hover:ring-emerald-500';
-                  let textClass = 'group-hover:text-emerald-400 text-white';
-                  
-                  if (clicks === 1) {
-                    colorClasses = 'bg-amber-900/40 border-amber-500 hover:bg-amber-800/40';
-                    ringClass = 'ring-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]';
-                    textClass = 'text-amber-400';
-                  } else if (clicks === 2) {
-                    colorClasses = 'bg-orange-900/50 border-orange-500 hover:bg-orange-800/50';
-                    ringClass = 'ring-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]';
-                    textClass = 'text-orange-400';
-                  } else if (clicks >= 3) {
-                    colorClasses = 'bg-red-900/60 border-red-500 hover:bg-red-800/60';
-                    ringClass = 'ring-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse';
-                    textClass = 'text-red-400';
-                  }
+              <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 animate-pulse"></div>
+                <button onClick={dismissMatchModal} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
 
-                  return (
-                    <button
-                      key={m.player.id}
-                      onClick={() => resolveMatch(m.player.id)}
-                      className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${colorClasses}`}
-                    >
-                      {m.initialCount > 1 && (
-                        <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-xs px-2 py-0.5 rounded-full shadow-lg border border-white/20 z-10">
-                          {m.count}x
+                <div className="p-6 text-center border-b border-white/5">
+                  <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">{t("MATCH!")}</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">{t("Wie legt op?")}</p>
+                </div>
+
+                <div className="p-5 grid grid-cols-2 gap-3">
+                  {pendingMatches.matches.map((m) => {
+                    const clicks = m.initialCount - m.count;
+                    let colorClasses = 'bg-black/40 border-white/5 hover:border-emerald-500 hover:bg-emerald-900/30';
+                    let ringClass = 'ring-white/10 group-hover:ring-emerald-500';
+                    let textClass = 'group-hover:text-emerald-400 text-white';
+                    
+                    if (clicks === 1) {
+                      colorClasses = 'bg-amber-900/40 border-amber-500 hover:bg-amber-800/40';
+                      ringClass = 'ring-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]';
+                      textClass = 'text-amber-400';
+                    } else if (clicks === 2) {
+                      colorClasses = 'bg-orange-900/50 border-orange-500 hover:bg-orange-800/50';
+                      ringClass = 'ring-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]';
+                      textClass = 'text-orange-400';
+                    } else if (clicks >= 3) {
+                      colorClasses = 'bg-red-900/60 border-red-500 hover:bg-red-800/60';
+                      ringClass = 'ring-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse';
+                      textClass = 'text-red-400';
+                    }
+
+                    return (
+                      <button
+                        key={m.player.id}
+                        onClick={() => resolveMatch(m.player.id)}
+                        className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${colorClasses}`}
+                      >
+                        {m.initialCount > 1 && (
+                          <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-xs px-2 py-0.5 rounded-full shadow-lg border border-white/20 z-10">
+                            {m.count}x
+                          </div>
+                        )}
+                        <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ring-2 transition-all ${ringClass}`}>
+                          {m.player.image ? <img src={m.player.image} className="w-full h-full object-cover" /> : m.player.name.charAt(0)}
                         </div>
-                      )}
-                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ring-2 transition-all ${ringClass}`}>
-                        {m.player.image ? <img src={m.player.image} className="w-full h-full object-cover" /> : m.player.name.charAt(0)}
-                      </div>
-                      <span className={`font-bold text-sm truncate w-full text-center transition-colors ${textClass}`}>{m.player.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="bg-black/50 p-3 text-center">
-                <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                  <ArrowRight size={12} /> {t(" Uitdelen: ")} {getSipsText(pendingMatches.sips)}
-                </p>
+                        <span className={`font-bold text-sm truncate w-full text-center transition-colors ${textClass}`}>{m.player.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="bg-black/50 p-3 text-center">
+                  <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                    <ArrowRight size={12} /> {t(" Uitdelen: ")} {getSipsText(pendingMatches.sips)}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -5238,44 +5467,51 @@ const initializeAdMob = useCallback(async () => {
           </div>
         )}
 
-        {/* Header - Redesigned */}
-        <div className="flex-none flex items-center justify-between px-5 pb-5 bg-black border-b border-red-900/30 z-10 shadow-2xl gap-3 flex-wrap" style={{ paddingTop: 'calc(1.25rem + var(--safe-top, 0px))' }}>
-          <div>
-            <div 
-              className="pointer-events-auto cursor-pointer"
-              onPointerDown={handleHeaderPointerDown}
-              onPointerUp={handleHeaderPointerUpOrLeave}
-              onPointerLeave={handleHeaderPointerUpOrLeave}
-              onContextMenu={(e) => e.preventDefault()}
-            >
-              <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+        {/* Header - Responsive & Stable */}
+        <div 
+          className="flex-none flex flex-col justify-center px-4 sm:px-5 bg-black border-b border-red-900/30 z-10 shadow-2xl gap-1.5 sm:gap-2" 
+          style={{ paddingTop: 'calc(0.85rem + var(--safe-top, 0px))', paddingBottom: '0.85rem' }}
+        >
+          <div className="w-full flex items-center justify-between gap-3">
+            <div className="shrink-0 flex items-center">
+              <div 
+                className="pointer-events-auto cursor-pointer"
+                onPointerDown={handleHeaderPointerDown}
+                onPointerUp={handleHeaderPointerUpOrLeave}
+                onPointerLeave={handleHeaderPointerUpOrLeave}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            {renderDevMenu()}
-            {remainingBusCards > 0 && (
+            <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end shrink-0 min-w-0 pr-8">
+              {renderDevMenu()}
               <button 
                 onClick={() => setIsCardOverviewOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-red-900/40 bg-red-900/10 text-slate-200"
+                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-red-900/40 bg-red-900/10 text-slate-200 shrink-0 ${
+                  remainingBusCards > 0 && !isBusWon ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
               >
-                <PlayingCardIcon size={14} className="text-red-500" />
-                <span>{remainingBusCards} {t("kaarten")}</span>
+                <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
+                <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
               </button>
-            )}
-            {settings.busDecks > 1 && (
-              <div className={`flex items-center gap-1 px-2 py-2 rounded-full border text-[10px] uppercase font-black tracking-widest ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-                <span>{t("Pakje")}</span>
-                <span className={`${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
-              </div>
-            )}
-            {!isBusWon && (
-              <div className="text-right mr-10">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                  {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}
-                </span>
-                <span className="text-white text-sm font-black">{passengerNames}</span>
-              </div>
-            )}
+              {settings.busDecks > 1 && (
+                <div className={`flex items-center gap-1 px-2 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest shrink-0 transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
+                  <span>{t("Pakje")}</span>
+                  <span className={`tabular-nums ${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Passenger Line - Horizontal, never truncated */}
+          <div className={`flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
+              {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}:
+            </span>
+            <span className="text-white font-black break-words">
+              {passengerNames}
+            </span>
           </div>
         </div>
 
