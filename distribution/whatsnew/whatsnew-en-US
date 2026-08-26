@@ -1,5 +1,5 @@
-• Pyramid swiping: smoothly glide across cards to reveal them instantly
-• Enhanced match modal animations and multi-match badges (2x, 3x, 4x)
-• Clearer feedback and warning hints when tapping cards
-• Improved multi-language support (NL/EN) in match modal
+• Improved the pyramid phase with a new selection and distribution screen for sips
+• Pyramid swiping: smoothly glide across cards in the pyramid to reveal them instantly instead of having to tap them one by one
+• Improved the match modal to clearly show the selected players, their names and how many matches they have on the current card
 • Minor performance optimizations and bug fixes
+• Minor UI optimizations
