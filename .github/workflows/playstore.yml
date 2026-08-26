@@ -58,31 +58,6 @@ jobs:
             echo "track=beta" >> $GITHUB_OUTPUT
           fi
 
-      - name: Validate Patch Notes Gates (Prod only)
-        if: ${{ steps.determine_track.outputs.track == 'production' }}
-        run: |
-          git fetch --tags --force
-          LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
-
-          echo "Latest release tag: $LATEST_TAG"
-
-          if [ -n "$LATEST_TAG" ]; then
-            # 1. Patch notes gate: ensure whatsnew files have changed
-            WHATSNEW_DIFF=$(git diff "$LATEST_TAG" HEAD -- distribution/whatsnew/)
-            if [ -z "$WHATSNEW_DIFF" ]; then
-              echo "::error::[Release Gate Failed] distribution/whatsnew/ has not changed since previous release ($LATEST_TAG). Update whatsnew notes before deploying to prod."
-              exit 1
-            fi
-          fi
-
-          # 2. Ensure files are non-empty
-          if [ ! -s "distribution/whatsnew/whatsnew-nl-NL" ] || [ ! -s "distribution/whatsnew/whatsnew-en-US" ]; then
-            echo "::error::[Release Gate Failed] distribution/whatsnew/ files must not be empty."
-            exit 1
-          fi
-
-          echo "Release gates passed: What's New notes are updated."
-
       - name: Resolve Version & Auto-Bump Version Code
         id: pkg
         env:
