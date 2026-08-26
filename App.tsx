@@ -25,6 +25,8 @@ import { PhotoOptionsModal } from './components/modals/PhotoOptionsModal';
 import { PatchNotesModal } from './components/modals/PatchNotesModal';
 import { HardBusWarningModal } from './components/modals/HardBusWarningModal';
 import { AdLoadingModal } from './components/modals/AdLoadingModal';
+import { SlideMenuModal } from './components/modals/SlideMenuModal';
+import { PyramidMatchModal } from './components/modals/PyramidMatchModal';
 
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -1078,11 +1080,13 @@ const App: React.FC = () => {
     if (!styleToUnlock) return null;
 
     return (
-      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setStyleToUnlock(null)}>
-        <div 
-          className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col items-center text-center relative"
-          onClick={e => e.stopPropagation()}
-        >
+      <SlideMenuModal
+        isOpen={!!styleToUnlock}
+        onClose={() => setStyleToUnlock(null)}
+        className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center text-center relative"
+        backdropClassName="p-4 bg-black/70 backdrop-blur-md"
+      >
+        {({ close }) => (
           <div className="pt-10 pb-6 px-8 flex flex-col items-center">
             {/* Reward Icon / Graphic */}
             <div className="relative mb-6">
@@ -1103,6 +1107,7 @@ const App: React.FC = () => {
               <button
                 onClick={async () => {
                   const style = styleToUnlock;
+                  close();
                   setStyleToUnlock(null);
                   const played = await showRewardedAd();
                   if (played) {
@@ -1112,23 +1117,23 @@ const App: React.FC = () => {
                     triggerHaptic('heavy');
                   }
                 }}
-                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override"
+                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override cursor-pointer"
               >
                 <Play size={22} fill="currentColor" /> {t("Video Kijken")}
               </button>
               
               <button
-                onClick={() => setStyleToUnlock(null)}
-                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
+                onClick={close}
+                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors cursor-pointer"
               >
                 {t("Nee bedankt")}
               </button>
             </div>
+            
+            <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mt-4" />
           </div>
-          
-          <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-        </div>
-      </div>
+        )}
+      </SlideMenuModal>
     );
   };
 
@@ -1140,11 +1145,13 @@ const App: React.FC = () => {
                       themeToUnlock === UITheme.CALM ? "Rustig" : "Bier";
 
     return (
-      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setThemeToUnlock(null)}>
-        <div 
-          className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col items-center text-center relative"
-          onClick={e => e.stopPropagation()}
-        >
+      <SlideMenuModal
+        isOpen={!!themeToUnlock}
+        onClose={() => setThemeToUnlock(null)}
+        className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center text-center relative"
+        backdropClassName="p-4 bg-black/70 backdrop-blur-md"
+      >
+        {({ close }) => (
           <div className="pt-10 pb-6 px-8 flex flex-col items-center">
             {/* Reward Icon / Graphic */}
             <div className="relative mb-6">
@@ -1165,6 +1172,7 @@ const App: React.FC = () => {
               <button
                 onClick={async () => {
                   const theme = themeToUnlock;
+                  close();
                   setThemeToUnlock(null);
                   const played = await showRewardedAd();
                   if (played) {
@@ -1174,23 +1182,21 @@ const App: React.FC = () => {
                     triggerHaptic('heavy');
                   }
                 }}
-                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override"
+                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-xl hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override cursor-pointer"
               >
                 <Play size={22} fill="currentColor" /> {t("Video Kijken")}
               </button>
               
               <button
-                onClick={() => setThemeToUnlock(null)}
-                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
+                onClick={close}
+                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors cursor-pointer"
               >
                 {t("Nee bedankt")}
               </button>
             </div>
           </div>
-          
-          <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-        </div>
-      </div>
+        )}
+      </SlideMenuModal>
     );
   };
 
@@ -1268,9 +1274,9 @@ const App: React.FC = () => {
 
   const [devModeArmed, setDevModeArmed] = useState(false);
   const [headerArmed, setHeaderArmed] = useState(false);
-  const [countArmed, setCountArmed] = useState(false);
+  const [iconArmed, setIconArmed] = useState(false);
   const headerPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const iconPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const avatarPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleHeaderPointerDown = useCallback(() => {
@@ -1287,37 +1293,37 @@ const App: React.FC = () => {
     if (headerPressTimerRef.current) clearTimeout(headerPressTimerRef.current);
   }, []);
 
-  const handleCountPointerDown = useCallback(() => {
-    countPressTimerRef.current = setTimeout(() => {
-      setCountArmed(true);
+  const handleIconPointerDown = useCallback(() => {
+    iconPressTimerRef.current = setTimeout(() => {
+      setIconArmed(true);
       triggerHaptic('heavy');
     }, 1500);
   }, [triggerHaptic]);
 
-  const handleCountPointerUpOrLeave = useCallback(() => {
-    if (countPressTimerRef.current) clearTimeout(countPressTimerRef.current);
+  const handleIconPointerUpOrLeave = useCallback(() => {
+    if (iconPressTimerRef.current) clearTimeout(iconPressTimerRef.current);
   }, []);
 
   useEffect(() => {
     if (phase === GamePhase.SETUP) {
-      if (headerArmed && countArmed) {
+      if (headerArmed && iconArmed) {
         setDevModeArmed(true);
         triggerHaptic('success');
       }
     }
-  }, [headerArmed, countArmed, phase, triggerHaptic]);
+  }, [headerArmed, iconArmed, phase, triggerHaptic]);
 
   const handleAvatarPointerDown = useCallback((player: Player) => {
-    const isArmed = devModeArmed || (phase === GamePhase.SETUP && headerArmed && countArmed);
+    const isArmed = devModeArmed || (phase === GamePhase.SETUP && headerArmed && iconArmed);
     if (!isArmed) return;
     avatarPressTimerRef.current = setTimeout(() => {
       updatePlayer(player.id, p => ({ ...p, isDev: !p.isDev }));
       triggerHaptic('success');
       setDevModeArmed(false);
       setHeaderArmed(false);
-      setCountArmed(false);
+      setIconArmed(false);
     }, 1500);
-  }, [devModeArmed, headerArmed, countArmed, phase, updatePlayer, triggerHaptic]);
+  }, [devModeArmed, headerArmed, iconArmed, phase, updatePlayer, triggerHaptic]);
 
   const handleAvatarPointerUpOrLeave = useCallback(() => {
     if (avatarPressTimerRef.current) clearTimeout(avatarPressTimerRef.current);
@@ -1338,7 +1344,6 @@ const App: React.FC = () => {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
-  const [isMoreSettingsClosing, setIsMoreSettingsClosing] = useState(false);
   const [isMatchModalClosing, setIsMatchModalClosing] = useState(false);
   const [lastAddedPlayerId, setLastAddedPlayerId] = useState<string | null>(null);
 
@@ -1428,8 +1433,8 @@ const App: React.FC = () => {
   const [isPyramidDoubleSetup, setIsPyramidDoubleSetup] = useState(false);
   const [pyramidDoubleSetupRow, setPyramidDoubleSetupRow] = useState(0);
   const [doubledPyramidCardIds, setDoubledPyramidCardIds] = useState<Set<string>>(new Set());
-  const [distributeBanner, setDistributeBanner] = useState<{resolutions: {name: string, sips: number}[], id: number, position?: 'top' | 'bottom', isFadingOut?: boolean} | null>(null);
-  const accumulatedSipsThisMatch = useRef<{name: string, sips: number}[]>([]);
+  const [distributeBanner, setDistributeBanner] = useState<{resolutions: {name: string, sips: number, targetName?: string}[], id: number, position?: 'top' | 'bottom', isFadingOut?: boolean} | null>(null);
+  const accumulatedSipsThisMatch = useRef<{name: string, sips: number, targetName?: string}[]>([]);
   const [pulseValidCards, setPulseValidCards] = useState(false);
   const [warningCooldown, setWarningCooldown] = useState(false);
 
@@ -2151,7 +2156,7 @@ const initializeAdMob = useCallback(async () => {
   }, [addPlayerToEngine, newPlayerImage, newPlayerName, playSound, players, triggerHaptic, setFeedback, t]);
 
   const removePlayer = useCallback((id: string) => {
-    triggerHaptic('light');
+    triggerHaptic('tick');
     playSound('playerRemove');
     removePlayerFromEngine(id);
   }, [playSound, removePlayerFromEngine, triggerHaptic]);
@@ -2786,7 +2791,6 @@ const initializeAdMob = useCallback(async () => {
       return;
     }
 
-    triggerHaptic('medium');
     const newRevealed = new Set(revealedPyramidCards);
     newRevealed.add(card.id);
     setRevealedPyramidCards(newRevealed);
@@ -2798,6 +2802,7 @@ const initializeAdMob = useCallback(async () => {
     const isFinished = newRevealed.size === totalCards;
 
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
+      triggerHaptic('medium');
       setFeedback({
         text: isTop ? t("ADTJE VOOR DE ZAAL!") : `${t("Wie heeft deze kaart?")} ${getSipsText(sips)}!`,
         type: 'info'
@@ -2807,6 +2812,7 @@ const initializeAdMob = useCallback(async () => {
     }
 
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'digital') {
+      triggerHaptic('medium');
       setFeedback({ text: `${t("Deze kaart is")} ${getSipsText(sips)} ${t("waard.")}`, type: 'info' });
       if (isFinished) setIsPyramidComplete(true);
       return;
@@ -2821,7 +2827,7 @@ const initializeAdMob = useCallback(async () => {
     });
 
     if (matches.length > 0) {
-      triggerHaptic('success');
+      triggerHaptic('tick');
       playSound('success');
       const isDoubled = card && doubledPyramidCardIds.has(card.id);
       setPendingMatches({
@@ -2831,17 +2837,20 @@ const initializeAdMob = useCallback(async () => {
         bannerPosition: (isFinished || isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
       });
     } else {
+      triggerHaptic('medium');
       if (isFinished) {
         setIsPyramidComplete(true);
       }
     }
   };
 
-  const resolveMatch = (playerId: string) => {
+  const resolveMatch = (playerId: string, targetPlayerId?: string) => {
     if (!pendingMatches || isMatchModalClosing) return;
-    triggerHaptic('light');
+    triggerHaptic(targetPlayerId ? 'success' : 'tick');
     const player = players.find(p => p.id === playerId);
     if (!player) return;
+
+    const targetPlayer = targetPlayerId ? players.find(p => p.id === targetPlayerId) : null;
 
     const matchIndex = pendingMatches.matches.findIndex(m => m.player.id === playerId);
     if (matchIndex === -1) return;
@@ -2855,12 +2864,23 @@ const initializeAdMob = useCallback(async () => {
         hand: currentPlayer.hand.filter((_, index) => index !== handIndex),
         drinksDistributed: currentPlayer.drinksDistributed + pendingMatches.sips,
       }));
+
+      if (targetPlayer) {
+        updatePlayer(targetPlayer.id, currentTarget => ({
+          ...currentTarget,
+          drinksTaken: currentTarget.drinksTaken + pendingMatches.sips,
+        }));
+      }
       
-      const existing = accumulatedSipsThisMatch.current.find(a => a.name === player.name);
+      const existing = accumulatedSipsThisMatch.current.find(a => a.name === player.name && a.targetName === targetPlayer?.name);
       if (existing) {
         existing.sips += pendingMatches.sips;
       } else {
-        accumulatedSipsThisMatch.current.push({ name: player.name, sips: pendingMatches.sips });
+        accumulatedSipsThisMatch.current.push({ 
+          name: player.name, 
+          sips: pendingMatches.sips,
+          targetName: targetPlayer?.name 
+        });
       }
     }
 
@@ -2886,11 +2906,12 @@ const initializeAdMob = useCallback(async () => {
         if (revealedPyramidCards.size === totalCards) {
           setIsPyramidComplete(true);
         }
-      }, 100);
+      }, 130);
     } else {
       setPendingMatches({ ...pendingMatches, matches: newMatches });
     }
   };
+
 
   const dismissMatchModal = () => {
     if (isMatchModalClosing) return;
@@ -2906,7 +2927,7 @@ const initializeAdMob = useCallback(async () => {
       if (revealedPyramidCards.size === totalCards) {
         setIsPyramidComplete(true);
       }
-    }, 100);
+    }, 130);
   };
 
   const findLoser = () => {
@@ -3570,24 +3591,18 @@ const initializeAdMob = useCallback(async () => {
   // Global fixed quit button shown during active gameplay (not on SETUP or GAME_OVER)
   const isInActiveGame = phase !== GamePhase.SETUP && phase !== GamePhase.GAME_OVER;
 
-  const closeMoreSettings = () => {
-    if (isMoreSettingsClosing) return;
-    setIsMoreSettingsClosing(true);
-    setTimeout(() => {
-      setIsMoreSettingsOpen(false);
-      setIsMoreSettingsClosing(false);
-    }, 100);
-  };
-
   const renderAdditionalModals = () => (
     <>
-        {isMoreSettingsOpen && (
-          <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md ${isMoreSettingsClosing ? 'animate-fast-fade-out' : 'animate-fast-fade-in'}`} onClick={(e) => { if (e.target === e.currentTarget) closeMoreSettings(); }}>
-            <div className={`bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-sm m-4 flex flex-col max-h-[85vh] overflow-hidden ${isMoreSettingsClosing ? 'animate-fast-subtle-pop-out' : 'animate-fast-subtle-pop'}`}>
+        <SlideMenuModal
+          isOpen={isMoreSettingsOpen}
+          onClose={() => setIsMoreSettingsOpen(false)}
+        >
+          {({ close }) => (
+            <>
               {/* Header */}
               <div className="flex justify-between items-center border-b border-slate-800 p-6 shrink-0">
                 <h3 className="text-xl font-black text-white uppercase tracking-wider">{t("Meer Instellingen")}</h3>
-                <button onClick={closeMoreSettings} className="text-slate-500 hover:text-white transition-colors">
+                <button onClick={close} className="text-slate-500 hover:text-white transition-colors">
                   <X size={24} />
                 </button>
               </div>
@@ -3893,31 +3908,36 @@ const initializeAdMob = useCallback(async () => {
               {/* Footer */}
               <div className="p-6 border-t border-slate-800 shrink-0">
                 <button
-                  onClick={closeMoreSettings}
+                  onClick={close}
                   className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-transform uppercase tracking-widest"
                 >
                   {t("Sluiten")}
                 </button>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </SlideMenuModal>
 
         {/* Phrase Editor Modal */}
-        {isPhraseEditorOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsPhraseEditorOpen(false); }}>
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full h-[90vh] max-w-lg m-2 flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-              <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-800/50">
+        <SlideMenuModal
+          isOpen={isPhraseEditorOpen}
+          onClose={() => { setIsPhraseEditorOpen(false); setIsMoreSettingsOpen(true); }}
+          className="bg-slate-900 border border-slate-700 rounded-3xl w-full h-[90vh] max-w-lg m-2 flex flex-col shadow-2xl overflow-hidden"
+          backdropClassName="bg-black/90 backdrop-blur-md"
+        >
+          {({ close }) => (
+            <>
+              <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-800/50 shrink-0">
                 <div className="flex items-center gap-2">
                   <Pencil size={20} className="text-red-500" />
                   <h3 className="text-lg font-black text-white uppercase tracking-wider">{t("Berichten")} ({lang.toUpperCase()})</h3>
                 </div>
-                <button onClick={() => { setIsPhraseEditorOpen(false); setIsMoreSettingsOpen(true); }} className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-full">
+                <button onClick={close} className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-full cursor-pointer">
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="flex gap-2 p-3 bg-slate-900 overflow-x-auto snap-x hide-scrollbar border-b border-slate-800">
+              <div className="flex gap-2 p-3 bg-slate-900 overflow-x-auto snap-x hide-scrollbar border-b border-slate-800 shrink-0">
                 {(['success', 'failure', 'loser'] as PhraseCategory[]).map(cat => (
                   <button
                     key={cat}
@@ -3934,20 +3954,17 @@ const initializeAdMob = useCallback(async () => {
                   const effectivePhrases = getEffectivePhrases(editorCategory);
                   return effectivePhrases.map((phrase, idx) => (
                     <div key={`${editorCategory}-${idx}`} className="flex justify-between items-center bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 group">
-                      <span className="text-slate-200 font-medium break-words flex-1 pr-2">{phrase}</span>
+                      <span className="text-white font-medium text-sm pr-2">{phrase}</span>
                       <button
                         onClick={() => {
                           const newPhrases = { ...customPhrases };
-                          if (!newPhrases[lang]) newPhrases[lang] = { success: [], failure: [], loser: [] };
-                          if (newPhrases[lang][editorCategory].length === 0) {
-                            newPhrases[lang][editorCategory] = [...DEFAULT_PHRASES[lang][editorCategory]];
-                          }
-                          newPhrases[lang][editorCategory] = newPhrases[lang][editorCategory].filter((_, i) => i !== idx);
+                          if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
+                          newPhrases[lang][editorCategory] = effectivePhrases.filter((_, i) => i !== idx);
                           setCustomPhrases(newPhrases);
                           localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
-                          triggerHaptic('light');
+                          triggerHaptic('medium');
                         }}
-                        className="text-slate-500 hover:text-red-500 p-2 transition-colors active:scale-95"
+                        className="text-slate-500 hover:text-red-400 p-1 transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -3956,22 +3973,19 @@ const initializeAdMob = useCallback(async () => {
                 })()}
               </div>
 
-              <div className="p-4 bg-slate-800/80 border-t border-slate-700 space-y-3">
+              <div className="p-4 border-t border-slate-800 bg-slate-800/30 space-y-3 shrink-0">
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder={t("Nieuw bericht...")}
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500"
                     value={editingPhraseText}
-                    onChange={e => setEditingPhraseText(e.target.value)}
-                    onKeyDown={e => {
+                    onChange={(e) => setEditingPhraseText(e.target.value)}
+                    placeholder={t("Nieuw bericht toevoegen...")}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter' && editingPhraseText.trim()) {
                         const newPhrases = { ...customPhrases };
-                        if (!newPhrases[lang]) newPhrases[lang] = { success: [], failure: [], loser: [] };
-                        if (newPhrases[lang][editorCategory].length === 0) {
-                          newPhrases[lang][editorCategory] = [...DEFAULT_PHRASES[lang][editorCategory]];
-                        }
-                        newPhrases[lang][editorCategory].push(editingPhraseText.trim());
+                        if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
+                        newPhrases[lang][editorCategory] = [...getEffectivePhrases(editorCategory), editingPhraseText.trim()];
                         setCustomPhrases(newPhrases);
                         localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
                         setEditingPhraseText('');
@@ -3983,11 +3997,8 @@ const initializeAdMob = useCallback(async () => {
                     onClick={() => {
                       if (editingPhraseText.trim()) {
                         const newPhrases = { ...customPhrases };
-                        if (!newPhrases[lang]) newPhrases[lang] = { success: [], failure: [], loser: [] };
-                        if (newPhrases[lang][editorCategory].length === 0) {
-                          newPhrases[lang][editorCategory] = [...DEFAULT_PHRASES[lang][editorCategory]];
-                        }
-                        newPhrases[lang][editorCategory].push(editingPhraseText.trim());
+                        if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
+                        newPhrases[lang][editorCategory] = [...getEffectivePhrases(editorCategory), editingPhraseText.trim()];
                         setCustomPhrases(newPhrases);
                         localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
                         setEditingPhraseText('');
@@ -4010,19 +4021,24 @@ const initializeAdMob = useCallback(async () => {
                       triggerHaptic('medium');
                     }
                   }}
-                  className="w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                  className="w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   <RotateCcw size={14} /> {t("Herstel standaardberichten")}
                 </button>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </SlideMenuModal>
 
         {/* Physical Mode Info Modal */}
-        {showPhysicalModeInfo && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-sm animate-in fade-in" onClick={() => setShowPhysicalModeInfo(false)}>
-            <div className="bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl w-full max-w-sm m-4 space-y-4 animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+        <SlideMenuModal
+          isOpen={showPhysicalModeInfo}
+          onClose={() => setShowPhysicalModeInfo(false)}
+          className="bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl w-full max-w-sm m-4 space-y-4"
+          backdropClassName="bg-black/75 backdrop-blur-sm"
+        >
+          {({ close }) => (
+            <>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
                   <span className="text-amber-400 font-black text-lg">i</span>
@@ -4031,14 +4047,15 @@ const initializeAdMob = useCallback(async () => {
               </div>
               <p className="text-slate-300 text-sm leading-relaxed">{t("Gebruik je eigen fysieke spelkaarten in plaats van digitale kaarten. De app begeleidt je alleen door de regels.")}</p>
               <button
-                onClick={() => setShowPhysicalModeInfo(false)}
-                className="w-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold py-3 rounded-xl transition-colors active:scale-95"
+                onClick={close}
+                className="w-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold py-3 rounded-xl transition-colors active:scale-95 cursor-pointer"
               >
                 {t("Sluiten")}
               </button>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </SlideMenuModal>
+
         {renderDeckPreview()}
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
@@ -4086,20 +4103,32 @@ const initializeAdMob = useCallback(async () => {
 
         <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
           <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
-            <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide"><Users size={16} className="text-red-500" /> {t("Spelers")}</h2>
-            <span 
-              className={`text-[10px] font-bold px-2 py-1 rounded-lg border cursor-pointer select-none transition-all duration-300 ${
-                countArmed || devModeArmed
-                  ? 'bg-blue-500/20 border-blue-400 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
-                  : 'text-slate-300 bg-slate-800 border-slate-700'
-              }`}
-              onPointerDown={handleCountPointerDown}
-              onPointerUp={handleCountPointerUpOrLeave}
-              onPointerLeave={handleCountPointerUpOrLeave}
-              onContextMenu={(e) => e.preventDefault()}
-            >
-              {players.length}/12
-            </span>
+            <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide">
+              <span
+                className="cursor-pointer select-none p-1 -m-1 rounded-lg inline-flex items-center justify-center transition-all duration-300 active:scale-95"
+                onPointerDown={handleIconPointerDown}
+                onPointerUp={handleIconPointerUpOrLeave}
+                onPointerLeave={handleIconPointerUpOrLeave}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <Users 
+                  size={16} 
+                  className={`transition-all duration-300 ${
+                    iconArmed || devModeArmed 
+                      ? 'text-blue-400 drop-shadow-[0_0_10px_rgba(59,130,246,0.9)] scale-110' 
+                      : 'text-red-500'
+                  }`} 
+                />
+              </span>
+              {t("Spelers")}
+            </h2>
+            {players.length >= 10 && (
+              <span 
+                className="inline-block text-[10px] font-bold px-2 py-1 rounded-lg border select-none transition-all duration-300 animate-pop text-slate-300 bg-slate-800 border-slate-700"
+              >
+                {players.length}/12
+              </span>
+            )}
           </div>
 
           <PlayerList
@@ -4130,7 +4159,7 @@ const initializeAdMob = useCallback(async () => {
             <input type="file" ref={fileInputCameraRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
             <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
             <button
-              onClick={() => setIsPhotoOptionsModalOpen(true)} // <--- Modified this onClick handler
+              onClick={() => setIsPhotoOptionsModalOpen(true)}
               className={`flex-none w-14 h-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
             >
               {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
@@ -4751,79 +4780,20 @@ const initializeAdMob = useCallback(async () => {
         {renderPlayerHandModal()}
         {renderDevModeOrb()}
         {renderAdditionalModals()}
-{renderQuitModal()}
-{renderAdLoadingModal()}
-{renderColorPickerModal()}
+        {renderQuitModal()}
+        {renderAdLoadingModal()}
+        {renderColorPickerModal()}
         {/* Match Modal */}
-        {pendingMatches && (
-          <div
-            className={`absolute inset-0 z-[80] bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 ${isMatchModalClosing ? 'animate-fast-fade-out' : 'animate-fast-fade-in'}`}
-            onClick={(e) => { if (e.target === e.currentTarget) dismissMatchModal(); }}
-          >
-            <div className={`flex flex-col items-center justify-center w-full max-w-xs ${isMatchModalClosing ? 'animate-fast-subtle-pop-out' : 'animate-fast-subtle-pop'}`}>
-              {/* Card Reveal for Match */}
-              <div className="mb-8 scale-125 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
-                <PlayingCard card={pendingMatches.card} size="md" style={settings.cardStyle} />
-              </div>
-
-              <div className="bg-gradient-to-b from-slate-800 to-slate-900 w-full max-w-xs rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative ring-1 ring-white/20">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 animate-pulse"></div>
-                <button onClick={dismissMatchModal} className="absolute top-3 right-3 p-2 bg-black/20 rounded-full text-slate-400 hover:text-white z-10"><X size={20} /></button>
-
-                <div className="p-6 text-center border-b border-white/5">
-                  <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 font-black text-3xl uppercase tracking-tight drop-shadow-lg animate-pulse">{t("MATCH!")}</h3>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">{t("Wie legt op?")}</p>
-                </div>
-
-                <div className="p-5 grid grid-cols-2 gap-3">
-                  {pendingMatches.matches.map((m) => {
-                    const clicks = m.initialCount - m.count;
-                    let colorClasses = 'bg-black/40 border-white/5 hover:border-emerald-500 hover:bg-emerald-900/30';
-                    let ringClass = 'ring-white/10 group-hover:ring-emerald-500';
-                    let textClass = 'group-hover:text-emerald-400 text-white';
-                    
-                    if (clicks === 1) {
-                      colorClasses = 'bg-amber-900/40 border-amber-500 hover:bg-amber-800/40';
-                      ringClass = 'ring-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]';
-                      textClass = 'text-amber-400';
-                    } else if (clicks === 2) {
-                      colorClasses = 'bg-orange-900/50 border-orange-500 hover:bg-orange-800/50';
-                      ringClass = 'ring-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)]';
-                      textClass = 'text-orange-400';
-                    } else if (clicks >= 3) {
-                      colorClasses = 'bg-red-900/60 border-red-500 hover:bg-red-800/60';
-                      ringClass = 'ring-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse';
-                      textClass = 'text-red-400';
-                    }
-
-                    return (
-                      <button
-                        key={m.player.id}
-                        onClick={() => resolveMatch(m.player.id)}
-                        className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95 ${colorClasses}`}
-                      >
-                        {m.initialCount > 1 && (
-                          <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-xs px-2 py-0.5 rounded-full shadow-lg border border-white/20 z-10">
-                            {m.count}x
-                          </div>
-                        )}
-                        <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ring-2 transition-all ${ringClass}`}>
-                          {m.player.image ? <img src={m.player.image} className="w-full h-full object-cover" /> : m.player.name.charAt(0)}
-                        </div>
-                        <span className={`font-bold text-sm truncate w-full text-center transition-colors ${textClass}`}>{m.player.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="bg-black/50 p-3 text-center">
-                  <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                    <ArrowRight size={12} /> {t(" Uitdelen: ")} {getSipsText(pendingMatches.sips)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <PyramidMatchModal
+          pendingMatches={pendingMatches}
+          players={players}
+          cardStyle={settings.cardStyle}
+          isClosing={isMatchModalClosing}
+          onResolveMatch={resolveMatch}
+          onDismiss={dismissMatchModal}
+          t={t}
+          getSipsText={getSipsText}
+        />
 
 
 
@@ -4934,15 +4904,29 @@ const initializeAdMob = useCallback(async () => {
                 <span key={idx}>
                   <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{res.name}</span>
                   {lang === 'en' ? (
-                    <>
-                      {" may give away"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "sip" : "sips"}
-                      {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
-                    </>
+                    res.targetName ? (
+                      <>
+                        {" gives "} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "sip" : "sips"} {" to "} <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">{res.name === res.targetName ? "themselves" : res.targetName}</span>
+                        {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
+                      </>
+                    ) : (
+                      <>
+                        {" may give away"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "sip" : "sips"}
+                        {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
+                      </>
+                    )
                   ) : (
-                    <>
-                      {" mag"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "slok" : "slokken"}
-                      {idx < distributeBanner.resolutions.length - 1 ? ", " : " uitdelen!"}
-                    </>
+                    res.targetName ? (
+                      <>
+                        {" deelt "} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "slok" : "slokken"} {" uit aan "} <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">{res.name === res.targetName ? "zichzelf" : res.targetName}</span>
+                        {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
+                      </>
+                    ) : (
+                      <>
+                        {" mag"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "slok" : "slokken"}
+                        {idx < distributeBanner.resolutions.length - 1 ? ", " : " uitdelen!"}
+                      </>
+                    )
                   )}
                 </span>
               ))}
@@ -5037,7 +5021,7 @@ const initializeAdMob = useCallback(async () => {
                                 }
                               });
                               if (matches.length > 0) {
-                                triggerHaptic('medium');
+                                triggerHaptic('tick');
                                 setPendingMatches({ card, sips, matches, bannerPosition: (isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
                               }
                             }
@@ -5634,12 +5618,17 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
 
-        {isCardOverviewOpen && (
-          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in" onClick={() => setIsCardOverviewOpen(false)}>
-            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+        <SlideMenuModal
+          isOpen={isCardOverviewOpen}
+          onClose={() => setIsCardOverviewOpen(false)}
+          className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative flex flex-col max-h-[85vh]"
+          backdropClassName="p-4 bg-black/80 backdrop-blur-md"
+        >
+          {({ close }) => (
+            <>
               <button
-                onClick={() => setIsCardOverviewOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                onClick={close}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -5732,14 +5721,14 @@ const initializeAdMob = useCallback(async () => {
                 </div>
               </div>
               <button
-                onClick={() => setIsCardOverviewOpen(false)}
-                className="mt-6 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shrink-0 shadow-lg shadow-red-900/30 border border-red-500/30"
+                onClick={close}
+                className="mt-6 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shrink-0 shadow-lg shadow-red-900/30 border border-red-500/30 cursor-pointer"
               >
                 {t("Sluiten")}
               </button>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </SlideMenuModal>
       </RootContainer>
       </>
       );

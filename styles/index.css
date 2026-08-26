@@ -365,8 +365,8 @@ input:disabled,
 .theme-calm button[class*="from-slate"]:not(.no-calm-override) { background-color: rgba(15, 23, 42, 0.6) !important; border: 1px solid rgba(71, 85, 105, 0.4) !important; color: #e2e8f0 !important; }
 .theme-calm button[class*="from-slate"]:not(.no-calm-override):hover { background-color: rgba(15, 23, 42, 0.8) !important; }
 
-.theme-calm button[class*="from-amber"] { background-color: var(--theme-btn-bg, #fbcd53) !important; border: 1px solid var(--theme-accent, #fbcd53) !important; color: var(--theme-btn-text, #0b0d19) !important; }
-.theme-calm button[class*="from-amber"]:hover { filter: brightness(1.1) !important; }
+.theme-calm button[class*="from-amber"]:not(.no-calm-override) { background-color: var(--theme-btn-bg, #fbcd53) !important; border: 1px solid var(--theme-accent, #fbcd53) !important; color: var(--theme-btn-text, #0b0d19) !important; }
+.theme-calm button[class*="from-amber"]:not(.no-calm-override):hover { filter: brightness(1.1) !important; }
 
 .theme-beer .bg-animated-gradient,
 .theme-beer .from-slate-800 {

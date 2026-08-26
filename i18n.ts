@@ -65,7 +65,10 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kans": "Kans",
         "Voor echte alcoholisten: wil je het maximum aantal buskaarten verhogen?": "Voor echte alcoholisten: wil je het maximum aantal buskaarten verhogen?",
         "Vergroot balk": "Vergroot balk",
-        "Verklein balk": "Verklein balk"
+        "Verklein balk": "Verklein balk",
+        "heeft deze kaart": "heeft deze kaart",
+        "hebben deze kaart": "hebben deze kaart",
+        "en": "en"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -149,7 +152,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Naar de Bus!": "To the Bus!",
         "Toch een Digitale Piramide": "Use a Digital Pyramid instead",
         "MATCH!": "MATCH!",
-        "Wie legt op?": "Who drinks?",
+        "Wie mag uitdelen?": "Who hands out drinks?",
         "Uitdelen:": "Distribute:",
         "Piramide": "Pyramid",
         "Draai kaarten om": "Turn cards over",
@@ -382,7 +385,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Niet zo oneerlijk!": "Don't be unfair!",
         "Hou je aan de regels!": "Stick to the rules!",
         "Aanpassen": "Adjust",
-        "Toch Starten": "Start Anyway"
+        "Toch Starten": "Start Anyway",
+        "heeft deze kaart": "has this card",
+        "hebben deze kaart": "have this card"
     }
 };
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GripVertical, Shield, X } from 'lucide-react';
 import { Player } from '../types';
 
@@ -27,9 +27,20 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
   isImmune,
   isNewlyAdded = false,
 }) => {
+  const [isExiting, setIsExiting] = useState(false);
   const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
+
+  const handleRemove = () => {
+    if (isExiting) return;
+    setIsExiting(true);
+    setTimeout(() => onRemove(player.id), 220);
+  };
+
   return (
-    <div data-player-item className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''}`}>
+    <div
+      data-player-item
+      className={`relative transition-transform duration-150 ${isDragging ? 'opacity-40 scale-95' : ''} ${isExiting ? 'animate-player-card-exit' : ''}`}
+    >
       {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
         <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
       )}
@@ -47,7 +58,7 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
         >
           <GripVertical size={18} />
         </div>
-        <button onClick={() => onRemove(player.id)} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18} /></button>
+        <button onClick={handleRemove} className="text-slate-500 hover:text-red-500 p-2 transition-all active:scale-90"><X size={18} /></button>
       </div>
     </div>
       {isOver && dragPlayerIndex !== null && dragPlayerIndex < index && (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { SlideMenuModal } from './SlideMenuModal';
 
 const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -105,93 +106,100 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = React.memo(({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <SlideMenuModal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl w-full max-w-xs m-4 flex flex-col items-center gap-6"
+      backdropClassName="bg-black/80 backdrop-blur-md"
     >
-      <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl w-full max-w-xs m-4 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
-        <div className="text-center space-y-1.5 w-full">
-          <h3 className="text-lg font-black text-white uppercase tracking-wider">{t('Kleur Kiezer')}</h3>
-          <p className="text-slate-400 text-xs">{t('Sleep op het wiel om een kleur te kiezen')}</p>
-        </div>
+      {({ close }) => (
+        <>
+          <div className="text-center space-y-1.5 w-full">
+            <h3 className="text-lg font-black text-white uppercase tracking-wider">{t('Kleur Kiezer')}</h3>
+            <p className="text-slate-400 text-xs">{t('Sleep op het wiel om een kleur te kiezen')}</p>
+          </div>
 
-        {/* Color Wheel Container */}
-        <div
-          id="calm-popup-wheel"
-          className="relative w-48 h-48 cursor-crosshair select-none touch-none rounded-full"
-          onMouseDown={(e) => {
-            handleWheelTouch(e);
-            const onMouseMove = (moveEvent: MouseEvent) => handleWheelTouch(moveEvent);
-            const onMouseUp = () => {
-              window.removeEventListener('mousemove', onMouseMove);
-              window.removeEventListener('mouseup', onMouseUp);
-            };
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-          }}
-          onTouchStart={(e) => {
-            handleWheelTouch(e);
-            const onTouchMove = (moveEvent: TouchEvent) => handleWheelTouch(moveEvent);
-            const onTouchEnd = () => {
-              window.removeEventListener('touchmove', onTouchMove);
-              window.removeEventListener('touchend', onTouchEnd);
-            };
-            window.addEventListener('touchmove', onTouchMove, { passive: false });
-            window.addEventListener('touchend', onTouchEnd);
-          }}
-        >
-          {/* The actual donut gradient */}
+          {/* Color Wheel Container */}
           <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background:
-                'conic-gradient(from 0deg, hsl(0,80%,75%), hsl(60,80%,75%), hsl(120,80%,75%), hsl(180,80%,75%), hsl(240,80%,75%), hsl(300,80%,75%), hsl(360,80%,75%))',
-              WebkitMaskImage: 'radial-gradient(circle, transparent 48%, black 49%)',
-              maskImage: 'radial-gradient(circle, transparent 48%, black 49%)',
+            id="calm-popup-wheel"
+            className="relative w-48 h-48 cursor-crosshair select-none touch-none rounded-full"
+            onMouseDown={(e) => {
+              handleWheelTouch(e);
+              const onMouseMove = (moveEvent: MouseEvent) => handleWheelTouch(moveEvent);
+              const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+              };
+              window.addEventListener('mousemove', onMouseMove);
+              window.addEventListener('mouseup', onMouseUp);
             }}
-          />
-
-          {/* Color Wheel selector Pin */}
-          <div
-            className="absolute w-5 h-5 rounded-full border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.6)] pointer-events-none -translate-x-1/2 -translate-y-1/2"
-            style={{
-              left: `${pinX}%`,
-              top: `${pinY}%`,
-              backgroundColor: tempColor,
+            onTouchStart={(e) => {
+              handleWheelTouch(e);
+              const onTouchMove = (moveEvent: TouchEvent) => handleWheelTouch(moveEvent);
+              const onTouchEnd = () => {
+                window.removeEventListener('touchmove', onTouchMove);
+                window.removeEventListener('touchend', onTouchEnd);
+              };
+              window.addEventListener('touchmove', onTouchMove);
+              window.addEventListener('touchend', onTouchEnd);
             }}
-          />
-        </div>
-
-        {/* Color Preview */}
-        <div className="flex items-center gap-4 w-full bg-slate-800/40 p-3 rounded-2xl border border-slate-700/30">
-          <div
-            className="w-12 h-12 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center transition-colors shrink-0"
-            style={{ backgroundColor: tempColor }}
-          />
-          <span className="text-sm text-slate-300 font-bold uppercase tracking-wider">
-            {t('Geselecteerde Kleur')}
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="grid grid-cols-2 gap-3 w-full pt-2">
-          <button
-            onClick={onClose}
-            className="py-3 rounded-2xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors text-sm active:scale-95 transition-transform"
+            style={{
+              background: `
+                radial-gradient(circle closest-side, #ffffff 0%, transparent 60%),
+                conic-gradient(
+                  from 0deg,
+                  #ff4d4d,
+                  #ff9933,
+                  #ffff33,
+                  #33cc33,
+                  #3399ff,
+                  #9933ff,
+                  #ff33cc,
+                  #ff4d4d
+                )
+              `,
+              boxShadow: '0 0 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.3)',
+            }}
           >
-            {t('Annuleren')}
-          </button>
-          <button
-            onClick={() => onSave(tempColor)}
-            className="py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm active:scale-95 transition-transform"
-          >
-            {t('Opslaan')}
-          </button>
-        </div>
-      </div>
-    </div>
+            {/* Center Thumb */}
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border-2 border-white shadow-lg pointer-events-none transition-transform"
+              style={{ backgroundColor: tempColor }}
+            />
+          </div>
+
+          {/* Current Selection Bar */}
+          <div className="flex items-center gap-4 w-full bg-slate-800/40 p-3 rounded-2xl border border-slate-700/30">
+            <div
+              className="w-12 h-12 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center transition-colors shrink-0"
+              style={{ backgroundColor: tempColor }}
+            />
+            <span className="text-sm text-slate-300 font-bold uppercase tracking-wider">
+              {t('Geselecteerde Kleur')}
+            </span>
+          </div>
+
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+            <button
+              onClick={close}
+              className="py-3 rounded-2xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors text-sm active:scale-95 transition-transform cursor-pointer"
+            >
+              {t('Annuleren')}
+            </button>
+            <button
+              onClick={() => {
+                close();
+                setTimeout(() => onSave(tempColor), 100);
+              }}
+              className="py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm active:scale-95 transition-transform cursor-pointer"
+            >
+              {t('Opslaan')}
+            </button>
+          </div>
+        </>
+      )}
+    </SlideMenuModal>
   );
 });
 

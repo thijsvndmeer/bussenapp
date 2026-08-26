@@ -423,7 +423,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         if (isOpen) onToggleOpen();
       }
     } else {
-      triggerHaptic('light');
+      triggerHaptic('tick');
       onToggleOpen();
     }
   };
@@ -530,12 +530,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                           : 'opacity-0 translate-y-3 pointer-events-none'
                       }`}
                     >
-                      <span className="text-[10px] sm:text-xs text-slate-400 font-semibold text-center leading-tight">
-                        {t("Voor echte alcoholisten: wil je het maximum aantal buskaarten verhogen?")}{' '}
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-semibold text-center leading-tight flex items-center justify-center">
+                        <span className="hidden sm:inline mr-1">{t("Voor echte alcoholisten: wil je het maximum aantal buskaarten verhogen?")}</span>
                         <button 
                           type="button"
                           onClick={() => setIsBusExpanded(true)}
-                          className="text-amber-400 font-bold underline hover:text-amber-300 transition-colors inline active:scale-95 ml-0.5 whitespace-nowrap"
+                          className="text-amber-400 font-bold underline hover:text-amber-300 transition-colors inline active:scale-95 whitespace-nowrap"
                         >
                           {t("Vergroot balk")}
                         </button>

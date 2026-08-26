@@ -202,3 +202,83 @@
   100% { filter: hue-rotate(360deg); }
 }
 
+@keyframes playerCardExit {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 80px;
+    margin-bottom: 0;
+  }
+  30% {
+    opacity: 0.8;
+    transform: translateX(-6px) scale(0.98);
+    max-height: 80px;
+    margin-bottom: 0;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(50px) scale(0.85);
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: -8px;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+}
+
+.animate-player-card-exit {
+  animation: playerCardExit 0.22s cubic-bezier(0.2, 0, 0, 1) forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+@keyframes slideLeftEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideLeftExit {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+.animate-slide-left-enter {
+  animation: slideLeftEnter 0.14s cubic-bezier(0.12, 0.9, 0.24, 1) forwards;
+}
+
+.animate-slide-left-exit {
+  animation: slideLeftExit 0.12s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes backdropFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes backdropFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-backdrop-fade-in {
+  animation: backdropFadeIn 0.14s ease-out forwards;
+}
+
+.animate-backdrop-fade-out {
+  animation: backdropFadeOut 0.12s ease-in forwards;
+}
+
+
