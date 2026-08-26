@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, X, ArrowRight } from 'lucide-react';
-import { useGameStore } from '../../store/gameStore';
 import PlayingCard from '../PlayingCard';
 
 export const PyramidMatchModal: React.FC<{
@@ -168,9 +167,9 @@ export const PyramidMatchModal: React.FC<{
   };
 
   const potentialTargets = players.filter(p => !p.isEliminated);
-  const showTargets = draggedPlayerId || selectedMatcherId || pendingMatches.matches.length === 1;
-  const draggingPlayer = draggedPlayerId ? players.find(p => p.id === draggedPlayerId) : null;
   const isDraggingActive = !!draggedPlayerId;
+  const showTargets = isDraggingActive;
+  const draggingPlayer = draggedPlayerId ? players.find(p => p.id === draggedPlayerId) : null;
 
   const localCardStyle = {
     ...cardStyle,
@@ -244,7 +243,7 @@ export const PyramidMatchModal: React.FC<{
                     <div
                       key={m.player.id}
                       onPointerDown={(e) => handlePointerDown(e, m.player.id)}
-                      className={`group flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl cursor-grab active:cursor-grabbing border ${widthClass} max-w-full transition-all duration-300 ${
+                      className={`group flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing border ${widthClass} max-w-full transition-all duration-300 ${
                         isThisDragged
                           ? 'opacity-20 scale-95 border-emerald-500/30 bg-emerald-950/20'
                           : isSelected
@@ -289,8 +288,8 @@ export const PyramidMatchModal: React.FC<{
         <div className="w-full min-h-[160px] mt-4 flex items-start justify-center relative">
           {showTargets && (
             <div className="w-full animate-slide-in-bottom">
-              <h3 className="text-center font-bold uppercase tracking-widest mb-3 text-emerald-400 animate-pulse text-xs flex items-center justify-center gap-2">
-                <Target size={14} className="animate-pulse" /> 
+              <h3 className="text-center font-bold uppercase tracking-widest mb-3 text-emerald-400 text-xs flex items-center justify-center gap-2">
+                <Target size={14} /> 
                 {isDraggingActive ? t("Laat los op slachtoffer") : t("Tik op een slachtoffer")}
               </h3>
 
