@@ -1,5 +1,5 @@
-• Smooth menu: swipe up to easily open quick settings
-• Subtle haptic feedback when adjusting sliders
-• Improved player names and layout in the bus round
-• Settings are now saved even more reliably
-• Minor improvements and bug fixes
+• Pyramid swiping: smoothly glide across cards to reveal them instantly
+• Enhanced match modal animations and multi-match badges (2x, 3x, 4x)
+• Clearer feedback and warning hints when tapping cards
+• Improved multi-language support (NL/EN) in match modal
+• Minor performance optimizations and bug fixes
