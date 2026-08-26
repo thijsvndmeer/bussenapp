@@ -23,6 +23,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Niveau": "Niveau",
         "Matches op deze kaart tellen dubbel": "Matches op deze kaart tellen dubbel",
         "Deze kaart kan nog niet!": "Deze kaart kan nog niet!",
+        "Deze kaart is al omgedraaid!": "Deze kaart is al omgedraaid!",
         "Stijl Wisselen": "Stijl Wisselen",
         "Kijk een korte video om direct over te schakelen naar de": "Kijk een korte video om direct over te schakelen naar de",
         "stijl!": "stijl!",
@@ -68,7 +69,8 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Verklein balk": "Verklein balk",
         "heeft deze kaart": "heeft deze kaart",
         "hebben deze kaart": "hebben deze kaart",
-        "en": "en"
+        "en": "en",
+        "jezelf": "jezelf"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -313,6 +315,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Kies een kaart per niveau voor dubbele slokken": "Choose one card per level for double sips",
         "Matches op deze kaart tellen dubbel": "Matches on this card count double",
         "Deze kaart kan nog niet!": "Cannot reveal this card yet!",
+        "Deze kaart is al omgedraaid!": "This card has already been flipped!",
         "Je mag uit de bus! 🎉": "You can leave the bus! 🎉",
         "Controleer nog even of": "Double check if",
         "echt": "really",
@@ -387,7 +390,8 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Aanpassen": "Adjust",
         "Toch Starten": "Start Anyway",
         "heeft deze kaart": "has this card",
-        "hebben deze kaart": "have this card"
+        "hebben deze kaart": "have this card",
+        "jezelf": "yourself"
     }
 };
 

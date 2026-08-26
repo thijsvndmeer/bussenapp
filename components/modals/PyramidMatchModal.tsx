@@ -2,6 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import PlayingCard from '../PlayingCard';
 import { triggerHaptic } from '../../services/haptics';
+import { CardStyle } from '../../types';
 
 export interface PyramidMatchModalProps {
   pendingMatches: {
@@ -14,7 +15,7 @@ export interface PyramidMatchModalProps {
     }[];
   } | null;
   players: any[];
-  cardStyle: any;
+  cardStyle?: CardStyle;
   isClosing?: boolean;
   onResolveMatch: (sourceId: string, targetId?: string) => void;
   onDismiss: () => void;
@@ -60,6 +61,8 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     prevPositions.current = map;
   };
 
+  const mountTimeRef = useRef(Date.now());
+
   useEffect(() => {
     if (isClosing) {
       setTimeout(() => {
@@ -69,11 +72,17 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   }, [isClosing]);
 
   useEffect(() => {
+    mountTimeRef.current = Date.now();
     setDraggedPlayerId(null);
     setDragPos(null);
     setHoveredTargetId(null);
     initialMatchesRef.current = pendingMatches?.matches ?? [];
   }, [pendingMatches?.card?.id]);
+
+  const safeDismiss = () => {
+    if (Date.now() - mountTimeRef.current < 400) return;
+    onDismiss();
+  };
 
   useLayoutEffect(() => {
     itemRefs.current.forEach((el, id) => {
@@ -220,20 +229,12 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   const showTargets = isDraggingActive;
   const draggingPlayer = draggedPlayerId ? players.find((p) => p.id === draggedPlayerId) : null;
 
-  const localCardStyle = {
-    ...cardStyle,
-    transform: dragPos
-      ? `rotateX(${(dragPos.y - window.innerHeight / 2) * 0.02}deg) rotateY(${(dragPos.x - window.innerWidth / 2) * 0.02}deg)`
-      : 'none',
-    transition: dragPos ? 'none' : 'transform 0.5s ease-out',
-  };
-
   return (
     <>
       {/* Backdrop */}
       <div
         onClick={() => {
-          if (!isDraggingActive) onDismiss();
+          if (!isDraggingActive) safeDismiss();
         }}
         className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300 ${
           isClosing ? 'opacity-0' : 'opacity-100'
@@ -243,7 +244,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       <div
         onClick={(e) => {
           if (e.target === e.currentTarget && !isDraggingActive) {
-            onDismiss();
+            safeDismiss();
           }
         }}
         className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-6 ${
@@ -266,15 +267,43 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                   : 'opacity-0 scale-90 pointer-events-none'
               }`}
             >
-              {hoveredTargetId
-                ? `${t("aan")} ${potentialTargets.find((p) => p.id === hoveredTargetId)?.name}?`
-                : `${t("aan")}?`}
+              {hoveredTargetId ? (
+                hoveredTargetId === draggedPlayerId ? (
+                  <>
+                    {t("aan")}{' '}
+                    <span
+                      className="text-transparent bg-clip-text font-black drop-shadow-[0_0_12px_rgba(244,114,182,0.8)]"
+                      style={{
+                        backgroundImage:
+                          'linear-gradient(90deg, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6, #7c3aed, #22d3ee, #f97316, #f472b6)',
+                        backgroundSize: '200% 100%',
+                        animation: 'disco-gradient 2s linear infinite',
+                      }}
+                    >
+                      {t("jezelf")}
+                    </span>
+                    ?
+                  </>
+                ) : (
+                  `${t("aan")} ${potentialTargets.find((p) => p.id === hoveredTargetId)?.name}?`
+                )
+              ) : (
+                `${t("aan")}?`
+              )}
             </span>
           </div>
         </div>
 
-        <div className="mb-6 pointer-events-none drop-shadow-[0_0_30px_rgba(52,211,153,0.3)]">
-          <PlayingCard card={pendingMatches.card} size="md" style={localCardStyle} />
+        <div
+          className="mb-6 pointer-events-none drop-shadow-[0_0_30px_rgba(52,211,153,0.3)]"
+          style={{
+            transform: dragPos
+              ? `rotateX(${(dragPos.y - window.innerHeight / 2) * 0.02}deg) rotateY(${(dragPos.x - window.innerWidth / 2) * 0.02}deg)`
+              : 'none',
+            transition: dragPos ? 'none' : 'transform 0.5s ease-out',
+          }}
+        >
+          <PlayingCard card={pendingMatches.card} size="md" style={cardStyle} />
         </div>
 
         <div
@@ -355,7 +384,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
         <div
           onClick={() => {
             if (!showTargets && !isDraggingActive) {
-              onDismiss();
+              safeDismiss();
             }
           }}
           className="w-full min-h-[160px] mt-4 flex items-start justify-center relative"
@@ -449,21 +478,35 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
             />
           </div>
 
-          <div className="flex flex-col items-center gap-2 -mt-1">
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center font-black text-white text-xl overflow-hidden transition-all shadow-[0_15px_30px_rgba(0,0,0,0.5)] ${
-                hoveredTargetId
-                  ? 'scale-110 border-4 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)]'
-                  : 'border-2 border-white'
-              }`}
-            >
-              {draggingPlayer.image ? (
-                <img src={draggingPlayer.image} className="w-full h-full object-cover bg-slate-800" />
-              ) : (
-                <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                  {draggingPlayer.name.charAt(0)}
-                </div>
-              )}
+          <div className="flex flex-col items-center gap-2 -mt-1 relative">
+            <div className="relative">
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center font-black text-white text-xl overflow-hidden transition-all shadow-[0_15px_30px_rgba(0,0,0,0.5)] ${
+                  hoveredTargetId
+                    ? 'scale-110 border-4 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)]'
+                    : 'border-2 border-white'
+                }`}
+              >
+                {draggingPlayer.image ? (
+                  <img src={draggingPlayer.image} className="w-full h-full object-cover bg-slate-800" />
+                ) : (
+                  <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                    {draggingPlayer.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              {(() => {
+                const match = pendingMatches.matches.find((m) => m.player.id === draggedPlayerId);
+                if (match && match.count > 1) {
+                  return (
+                    <div className="absolute -top-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-[10px] px-1.5 py-0.5 rounded-full shadow-lg pointer-events-none z-10">
+                      {match.count}x
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
             <div className="bg-slate-900/90 border border-emerald-400/50 rounded-full px-3 py-0.5 text-[10px] font-black text-emerald-300 shadow-xl whitespace-nowrap">
               {getSipsText(pendingMatches.sips)}

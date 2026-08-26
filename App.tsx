@@ -2680,16 +2680,26 @@ const initializeAdMob = useCallback(async () => {
     }
   };
 
-  const triggerPyramidWarning = () => {
-    if (warningCooldown) return;
+  const warningCooldownRef = useRef(false);
+
+  const triggerPyramidWarning = (customText?: string) => {
+    if (warningCooldownRef.current) return;
+    warningCooldownRef.current = true;
 
     triggerHaptic('warning');
-    setFeedback({ text: t("Deze kaart kan nog niet!"), type: 'warning' });
-    setPulseValidCards(true);
-    setWarningCooldown(true);
+    setFeedback({ text: customText || t("Deze kaart kan nog niet!"), type: 'warning' });
+    if (!customText) {
+      setPulseValidCards(true);
+    }
 
-    scheduleGameEvent('pyramid-warning-feedback', 1500, { type: 'PYRAMID_WARNING_FEEDBACK_DONE' });
-    scheduleGameEvent('pyramid-warning-cooldown', 2000, { type: 'PYRAMID_WARNING_COOLDOWN_DONE' });
+    setTimeout(() => {
+      setFeedback(null);
+      setPulseValidCards(false);
+    }, 1200);
+
+    setTimeout(() => {
+      warningCooldownRef.current = false;
+    }, 350);
   };
 
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
@@ -2773,8 +2783,8 @@ const initializeAdMob = useCallback(async () => {
 
   useThrottledResize(calculatePyramidScale);
 
-  const revealPyramidCard = (rowIndex: number, cardIndex: number) => {
-    const card = pyramid[rowIndex][cardIndex];
+  const revealPyramidCard = (rowIndex: number, cardIndex: number, isSwipe: boolean = false) => {
+    const card = pyramid[rowIndex]?.[cardIndex];
     if (!card || revealedPyramidCards.has(card.id)) return;
 
     // Find the highest rowIndex (bottom-most row) that still has an unrevealed card
@@ -2787,7 +2797,9 @@ const initializeAdMob = useCallback(async () => {
     }
 
     if (rowIndex !== lowestAvailableRowIndex) {
-      triggerPyramidWarning();
+      if (!isSwipe) {
+        triggerPyramidWarning();
+      }
       return;
     }
 
@@ -2842,6 +2854,102 @@ const initializeAdMob = useCallback(async () => {
         setIsPyramidComplete(true);
       }
     }
+  };
+
+  const isPyramidSwipingRef = useRef(false);
+  const lastSwipedCardKeyRef = useRef<string | null>(null);
+
+  const handlePyramidCardInteraction = useCallback((rowIndex: number, cardIndex: number, isSwipe: boolean = false) => {
+    const card = pyramid[rowIndex]?.[cardIndex];
+    if (!card) return;
+
+    const cardKey = `${rowIndex}-${cardIndex}-${card.id}`;
+    if (isSwipe && lastSwipedCardKeyRef.current === cardKey) return;
+    lastSwipedCardKeyRef.current = cardKey;
+
+    if (isPyramidDoubleSetup) {
+      if (rowIndex === pyramidDoubleSetupRow) {
+        handleDoubleCardSelection(rowIndex, cardIndex);
+      } else if (!isSwipe) {
+        triggerPyramidWarning();
+      }
+      return;
+    }
+
+    const isRevealed = revealedPyramidCards.has(card.id);
+    if (!isRevealed) {
+      revealPyramidCard(rowIndex, cardIndex, isSwipe);
+    } else {
+      let hasMatch = false;
+      if (card && settings.mode === GameMode.DIGITAL) {
+        hasMatch = players.some(p => p.hand.some(h => h.rank === card.rank));
+      }
+      if (hasMatch && card) {
+        const isDoubled = doubledPyramidCardIds.has(card.id);
+        const sips = (settings.pyramidRows - rowIndex) * (isDoubled ? 2 : 1);
+        const matches: { player: Player, count: number, initialCount: number }[] = [];
+        players.forEach(p => {
+          const matchingCardsCount = p.hand.filter(h => h.rank === card.rank).length;
+          if (matchingCardsCount > 0) {
+            matches.push({ player: p, count: matchingCardsCount, initialCount: matchingCardsCount });
+          }
+        });
+        if (matches.length > 0) {
+          isPyramidSwipingRef.current = false;
+          triggerHaptic('tick');
+          setPendingMatches({
+            card,
+            sips,
+            matches,
+            bannerPosition: (isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom'
+          });
+        } else if (!isSwipe) {
+          triggerPyramidWarning(t("Deze kaart is al omgedraaid!"));
+        }
+      } else if (!isSwipe) {
+        triggerPyramidWarning(t("Deze kaart is al omgedraaid!"));
+      }
+    }
+  }, [
+    pyramid,
+    isPyramidDoubleSetup,
+    pyramidDoubleSetupRow,
+    revealedPyramidCards,
+    doubledPyramidCardIds,
+    settings.pyramidRows,
+    settings.mode,
+    players,
+    isPyramidComplete,
+    revealPyramidCard,
+    handleDoubleCardSelection,
+    triggerPyramidWarning
+  ]);
+
+  const checkPyramidPoint = (clientX: number, clientY: number, isSwipe: boolean = false) => {
+    const el = document.elementFromPoint(clientX, clientY)?.closest('[data-pyramid-card="true"]');
+    if (el) {
+      const r = Number(el.getAttribute('data-row-index'));
+      const c = Number(el.getAttribute('data-card-index'));
+      if (!isNaN(r) && !isNaN(c)) {
+        handlePyramidCardInteraction(r, c, isSwipe);
+      }
+    }
+  };
+
+  const handlePyramidPointerDown = (e: React.PointerEvent) => {
+    isPyramidSwipingRef.current = true;
+    lastSwipedCardKeyRef.current = null;
+    checkPyramidPoint(e.clientX, e.clientY, false);
+  };
+
+  const handlePyramidPointerMove = (e: React.PointerEvent) => {
+    if (!isPyramidSwipingRef.current) return;
+    checkPyramidPoint(e.clientX, e.clientY, true);
+  };
+
+  const handlePyramidPointerEnd = () => {
+    isPyramidSwipingRef.current = false;
+    lastSwipedCardKeyRef.current = null;
   };
 
   const resolveMatch = (playerId: string, targetPlayerId?: string) => {
@@ -4900,36 +5008,218 @@ const initializeAdMob = useCallback(async () => {
                 ? (distributeBanner.position === 'bottom' ? 'animate-slide-out-bottom' : 'animate-slide-out-top') 
                 : (distributeBanner.position === 'bottom' ? 'animate-slide-in-bottom' : 'animate-slide-in-top')}
             `}>
-              {distributeBanner.resolutions.map((res, idx) => (
-                <span key={idx}>
-                  <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">{res.name}</span>
-                  {lang === 'en' ? (
-                    res.targetName ? (
-                      <>
-                        {" gives "} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "sip" : "sips"} {" to "} <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">{res.name === res.targetName ? "themselves" : res.targetName}</span>
-                        {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
-                      </>
-                    ) : (
-                      <>
-                        {" may give away"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "sip" : "sips"}
-                        {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
-                      </>
-                    )
-                  ) : (
-                    res.targetName ? (
-                      <>
-                        {" deelt "} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "slok" : "slokken"} {" uit aan "} <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">{res.name === res.targetName ? "zichzelf" : res.targetName}</span>
-                        {idx < distributeBanner.resolutions.length - 1 ? ", " : "!"}
-                      </>
-                    ) : (
-                      <>
-                        {" mag"} <span className="text-emerald-400 font-black text-4xl mx-1">{res.sips}</span> {res.sips === 1 ? "slok" : "slokken"}
-                        {idx < distributeBanner.resolutions.length - 1 ? ", " : " uitdelen!"}
-                      </>
-                    )
-                  )}
-                </span>
-              ))}
+              {(() => {
+                interface GroupedRes {
+                  names: string[];
+                  sips: number;
+                  type: 'general' | 'self' | 'target';
+                  targetName?: string;
+                }
+
+                const groups: GroupedRes[] = [];
+                for (const res of distributeBanner.resolutions) {
+                  const type: 'general' | 'self' | 'target' = !res.targetName
+                    ? 'general'
+                    : res.targetName === res.name
+                    ? 'self'
+                    : 'target';
+
+                  const existing = groups.find(
+                    (g) => g.sips === res.sips && g.type === type && (type !== 'target' || g.targetName === res.targetName)
+                  );
+
+                  if (existing) {
+                    if (!existing.names.includes(res.name)) {
+                      existing.names.push(res.name);
+                    }
+                  } else {
+                    groups.push({
+                      names: [res.name],
+                      sips: res.sips,
+                      type,
+                      targetName: res.targetName,
+                    });
+                  }
+                }
+
+                const renderNames = (names: string[]) => {
+                  return names.map((name, i) => (
+                    <React.Fragment key={i}>
+                      <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4">
+                        {name}
+                      </span>
+                      {i < names.length - 2 ? ", " : i === names.length - 2 ? (lang === 'en' ? " and " : " en ") : ""}
+                    </React.Fragment>
+                  ));
+                };
+
+                return groups.map((g, idx) => {
+                  const isLast = idx === groups.length - 1;
+                  const punctuation = isLast ? "!" : ", ";
+                  const quantifierEn = g.names.length === 2 ? "both" : "all";
+                  const quantifierNl = g.names.length === 2 ? "beiden" : "allemaal";
+
+                  if (lang === 'en') {
+                    if (g.type === 'general') {
+                      if (g.names.length > 1) {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {` ${quantifierEn} give out `}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " sip" : " sips"}
+                            {punctuation}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {" gives out "}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " sip" : " sips"}
+                            {punctuation}
+                          </span>
+                        );
+                      }
+                    } else if (g.type === 'self') {
+                      if (g.names.length > 1) {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {` ${quantifierEn} give `}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " sip" : " sips"}
+                            {" to themselves"}
+                            {punctuation}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {" gives "}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " sip" : " sips"}
+                            {" to themselves"}
+                            {punctuation}
+                          </span>
+                        );
+                      }
+                    } else {
+                      if (g.names.length > 1) {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {` ${quantifierEn} give `}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " sip" : " sips"}
+                            {" to "}
+                            <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">
+                              {g.targetName}
+                            </span>
+                            {punctuation}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {" gives "}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " sip" : " sips"}
+                            {" to "}
+                            <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">
+                              {g.targetName}
+                            </span>
+                            {punctuation}
+                          </span>
+                        );
+                      }
+                    }
+                  } else {
+                    if (g.type === 'general') {
+                      if (g.names.length > 1) {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {` delen ${quantifierNl} `}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " slok" : " slokken"}
+                            {" uit"}
+                            {punctuation}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {" deelt "}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " slok" : " slokken"}
+                            {" uit"}
+                            {punctuation}
+                          </span>
+                        );
+                      }
+                    } else if (g.type === 'self') {
+                      if (g.names.length > 1) {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {` delen ${quantifierNl} `}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " slok" : " slokken"}
+                            {" uit aan zichzelf"}
+                            {punctuation}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {" deelt "}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " slok" : " slokken"}
+                            {" uit aan zichzelf"}
+                            {punctuation}
+                          </span>
+                        );
+                      }
+                    } else {
+                      if (g.names.length > 1) {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {` delen ${quantifierNl} `}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " slok" : " slokken"}
+                            {" uit aan "}
+                            <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">
+                              {g.targetName}
+                            </span>
+                            {punctuation}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span key={idx}>
+                            {renderNames(g.names)}
+                            {" deelt "}
+                            <span className="text-emerald-400 font-black text-4xl mx-1">{g.sips}</span>
+                            {g.sips === 1 ? " slok" : " slokken"}
+                            {" uit aan "}
+                            <span className="text-white font-black mx-1 underline decoration-amber-400 underline-offset-4">
+                              {g.targetName}
+                            </span>
+                            {punctuation}
+                          </span>
+                        );
+                      }
+                    }
+                  }
+                });
+              })()}
             </p>
           </div>
         )}
@@ -4967,7 +5257,15 @@ const initializeAdMob = useCallback(async () => {
         )}
 
         {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
-        <div ref={pyramidContainerRef} className="flex-1 flex items-center justify-center overflow-hidden p-2 relative">
+        <div
+          ref={pyramidContainerRef}
+          onPointerDown={handlePyramidPointerDown}
+          onPointerMove={handlePyramidPointerMove}
+          onPointerUp={handlePyramidPointerEnd}
+          onPointerCancel={handlePyramidPointerEnd}
+          onPointerLeave={handlePyramidPointerEnd}
+          className="flex-1 flex items-center justify-center overflow-hidden p-2 relative touch-none select-none"
+        >
           <div
             ref={pyramidContentRef}
             className="flex flex-col items-center gap-2 md:gap-3 origin-center transition-transform duration-500"
@@ -4991,41 +5289,25 @@ const initializeAdMob = useCallback(async () => {
                     }
 
                     return (
-                      <div key={card ? card.id : `${rowIndex}-${cardIndex}`} className={`relative group ${hasMatch ? 'cursor-pointer' : ''}`}>
+                      <div
+                        key={card ? card.id : `${rowIndex}-${cardIndex}`}
+                        data-pyramid-card="true"
+                        data-row-index={rowIndex}
+                        data-card-index={cardIndex}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          isPyramidSwipingRef.current = true;
+                          lastSwipedCardKeyRef.current = null;
+                          handlePyramidCardInteraction(rowIndex, cardIndex);
+                        }}
+                        className={`relative group ${hasMatch ? 'cursor-pointer' : ''}`}
+                      >
                         <PlayingCard
                           card={isRevealed ? card : null}
                           isFaceDown={!isRevealed}
                           size="md"
                           style={settings.cardStyle}
                           className={`${doubledPyramidCardIds.has(card?.id || '') ? 'rotate-90' : ''} ${isPyramidDoubleSetup && rowIndex === pyramidDoubleSetupRow ? 'ring-4 ring-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : ''} ${pulseValidCards && rowIndex === activeRowIndex && !isRevealed ? 'animate-pyramid-ring-pulse z-20' : ''} transition-all duration-300 ${!isRevealed ? 'z-10' : 'z-0'} ${hasMatch ? 'ring-[3px] ring-green-500 shadow-[0_0_25px_rgba(34,197,94,0.7)] scale-[1.02]' : ''}`}
-                          onClick={() => {
-                            if (isPyramidDoubleSetup) {
-                              if (rowIndex === pyramidDoubleSetupRow) {
-                                handleDoubleCardSelection(rowIndex, cardIndex);
-                              } else {
-                                triggerPyramidWarning();
-                              }
-                              return;
-                            }
-                            if (!isRevealed) {
-                              dispatchGameEvent({ type: 'PYRAMID_REVEAL', rowIndex, cardIndex });
-                            } else if (hasMatch && card) {
-                              const isDoubled = doubledPyramidCardIds.has(card.id);
-                              const sips = (settings.pyramidRows - rowIndex) * (isDoubled ? 2 : 1);
-                              const isTop = rowIndex === 0;
-                              const matches: { player: Player, count: number, initialCount: number }[] = [];
-                              players.forEach(p => {
-                                const matchingCardsCount = p.hand.filter(h => h.rank === card.rank).length;
-                                if (matchingCardsCount > 0) {
-                                  matches.push({ player: p, count: matchingCardsCount, initialCount: matchingCardsCount });
-                                }
-                              });
-                              if (matches.length > 0) {
-                                triggerHaptic('tick');
-                                setPendingMatches({ card, sips, matches, bannerPosition: (isPyramidComplete || rowIndex === 0 || rowIndex >= Math.ceil(settings.pyramidRows / 2)) ? 'top' : 'bottom' });
-                              }
-                            }
-                          }}
                         />
                       </div>
                     );
