@@ -70,7 +70,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "heeft deze kaart": "heeft deze kaart",
         "hebben deze kaart": "hebben deze kaart",
         "en": "en",
-        "jezelf": "jezelf"
+        "jezelf": "jezelf",
+        "uitdelen": "uitdelen",
+        "aan": "aan",
+        "MATCH!": "MATCH!",
+        "Sleep of tik om uit te delen": "Sleep of tik om uit te delen",
+        "Slachtoffers": "Slachtoffers"
     },
     en: {
         "Bussen": "Ride the Bus",
@@ -391,7 +396,11 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Toch Starten": "Start Anyway",
         "heeft deze kaart": "has this card",
         "hebben deze kaart": "have this card",
-        "jezelf": "yourself"
+        "jezelf": "yourself",
+        "uitdelen": "to distribute",
+        "aan": "to",
+        "Sleep of tik om uit te delen": "Drag or tap to distribute",
+        "Slachtoffers": "Victims"
     }
 };
 
