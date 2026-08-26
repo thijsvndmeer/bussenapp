@@ -50,6 +50,16 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   const animationFrameRef = useRef<number>();
   const matchIdsKey = pendingMatches?.matches.map((m) => `${m.player.id}:${m.count}`).join(',') ?? '';
 
+  const snapshotPositions = () => {
+    const map = new Map<string, DOMRect>();
+    itemRefs.current.forEach((el, id) => {
+      if (el) {
+        map.set(id, el.getBoundingClientRect());
+      }
+    });
+    prevPositions.current = map;
+  };
+
   useEffect(() => {
     if (isClosing) {
       setTimeout(() => {
@@ -63,7 +73,6 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     setDragPos(null);
     setHoveredTargetId(null);
     initialMatchesRef.current = pendingMatches?.matches ?? [];
-    prevPositions.current.clear();
   }, [pendingMatches?.card?.id]);
 
   useLayoutEffect(() => {
@@ -90,13 +99,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       }
     });
 
-    const newPositions = new Map<string, DOMRect>();
-    itemRefs.current.forEach((el, id) => {
-      if (el) {
-        newPositions.set(id, el.getBoundingClientRect());
-      }
-    });
-    prevPositions.current = newPositions;
+    snapshotPositions();
   }, [matchIdsKey]);
 
   if (!pendingMatches) return null;
@@ -171,6 +174,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       window.removeEventListener('pointercancel', onPointerUp);
 
       if (startInfo) {
+        snapshotPositions();
         if (startInfo.isDragging) {
           const elements = document.elementsFromPoint(upEvent.clientX, upEvent.clientY);
           const targetEl = elements.find((el) => el.getAttribute('data-target-player-id'));
