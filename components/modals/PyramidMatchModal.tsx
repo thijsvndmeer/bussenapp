@@ -37,6 +37,8 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   const [dragTilt, setDragTilt] = useState<number>(0);
   const [hoveredTargetId, setHoveredTargetId] = useState<string | null>(null);
 
+  const initialMatchesRef = useRef(pendingMatches?.matches ?? []);
+
   const dragStartRef = useRef<{
     x: number;
     y: number;
@@ -57,6 +59,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     setDraggedPlayerId(null);
     setDragPos(null);
     setHoveredTargetId(null);
+    initialMatchesRef.current = pendingMatches?.matches ?? [];
   }, [pendingMatches?.card?.id]);
 
   if (!pendingMatches) return null;
@@ -99,12 +102,12 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
           setDragTilt(Math.max(-15, Math.min(15, tilt)));
 
           const elements = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY);
-          const targetEl = elements.find(el => el.getAttribute('data-target-player-id'));
+          const targetEl = elements.find((el) => el.getAttribute('data-target-player-id'));
 
           if (targetEl) {
             const targetId = targetEl.getAttribute('data-target-player-id');
-            if (targetId && targetId !== playerId) {
-              setHoveredTargetId(prev => {
+            if (targetId) {
+              setHoveredTargetId((prev) => {
                 if (prev !== targetId) triggerHaptic('tick');
                 return targetId;
               });
@@ -133,11 +136,11 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       if (startInfo) {
         if (startInfo.isDragging) {
           const elements = document.elementsFromPoint(upEvent.clientX, upEvent.clientY);
-          const targetEl = elements.find(el => el.getAttribute('data-target-player-id'));
+          const targetEl = elements.find((el) => el.getAttribute('data-target-player-id'));
 
           if (targetEl) {
             const targetId = targetEl.getAttribute('data-target-player-id');
-            if (targetId && targetId !== playerId) {
+            if (targetId) {
               onResolveMatch(playerId, targetId);
             }
           }
@@ -164,10 +167,10 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     return `${pendingMatches.matches.length} ${t("SPELERS")}`;
   };
 
-  const potentialTargets = players.filter(p => !p.isEliminated);
+  const potentialTargets = players.filter((p) => !p.isEliminated);
   const isDraggingActive = !!draggedPlayerId;
   const showTargets = isDraggingActive;
-  const draggingPlayer = draggedPlayerId ? players.find(p => p.id === draggedPlayerId) : null;
+  const draggingPlayer = draggedPlayerId ? players.find((p) => p.id === draggedPlayerId) : null;
 
   const localCardStyle = {
     ...cardStyle,
@@ -177,15 +180,27 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     transition: dragPos ? 'none' : 'transform 0.5s ease-out',
   };
 
+  const initialMatches = initialMatchesRef.current.length > 0 ? initialMatchesRef.current : pendingMatches.matches;
+  const widthClass = initialMatches.length > 1 ? 'w-[calc(50%-0.375rem)]' : 'w-full';
+
   return (
     <>
+      {/* Backdrop */}
       <div
+        onClick={() => {
+          if (!isDraggingActive) onDismiss();
+        }}
         className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300 ${
           isClosing ? 'opacity-0' : 'opacity-100'
         }`}
       />
 
       <div
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !isDraggingActive) {
+            onDismiss();
+          }
+        }}
         className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-6 ${
           isClosing ? 'animate-slide-left-exit pointer-events-none' : 'animate-slide-left-enter'
         }`}
@@ -218,7 +233,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
         </div>
 
         <div
-          className="bg-gradient-to-b from-slate-800 to-slate-900 w-full rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden transition-all duration-300"
+          className="bg-gradient-to-b from-slate-800 to-slate-900 w-full rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="w-full">
@@ -245,42 +260,59 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                 </span>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 relative transition-all duration-300 w-full">
-                {pendingMatches.matches.map((m) => {
-                  const isThisDragged = draggedPlayerId === m.player.id;
-                  const isLastCard = m.player.hand.length === 1;
-                  const widthClass = pendingMatches.matches.length > 1 ? 'w-[calc(50%-0.375rem)]' : 'w-full';
+              <div className="flex flex-wrap justify-center gap-3 relative w-full">
+                {initialMatches.map((initM) => {
+                  const activeMatch = pendingMatches.matches.find((m) => m.player.id === initM.player.id);
+                  const isDone = !activeMatch;
+                  const isThisDragged = draggedPlayerId === initM.player.id;
+                  const isLastCard = initM.player.hand.length === 1;
+
+                  if (isDone) {
+                    return (
+                      <div
+                        key={initM.player.id}
+                        className={`group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border border-transparent ${widthClass} max-w-full invisible pointer-events-none select-none`}
+                        aria-hidden="true"
+                      >
+                        <div className="w-12 h-12 rounded-full shrink-0 border-2 border-transparent" />
+                        <div className="flex flex-col min-w-0 justify-center">
+                          <span className="font-bold text-sm leading-tight">&nbsp;</span>
+                          <span className="text-[10px] font-medium truncate">&nbsp;</span>
+                        </div>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div
-                      key={m.player.id}
-                      onPointerDown={(e) => handlePointerDown(e, m.player.id)}
-                      className={`group flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing border ${widthClass} max-w-full transition-all duration-300 ${
+                      key={initM.player.id}
+                      onPointerDown={(e) => handlePointerDown(e, initM.player.id)}
+                      className={`group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing border ${widthClass} max-w-full transition-all duration-200 ${
                         isThisDragged
                           ? 'opacity-20 scale-95 border-emerald-500/30 bg-emerald-950/20'
                           : 'bg-black/40 border-white/10 hover:border-emerald-500/50 hover:bg-emerald-950/20 active:scale-95'
                       }`}
                     >
-                      {m.initialCount > 1 && (
-                        <div className="absolute -top-1.5 -right-1.5 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-[11px] px-2 py-0.5 rounded-full shadow-lg">
-                          {m.count}x
+                      {activeMatch.count > 1 && (
+                        <div className="absolute -top-1.5 -right-1.5 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-[11px] px-2 py-0.5 rounded-full shadow-lg pointer-events-none z-10">
+                          {activeMatch.count}x
                         </div>
                       )}
 
                       <div className="w-12 h-12 rounded-full border-2 border-white/10 bg-slate-800 flex items-center justify-center font-black text-white overflow-hidden shadow-md shrink-0 pointer-events-none">
-                        {m.player.image ? (
-                          <img src={m.player.image} className="w-full h-full object-cover pointer-events-none" />
+                        {activeMatch.player.image ? (
+                          <img src={activeMatch.player.image} className="w-full h-full object-cover pointer-events-none" />
                         ) : (
-                          m.player.name.charAt(0)
+                          activeMatch.player.name.charAt(0)
                         )}
                       </div>
 
                       <div className="flex flex-col min-w-0 justify-center pointer-events-none">
                         <span className="font-bold text-sm text-white truncate leading-tight">
-                          {m.player.name}
+                          {activeMatch.player.name}
                         </span>
                         <span className="text-[10px] text-slate-400 font-medium truncate">
-                          {isLastCard ? t("Laatste kaart") : `${m.player.hand.length} ${t("kaarten")}`}
+                          {isLastCard ? t("Laatste kaart") : `${activeMatch.player.hand.length} ${t("kaarten")}`}
                         </span>
                       </div>
                     </div>
@@ -292,9 +324,16 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
         </div>
 
         {/* Victims Dock */}
-        <div className="w-full min-h-[160px] mt-4 flex items-start justify-center relative">
+        <div
+          onClick={() => {
+            if (!showTargets && !isDraggingActive) {
+              onDismiss();
+            }
+          }}
+          className="w-full min-h-[160px] mt-4 flex items-start justify-center relative"
+        >
           {showTargets && (
-            <div className="w-full animate-slide-in-bottom">
+            <div className="w-full animate-slide-in-bottom" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-center font-bold uppercase tracking-widest mb-3 text-emerald-400 text-xs transition-colors">
                 {t("Slachtoffers")}
               </h3>
@@ -325,14 +364,14 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                       data-target-player-id={p.id}
                       className={`flex flex-col items-center gap-1.5 shrink-0 transition-all duration-200 cursor-pointer ${
                         isHovered ? 'scale-125 -translate-y-2 z-10' : 'scale-100 opacity-90'
-                      } ${isSource && !isHovered ? 'opacity-40 grayscale pointer-events-none' : ''}`}
+                      }`}
                     >
                       <div
                         className={`${sizeClass} rounded-full flex items-center justify-center font-bold text-white overflow-hidden shadow-lg transition-all pointer-events-none ${
                           isHovered
                             ? 'bg-emerald-500 ring-4 ring-emerald-400/50 shadow-[0_10px_25px_rgba(52,211,153,0.6)]'
                             : isSource
-                            ? 'bg-slate-700 border-2 border-slate-600'
+                            ? 'bg-emerald-950/60 border-2 border-emerald-500/40'
                             : 'bg-slate-800 border-2 border-white/20'
                         }`}
                       >
@@ -358,6 +397,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
         </div>
       </div>
 
+      {/* Floating Drag Avatar Ghost */}
       {isDraggingActive && dragPos && draggingPlayer && (
         <div
           className="fixed z-[999] pointer-events-none flex flex-col items-center"
