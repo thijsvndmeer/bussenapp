@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import PlayingCard from '../PlayingCard';
 import { triggerHaptic } from '../../services/haptics';
@@ -38,6 +38,8 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   const [hoveredTargetId, setHoveredTargetId] = useState<string | null>(null);
 
   const initialMatchesRef = useRef(pendingMatches?.matches ?? []);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const prevPositions = useRef<Map<string, DOMRect>>(new Map());
 
   const dragStartRef = useRef<{
     x: number;
@@ -46,6 +48,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     isDragging: boolean;
   } | null>(null);
   const animationFrameRef = useRef<number>();
+  const matchIdsKey = pendingMatches?.matches.map((m) => `${m.player.id}:${m.count}`).join(',') ?? '';
 
   useEffect(() => {
     if (isClosing) {
@@ -60,7 +63,41 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     setDragPos(null);
     setHoveredTargetId(null);
     initialMatchesRef.current = pendingMatches?.matches ?? [];
+    prevPositions.current.clear();
   }, [pendingMatches?.card?.id]);
+
+  useLayoutEffect(() => {
+    itemRefs.current.forEach((el, id) => {
+      const prevRect = prevPositions.current.get(id);
+      if (prevRect && el) {
+        const newRect = el.getBoundingClientRect();
+        const deltaX = prevRect.left - newRect.left;
+
+        if (Math.abs(deltaX) > 0.5) {
+          el.getAnimations().forEach((a) => a.cancel());
+          el.animate(
+            [
+              { transform: `translateX(${deltaX}px)` },
+              { transform: 'translateX(0px)' },
+            ],
+            {
+              duration: 320,
+              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              fill: 'none',
+            }
+          );
+        }
+      }
+    });
+
+    const newPositions = new Map<string, DOMRect>();
+    itemRefs.current.forEach((el, id) => {
+      if (el) {
+        newPositions.set(id, el.getBoundingClientRect());
+      }
+    });
+    prevPositions.current = newPositions;
+  }, [matchIdsKey]);
 
   if (!pendingMatches) return null;
 
@@ -160,11 +197,18 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     window.addEventListener('pointercancel', onPointerUp);
   };
 
+  const initialMatches = initialMatchesRef.current.length > 0 ? initialMatchesRef.current : pendingMatches.matches;
+
   const getMatchersText = () => {
-    if (pendingMatches.matches.length === 1) {
-      return pendingMatches.matches[0].player.name;
+    const names = initialMatches.map((m) => m.player.name);
+    if (names.length === 0) return '';
+    if (names.length === 1) {
+      return `${names[0]} ${t("heeft deze kaart")}`;
     }
-    return `${pendingMatches.matches.length} ${t("SPELERS")}`;
+    if (names.length === 2) {
+      return `${names[0]} ${t("en")} ${names[1]} ${t("hebben deze kaart")}`;
+    }
+    return `${names.slice(0, -1).join(', ')} ${t("en")} ${names[names.length - 1]} ${t("hebben deze kaart")}`;
   };
 
   const potentialTargets = players.filter((p) => !p.isEliminated);
@@ -179,9 +223,6 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       : 'none',
     transition: dragPos ? 'none' : 'transform 0.5s ease-out',
   };
-
-  const initialMatches = initialMatchesRef.current.length > 0 ? initialMatchesRef.current : pendingMatches.matches;
-  const widthClass = initialMatches.length > 1 ? 'w-[calc(50%-0.375rem)]' : 'w-full';
 
   return (
     <>
@@ -260,61 +301,44 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                 </span>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 relative w-full">
-                {initialMatches.map((initM) => {
-                  const activeMatch = pendingMatches.matches.find((m) => m.player.id === initM.player.id);
-                  const isDone = !activeMatch;
-                  const isThisDragged = draggedPlayerId === initM.player.id;
-                  const isLastCard = initM.player.hand.length === 1;
-
-                  if (isDone) {
-                    return (
-                      <div
-                        key={initM.player.id}
-                        className={`group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border border-transparent ${widthClass} max-w-full invisible pointer-events-none select-none`}
-                        aria-hidden="true"
-                      >
-                        <div className="w-12 h-12 rounded-full shrink-0 border-2 border-transparent" />
-                        <div className="flex flex-col min-w-0 justify-center">
-                          <span className="font-bold text-sm leading-tight">&nbsp;</span>
-                          <span className="text-[10px] font-medium truncate">&nbsp;</span>
-                        </div>
-                      </div>
-                    );
-                  }
+              <div className="flex flex-nowrap justify-center items-center gap-3 sm:gap-4 relative w-full py-1 overflow-hidden">
+                {pendingMatches.matches.map((m) => {
+                  const isThisDragged = draggedPlayerId === m.player.id;
 
                   return (
                     <div
-                      key={initM.player.id}
-                      onPointerDown={(e) => handlePointerDown(e, initM.player.id)}
-                      className={`group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing border ${widthClass} max-w-full transition-all duration-200 ${
-                        isThisDragged
-                          ? 'opacity-20 scale-95 border-emerald-500/30 bg-emerald-950/20'
-                          : 'bg-black/40 border-white/10 hover:border-emerald-500/50 hover:bg-emerald-950/20 active:scale-95'
+                      key={m.player.id}
+                      ref={(el) => {
+                        if (el) {
+                          itemRefs.current.set(m.player.id, el);
+                        } else {
+                          itemRefs.current.delete(m.player.id);
+                        }
+                      }}
+                      onPointerDown={(e) => handlePointerDown(e, m.player.id)}
+                      className={`group relative flex flex-col items-center gap-1.5 p-1 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing shrink-0 min-w-[64px] sm:min-w-[76px] ${
+                        isThisDragged ? 'opacity-20 scale-95' : ''
                       }`}
                     >
-                      {activeMatch.count > 1 && (
-                        <div className="absolute -top-1.5 -right-1.5 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-[11px] px-2 py-0.5 rounded-full shadow-lg pointer-events-none z-10">
-                          {activeMatch.count}x
+                      <div className="relative">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white/20 bg-slate-800 flex items-center justify-center font-black text-white text-xl sm:text-2xl overflow-hidden shadow-lg group-hover:border-emerald-400/60 group-hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] group-hover:scale-105 group-active:scale-95 transition-all pointer-events-none">
+                          {m.player.image ? (
+                            <img src={m.player.image} className="w-full h-full object-cover pointer-events-none" />
+                          ) : (
+                            m.player.name.charAt(0)
+                          )}
                         </div>
-                      )}
 
-                      <div className="w-12 h-12 rounded-full border-2 border-white/10 bg-slate-800 flex items-center justify-center font-black text-white overflow-hidden shadow-md shrink-0 pointer-events-none">
-                        {activeMatch.player.image ? (
-                          <img src={activeMatch.player.image} className="w-full h-full object-cover pointer-events-none" />
-                        ) : (
-                          activeMatch.player.name.charAt(0)
+                        {m.count > 1 && (
+                          <div className="absolute -top-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-[10px] px-1.5 py-0.5 rounded-full shadow-lg pointer-events-none z-10">
+                            {m.count}x
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col min-w-0 justify-center pointer-events-none">
-                        <span className="font-bold text-sm text-white truncate leading-tight">
-                          {activeMatch.player.name}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium truncate">
-                          {isLastCard ? t("Laatste kaart") : `${activeMatch.player.hand.length} ${t("kaarten")}`}
-                        </span>
-                      </div>
+                      <span className="font-bold text-xs sm:text-sm text-white truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none">
+                        {m.player.name}
+                      </span>
                     </div>
                   );
                 })}
@@ -363,15 +387,19 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                       key={p.id}
                       data-target-player-id={p.id}
                       className={`flex flex-col items-center gap-1.5 shrink-0 transition-all duration-200 cursor-pointer ${
-                        isHovered ? 'scale-125 -translate-y-2 z-10' : 'scale-100 opacity-90'
+                        isHovered
+                          ? 'scale-125 -translate-y-2 z-10'
+                          : isSource
+                          ? 'scale-100 opacity-50 grayscale'
+                          : 'scale-100 opacity-90'
                       }`}
                     >
                       <div
                         className={`${sizeClass} rounded-full flex items-center justify-center font-bold text-white overflow-hidden shadow-lg transition-all pointer-events-none ${
                           isHovered
-                            ? 'bg-emerald-500 ring-4 ring-emerald-400/50 shadow-[0_10px_25px_rgba(52,211,153,0.6)]'
+                            ? 'bg-emerald-500 ring-4 ring-emerald-400/50 shadow-[0_10px_25px_rgba(52,211,153,0.6)] grayscale-0 opacity-100'
                             : isSource
-                            ? 'bg-emerald-950/60 border-2 border-emerald-500/40'
+                            ? 'bg-slate-800 border-2 border-white/10'
                             : 'bg-slate-800 border-2 border-white/20'
                         }`}
                       >
