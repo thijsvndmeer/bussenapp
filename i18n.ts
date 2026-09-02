@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export type Language = 'nl' | 'en';
 
-const dictionaries: Record<Language, Record<string, string>> = {
+export const dictionaries: Record<Language, Record<string, string>> = {
     nl: {
         "Kaartstijl": "Kaartstijl",
         "Modern": "Modern",
@@ -78,6 +78,20 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Slachtoffers": "Slachtoffers"
     },
     en: {
+        "Kaartstijl": "Card Style",
+        "Modern": "Modern",
+        "Donker": "Dark",
+        "Klassiek": "Classic",
+        "Creative": "Neon",
+        "Neon": "Neon",
+        "HEARTS": "Hearts",
+        "DIAMONDS": "Diamonds",
+        "CLUBS": "Clubs",
+        "SPADES": "Spades",
+        "Harten": "Hearts",
+        "Ruiten": "Diamonds",
+        "Klaveren": "Clubs",
+        "Schoppen": "Spades",
         "Bussen": "Ride the Bus",
         "Spelers": "Players",
         "spelers": "players",
@@ -306,9 +320,6 @@ const dictionaries: Record<Language, Record<string, string>> = {
         "Bus Loser": "Bus Loser",
         "Thema": "Theme",
         "Nieuw bericht...": "New message...",
-        "Kaartstijl": "Card Style",
-        "Donker": "Dark",
-        "Klassiek": "Classic",
         "Rustig": "Calm",
         "Bier": "Beer",
         "classic": "Classic",

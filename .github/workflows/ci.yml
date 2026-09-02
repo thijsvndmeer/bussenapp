@@ -1,0 +1,96 @@
+name: CI Checks
+
+on:
+  push:
+    branches:
+      - main
+      - alpha
+      - beta
+      - prod
+  pull_request:
+    branches:
+      - main
+      - alpha
+      - beta
+      - prod
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------------
+  # 1. TYPECHECK & UNIT TESTS
+  # -------------------------------------------------------------
+  test-and-typecheck:
+    name: Typecheck & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck TypeScript
+        run: npm run typecheck
+
+      - name: Run Vitest Unit Tests
+        run: npm run test:ci
+
+  # -------------------------------------------------------------
+  # 2. WEB BUILD VERIFICATION
+  # -------------------------------------------------------------
+  build-web:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test Production Build
+        run: npm run build
+
+  # -------------------------------------------------------------
+  # 3. RELEASE NOTES & VERSION CODE INTEGRITY
+  # -------------------------------------------------------------
+  version-and-notes:
+    name: Version & Release Notes Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate Version Code Logic
+        run: |
+          git fetch --tags --force
+          node scripts/resolve-version-code.cjs
+
+      - name: Validate What's New Files
+        run: |
+          if [ ! -s "distribution/whatsnew/whatsnew-nl-NL" ] || [ ! -s "distribution/whatsnew/whatsnew-en-US" ]; then
+            echo "::error::distribution/whatsnew files must exist and be non-empty."
+            exit 1
+          fi
