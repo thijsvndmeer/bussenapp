@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useGameEngine, GameEngineEvent } from './hooks/useGameEngine';
 import { usePlayerState } from './hooks/usePlayerState';
@@ -14,6 +13,16 @@ import { StatusBar } from '@capacitor/status-bar';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { triggerHaptic } from './services/haptics';
 import './styles/animations.css';
+
+import { getSuitSymbol, getRankChar, getRankString, getFullRankName, ALL_SUITS, PREVIEW_CARD, createDeck, shuffleDeck } from './src/lib/utils/deck';
+import { createOscillatorSound, SoundEffect } from './src/lib/utils/audio';
+import { resizeImage, cropToSquareDataUrl } from './src/lib/utils/image';
+import { Confetti } from './src/components/backgrounds/Confetti';
+import { CalmBackground } from './src/components/backgrounds/CalmBackground';
+import { BeerBackground } from './src/components/backgrounds/BeerBackground';
+import { PlayerAvatar } from './src/components/ui/PlayerAvatar';
+import { ThemeLabel, ThemeHeader } from './src/components/ui/ThemeComponents';
+
 import { useTranslation, currentLanguage, setLanguage } from "./i18n";
 import { useAudio } from './hooks/useAudio';
 import { useThrottledResize } from './hooks/useThrottledResize';
@@ -27,15 +36,12 @@ import { HardBusWarningModal } from './components/modals/HardBusWarningModal';
 import { AdLoadingModal } from './components/modals/AdLoadingModal';
 import { SlideMenuModal } from './components/modals/SlideMenuModal';
 import { PyramidMatchModal } from './components/modals/PyramidMatchModal';
-
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
 const ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
 const ADMOB_REWARDED_UNIT_ID = import.meta.env.VITE_ADMOB_REWARDED_UNIT_ID || 'ca-app-pub-3940256099942544/5224354917';
 const INTERSTITIAL_PLACEMENT = 'post_leaderboard_continue'; // Placement: after leaderboard, at end of round
-
 // --- HELPERS ---
-
 const PlayingCardIcon: React.FC<{ className?: string; size?: number }> = ({ className = "", size = 14 }) => (
   <svg
     viewBox="0 0 24 24"
@@ -53,56 +59,7 @@ const PlayingCardIcon: React.FC<{ className?: string; size?: number }> = ({ clas
     <rect x="4" y="4" width="13" height="14" rx="1.5" />
   </svg>
 );
-
-const getSuitSymbol = (suit: Suit) => {
-  switch (suit) {
-    case Suit.HEARTS: return '♥';
-    case Suit.DIAMONDS: return '♦';
-    case Suit.CLUBS: return '♣';
-    case Suit.SPADES: return '♠';
-  }
-};
-
-const getRankChar = (rank: Rank) => {
-  switch (rank) {
-    case Rank.TWO: return '2';
-    case Rank.THREE: return '3';
-    case Rank.FOUR: return '4';
-    case Rank.FIVE: return '5';
-    case Rank.SIX: return '6';
-    case Rank.SEVEN: return '7';
-    case Rank.EIGHT: return '8';
-    case Rank.NINE: return '9';
-    case Rank.TEN: return '10';
-    case Rank.JACK: return 'J';
-    case Rank.QUEEN: return 'Q';
-    case Rank.KING: return 'K';
-    case Rank.ACE: return 'A';
-  }
-};
-
-const getRankString = (rank: Rank) => {
-  switch (rank) {
-    case Rank.JACK: return 'J';
-    case Rank.QUEEN: return 'Q';
-    case Rank.KING: return 'K';
-    case Rank.ACE: return 'A';
-    default: return rank.toString();
-  }
-};
-
-const getFullRankName = (rank: Rank, t: any) => {
-  switch (rank) {
-    case Rank.JACK: return t("Boer");
-    case Rank.QUEEN: return t("Vrouw");
-    case Rank.KING: return t("Koning");
-    case Rank.ACE: return t("Aas");
-    default: return rank.toString();
-  }
-};
-
 // --- CONSTANTS & PHRASES ---
-
 const DEFAULT_SUCCESS_PHRASES_NL = [
   "Vo!", "Hoppa!", "👨‍🍳👨‍🍳", "Strijder!",
   "Netjes!", "dat is m!", "Biem!", "Jaja!",
@@ -110,7 +67,6 @@ const DEFAULT_SUCCESS_PHRASES_NL = [
   "keurig,", "clean.", "bam!",
   "big brain,", "slayy,"
 ];
-
 const DEFAULT_FAILURE_PHRASES_NL = [
   "Helaas pindakaas!", "Zuur!", "Aii,",
   "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
@@ -118,14 +74,12 @@ const DEFAULT_FAILURE_PHRASES_NL = [
   "lol,", "ha bier,", "maat..",
   "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Incapabele ziel.."
 ];
-
 const DEFAULT_LOSER_TITLES_NL = [
   "🍺🍺🍺", "De Lul", "L gepakt", "hahaha",
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je",
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
   "Proost!"
 ];
-
 const DEFAULT_SUCCESS_PHRASES_EN = [
   "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
   "Clean!", "that's it!", "Bam!", "Yes sir!",
@@ -133,7 +87,6 @@ const DEFAULT_SUCCESS_PHRASES_EN = [
   "neat,", "clean.", "bam!",
   "big brain,", "slayy,"
 ];
-
 const DEFAULT_FAILURE_PHRASES_EN = [
   "Bad luck!", "Ouch!", "Aii,",
   "lord, again??", "why are you so bad,", "skill issue,",
@@ -141,23 +94,18 @@ const DEFAULT_FAILURE_PHRASES_EN = [
   "lol,", "ha beer,", "mate..",
   "Crybaby!", "so bad!", "Unbelievable!", "Incapable soul.."
 ];
-
 const DEFAULT_LOSER_TITLES_EN = [
   "🍺🍺🍺", "The Loser", "Caught the L", "hahaha",
   "🧌🧌", "Good luck friend", "ai ai ai", "there you go",
   "💀💀", "🤡🤡", "so bad", "Hopeless",
   "Cheers!"
 ];
-
 type PhraseCategory = 'success' | 'failure' | 'loser';
-
 const DEFAULT_PHRASES: Record<string, Record<PhraseCategory, string[]>> = {
   nl: { success: DEFAULT_SUCCESS_PHRASES_NL, failure: DEFAULT_FAILURE_PHRASES_NL, loser: DEFAULT_LOSER_TITLES_NL },
   en: { success: DEFAULT_SUCCESS_PHRASES_EN, failure: DEFAULT_FAILURE_PHRASES_EN, loser: DEFAULT_LOSER_TITLES_EN },
 };
-
 const CUSTOM_PHRASES_KEY = 'bus-app-custom-phrases-v1';
-
 const PYRAMID_WARNING_PHRASES = [
   "Hoho! Begin onderaan, stiekemerds!",
   "Niet zo valsspelen he...",
@@ -177,58 +125,7 @@ const PYRAMID_WARNING_PHRASES = [
   "Niet zo oneerlijk!",
   "Hou je aan de regels!",
 ];
-
 // --- UTILS & FX ---
-
-type SoundEffect =
-  | 'draw'
-  | 'success'
-  | 'fail'
-  | 'playerAdd'
-  | 'playerRemove'
-  | 'celebrate'
-  | 'busEnter'
-  | 'busStep'
-  | 'busFail'
-  | 'reshuffle'
-  | 'disco'
-  | 'stopDisco';
-
-const createOscillatorSound = (
-  ctx: AudioContext,
-  {
-    frequency,
-    duration = 0.15,
-    type = 'sine',
-    volume = 0.12,
-    attack = 0.01,
-    decay = 0.12,
-  }: {
-    frequency: number;
-    duration?: number;
-    type?: OscillatorType;
-    volume?: number;
-    attack?: number;
-    decay?: number;
-  }
-) => {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = type;
-  osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-
-  const now = ctx.currentTime;
-  const start = now + 0.001;
-  gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(volume, start + attack);
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration + decay);
-
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(start);
-  osc.stop(start + duration + decay + 0.05);
-};
-
 const PLAYER_DATA_KEY = 'bus-app-player-data-v1';
 const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
@@ -236,148 +133,23 @@ const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const PATCH_NOTES_VERSION = CURRENT_APP_VERSION;
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-
 const queueStorageWrite = (key: string, value: string, label: string) => {
   if (!storageAvailable) return;
-
   const write = () => {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.warn(`Kon ${label} niet opslaan`, error);
     }
   };
-
   const requester = (window as typeof window & { requestIdleCallback?: (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number }).requestIdleCallback;
-
   if (typeof requester === 'function') {
     requester(() => write(), { timeout: 500 });
   } else {
     setTimeout(write, 0);
   }
 };
-
-const resizeImage = (file: File, maxDimension = 128, quality = 0.75): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Kon afbeelding niet lezen'));
-    reader.onload = () => {
-      const img = new window.Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Canvas context ontbreekt'));
-
-        // Crop to center square first
-        const side = Math.min(img.width, img.height);
-        const sx = (img.width - side) / 2;
-        const sy = (img.height - side) / 2;
-        const outputSize = Math.min(side, maxDimension);
-
-        canvas.width = outputSize;
-        canvas.height = outputSize;
-        ctx.drawImage(img, sx, sy, side, side, 0, 0, outputSize, outputSize);
-
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => reject(new Error('Kon afbeelding niet laden'));
-      img.src = reader.result as string;
-    };
-
-    reader.readAsDataURL(file);
-  });
-};
-
-const cropToSquareDataUrl = (dataUrl: string, maxDimension = 128, quality = 0.75): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject(new Error('Canvas context ontbreekt'));
-
-      const side = Math.min(img.width, img.height);
-      const sx = (img.width - side) / 2;
-      const sy = (img.height - side) / 2;
-      const outputSize = Math.min(side, maxDimension);
-
-      canvas.width = outputSize;
-      canvas.height = outputSize;
-      ctx.drawImage(img, sx, sy, side, side, 0, 0, outputSize, outputSize);
-
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => reject(new Error('Kon afbeelding niet laden'));
-    img.src = dataUrl;
-  });
-};
-
-const ALL_SUITS: Suit[] = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
-
-const PREVIEW_CARD: Card = { suit: Suit.HEARTS, rank: Rank.KING, id: 'preview-king' };
-
-const createDeck = (): Card[] => {
-  const suits = ALL_SUITS;
-  const ranks = [Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE];
-  const deck: Card[] = [];
-  suits.forEach(suit => {
-    ranks.forEach(rank => {
-      deck.push({ suit, rank, id: `${suit}-${rank}-${Math.random()}` });
-    });
-  });
-  return deck;
-};
-
-const shuffleDeck = (deck: Card[]): Card[] => {
-  const newDeck = [...deck];
-  for (let i = newDeck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
-  }
-  return newDeck;
-};
-
-
 // --- COMPONENTS ---
-
-const Confetti: React.FC = () => {
-  const [particles, setParticles] = useState<{ id: number, left: string, color: string, delay: string, duration: string }[]>([]);
-
-  useEffect(() => {
-    const colors = ['#ef4444', '#3b82f6', '#eab308', '#10b981', '#a855f7', '#ec4899'];
-    const newParticles = Array.from({ length: 75 }).map((_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      delay: `${Math.random() * 0.5}s`,
-      duration: `${2 + Math.random() * 2}s`
-    }));
-    setParticles(newParticles);
-  }, []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-      {particles.map(p => (
-        <div
-          key={p.id}
-          className="absolute w-3 h-3 rounded-sm shadow-lg" // Remove top-0
-          style={{
-            top: `${-10 - Math.random() * 10}%`, // Start slightly above (e.g., -10% to -20%)
-            left: p.left,
-            backgroundColor: p.color,
-            animation: `confetti-fall ${p.duration} linear forwards`,
-            animationDelay: p.delay
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-
-
 // --- ROOT CONTAINER ---
-
 interface RootContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -391,13 +163,11 @@ interface RootContainerProps {
   showChest?: boolean;
   theme?: UITheme; // Added theme
 }
-
 interface PersistedPlayerState {
   players: Player[];
   newPlayerName: string;
   newPlayerImage: string | null;
 }
-
 interface PersistedGameState {
   settings: GameSettings;
   phase: GamePhase;
@@ -427,338 +197,11 @@ interface PersistedGameState {
   busSelectionCandidateId: string | null;
   usedPhrases: string[];
 }
-
 type Feedback = NonNullable<PersistedGameState['feedback']>;
-
-
-
 const GlobalAnimations = () => null;
-
-
-
-
-
-
-
 // --- AMBIENT BACKGROUND COMPONENTS ---
-
-const CalmBackground: React.FC<{ accentColor?: string }> = ({ accentColor }) => {
-  const { color1, color2 } = useMemo(() => {
-    let hue1 = 43; // Default calm hue
-    if (accentColor) {
-      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-      const fullHex = accentColor.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
-      if (result) {
-        const r = parseInt(result[1], 16) / 255;
-        const g = parseInt(result[2], 16) / 255;
-        const b = parseInt(result[3], 16) / 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h = 0;
-        if (max !== min) {
-          const d = max - min;
-          switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-          }
-          h /= 6;
-        }
-        hue1 = Math.round(h * 360);
-      }
-    }
-    const hue2 = (hue1 + 180) % 360;
-    return {
-      color1: `radial-gradient(circle at center, hsla(${hue1}, 80%, 55%, 0.5), transparent 70%)`,
-      color2: `radial-gradient(circle at center, hsla(${hue2}, 80%, 55%, 0.4), transparent 70%)`
-    };
-  }, [accentColor]);
-
-  const isInBufferZone = (x: number, y: number) => {
-    // Buffer zone: X in [20, 80], Y in [15, 75]
-    return x >= 20 && x <= 80 && y >= 15 && y <= 75;
-  };
-
-  const getURCoords = () => {
-    let x = 0, y = 0;
-    let count = 0;
-    do {
-      // Upper Right quadrant: X: 55% to 100%, Y: 0% to 45%
-      x = Math.random() * 45 + 55;
-      y = Math.random() * 45;
-      count++;
-    } while (isInBufferZone(x, y) && count < 100);
-    return { x, y };
-  };
-
-  const getBLCoords = () => {
-    let x = 0, y = 0;
-    let count = 0;
-    do {
-      // Bottom Left quadrant: X: 0% to 45%, Y: 55% to 100%
-      x = Math.random() * 45;
-      y = Math.random() * 45 + 55;
-      count++;
-    } while (isInBufferZone(x, y) && count < 100);
-    return { x, y };
-  };
-
-  const [pos1, setPos1] = useState(() => getURCoords());
-  const [pos2, setPos2] = useState(() => getBLCoords());
-
-  useEffect(() => {
-    const updatePositions = () => {
-      setPos1(getURCoords());
-      setPos2(getBLCoords());
-    };
-
-    const interval = setInterval(updatePositions, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Upper Right Glow Spot */}
-      <div 
-        className="absolute w-[800px] h-[800px] rounded-full blur-[100px] transition-transform duration-[10000ms] ease-in-out opacity-60" 
-        style={{ 
-          backgroundImage: color1,
-          left: 0,
-          top: 0,
-          transform: `translate3d(calc(${pos1.x}vw - 400px), calc(${pos1.y}vh - 400px), 0)`,
-        }} 
-      />
-      {/* Bottom Left Glow Spot */}
-      <div 
-        className="absolute w-[900px] h-[900px] rounded-full blur-[120px] transition-transform duration-[10000ms] ease-in-out opacity-50" 
-        style={{ 
-          backgroundImage: color2,
-          left: 0,
-          top: 0,
-          transform: `translate3d(calc(${pos2.x}vw - 450px), calc(${pos2.y}vh - 450px), 0)`,
-        }} 
-      />
-    </div>
-  );
-};
-
-const BeerBackground: React.FC = () => {
-  const bubbles = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    size: `${Math.random() * 5 + 3}px`,
-    duration: `${Math.random() * 4 + 4}s`,
-    delay: `${Math.random() * 5}s`
-  })), []);
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {bubbles.map(b => (
-        <div 
-          key={b.id} 
-          className="bubble-elem" 
-          style={{ left: b.left, width: b.size, height: b.size, animationDuration: b.duration, animationDelay: b.delay }}
-        />
-      ))}
-    </div>
-  );
-};
-
 /** Unified Player Avatar component */
-const PlayerAvatar: React.FC<{ 
-  player?: Player; 
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  glow?: boolean;
-  className?: string;
-  theme?: UITheme;
-  onPointerDown?: (e: React.PointerEvent) => void;
-  onPointerUp?: (e: React.PointerEvent) => void;
-  onPointerLeave?: (e: React.PointerEvent) => void;
-}> = ({ player, size = 'md', glow = false, className = "", theme = UITheme.CLASSIC, onPointerDown, onPointerUp, onPointerLeave }) => {
-  const sizeClasses = {
-    sm: 'w-8 h-8 text-[10px]',
-    md: 'w-10 h-10 text-base',
-    lg: 'w-11 h-11 text-lg',
-    xl: 'w-32 h-32 text-5xl',
-  };
-
-  const borderClasses = size === 'xl' ? 'border-4' : 'border-2';
-  const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
-  
-  const isCalmGlow = glow && theme === UITheme.CALM;
-  const isDev = !!player?.isDev;
-
-  const borderColor = isDev ? 'border-green-400/30' : (isCalmGlow ? '' : (glow ? 'border-red-500' : 'border-slate-600/50'));
-  const shadowEffect = isDev ? '' : (isCalmGlow ? '' : (glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md'));
-  const animationEffect = isDev ? '' : '';
-  const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
-
-  const calmStyle = (isCalmGlow && !isDev) ? {
-    borderColor: 'var(--theme-accent)',
-    boxShadow: '0 0 40px var(--theme-accent-glow)'
-  } : undefined;
-
-  return (
-    <div 
-      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center overflow-hidden relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
-      style={calmStyle}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerLeave}
-      onContextMenu={(e) => { if (onPointerDown) e.preventDefault(); }}
-    >
-      {player?.image ? (
-        <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
-      ) : (
-        <span className="font-black text-white">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
-      )}
-      <div 
-        className={`absolute inset-0 rounded-full ${ringClasses} ${glow ? (isCalmGlow ? 'animate-pulse' : 'ring-red-500/20 animate-pulse') : 'border-transparent'}`}
-        style={(isCalmGlow && !isDev) ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
-      ></div>
-    </div>
-  );
-};
-
-/** Per-theme section label — genuinely different design per theme */
-const ThemeLabel: React.FC<{ 
-  text: string; 
-  theme: UITheme; 
-  size?: 'sm' | 'md' | 'lg';
-  variant?: 'simple' | 'fancy';
-}> = ({ text, theme, size = 'sm', variant = 'fancy' }) => {
-  const isLg = size === 'lg';
-  const isSm = size === 'sm';
-  const isSimple = variant === 'simple';
-  
-  // Base text sizes
-  const textSizeClass = isLg ? 'text-2xl sm:text-3xl' : isSm ? 'text-[10px]' : 'text-sm';
-
-  if (theme === UITheme.METRO) {
-    return (
-      <div className={`relative flex flex-col items-start ${isLg ? 'gap-3' : 'gap-1.5'}`}>
-        <div 
-          className={`relative z-10 font-mono font-black uppercase tracking-[0.2em] ${textSizeClass}`} 
-          style={{ color: 'var(--theme-accent)' }}
-        >
-          <span className="opacity-40 mr-1.5">{isLg ? '>>' : '>'}</span>
-          {text}
-          {isLg && <span className="inline-block ml-4 w-3 h-6 bg-[var(--theme-accent)] animate-pulse" />}
-        </div>
-        {!isSimple && (
-          <div className="flex w-full items-center gap-1">
-            <div className={`h-px bg-[var(--theme-accent)] opacity-40 ${isLg ? 'w-24' : 'w-8'}`} />
-            <div className="w-1 h-1 bg-[var(--theme-accent)] rounded-full opacity-60" />
-            <div className="flex-1 h-px bg-[var(--theme-accent)] opacity-10" />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (theme === UITheme.CALM) {
-    return (
-      <div className="flex flex-col items-center">
-        <div 
-          className={`${textSizeClass} font-light italic uppercase`}
-          style={{ 
-            color: 'var(--theme-accent)',
-            fontFamily: "'Outfit', sans-serif"
-          }}
-        >
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (theme === UITheme.BEER) {
-    if (isSimple) {
-      return (
-        <div 
-          className={`${textSizeClass} font-black uppercase tracking-[0.15em]`}
-          style={{ color: 'var(--theme-accent)' }}
-        >
-          {text}
-        </div>
-      );
-    }
-    return (
-      <div className="relative inline-flex flex-col items-center">
-        <div 
-          className={`px-6 py-1 bg-[var(--theme-accent)] ${textSizeClass} font-black uppercase tracking-[0.15em] shadow-[4px_4px_0_rgba(0,0,0,0.3)]`}
-          style={{ color: '#fff', transform: 'rotate(-1deg)' }}
-        >
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  // Classic default: glowing floating text
-  return (
-    <div className={`relative z-[60] ${isLg ? 'py-4' : 'py-2'}`}>
-      <div 
-        className={`${textSizeClass} font-black uppercase tracking-[0.3em]`}
-        style={{ 
-          color: 'var(--theme-accent)',
-          textShadow: '0 0 12px var(--theme-accent-glow), 0 0 20px rgba(251,113,133,0.3)'
-        }}
-      >
-        {text}
-      </div>
-    </div>
-  );
-};
-
-/** Main header/title — genuinely different typography per theme */
-const ThemeHeader: React.FC<{ 
-  text: string; 
-  theme: UITheme; 
-  className?: string; 
-  as?: 'h1' | 'h2' | 'p' 
-}> = ({ text, theme, className = "", as: Component = 'h2' }) => {
-  if (theme === UITheme.METRO) {
-    return (
-      <Component 
-        className={`font-mono font-black uppercase tracking-tighter border-l-4 border-[var(--theme-accent)] pl-4 ${className}`}
-        style={{ color: 'var(--theme-text)' }}
-      >
-        {text}
-      </Component>
-    );
-  }
-  if (theme === UITheme.CALM) {
-    return (
-      <Component 
-        className={`font-light italic tracking-[0.15em] uppercase ${className}`}
-        style={{ color: 'var(--theme-text)', fontFamily: "'Outfit', sans-serif" }}
-      >
-        {text}
-      </Component>
-    );
-  }
-  if (theme === UITheme.BEER) {
-    return (
-      <Component 
-        className={`font-black uppercase tracking-tight ${className}`}
-        style={{ color: 'var(--theme-text)', textShadow: '3px 3px 0 var(--theme-accent)' }}
-      >
-        {text}
-      </Component>
-    );
-  }
-  // Classic
-  return (
-    <Component 
-      className={`font-black text-white drop-shadow-2xl neon-text ${className}`}
-    >
-      {text}
-    </Component>
-  );
-};
-
 const MetroBackground = MetroBackgroundAnimated;
-
 /** Dramatic transition overlay for when someone goes to the bus */
 const BusTransitionOverlay: React.FC<{
   loserReveal: { player: Player; title: string } | null;
@@ -767,7 +210,6 @@ const BusTransitionOverlay: React.FC<{
   t: (key: string) => string;
 }> = ({ loserReveal, isBusEntrance, busPassengers, t }) => {
   if (!loserReveal && !isBusEntrance) return null;
-
   return (
     <div 
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 overflow-hidden" 
@@ -779,13 +221,11 @@ const BusTransitionOverlay: React.FC<{
         {/* Intense strobe for high stakes */}
         <div className="absolute inset-0 bg-white/[0.03] animate-[pulse_0.1s_ease-in-out_infinite]"></div>
       </div>
-
       {loserReveal && (
         <div className="relative z-10 flex flex-col items-center animate-in zoom-in duration-500">
           <h2 className="text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center text-white">
             {loserReveal.title}
           </h2>
-
           <div className="relative w-48 h-48 mb-8">
             <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40 no-calm-override"></div>
             <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75 no-calm-override"></div>
@@ -797,7 +237,6 @@ const BusTransitionOverlay: React.FC<{
               )}
             </div>
           </div>
-
           <h1 className="text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">
             {loserReveal.player.name}
           </h1>
@@ -806,7 +245,6 @@ const BusTransitionOverlay: React.FC<{
           </div>
         </div>
       )}
-
       {!loserReveal && isBusEntrance && (
         <div className="relative z-10 flex flex-col items-center animate-in zoom-in duration-500">
           <h1 className="text-5xl font-black text-white mb-4 text-center uppercase tracking-tighter drop-shadow-xl">
@@ -818,7 +256,6 @@ const BusTransitionOverlay: React.FC<{
               <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[0].name}</span> & <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[1].name}</span> {t("gaan samen in de bus.")}
             </p>
           )}
-
           <div className="flex flex-row gap-8 items-center justify-center flex-wrap">
             {busPassengers.map((p, i) => (
               <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
@@ -839,7 +276,6 @@ const BusTransitionOverlay: React.FC<{
     </div>
   );
 };
-
 const PersistentBackground: React.FC<{ 
   theme: UITheme; 
   style?: React.CSSProperties; 
@@ -849,7 +285,6 @@ const PersistentBackground: React.FC<{
 }> = ({ theme, style, isDiscoActive, showTexture = true, calmAccentColor }) => {
   let bgClass = 'bg-animated-gradient';
   let additionalStyles: React.CSSProperties = {};
-
   if (isDiscoActive) {
     bgClass = '';
     additionalStyles = {
@@ -858,9 +293,7 @@ const PersistentBackground: React.FC<{
       opacity: 1,
     };
   }
-
   const finalStyle = { ...additionalStyles, ...style };
-
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden isolate">
       {/* 1. Base Color Layer */}
@@ -872,7 +305,6 @@ const PersistentBackground: React.FC<{
         {theme === UITheme.BEER && <BeerBackground />}
         {theme === UITheme.METRO && <MetroBackground />}
       </div>
-
       {/* 3. Global Texture Overlay */}
       {showTexture && (
         <div 
@@ -883,7 +315,6 @@ const PersistentBackground: React.FC<{
     </div>
   );
 };
-
 const RootContainer: React.FC<RootContainerProps> = ({ children, className = '', shake = false, variant = 'default', isDiscoActive = false, style, disableBaseBg = false, showTexture = true, disableSafeTop = false, showChest = false, theme = UITheme.CLASSIC }) => {
   const { t, lang } = useTranslation();
   const [showPatchChest, setShowPatchChest] = useState(() => {
@@ -895,10 +326,8 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
       return true;
     }
   });
-
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
   const patchNotes = useMemo(() => getPatchNotesList(lang), [lang]);
-
   const openPatchNotes = useCallback(() => {
     setIsPatchNotesOpen(true);
     setShowPatchChest(false);
@@ -906,26 +335,20 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
     try {
       localStorage.setItem(PATCH_NOTES_SEEN_KEY, PATCH_NOTES_VERSION);
     } catch (error) {
-      console.warn('Kon patch notes status niet opslaan', error);
     }
   }, []);
-
   const combinedStyles = { ...style }; // Remove additionalStyles here as they moved to PersistentBackground
-
   const isAndroid = Capacitor.getPlatform() === 'android';
   const safeTopPadding = isAndroid ? 'max(env(safe-area-inset-top, 0px), 16px)' : 'env(safe-area-inset-top, 0px)';
   const containerPaddingTop = disableSafeTop ? '0px' : safeTopPadding;
-
   const finalStyle = {
     paddingTop: containerPaddingTop,
     '--safe-top': safeTopPadding,
     ...combinedStyles,
   } as React.CSSProperties;
-
   return (
     <div className={`h-[100dvh] w-full flex flex-col overflow-hidden relative isolate bg-transparent ${className} ${shake ? 'animate-shake' : ''}`} style={finalStyle}>
       <GlobalAnimations />
-
       {showChest && showPatchChest && (
         <button
           type="button"
@@ -944,7 +367,6 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
           </svg>
         </button>
       )}
-
       <PatchNotesModal
         isOpen={isPatchNotesOpen}
         version={PATCH_NOTES_VERSION}
@@ -952,12 +374,10 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
         t={t}
         onClose={() => setIsPatchNotesOpen(false)}
       />
-
       {children}
     </div>
   );
 };
-
 const hexToHue = (hex: string): number => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
@@ -982,7 +402,6 @@ const hexToHue = (hex: string): number => {
   }
   return Math.round(h * 360);
 };
-
 const hexToHsl = (hex: string) => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
@@ -1013,7 +432,6 @@ const hexToHsl = (hex: string) => {
     l: Math.round(l * 100)
   };
 };
-
 const hslToHex = (h: number, s: number, l: number): string => {
   l /= 100;
   const a = (s * Math.min(l, 1 - l)) / 100;
@@ -1024,9 +442,7 @@ const hslToHex = (h: number, s: number, l: number): string => {
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 };
-
 // --- APP COMPONENT ---
-
 const App: React.FC = () => {
   const { t, lang, setLanguage } = useTranslation();
   const getSipsText = (count: number) => `${count} ${count === 1 ? t('slok') : t('slokken')}`;
@@ -1044,9 +460,7 @@ const App: React.FC = () => {
       theme: UITheme.CALM,
       calmAccentColor: '#fb7185',
     };
-
     if (!storageAvailable) return defaultSettings;
-
     try {
       const saved = localStorage.getItem(GAME_SETTINGS_KEY);
       if (saved) {
@@ -1059,26 +473,20 @@ const App: React.FC = () => {
         return { ...defaultSettings, ...parsed };
       }
     } catch (e) {
-      console.warn("Kon instellingen niet laden, gebruik standaardinstellingen", e);
       localStorage.removeItem(GAME_SETTINGS_KEY);
     }
-
     return defaultSettings;
   });
-
   // Guarantee settings are immediately persisted to localStorage on every change
   useEffect(() => {
     if (!storageAvailable) return;
     try {
       localStorage.setItem(GAME_SETTINGS_KEY, JSON.stringify(settings));
     } catch (e) {
-      console.warn("Kon instellingen niet opslaan", e);
     }
   }, [settings]);
-
   const renderStyleUnlockModal = () => {
     if (!styleToUnlock) return null;
-
     return (
       <SlideMenuModal
         isOpen={!!styleToUnlock}
@@ -1094,7 +502,6 @@ const App: React.FC = () => {
                 <Clapperboard size={48} className="text-amber-950" />
               </div>
             </div>
-
             <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
               {t("Stijl Wisselen")}
             </h3>
@@ -1102,7 +509,6 @@ const App: React.FC = () => {
             <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
               {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : "Neon")}</span> {t("stijl!")}
             </p>
-
             <div className="w-full flex flex-col gap-3">
               <button
                 onClick={async () => {
@@ -1136,14 +542,11 @@ const App: React.FC = () => {
       </SlideMenuModal>
     );
   };
-
   const renderThemeUnlockModal = () => {
     if (!themeToUnlock) return null;
-
     const themeName = themeToUnlock === UITheme.CLASSIC ? "Klassiek" :
                       themeToUnlock === UITheme.METRO ? "Bus" :
                       themeToUnlock === UITheme.CALM ? "Rustig" : "Bier";
-
     return (
       <SlideMenuModal
         isOpen={!!themeToUnlock}
@@ -1159,7 +562,6 @@ const App: React.FC = () => {
                 <Clapperboard size={48} className="text-amber-950" />
               </div>
             </div>
-
             <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
               {t("Thema Wisselen")}
             </h3>
@@ -1167,7 +569,6 @@ const App: React.FC = () => {
             <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
               {t("Kijk een korte video om direct over te schakelen naar het")} <span className="text-amber-400 font-bold">{t(themeName)}</span> {t("thema!")}
             </p>
-
             <div className="w-full flex flex-col gap-3">
               <button
                 onClick={async () => {
@@ -1199,10 +600,8 @@ const App: React.FC = () => {
       </SlideMenuModal>
     );
   };
-
   const renderDeckPreview = () => {
     if (!previewDeckStyle) return null;
-
     const sampleCards: Card[] = [
       { suit: Suit.HEARTS, rank: Rank.ACE, id: 'p1' },
       { suit: Suit.HEARTS, rank: Rank.KING, id: 'p2' },
@@ -1210,7 +609,6 @@ const App: React.FC = () => {
       { suit: Suit.CLUBS, rank: Rank.JACK, id: 'p4' },
       { suit: Suit.SPADES, rank: Rank.TEN, id: 'p5' },
     ];
-
     return (
       <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in" onClick={() => setPreviewDeckStyle(null)}>
         <div className="w-full max-w-lg p-6 flex flex-col h-[80vh]" onClick={e => e.stopPropagation()}>
@@ -1227,7 +625,6 @@ const App: React.FC = () => {
               <X size={20} />
             </button>
           </div>
-
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             <div className="grid grid-cols-2 gap-6 pb-10">
               {/* Back Preview (Achterkant) First */}
@@ -1235,7 +632,6 @@ const App: React.FC = () => {
                 <PlayingCard card={sampleCards[0]} isFaceDown size="md" style={previewDeckStyle} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Achterkant")}</span>
               </div>
-
               {sampleCards.map(card => (
                 <div key={card.id} className="flex flex-col items-center gap-3">
                   <PlayingCard card={card} size="md" style={previewDeckStyle} />
@@ -1244,7 +640,6 @@ const App: React.FC = () => {
               ))}
             </div>
           </div>
-
           <button
             onClick={() => setPreviewDeckStyle(null)}
             className="mt-6 w-full py-4 bg-white text-black font-black rounded-2xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
@@ -1255,7 +650,6 @@ const App: React.FC = () => {
       </div>
     );
   };
-
   // Quit confirmation state
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
@@ -1266,19 +660,16 @@ const App: React.FC = () => {
   const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
   const [styleToUnlock, setStyleToUnlock] = useState<CardStyle | null>(null);
   const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
-
   const { players, setPlayers, addPlayer: addPlayerToEngine, removePlayer: removePlayerFromEngine, updatePlayer, updatePlayers, reorderPlayers } = usePlayerState();
   const { phase, transitionToPhase: setPhase, dispatch: dispatchGameEvent, registerEventHandler: registerGameEventHandler, schedule: scheduleGameEvent } = useGameEngine(GamePhase.SETUP);
   const [deck, setDeck] = useState<Card[]>([]);
   const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
-
   const [devModeArmed, setDevModeArmed] = useState(false);
   const [headerArmed, setHeaderArmed] = useState(false);
   const [iconArmed, setIconArmed] = useState(false);
   const headerPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const iconPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const avatarPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   const handleHeaderPointerDown = useCallback(() => {
     headerPressTimerRef.current = setTimeout(() => {
       setHeaderArmed(true);
@@ -1288,22 +679,18 @@ const App: React.FC = () => {
       }
     }, 1500);
   }, [phase, triggerHaptic]);
-
   const handleHeaderPointerUpOrLeave = useCallback(() => {
     if (headerPressTimerRef.current) clearTimeout(headerPressTimerRef.current);
   }, []);
-
   const handleIconPointerDown = useCallback(() => {
     iconPressTimerRef.current = setTimeout(() => {
       setIconArmed(true);
       triggerHaptic('heavy');
     }, 1500);
   }, [triggerHaptic]);
-
   const handleIconPointerUpOrLeave = useCallback(() => {
     if (iconPressTimerRef.current) clearTimeout(iconPressTimerRef.current);
   }, []);
-
   useEffect(() => {
     if (phase === GamePhase.SETUP) {
       if (headerArmed && iconArmed) {
@@ -1312,7 +699,6 @@ const App: React.FC = () => {
       }
     }
   }, [headerArmed, iconArmed, phase, triggerHaptic]);
-
   const handleAvatarPointerDown = useCallback((player: Player) => {
     const isArmed = devModeArmed || (phase === GamePhase.SETUP && headerArmed && iconArmed);
     if (!isArmed) return;
@@ -1324,15 +710,12 @@ const App: React.FC = () => {
       setIconArmed(false);
     }, 1500);
   }, [devModeArmed, headerArmed, iconArmed, phase, updatePlayer, triggerHaptic]);
-
   const handleAvatarPointerUpOrLeave = useCallback(() => {
     if (avatarPressTimerRef.current) clearTimeout(avatarPressTimerRef.current);
   }, []);
-
   // Setup State
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerImage, setNewPlayerImage] = useState<string | null>(null);
-
   const canAddPlayer = useMemo(() => {
     const trimmed = newPlayerName.trim();
     return (
@@ -1341,22 +724,18 @@ const App: React.FC = () => {
       !players.some(p => p.name.toLowerCase() === trimmed.toLowerCase())
     );
   }, [newPlayerName, players]);
-
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
   const [isMatchModalClosing, setIsMatchModalClosing] = useState(false);
   const [lastAddedPlayerId, setLastAddedPlayerId] = useState<string | null>(null);
-
   // Bus Decks Slider State (More Settings)
   const [draftBusDecks, setDraftBusDecks] = useState<number>(settings.busDecks || 1);
   const [isBusDecksDragging, setIsBusDecksDragging] = useState(false);
-
   useEffect(() => {
     if (!isBusDecksDragging) {
       setDraftBusDecks(settings.busDecks || 1);
     }
   }, [settings.busDecks, isBusDecksDragging]);
-
   const handleBusDecksChange = (val: number) => {
     const clamped = Math.max(1, Math.min(5, val));
     const prevRounded = Math.round(draftBusDecks);
@@ -1366,7 +745,6 @@ const App: React.FC = () => {
     }
     setDraftBusDecks(clamped);
   };
-
   const handleBusDecksCommit = () => {
     setIsBusDecksDragging(false);
     const rounded = Math.round(draftBusDecks);
@@ -1376,7 +754,6 @@ const App: React.FC = () => {
       triggerHaptic('tick');
     }
   };
-
   // Dev Tools State
   const [devSettings, setDevSettings] = useState({
     alwaysWin: false,
@@ -1392,12 +769,10 @@ const App: React.FC = () => {
   const fileInputCameraRef = useRef<HTMLInputElement>(null);
   const adMobReadyRef = useRef(false);
   const lastAdShownRef = useRef<number>(0);
-
   // Visuals State
   const [screenShake, setScreenShake] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isDiscoActive, setIsDiscoActive] = useState(false);
-
   // Phrase Randomization State
   const [usedPhrases, setUsedPhrases] = useState<Set<string>>(new Set());
   const [customPhrases, setCustomPhrases] = useState<Record<string, Record<PhraseCategory, string[]>>>(() => {
@@ -1410,7 +785,6 @@ const App: React.FC = () => {
   const [isPhraseEditorOpen, setIsPhraseEditorOpen] = useState(false);
   const [editorCategory, setEditorCategory] = useState<PhraseCategory>('success');
   const [editingPhraseText, setEditingPhraseText] = useState('');
-
   // Round 1-4 State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [roundStep, setRoundStep] = useState<RoundStep>(RoundStep.RED_BLACK);
@@ -1420,7 +794,6 @@ const App: React.FC = () => {
   const [pyramidMode, setPyramidMode] = useState<'physical' | 'digital'>(
     settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital'
   );
-
   // Pyramid State
   const [pyramid, setPyramid] = useState<(Card | null)[][]>([]);
   const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
@@ -1437,7 +810,6 @@ const App: React.FC = () => {
   const accumulatedSipsThisMatch = useRef<{name: string, sips: number, targetName?: string}[]>([]);
   const [pulseValidCards, setPulseValidCards] = useState(false);
   const [warningCooldown, setWarningCooldown] = useState(false);
-
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
   const [busPassengers, setBusPassengers] = useState<Player[]>([]);
@@ -1470,20 +842,16 @@ const App: React.FC = () => {
   const busProgressItemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const busProgressScaleMetricsRef = useRef({ availableWidth: 0, contentWidth: 0, scale: 1 });
   const [busProgressScale, setBusProgressScale] = useState(1);
-
   const activePlayer = useMemo(() => players[activePlayerIndex], [players, activePlayerIndex]);
   const currentDealerIndex = useMemo(() => players.findIndex(p => p.isDealer), [players]);
   const sortedPlayers = useMemo(
     () => [...players].sort((a, b) => (b.drinksTaken + b.adtjes * 5) - (a.drinksTaken + a.adtjes * 5)),
     [players]
   );
-
   useEffect(() => {
     setScreenShake(false);
   }, [phase, activePlayerIndex]);
-
   const { playSound } = useAudio();
-
   const resetBusState = useCallback(() => {
     setBusMode(null);
     setBusPassengers([]);
@@ -1508,29 +876,23 @@ const App: React.FC = () => {
     setIsCardOverviewOpen(false);
     setShowReshuffleBanner(false);
   }, []);
-
     const dismissTransitions = useCallback(() => {
     setLoserReveal(null);
     setIsBusEntrance(false);
     }, []);
-
 const initializeAdMob = useCallback(async () => {
     if (!Capacitor.isNativePlatform() || adMobReadyRef.current) return;
-
     try {
       await AdMob.initialize({
         initializeForTesting: false,
       });
       adMobReadyRef.current = true;
     } catch (error) {
-      console.warn('AdMob initialisatie mislukt', error);
     }
   }, []);
-
   // Pre-load an interstitial ad in background
   const prepareAdInterstitial = useCallback(async (adId: string) => {
     if (!Capacitor.isNativePlatform() || players.some(p => p.isDev)) return;
-
     try {
       if (!adMobReadyRef.current) {
         await AdMob.initialize({
@@ -1538,63 +900,48 @@ const initializeAdMob = useCallback(async () => {
         });
         adMobReadyRef.current = true;
       }
-
       await AdMob.prepareInterstitial({ adId });
     } catch (error) {
-      console.warn('AdMob interstitial preload failed', error);
     }
   }, [players]);
-
   const prepareRewardedAd = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
     if (players.some(p => p.isDev)) return;
-
     try {
       await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
     } catch (error) {
-      console.warn('AdMob rewarded preload failed', error);
     }
   }, [players]);
-
   const showRewardedAd = useCallback(async () => {
     if (players.some(p => p.isDev)) return true; // Always success for dev player
-
     setIsAdLoading(true);
-
     if (!Capacitor.isNativePlatform()) {
       // Simulate ad playback delay on web/dev to show loading popup
       await new Promise(r => setTimeout(r, 1200));
       setIsAdLoading(false);
       return true;
     }
-
     try {
       await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
       const reward = await AdMob.showRewardVideoAd();
       setIsAdLoading(false);
       return !!reward;
     } catch (error) {
-      console.warn('AdMob rewarded show failed', error);
       setIsAdLoading(false);
       return false;
     }
   }, [players]);
-
   // Interstitial ad
   const showInterstitialAd = useCallback(async (type: 'QUIT' | 'LEADERBOARD') => {
     if (players.some(p => p.isDev)) return;
-
     setIsAdLoading(true);
-
     if (!Capacitor.isNativePlatform()) {
       // Simulate ad playback delay on web/dev to show loading popup
       await new Promise(r => setTimeout(r, 1200));
       setIsAdLoading(false);
       return;
     }
-
     const adId = type === 'QUIT' ? ADMOB_INTERSTITIAL_QUIT_UNIT_ID : ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID;
-
     try {
       if (!adMobReadyRef.current) {
         await AdMob.initialize({
@@ -1602,25 +949,21 @@ const initializeAdMob = useCallback(async () => {
         });
         adMobReadyRef.current = true;
       }
-
       // Try showing directly in case it was preloaded
       try {
         await AdMob.showInterstitial();
         lastAdShownRef.current = Date.now();
       } catch (showError) {
-        console.log('Preloaded ad not available, preparing fresh interstitial...', showError);
         // Preloaded ad wasn't available, prepare and show now
         await AdMob.prepareInterstitial({ adId });
         await AdMob.showInterstitial();
         lastAdShownRef.current = Date.now();
       }
     } catch (error) {
-      console.warn('AdMob interstitial failed', error);
     } finally {
       setIsAdLoading(false);
     }
   }, [players]);
-
   const persistPlayers = useCallback(() => {
     const payload: PersistedPlayerState = {
       players,
@@ -1629,7 +972,6 @@ const initializeAdMob = useCallback(async () => {
     };
     queueStorageWrite(PLAYER_DATA_KEY, JSON.stringify(payload), 'spelersdata');
   }, [players, newPlayerName, newPlayerImage]);
-
   // Hydrate players only
   const hydratePlayers = useCallback(() => {
     if (!storageAvailable) return;
@@ -1641,16 +983,13 @@ const initializeAdMob = useCallback(async () => {
       if (parsed.newPlayerName !== undefined) setNewPlayerName(parsed.newPlayerName);
       if (parsed.newPlayerImage !== undefined) setNewPlayerImage(parsed.newPlayerImage);
     } catch (error) {
-      console.error('Herstellen spelersdata mislukt', error);
       localStorage.removeItem(PLAYER_DATA_KEY);
     }
   }, [storageAvailable, setPlayers, setNewPlayerName, setNewPlayerImage]);
-
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer');
     root.classList.add(`theme-${settings.theme}`, 'theme-transition');
-
     if (settings.theme === UITheme.CALM) {
       const accentHex = settings.calmAccentColor || '#fb7185'; // Default light red
       
@@ -1678,40 +1017,32 @@ const initializeAdMob = useCallback(async () => {
       root.style.removeProperty('--theme-card-border');
     }
   }, [settings.theme, settings.calmAccentColor]);
-
   // Main hydration effect on component mount
   useEffect(() => {
     hydratePlayers(); // Always hydrate players
     if (storageAvailable) {
       localStorage.removeItem(GAME_STATE_KEY); // Ensure game state never persists between sessions
     }
-
     // Hide status bar on native devices
     if (Capacitor.isNativePlatform()) {
       StatusBar.setOverlaysWebView({ overlay: true }).catch(() => { });
-      StatusBar.hide().catch((e) => console.warn('Could not hide status bar', e));
+      StatusBar.hide().catch(() => { });
     }
   }, [hydratePlayers, storageAvailable]);
-
   useEffect(() => {
     if (!storageAvailable) return;
-
     try {
       const savedPyramid = localStorage.getItem(PYRAMID_INSTRUCTIONS_COLLAPSED_KEY);
       const savedBus = localStorage.getItem(BUS_INSTRUCTIONS_COLLAPSED_KEY);
-
       if (savedPyramid !== null) {
         setIsPyramidInstructionsCollapsed(savedPyramid === 'true');
       }
-
       if (savedBus !== null) {
         setIsBusInstructionsCollapsed(savedBus === 'true');
       }
     } catch (error) {
-      console.warn('Kon instructiestatus niet herstellen', error);
     }
   }, [storageAvailable]);
-
   useEffect(() => {
     if (!storageAvailable) return;
     try {
@@ -1721,10 +1052,8 @@ const initializeAdMob = useCallback(async () => {
         'piramide-instructies'
       );
     } catch (error) {
-      console.warn('Kon piramide-instructies niet opslaan', error);
     }
   }, [isPyramidInstructionsCollapsed, storageAvailable]);
-
   useEffect(() => {
     if (!storageAvailable) return;
     try {
@@ -1734,15 +1063,12 @@ const initializeAdMob = useCallback(async () => {
         'bus-instructies'
       );
     } catch (error) {
-      console.warn('Kon bus-instructies niet opslaan', error);
     }
   }, [isBusInstructionsCollapsed, storageAvailable]);
-
   useEffect(() => {
     if (!storageAvailable) return;
     persistPlayers();
   }, [persistPlayers, storageAvailable]);
-
   useEffect(() => {
     if (distributeBanner && !distributeBanner.isFadingOut) {
       const timer = setTimeout(() => setDistributeBanner(prev => prev ? { ...prev, isFadingOut: true } : null), 3500);
@@ -1752,59 +1078,43 @@ const initializeAdMob = useCallback(async () => {
       return () => clearTimeout(timer);
     }
   }, [distributeBanner]);
-
   useEffect(() => {
     if (settings.mode === GameMode.DIGITAL) {
       setPyramidMode('digital');
     }
   }, [settings.mode]);
-
-
-
   useEffect(() => {
     if (!storageAvailable) return;
-
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         persistPlayers(); // Only persist players on web visibility change
       }
     };
-
     const handleBeforeUnload = () => persistPlayers(); // Only persist players on web beforeunload
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [persistPlayers]); // Dependency array changes to persistPlayers
-
   useEffect(() => {
     if (!storageAvailable) return;
-
     const isNativeApp = Capacitor.getPlatform() !== 'web';
     if (!isNativeApp) return;
-
     const handleAppPause = () => {
       persistPlayers();
     }
-
     document.addEventListener('pause', handleAppPause);
     document.addEventListener('resume', handleAppPause); // Resume does not need to save state
-
     return () => {
       document.removeEventListener('pause', handleAppPause);
       document.removeEventListener('resume', handleAppPause);
     };
   }, [persistPlayers]); // Dependency array changes
-
-
   useEffect(() => {
     initializeAdMob();
   }, [initializeAdMob]);
-
   useEffect(() => {
     const manageBars = async () => {
       try {
@@ -1815,14 +1125,11 @@ const initializeAdMob = useCallback(async () => {
     };
     manageBars();
   }, [phase]);
-
   // --- HELPERS ---
-
   const triggerShake = () => {
     setScreenShake(true);
     scheduleGameEvent('screen-shake', 500, { type: 'SCREEN_SHAKE_DONE' });
   };
-
   const triggerFileCapture = (mode: 'camera' | 'gallery' = 'camera') => {
     if (mode === 'camera') {
       const input = fileInputCameraRef.current;
@@ -1832,14 +1139,12 @@ const initializeAdMob = useCallback(async () => {
       if (input) input.click();
     }
   };
-
   const tryNativePhoto = async (
     source: 'CAMERA' | 'PHOTOS'
   ): Promise<{ dataUrl: string | null; cancelled: boolean; available: boolean }> => {
     if (!Capacitor.isPluginAvailable('Camera')) {
       return { dataUrl: null, cancelled: false, available: false };
     }
-
     try {
       const photo = await Camera.getPhoto({
         quality: 75,
@@ -1849,26 +1154,20 @@ const initializeAdMob = useCallback(async () => {
         width: 160,
         height: 160,
       });
-
       return { dataUrl: photo?.dataUrl ?? null, cancelled: false, available: true };
     } catch (error: any) {
       const message = (error?.message ?? '').toLowerCase();
       const cancelled = message.includes('cancel') || message.includes('no image selected');
-
       if (!cancelled) {
-        console.error('Camera capture failed', error);
       }
-
       return { dataUrl: null, cancelled, available: true };
     }
   };
-
   const getEffectivePhrases = (category: PhraseCategory): string[] => {
     const langPhrases = customPhrases[lang]?.[category] || [];
     if (langPhrases.length > 0) return langPhrases;
     return DEFAULT_PHRASES[lang][category] || DEFAULT_PHRASES['nl'][category];
   };
-
   const getUniquePhrase = (poolOrCategory: string[] | PhraseCategory) => {
     const pool = Array.isArray(poolOrCategory) ? poolOrCategory : getEffectivePhrases(poolOrCategory as PhraseCategory);
     let available = pool.filter(p => !usedPhrases.has(p));
@@ -1878,7 +1177,6 @@ const initializeAdMob = useCallback(async () => {
       setUsedPhrases(new Set());
     }
     const phrase = available[Math.floor(Math.random() * available.length)];
-
     setUsedPhrases(prev => {
       const newSet = new Set(prev);
       if (newSet.size >= pool.length * 2) newSet.clear(); // Safety clear
@@ -1887,7 +1185,6 @@ const initializeAdMob = useCallback(async () => {
     });
     return phrase;
   };
-
   const drawCard = () => {
     if (deck.length === 0) {
       const newD = shuffleDeck(createDeck());
@@ -1899,20 +1196,15 @@ const initializeAdMob = useCallback(async () => {
     setDeck(remaining);
     return card;
   };
-
   const recalcBusProgressScale = useCallback(() => {
     const container = busProgressContainerRef.current;
     const content = busProgressContentRef.current;
     if (!container || !content) return;
-
     const availableWidth = Math.round(container.clientWidth);
     const contentWidth = Math.round(content.scrollWidth);
-
     if (!contentWidth) return;
-
     const nextScale = Math.max(0.65, Math.min(1, availableWidth / contentWidth));
     const previous = busProgressScaleMetricsRef.current;
-
     if (
       previous.availableWidth === availableWidth
       && previous.contentWidth === contentWidth
@@ -1920,11 +1212,9 @@ const initializeAdMob = useCallback(async () => {
     ) {
       return;
     }
-
     busProgressScaleMetricsRef.current = { availableWidth, contentWidth, scale: nextScale };
     setBusProgressScale(nextScale);
   }, []);
-
   const busCardStates = useMemo(() => {
     return busCards.map((card, index) => {
       const isBase = index === 0;
@@ -1934,13 +1224,11 @@ const initializeAdMob = useCallback(async () => {
       const isFocused = busFocusIndex === index;
       const isWrong = index === busWrongCardIndex;
       const isRevealed = isBase || isHistory || isWrong || isBusWon;
-
       let containerClass = '';
       if (isBusWon) {
         containerClass = 'opacity-100 scale-100 z-10';
       } else {
         containerClass = 'opacity-50 scale-90 grayscale drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]';
-
         if (isReference) {
           containerClass = 'opacity-100 scale-110 z-20';
         } else if (isTarget) {
@@ -1948,12 +1236,10 @@ const initializeAdMob = useCallback(async () => {
         } else if (isWrong) {
           containerClass = 'opacity-100 scale-110 z-20';
         }
-
         if (isFocused) {
           containerClass += ' saturate-150 drop-shadow-[0_0_50px_rgba(248,113,113,0.45)]';
         }
       }
-
       return {
         card,
         index,
@@ -1967,73 +1253,53 @@ const initializeAdMob = useCallback(async () => {
       };
     });
   }, [busCards, currentBusIndex, busWrongCardIndex, isBusWon, busFocusIndex]);
-
   // --- SCROLL HELPERS ---
   useEffect(() => {
     // Keep refs array in sync with cards
     busCardRefs.current = busCardRefs.current.slice(0, busCards.length);
   }, [busCards.length]);
-
   useEffect(() => {
     busProgressItemRefs.current = busProgressItemRefs.current.slice(0, settings.busLength);
   }, [settings.busLength]);
-
   useEffect(() => {
     if (phase !== GamePhase.THE_BUS || busCards.length === 0) return;
-
     const container = busScrollRef.current;
     if (!container) return;
-
     if (busWrongCardIndex !== null) {
       const focusIndex = Math.max(0, Math.min(busCards.length - 1, busWrongCardIndex));
       setBusFocusIndex(focusIndex);
-
       const wrongCardEl = busCardRefs.current[focusIndex];
       wrongCardEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       return;
     }
-
     const previousIndex = Math.max(0, currentBusIndex - 1);
     const targetIndex = Math.max(0, Math.min(busCards.length - 1, currentBusIndex));
     setBusFocusIndex(targetIndex);
-
     const previousEl = busCardRefs.current[previousIndex];
     const targetEl = busCardRefs.current[targetIndex];
-
     if (previousEl && targetEl) {
       const containerRect = container.getBoundingClientRect();
       const previousRect = previousEl.getBoundingClientRect();
       const targetRect = targetEl.getBoundingClientRect();
-
       const left = Math.min(previousRect.left, targetRect.left) - containerRect.left + container.scrollLeft;
       const right = Math.max(previousRect.right, targetRect.right) - containerRect.left + container.scrollLeft;
-
       const desiredCenter = (left + right) / 2;
       const newScrollLeft = desiredCenter - containerRect.width / 2;
-
       container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
     }
   }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
-
   const shouldTrackBusProgressResize = phase === GamePhase.THE_BUS && settings.mode === GameMode.PHYSICAL && busMode === 'physical';
-
   useThrottledResize(recalcBusProgressScale, shouldTrackBusProgressResize);
-
   useEffect(() => {
     if (!shouldTrackBusProgressResize) return;
-
     recalcBusProgressScale();
   }, [recalcBusProgressScale, settings.busLength, shouldTrackBusProgressResize]);
-
   useEffect(() => {
     if (phase !== GamePhase.THE_BUS || settings.mode !== GameMode.PHYSICAL || busMode !== 'physical') return;
-
     const targetIndex = Math.min(settings.busLength - 1, Math.max(0, physicalBusPosition - 1));
     const targetEl = busProgressItemRefs.current[targetIndex];
-
     targetEl?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [busMode, phase, physicalBusPosition, settings.busLength, settings.mode]);
-
   useEffect(() => {
     if (isBusWon) {
       setBusWinBurst(true);
@@ -2041,15 +1307,10 @@ const initializeAdMob = useCallback(async () => {
       scheduleGameEvent('bus-win-burst', 1800, { type: 'BUS_WIN_BURST_DONE' });
     }
   }, [isBusWon, prepareAdInterstitial, scheduleGameEvent]);
-
-
-
   // --- PHASE HANDLERS ---
-
   const handleTakePhoto = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
     const { dataUrl, cancelled, available } = await tryNativePhoto('CAMERA');
-
     if (dataUrl) {
       try {
         const squared = await cropToSquareDataUrl(dataUrl);
@@ -2060,23 +1321,18 @@ const initializeAdMob = useCallback(async () => {
       triggerHaptic('light');
       return;
     }
-
     if (cancelled) return;
-
     setFeedback({
       text: available
         ? t('Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.')
         : t('Camera niet beschikbaar. Kies lokaal bestand.'),
       type: available ? 'error' : 'info'
     });
-
     triggerFileCapture('camera');
   };
-
   const handleSelectFromGallery = async () => {
     setIsPhotoOptionsModalOpen(false); // Close modal
     const { dataUrl, cancelled, available } = await tryNativePhoto('PHOTOS');
-
     if (dataUrl) {
       try {
         const squared = await cropToSquareDataUrl(dataUrl);
@@ -2087,54 +1343,42 @@ const initializeAdMob = useCallback(async () => {
       triggerHaptic('light');
       return;
     }
-
     if (cancelled) return;
-
     setFeedback({
       text: available
         ? t('Er is een fout opgetreden bij de fotoselectie. Probeer opnieuw of kies lokaal bestand.')
         : t('Galerij niet beschikbaar. Kies lokaal bestand.'),
       type: available ? 'error' : 'info'
     });
-
     triggerFileCapture('gallery');
   };
-
-
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       setFeedback({ text: t('Kies een afbeelding om te gebruiken als profielfoto.'), type: 'error' });
       return;
     }
-
     try {
       const resized = await resizeImage(file);
       setNewPlayerImage(resized);
       triggerHaptic('light');
       setTimeout(() => inputRef.current?.focus(), 10);
     } catch (error) {
-      console.error('Afbeelding verwerken mislukt', error);
       setFeedback({ text: t('Kon de foto niet laden. Controleer de rechten of probeer een kleinere afbeelding.'), type: 'error' });
     }
   };
-
   const addPlayer = useCallback(() => {
     const trimmedName = newPlayerName.trim();
     if (!trimmedName) return;
-
     if (players.length >= 12) {
       setFeedback({ text: t("Maximum aantal spelers (12) is bereikt."), type: 'error' });
       return;
     }
-
     if (players.some(p => p.name.toLowerCase() === trimmedName.toLowerCase())) {
       setFeedback({ text: t("Deze speler is al toegevoegd!"), type: 'error' });
       return;
     }
-
     triggerHaptic('success');
     playSound('playerAdd');
     const newId = Date.now().toString();
@@ -2154,13 +1398,11 @@ const initializeAdMob = useCallback(async () => {
     setNewPlayerImage(null);
     setTimeout(() => inputRef.current?.focus(), 10);
   }, [addPlayerToEngine, newPlayerImage, newPlayerName, playSound, players, triggerHaptic, setFeedback, t]);
-
   const removePlayer = useCallback((id: string) => {
     triggerHaptic('tick');
     playSound('playerRemove');
     removePlayerFromEngine(id);
   }, [playSound, removePlayerFromEngine, triggerHaptic]);
-
   const renderPlayerListAvatar = useCallback((player: Player) => (
     <PlayerAvatar 
       player={player} 
@@ -2171,7 +1413,6 @@ const initializeAdMob = useCallback(async () => {
       onPointerLeave={handleAvatarPointerUpOrLeave}
     />
   ), [handleAvatarPointerDown, handleAvatarPointerUpOrLeave, settings.theme]);
-
   // --- DRAG-AND-DROP PLAYER REORDER ---
   const [dragPlayerIndex, setDragPlayerIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -2179,7 +1420,6 @@ const initializeAdMob = useCallback(async () => {
   const dragStartYRef = useRef<number>(0);
   const dragItemHeightRef = useRef<number>(0);
   const playerListRef = useRef<HTMLDivElement | null>(null);
-
   const handleDragStart = useCallback((e: React.TouchEvent | React.MouseEvent, index: number) => {
     e.stopPropagation();
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -2193,7 +1433,6 @@ const initializeAdMob = useCallback(async () => {
     }
     triggerHaptic('light');
   }, [triggerHaptic]);
-
   const handleDragMove = useCallback((e: TouchEvent | MouseEvent) => {
     if (dragPlayerIndex === null) return;
     e.preventDefault();
@@ -2203,7 +1442,6 @@ const initializeAdMob = useCallback(async () => {
     const newIndex = Math.max(0, Math.min(players.length - 1, dragPlayerIndex + indexOffset));
     setDragOverIndex(newIndex);
   }, [dragPlayerIndex, players.length]);
-
   const handleDragEnd = useCallback(() => {
     if (dragPlayerIndex !== null && dragOverIndex !== null && dragPlayerIndex !== dragOverIndex) {
       reorderPlayers(dragPlayerIndex, dragOverIndex);
@@ -2212,7 +1450,6 @@ const initializeAdMob = useCallback(async () => {
     setDragPlayerIndex(null);
     setDragOverIndex(null);
   }, [dragPlayerIndex, dragOverIndex, reorderPlayers]);
-
   useEffect(() => {
     if (dragPlayerIndex === null) return;
     const onMove = (e: TouchEvent | MouseEvent) => handleDragMove(e);
@@ -2228,25 +1465,21 @@ const initializeAdMob = useCallback(async () => {
       window.removeEventListener('mouseup', onEnd);
     };
   }, [dragPlayerIndex, handleDragMove, handleDragEnd]);
-
   const handleGameOverContinue = async () => {
     await showInterstitialAd('LEADERBOARD');
     setPhase(GamePhase.SETUP);
   };
-
   const getGuessBtnClasses = (type: string) => {
     const isMetro = settings.theme === UITheme.METRO;
     const isBeer = settings.theme === UITheme.BEER;
     const isCalm = settings.theme === UITheme.CALM;
     const cardStyle = settings.cardStyle;
-
     if (isMetro) {
       const base = "py-4 rounded-none font-black text-lg border-2 shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2";
       if (type === 'RED' || type === 'HIGHER' || type === 'BETWEEN' || type === 'MATCH') return `${base} bg-[var(--theme-accent)] text-slate-950 border-white`;
       if (type === 'BLACK' || type === 'LOWER' || type === 'OUTSIDE' || type === 'NO_MATCH') return `${base} bg-slate-900 text-[var(--theme-accent)] border-[var(--theme-accent)]`;
       if (type === 'EQUAL') return `col-span-2 py-3 rounded-none font-mono text-xs font-black bg-slate-900 text-slate-300 border-2 border-slate-700 shadow-[4px_4px_0_rgba(0,0,0,0.8)]`;
     }
-
     if (isBeer) {
       const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
       if (type === 'RED') return `${base} bg-gradient-to-br from-red-600 to-amber-900 border-red-400 text-white shadow-[0_6px_20px_rgba(220,38,38,0.4)]`;
@@ -2259,7 +1492,6 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-stone-800 to-amber-950 border-amber-700/50 text-amber-100 shadow-[0_6px_20px_rgba(0,0,0,0.4)]`;
       if (type === 'EQUAL') return `col-span-2 py-3 text-xs font-bold rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300 hover:bg-amber-900/50 transition-colors`;
     }
-
     if (isCalm) {
       const base = "py-4 rounded-2xl font-black text-lg backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-lg";
       if (type === 'RED') {
@@ -2282,7 +1514,6 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'NO_MATCH') return `${base} bg-pink-950/50 hover:bg-pink-950/70 border-pink-500/30 text-pink-200 shadow-[0_4px_20px_rgba(236,72,153,0.2)] no-calm-override`;
       if (type === 'EQUAL') return `col-span-2 bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:text-white transition-colors no-calm-override`;
     }
-
     // Default (Classic)
     const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
     if (type === 'RED') {
@@ -2306,36 +1537,30 @@ const initializeAdMob = useCallback(async () => {
     if (type === 'EQUAL') return `col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors`;
     return base;
   };
-
   const getBusGuessBtnClasses = (type: 'HIGHER' | 'LOWER' | 'EQUAL') => {
     const isMetro = settings.theme === UITheme.METRO;
     const isBeer = settings.theme === UITheme.BEER;
     const isCalm = settings.theme === UITheme.CALM;
-
     if (isMetro) {
       if (type === 'HIGHER') return "group flex-1 bg-[var(--theme-accent)] text-slate-950 py-6 rounded-none font-black border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
       if (type === 'LOWER') return "group flex-1 bg-slate-900 text-[var(--theme-accent)] py-6 rounded-none font-black border-2 border-[var(--theme-accent)] shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
       if (type === 'EQUAL') return "w-full bg-slate-900 text-slate-300 py-3 text-xs font-mono font-black border-2 border-slate-700 shadow-[4px_4px_0_rgba(0,0,0,0.8)] rounded-none transition-colors active:scale-95";
     }
-
     if (isBeer) {
       if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-amber-500 to-amber-700 text-slate-950 py-6 rounded-2xl font-black border border-amber-300 shadow-[0_6px_20px_rgba(245,158,11,0.4)] flex flex-col items-center active:scale-95 transition-all";
       if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-stone-800 to-amber-950 text-amber-100 py-6 rounded-2xl font-black border border-amber-700/60 shadow-[0_6px_20px_rgba(180,83,9,0.3)] flex flex-col items-center active:scale-95 transition-all";
       if (type === 'EQUAL') return "w-full bg-amber-950/60 border border-amber-500/30 text-amber-300 py-3 text-xs font-bold rounded-xl hover:bg-amber-900/50 transition-colors active:scale-95";
     }
-
     if (isCalm) {
       if (type === 'HIGHER') return "group flex-1 bg-emerald-950/50 hover:bg-emerald-950/70 text-emerald-200 py-6 rounded-2xl font-black border border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.2)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
       if (type === 'LOWER') return "group flex-1 bg-blue-950/50 hover:bg-blue-950/70 text-blue-200 py-6 rounded-2xl font-black border border-blue-500/30 shadow-[0_4px_20px_rgba(59,130,246,0.2)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
       if (type === 'EQUAL') return "w-full bg-slate-900/60 border border-slate-700/50 text-slate-400 hover:text-white py-3 text-xs font-bold rounded-xl backdrop-blur-xl transition-colors active:scale-95";
     }
-
     if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-green-500";
     if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500";
     if (type === 'EQUAL') return "w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95";
     return "";
   };
-
   const handleStartPress = () => {
     if (players.length < 2) return;
     setIsSettingsOpen(false);
@@ -2347,7 +1572,6 @@ const initializeAdMob = useCallback(async () => {
     }
     confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
   };
-
   const handleQuitGame = async () => {
     setShowQuitConfirm(false);
     await showInterstitialAd('QUIT');
@@ -2359,14 +1583,12 @@ const initializeAdMob = useCallback(async () => {
     setIsDiscoActive(false);
     setImmunePlayerId(null);
   };
-
   const confirmStart = (mode: GameMode) => {
     triggerHaptic('heavy');
     resetBusState();
     setSettings(prev => ({ ...prev, mode }));
     setPyramidMode(mode === GameMode.PHYSICAL ? 'physical' : 'digital');
     setDeck(shuffleDeck(createDeck()));
-
     const dealerIndex = players.length - 1; // Dealer is the last player so index 0 goes first
     const updatedPlayers = players.map((p, i) => ({
       ...p,
@@ -2377,21 +1599,17 @@ const initializeAdMob = useCallback(async () => {
       isDealer: i === dealerIndex,
       isImmune: p.id === immunePlayerId
     }));
-
     setPlayers(updatedPlayers);
     setActivePlayerIndex((dealerIndex + 1) % players.length);
     setUsedPhrases(new Set()); // Reset phrases for new game
     setRoundStep(RoundStep.RED_BLACK);
-
     setPhase(GamePhase.ROUNDS_1_4);
     setRoundStep(RoundStep.RED_BLACK);
     setFeedback(null);
     setIsWaitingForNextPlayer(true);
     prepareAdInterstitial(ADMOB_INTERSTITIAL_QUIT_UNIT_ID);
   };
-
   // --- ROUNDS 1-4 LOGIC ---
-
   const nextPlayerTurn = () => {
     triggerHaptic('light');
     setFeedback(null);
@@ -2399,7 +1617,6 @@ const initializeAdMob = useCallback(async () => {
     setShowConfetti(false);
     playSound('stopDisco');
     setIsDiscoActive(false); // <--- Add this line
-
     const dealerIndex = currentDealerIndex;
     if (activePlayerIndex === dealerIndex) {
       if (roundStep === RoundStep.SUIT) {
@@ -2416,12 +1633,10 @@ const initializeAdMob = useCallback(async () => {
       setIsWaitingForNextPlayer(true);
     }
   };
-
   const handlePhysicalGuess = (correct: boolean) => {
     const sips = roundStep;
     const currentPlayer = activePlayer;
     const placeholderCard: Card = { suit: Suit.SPADES, rank: Rank.ACE, id: `physical-${Date.now()}` };
-
     if (correct) {
       triggerHaptic('success');
       playSound('success');
@@ -2436,18 +1651,15 @@ const initializeAdMob = useCallback(async () => {
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
     }
-
     updatePlayer(currentPlayer.id, player => ({
       ...player,
       hand: [...player.hand, placeholderCard],
       drinksTaken: correct ? player.drinksTaken : player.drinksTaken + sips,
     }));
   };
-
   const handleDigitalGuess = (guess: string) => {
     let card = drawCard();
     if (!card) return;
-
     if (devSettings.alwaysWin && activePlayer.isDev && deck.length > 0) {
       const r = roundStep;
       let validIndex = deck.findIndex(c => {
@@ -2474,7 +1686,6 @@ const initializeAdMob = useCallback(async () => {
         }
         return false;
       });
-
       if (validIndex > 0) {
         const matchingCard = deck[validIndex];
         setDeck(prev => {
@@ -2507,14 +1718,11 @@ const initializeAdMob = useCallback(async () => {
         }
       }
     }
-
     playSound('draw');
     setLastDrawnCard(card);
-
     const player = activePlayer;
     let correct = false;
     const sips = roundStep;
-
     if (roundStep === RoundStep.RED_BLACK) {
       const isRed = card.suit === Suit.HEARTS || card.suit === Suit.DIAMONDS;
       correct = (guess === 'RED' && isRed) || (guess === 'BLACK' && !isRed);
@@ -2539,9 +1747,7 @@ const initializeAdMob = useCallback(async () => {
       const hasSuit = player.hand.some(h => h.suit === card.suit);
       correct = (guess === 'MATCH' && hasSuit) || (guess === 'NO_MATCH' && !hasSuit);
     }
-
     const currentPlayer = activePlayer;
-
     if (correct) {
       triggerHaptic('success');
       playSound('success');
@@ -2556,35 +1762,28 @@ const initializeAdMob = useCallback(async () => {
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
     }
-
     updatePlayer(currentPlayer.id, player => ({
       ...player,
       hand: [...player.hand, card],
       drinksTaken: correct ? player.drinksTaken : player.drinksTaken + sips,
     }));
   };
-
   const handleDiscoAttempt = () => {
     const player = activePlayer;
     const uniqueSuits = new Set(player.hand.map(h => h.suit));
     if (uniqueSuits.size !== 3) return;
-
     const missingSuit = ALL_SUITS.find(s => !uniqueSuits.has(s));
     const card = drawCard();
     if (!card) return;
-
     playSound('draw');
     setLastDrawnCard(card);
-
     const currentPlayer = activePlayer;
-
     if (missingSuit && card.suit === missingSuit) {
       triggerHaptic('success');
       playSound('disco');
       setShowConfetti(true);
       setIsDiscoActive(true);
       setFeedback({ text: `${t("DISCO! Iedereen behalve")} ${currentPlayer.name} ${t("drinkt 1 slok.")}`, type: 'success' });
-
       const updates = players.reduce<Record<string, (player: Player) => Player>>((acc, player, idx) => {
         acc[player.id] = idx === activePlayerIndex
           ? current => ({ ...current, drinksDistributed: current.drinksDistributed + Math.max(0, players.length - 1) })
@@ -2604,20 +1803,16 @@ const initializeAdMob = useCallback(async () => {
         drinksTaken: player.drinksTaken + sips,
       }));
     }
-
     updatePlayer(currentPlayer.id, player => ({
       ...player,
       hand: [...player.hand, card],
     }));
   };
-
   // --- PYRAMID LOGIC ---
-
   const generateDigitalPyramid = () => {
     let currentDeck = deck;
     const required = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
     if (currentDeck.length < required) currentDeck = shuffleDeck(createDeck());
-
     const newPyramid: Card[][] = [];
     for (let i = 1; i <= settings.pyramidRows; i++) {
       const rowCards: Card[] = [];
@@ -2629,7 +1824,6 @@ const initializeAdMob = useCallback(async () => {
     setDeck(currentDeck);
     setPyramid(newPyramid);
   };
-
   const initializePyramid = () => {
     triggerHaptic('medium');
     setPhase(GamePhase.PYRAMID);
@@ -2646,7 +1840,6 @@ const initializeAdMob = useCallback(async () => {
     } else {
       setIsPyramidDoubleSetup(false);
     }
-
     if (settings.mode === GameMode.DIGITAL) {
       generateDigitalPyramid();
     }
@@ -2661,57 +1854,46 @@ const initializeAdMob = useCallback(async () => {
       setPyramid(newPyramid);
     }
   };
-
   const handleDoubleCardSelection = (rowIndex: number, cardIndex: number) => {
     const row = pyramid[rowIndex];
     if (!row) return;
     const card = row[cardIndex];
     if (!card) return;
-
     triggerHaptic('light');
     const newDoubled = new Set(doubledPyramidCardIds);
     newDoubled.add(card.id);
     setDoubledPyramidCardIds(newDoubled);
-
     if (pyramidDoubleSetupRow > 1) {
       setPyramidDoubleSetupRow(pyramidDoubleSetupRow - 1);
     } else {
       setIsPyramidDoubleSetup(false);
     }
   };
-
   const warningCooldownRef = useRef(false);
-
   const triggerPyramidWarning = (customText?: string) => {
     if (warningCooldownRef.current) return;
     warningCooldownRef.current = true;
-
     triggerHaptic('warning');
     setFeedback({ text: customText || t("Deze kaart kan nog niet!"), type: 'warning' });
     if (!customText) {
       setPulseValidCards(true);
     }
-
     setTimeout(() => {
       setFeedback(null);
       setPulseValidCards(false);
     }, 1200);
-
     setTimeout(() => {
       warningCooldownRef.current = false;
     }, 350);
   };
-
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
   const pyramidContentRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pyramidScaleMetricsRef = useRef({ containerWidth: 0, containerHeight: 0, contentWidth: 0, contentHeight: 0, scale: 1 });
   const [pyramidScale, setPyramidScale] = useState(1);
-
   const calculatePyramidScale = useCallback(() => {
     const container = pyramidContainerRef.current;
     const content = pyramidContentRef.current;
-
     if (container && content) {
       // Small 24px buffer (12px per side) for a tight fit
       const containerWidth = Math.round(container.clientWidth - 24); 
@@ -2719,7 +1901,6 @@ const initializeAdMob = useCallback(async () => {
       
       let contentWidth = Math.round(content.scrollWidth);
       let contentHeight = Math.round(content.scrollHeight);
-
       // Add a static buffer to the content width based on the longest row's sip emojis
       // The longest sip emoji string is on the top row (pyramidRows - 1 emojis).
       const maxEmojis = settings.pyramidRows - 1;
@@ -2739,9 +1920,7 @@ const initializeAdMob = useCallback(async () => {
         if (leftEdgeCard && doubledPyramidCardIds.has(leftEdgeCard.id)) doubledBump += 16;
         if (rightEdgeCard && doubledPyramidCardIds.has(rightEdgeCard.id)) doubledBump += 16;
       }
-
       contentWidth += emojiBuffer + doubledBump;
-
       if (contentWidth === 0 || contentHeight === 0) {
         const previous = pyramidScaleMetricsRef.current;
         if (previous.scale !== 1) {
@@ -2750,11 +1929,9 @@ const initializeAdMob = useCallback(async () => {
         }
         return;
       }
-
       const widthScale = containerWidth / contentWidth;
       const heightScale = containerHeight / contentHeight;
       let fitScale = Math.min(widthScale, heightScale, 1);
-
       const previous = pyramidScaleMetricsRef.current;
       if (
         previous.containerWidth === containerWidth
@@ -2765,7 +1942,6 @@ const initializeAdMob = useCallback(async () => {
       ) {
         return;
       }
-
       pyramidScaleMetricsRef.current = { containerWidth, containerHeight, contentWidth, contentHeight, scale: fitScale };
       setPyramidScale(fitScale);
     } else {
@@ -2776,17 +1952,13 @@ const initializeAdMob = useCallback(async () => {
       }
     }
   }, [settings.pyramidRows, doubledPyramidCardIds.size]);
-
   useEffect(() => {
     calculatePyramidScale();
   }, [calculatePyramidScale, pyramid, revealedPyramidCards]);
-
   useThrottledResize(calculatePyramidScale);
-
   const revealPyramidCard = (rowIndex: number, cardIndex: number, isSwipe: boolean = false) => {
     const card = pyramid[rowIndex]?.[cardIndex];
     if (!card || revealedPyramidCards.has(card.id)) return;
-
     // Find the highest rowIndex (bottom-most row) that still has an unrevealed card
     let lowestAvailableRowIndex = -1;
     for (let i = pyramid.length - 1; i >= 0; i--) {
@@ -2795,24 +1967,19 @@ const initializeAdMob = useCallback(async () => {
         break;
       }
     }
-
     if (rowIndex !== lowestAvailableRowIndex) {
       if (!isSwipe) {
         triggerPyramidWarning();
       }
       return;
     }
-
     const newRevealed = new Set(revealedPyramidCards);
     newRevealed.add(card.id);
     setRevealedPyramidCards(newRevealed);
-
     const sips = settings.pyramidRows - rowIndex;
     const isTop = rowIndex === 0;
-
     const totalCards = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
     const isFinished = newRevealed.size === totalCards;
-
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       triggerHaptic('medium');
       setFeedback({
@@ -2822,14 +1989,12 @@ const initializeAdMob = useCallback(async () => {
       if (isFinished) setIsPyramidComplete(true);
       return;
     }
-
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'digital') {
       triggerHaptic('medium');
       setFeedback({ text: `${t("Deze kaart is")} ${getSipsText(sips)} ${t("waard.")}`, type: 'info' });
       if (isFinished) setIsPyramidComplete(true);
       return;
     }
-
     const matches: { player: Player, count: number, initialCount: number }[] = [];
     players.forEach(p => {
       const matchingCardsCount = p.hand.filter(h => h.rank === card.rank).length;
@@ -2837,7 +2002,6 @@ const initializeAdMob = useCallback(async () => {
         matches.push({ player: p, count: matchingCardsCount, initialCount: matchingCardsCount });
       }
     });
-
     if (matches.length > 0) {
       triggerHaptic('tick');
       playSound('success');
@@ -2855,18 +2019,14 @@ const initializeAdMob = useCallback(async () => {
       }
     }
   };
-
   const isPyramidSwipingRef = useRef(false);
   const lastSwipedCardKeyRef = useRef<string | null>(null);
-
   const handlePyramidCardInteraction = useCallback((rowIndex: number, cardIndex: number, isSwipe: boolean = false) => {
     const card = pyramid[rowIndex]?.[cardIndex];
     if (!card) return;
-
     const cardKey = `${rowIndex}-${cardIndex}-${card.id}`;
     if (isSwipe && lastSwipedCardKeyRef.current === cardKey) return;
     lastSwipedCardKeyRef.current = cardKey;
-
     if (isPyramidDoubleSetup) {
       if (rowIndex === pyramidDoubleSetupRow) {
         handleDoubleCardSelection(rowIndex, cardIndex);
@@ -2875,7 +2035,6 @@ const initializeAdMob = useCallback(async () => {
       }
       return;
     }
-
     const isRevealed = revealedPyramidCards.has(card.id);
     if (!isRevealed) {
       revealPyramidCard(rowIndex, cardIndex, isSwipe);
@@ -2924,7 +2083,6 @@ const initializeAdMob = useCallback(async () => {
     handleDoubleCardSelection,
     triggerPyramidWarning
   ]);
-
   const checkPyramidPoint = (clientX: number, clientY: number, isSwipe: boolean = false) => {
     const el = document.elementFromPoint(clientX, clientY)?.closest('[data-pyramid-card="true"]');
     if (el) {
@@ -2935,44 +2093,35 @@ const initializeAdMob = useCallback(async () => {
       }
     }
   };
-
   const handlePyramidPointerDown = (e: React.PointerEvent) => {
     isPyramidSwipingRef.current = true;
     lastSwipedCardKeyRef.current = null;
     checkPyramidPoint(e.clientX, e.clientY, false);
   };
-
   const handlePyramidPointerMove = (e: React.PointerEvent) => {
     if (!isPyramidSwipingRef.current) return;
     checkPyramidPoint(e.clientX, e.clientY, true);
   };
-
   const handlePyramidPointerEnd = () => {
     isPyramidSwipingRef.current = false;
     lastSwipedCardKeyRef.current = null;
   };
-
   const resolveMatch = (playerId: string, targetPlayerId?: string) => {
     if (!pendingMatches || isMatchModalClosing) return;
     triggerHaptic(targetPlayerId ? 'success' : 'tick');
     const player = players.find(p => p.id === playerId);
     if (!player) return;
-
     const targetPlayer = targetPlayerId ? players.find(p => p.id === targetPlayerId) : null;
-
     const matchIndex = pendingMatches.matches.findIndex(m => m.player.id === playerId);
     if (matchIndex === -1) return;
     const match = pendingMatches.matches[matchIndex];
-
     const handIndex = player.hand.findIndex(c => c.rank === pendingMatches.card.rank);
-
     if (handIndex !== -1) {
       updatePlayer(playerId, currentPlayer => ({
         ...currentPlayer,
         hand: currentPlayer.hand.filter((_, index) => index !== handIndex),
         drinksDistributed: currentPlayer.drinksDistributed + pendingMatches.sips,
       }));
-
       if (targetPlayer) {
         updatePlayer(targetPlayer.id, currentTarget => ({
           ...currentTarget,
@@ -2991,16 +2140,13 @@ const initializeAdMob = useCallback(async () => {
         });
       }
     }
-
     const newCount = match.count - 1;
     let newMatches = [...pendingMatches.matches];
-
     if (newCount <= 0) {
       newMatches = newMatches.filter(m => m.player.id !== playerId);
     } else {
       newMatches[matchIndex] = { ...match, count: newCount };
     }
-
     if (newMatches.length === 0) {
       setIsMatchModalClosing(true);
       setTimeout(() => {
@@ -3019,8 +2165,6 @@ const initializeAdMob = useCallback(async () => {
       setPendingMatches({ ...pendingMatches, matches: newMatches });
     }
   };
-
-
   const dismissMatchModal = () => {
     if (isMatchModalClosing) return;
     setIsMatchModalClosing(true);
@@ -3037,7 +2181,6 @@ const initializeAdMob = useCallback(async () => {
       }
     }, 130);
   };
-
   const findLoser = () => {
     if (devSettings.forceBusPlayerId) {
       const forced = players.find(p => p.id === devSettings.forceBusPlayerId);
@@ -3045,10 +2188,8 @@ const initializeAdMob = useCallback(async () => {
     }
     const eligiblePlayers = players.filter(p => !p.isImmune);
     const candidates = eligiblePlayers.length > 0 ? eligiblePlayers : players;
-
     // Check if any candidate still has cards in hand (relevant for both digital and physical mode if tracked)
     const playersWithCards = candidates.filter(p => p.hand.length > 0);
-
     if (playersWithCards.length > 0) {
       // Prioritize cards: most cards, then highest total rank value
       const stats = playersWithCards.map(p => {
@@ -3056,42 +2197,34 @@ const initializeAdMob = useCallback(async () => {
         p.hand.forEach(c => { totalValue += c.rank; });
         return { id: p.id, count: p.hand.length, val: totalValue };
       });
-
       stats.sort((a, b) => {
         if (b.count !== a.count) return b.count - a.count;
         return b.val - a.val;
       });
-
       const victimId = stats[0].id;
       return players.find(p => p.id === victimId)!;
     }
-
     // Fallback: most drinks taken (original physical mode logic)
     const playerStats = candidates.map(p => ({
       id: p.id,
       count: p.drinksTaken,
       val: p.drinksDistributed
     }));
-
     playerStats.sort((a, b) => {
       if (b.count !== a.count) return b.count - a.count;
       return b.val - a.val;
     });
-
     const victimId = playerStats[0].id;
     return players.find(p => p.id === victimId)!;
   };
-
   const goToBusSelection = () => {
     resetBusState();
     const victim = findLoser();
     const driver = players.find(p => p.isDealer) || players[0];
     const title = getUniquePhrase('loser');
-
     setBusDriver(driver);
     setBusPassengers([victim]);
     setLoserReveal({ player: victim, title: title });
-
     if (settings.sharedBus) {
       setPhase(GamePhase.BUS_TEAM_SELECTION);
       scheduleGameEvent('loser-reveal', 2500, { type: 'LOSER_REVEAL_DONE' });
@@ -3099,7 +2232,6 @@ const initializeAdMob = useCallback(async () => {
       dispatchGameEvent({ type: 'START_BUS', passengers: [victim] });
     }
   };
-
   const determineLoserAndAnimate = () => {
     resetBusState();
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
@@ -3110,14 +2242,11 @@ const initializeAdMob = useCallback(async () => {
     const victim = findLoser();
     const driver = players.find(p => p.isDealer) || players[0];
     const title = getUniquePhrase('loser');
-
     setBusDriver(driver);
     setBusPassengers([victim]);
     setLoserReveal({ player: victim, title: title });
-
     scheduleGameEvent('loser-reveal', 2500, { type: 'START_BUS', passengers: [victim] });
   };
-
   const proceedToBus = () => {
     if (settings.mode === GameMode.PHYSICAL) {
       setIsSelectingBusPlayer(true);
@@ -3125,7 +2254,6 @@ const initializeAdMob = useCallback(async () => {
     }
     determineLoserAndAnimate();
   };
-
   const handleManualBusPassengerSelect = (passenger: Player) => {
     triggerHaptic('medium');
     const driver = players.find(p => p.isDealer) || players[0];
@@ -3135,10 +2263,8 @@ const initializeAdMob = useCallback(async () => {
     setBusPassengers([passenger]);
     setBusMode('physical');
     setIsSelectingBusPlayer(false);
-
     scheduleGameEvent('loser-reveal', 2500, { type: 'START_BUS', passengers: [passenger] });
   };
-
   const handleSharedBusSelection = (partner: Player | null) => {
     triggerHaptic('medium');
     const currentPassengers = busPassengers.length ? busPassengers : [];
@@ -3146,9 +2272,7 @@ const initializeAdMob = useCallback(async () => {
     setBusPassengers(updatedPassengers);
     dispatchGameEvent({ type: 'START_BUS', passengers: updatedPassengers, showEntrance: !!partner });
   };
-
   // --- BUS LOGIC ---
-
   const startDigitalBus = (passengers: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
     setImmunePlayerId(null);
     setPlayers(prev => prev.map(p => ({ ...p, isImmune: false })));
@@ -3161,14 +2285,12 @@ const initializeAdMob = useCallback(async () => {
       setBusPassengers(selectedPassengers);
     }
     const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !options?.skipEntrance;
-
     if (shouldShowEntrance) {
       setIsBusEntrance(true);
       setPhase(GamePhase.THE_BUS);
       scheduleGameEvent('bus-entrance', 3000, { type: 'BUS_ENTRANCE_DONE', passengers: selectedPassengers, mode: 'digital' });
       return;
     }
-
     setIsBusEntrance(false);
     setBusMode('digital');
     setBusDecksUsed(1); // Reset bus decks used at the start of bus phase
@@ -3176,7 +2298,6 @@ const initializeAdMob = useCallback(async () => {
     setBusFocusIndex(null);
     setIsBusWon(false);
     playSound('busEnter');
-
     const needed = settings.busLength;
     
     // Create decks
@@ -3199,7 +2320,6 @@ const initializeAdMob = useCallback(async () => {
     setPhase(GamePhase.THE_BUS);
     setFeedback(null);
   };
-
   const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
     setImmunePlayerId(null);
     setPlayers(prev => prev.map(p => ({ ...p, isImmune: false })));
@@ -3210,7 +2330,6 @@ const initializeAdMob = useCallback(async () => {
       setPhase(GamePhase.PYRAMID);
       return;
     }
-
     if (!options?.skipEntrance) {
       const driver = players.find(p => p.isDealer) || players[0];
       setBusDriver(driver);
@@ -3218,16 +2337,13 @@ const initializeAdMob = useCallback(async () => {
       setBusPassengers(passengers);
       setBusMode('physical');
     }
-
     const shouldShowEntrance = settings.sharedBus && options?.showEntrance && !options?.skipEntrance;
-
     if (shouldShowEntrance) {
       setIsBusEntrance(true);
       setPhase(GamePhase.THE_BUS);
       scheduleGameEvent('bus-entrance', 3000, { type: 'BUS_ENTRANCE_DONE', passengers, mode: 'physical' });
       return;
     }
-
     setIsBusEntrance(false);
     triggerHaptic('medium');
     playSound('busEnter');
@@ -3243,31 +2359,25 @@ const initializeAdMob = useCallback(async () => {
     setFeedback(null);
     setPhase(GamePhase.THE_BUS);
   };
-
   const startBus = (passengers: Player[], options?: { showEntrance?: boolean }) => {
     if (settings.mode === GameMode.PHYSICAL) {
       startPhysicalBus(passengers, { showEntrance: options?.showEntrance });
       return;
     }
-
     startDigitalBus(passengers, { showEntrance: options?.showEntrance });
   };
-
   const restartBus = () => {
     setBusWrongCardIndex(null);
     const configuredBusLength = settings.busLength;
-
     // Recycle unrevealed cards from the previous failed attempt
     const unrevealed = busCards.slice(currentBusIndex + 1);
     let tempAvailableDeck = shuffleDeck([...busDeck, ...unrevealed]);
     let newOldCardsCount = 0;
     let newDecksUsed = busDecksUsed;
     let newExtraDecks = [...extraDecks];
-
     // Calculate how many cards of the current pack were discarded in this failed attempt
     const discardedInThisRun = Math.max(0, currentBusIndex + 1 - oldCardsInLayoutCount);
     let nextDiscardedCardsCount = discardedCardsCount + discardedInThisRun;
-
     // If the current deck is exhausted or has less than configuredBusLength cards left
     if (tempAvailableDeck.length < configuredBusLength) {
       if (newDecksUsed >= settings.busDecks || newExtraDecks.length === 0) {
@@ -3302,10 +2412,8 @@ const initializeAdMob = useCallback(async () => {
         scheduleGameEvent('reshuffle-banner', 2500, { type: 'RESHUFFLE_DONE' });
       }
     }
-
     setDiscardedCardsCount(nextDiscardedCardsCount);
     setOldCardsInLayoutCount(newOldCardsCount);
-
     const cardsToDraw = Math.min(configuredBusLength, tempAvailableDeck.length);
     const newBusCards = tempAvailableDeck.slice(0, cardsToDraw);
     setBusDeck(tempAvailableDeck.slice(cardsToDraw));
@@ -3314,19 +2422,16 @@ const initializeAdMob = useCallback(async () => {
     setFeedback(null); // No pop-up feedback message
     setIsBusDeckExhausted(false);
   };
-
   const handleBusGuess = (guess: 'HIGHER' | 'LOWER' | 'EQUAL') => {
     const prevCard = busCards[currentBusIndex - 1];
     let targetCard = busCards[currentBusIndex];
     let isHigher = targetCard.rank > prevCard.rank;
     let isLower = targetCard.rank < prevCard.rank;
     let isEqual = targetCard.rank === prevCard.rank;
-
     let correct = false;
     if (guess === 'HIGHER' && isHigher) correct = true;
     if (guess === 'LOWER' && isLower) correct = true;
     if (guess === 'EQUAL' && isEqual) correct = true;
-
     const isDevPassenger = busPassengers.some(p => p.isDev);
     if (devSettings.alwaysWin && isDevPassenger && !correct) {
       const validIndex = busDeck.findIndex(c => {
@@ -3364,7 +2469,6 @@ const initializeAdMob = useCallback(async () => {
          correct = true;
       }
     }
-
     if (correct) {
       triggerHaptic('success');
       playSound('busStep');
@@ -3384,10 +2488,8 @@ const initializeAdMob = useCallback(async () => {
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
-
       setBusSipsTaken(prev => prev + (sips * (busPassengers.length || 1)));
       setBusAttempts(prev => prev + 1);
-
       updatePlayers(Object.fromEntries(
         busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
       ));
@@ -3401,16 +2503,12 @@ const initializeAdMob = useCallback(async () => {
       scheduleGameEvent('bus-fail-restart', 2500, { type: 'BUS_FAIL' });
     }
   };
-
   const handlePhysicalBusGuess = (result: 'correct' | 'incorrect') => {
     if (busPassengers.length === 0 || isBusWon) return;
-
     triggerHaptic('heavy');
-
     if (result === 'correct') {
       triggerHaptic('success');
       playSound('busStep');
-
       const nextPosition = Math.min(settings.busLength, physicalBusPosition + 1);
       if (nextPosition >= settings.busLength) {
         setIsBusWon(true);
@@ -3420,29 +2518,24 @@ const initializeAdMob = useCallback(async () => {
         setFeedback({ text: t('Je hebt de bus overleefd! Vrijstelling!'), type: 'success' });
         return;
       }
-
       setPhysicalBusPosition(nextPosition + 1);
       setFeedback({ text: `${t("Goed! Kaart")} ${nextPosition} ${t("klaar.")}`, type: 'info' });
       return;
     }
-
     triggerHaptic('error');
     triggerShake();
     playSound('busFail');
     const sips = physicalBusPosition;
     const phrase = getUniquePhrase('failure');
     setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("opnieuw!")}`, type: 'error' });
-
     setBusSipsTaken(prev => prev + (sips * (busPassengers.length || 1)));
     setBusAttempts(prev => prev + 1);
-
     updatePlayers(Object.fromEntries(
       busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
     ));
     setPhysicalBusPosition(2);
     setIsBusWon(false);
   };
-
   useEffect(() => {
     const handleGameEvent = (event: GameEngineEvent) => {
       switch (event.type) {
@@ -3492,12 +2585,9 @@ const initializeAdMob = useCallback(async () => {
           return;
       }
     };
-
     registerGameEventHandler(handleGameEvent);
   });
-
   // --- RENDERING HELPERS ---
-
   const renderAdLoadingModal = () => (
     <AdLoadingModal
       isOpen={isAdLoading}
@@ -3505,7 +2595,6 @@ const initializeAdMob = useCallback(async () => {
       lang={lang}
     />
   );
-
   const renderColorPickerModal = () => (
     <ColorPickerModal
       isOpen={isColorPickerOpen}
@@ -3521,7 +2610,6 @@ const initializeAdMob = useCallback(async () => {
       }}
     />
   );
-
   const renderQuitModal = () => (
     <QuitConfirmModal
       isOpen={showQuitConfirm}
@@ -3530,7 +2618,6 @@ const initializeAdMob = useCallback(async () => {
       onConfirm={handleQuitGame}
     />
   );
-
   const renderDevModeOrb = () => {
     if (!devModeArmed) return null;
     return (
@@ -3547,7 +2634,6 @@ const initializeAdMob = useCallback(async () => {
       </div>
     );
   };
-
   const renderPlayerHandModal = () => (
     <PlayerHandModal
       player={playerHandToView}
@@ -3556,7 +2642,6 @@ const initializeAdMob = useCallback(async () => {
       onClose={() => setPlayerHandToView(null)}
     />
   );
-
   const renderSettingsModal = () => (isSettingsOpen && phase !== GamePhase.SETUP) && (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }}>
       <div className="w-full max-w-sm m-4 relative animate-in zoom-in-50 duration-300">
@@ -3585,7 +2670,6 @@ const initializeAdMob = useCallback(async () => {
       </div>
     </div>
   );
-
   const renderQuitButton = (className = "ml-2 w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-400 hover:bg-slate-800/60 transition-all active:scale-90") => (
     <button
       onClick={() => setShowQuitConfirm(true)}
@@ -3595,7 +2679,6 @@ const initializeAdMob = useCallback(async () => {
       <X size={14} />
     </button>
   );
-
   // Global Dev Menu logic
   const isDevMenuVisible = (() => {
     if (!players.some(p => p.isDev)) return false;
@@ -3604,7 +2687,6 @@ const initializeAdMob = useCallback(async () => {
     if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) return busPassengers.some(p => p.isDev);
     return false;
   })();
-
   const renderDevMenu = (className = "") => {
     if (!isDevMenuVisible) return null;
     return (
@@ -3675,7 +2757,6 @@ const initializeAdMob = useCallback(async () => {
                 <option key={p.id} value={p.id}>{p.name.slice(0,5)}</option>
               ))}
             </select>
-
             <button 
               onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(false); setIsSettingsOpen(true); }}
               className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-800 text-slate-400 transition-colors"
@@ -3693,12 +2774,9 @@ const initializeAdMob = useCallback(async () => {
       </div>
     );
   };
-
   // --- RENDERING ---
-
   // Global fixed quit button shown during active gameplay (not on SETUP or GAME_OVER)
   const isInActiveGame = phase !== GamePhase.SETUP && phase !== GamePhase.GAME_OVER;
-
   const renderAdditionalModals = () => (
     <>
         <SlideMenuModal
@@ -3714,7 +2792,6 @@ const initializeAdMob = useCallback(async () => {
                   <X size={24} />
                 </button>
               </div>
-
               {/* Scrollable Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="flex flex-col gap-3 w-full">
@@ -3734,7 +2811,6 @@ const initializeAdMob = useCallback(async () => {
                     </button>
                   </div>
                 </div>
-
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
                   <button
@@ -3744,7 +2820,6 @@ const initializeAdMob = useCallback(async () => {
                     <Pencil size={16} /> {t("Berichten bewerken")}
                   </button>
                 </div>
-
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium">{t("Thema")}</h4>
                   <div className="flex bg-slate-800/70 p-1 rounded-2xl gap-1 border border-slate-700/50">
@@ -3801,7 +2876,6 @@ const initializeAdMob = useCallback(async () => {
                     })}
                   </div>
                 </div>
-
                 {settings.theme === UITheme.CALM && (
                   <div className="flex flex-col gap-3 w-full pt-2 animate-in slide-in-from-top-2 duration-300">
                     <h4 className="text-white font-medium">{t("Calm Accent Kleur")}</h4>
@@ -3834,7 +2908,6 @@ const initializeAdMob = useCallback(async () => {
                           </button>
                         );
                       })}
-
                       {/* Custom Color Picker Button */}
                       {(() => {
                         const presets = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
@@ -3860,7 +2933,6 @@ const initializeAdMob = useCallback(async () => {
                     </div>
                   </div>
                 )}
-
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium mb-1">{t("Kaartstijl")}</h4>
                   <div className="grid grid-cols-2 gap-3">
@@ -3915,7 +2987,6 @@ const initializeAdMob = useCallback(async () => {
                         >
                           <Eye size={12} className="text-white" />
                         </button>
-
                         {settings.cardStyle !== style && (
                           <div className="absolute top-2 right-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center gap-1">
                             <Video size={12} className="text-amber-400" />
@@ -3933,7 +3004,6 @@ const initializeAdMob = useCallback(async () => {
                         ))}
                   </div>
                 </div>
-
                 {/* Bus Pakjes / Decks Slider */}
                 <div className="flex flex-col gap-2 w-full pt-2">
                   <div className="flex items-center justify-between">
@@ -4012,7 +3082,6 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 </div>
               </div>
-
               {/* Footer */}
               <div className="p-6 border-t border-slate-800 shrink-0">
                 <button
@@ -4025,7 +3094,6 @@ const initializeAdMob = useCallback(async () => {
             </>
           )}
         </SlideMenuModal>
-
         {/* Phrase Editor Modal */}
         <SlideMenuModal
           isOpen={isPhraseEditorOpen}
@@ -4044,7 +3112,6 @@ const initializeAdMob = useCallback(async () => {
                   <X size={20} />
                 </button>
               </div>
-
               <div className="flex gap-2 p-3 bg-slate-900 overflow-x-auto snap-x hide-scrollbar border-b border-slate-800 shrink-0">
                 {(['success', 'failure', 'loser'] as PhraseCategory[]).map(cat => (
                   <button
@@ -4056,7 +3123,6 @@ const initializeAdMob = useCallback(async () => {
                   </button>
                 ))}
               </div>
-
               <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">
                 {(() => {
                   const effectivePhrases = getEffectivePhrases(editorCategory);
@@ -4080,7 +3146,6 @@ const initializeAdMob = useCallback(async () => {
                   ));
                 })()}
               </div>
-
               <div className="p-4 border-t border-slate-800 bg-slate-800/30 space-y-3 shrink-0">
                 <div className="flex gap-2">
                   <input
@@ -4118,7 +3183,6 @@ const initializeAdMob = useCallback(async () => {
                     <Plus size={24} />
                   </button>
                 </div>
-
                 <button
                   onClick={() => {
                     const newPhrases = { ...customPhrases };
@@ -4137,7 +3201,6 @@ const initializeAdMob = useCallback(async () => {
             </>
           )}
         </SlideMenuModal>
-
         {/* Physical Mode Info Modal */}
         <SlideMenuModal
           isOpen={showPhysicalModeInfo}
@@ -4163,7 +3226,6 @@ const initializeAdMob = useCallback(async () => {
             </>
           )}
         </SlideMenuModal>
-
         {renderDeckPreview()}
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
@@ -4208,7 +3270,6 @@ const initializeAdMob = useCallback(async () => {
           </h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
         </div>
-
         <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
           <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
             <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide">
@@ -4238,7 +3299,6 @@ const initializeAdMob = useCallback(async () => {
               </span>
             )}
           </div>
-
           <PlayerList
             players={players}
             dragPlayerIndex={dragPlayerIndex}
@@ -4252,7 +3312,6 @@ const initializeAdMob = useCallback(async () => {
             lastAddedPlayerId={lastAddedPlayerId}
           />
         </div>
-
         {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
           <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 flex-none shrink-0 mb-4">
             <Shield size={20} className="text-yellow-400 shrink-0" />
@@ -4261,7 +3320,6 @@ const initializeAdMob = useCallback(async () => {
             </p>
           </div>
         )}
-
         <div className="flex-none space-y-3">
           <div className="flex gap-2 h-14">
             <input type="file" ref={fileInputCameraRef} hidden accept="image/*" capture="environment" onChange={handleImageSelect} />
@@ -4272,7 +3330,6 @@ const initializeAdMob = useCallback(async () => {
             >
               {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
             </button>
-
             <input
               ref={inputRef}
               type="text"
@@ -4295,7 +3352,6 @@ const initializeAdMob = useCallback(async () => {
               <Check size={24} strokeWidth={4} className={canAddPlayer ? 'text-green-100' : 'text-slate-500'} />
             </button>
           </div>
-
           <button
             onClick={handleStartPress}
             disabled={players.length < 2}
@@ -4303,7 +3359,6 @@ const initializeAdMob = useCallback(async () => {
           >
             <Play fill="currentColor" size={24} /> {t("START SPEL")}
           </button>
-
           <SettingsPanel
             isOpen={isSettingsOpen}
             settings={settings}
@@ -4319,7 +3374,6 @@ const initializeAdMob = useCallback(async () => {
             }}
           />
         </div>
-
         {/* Photo Options Modal */}
         <PhotoOptionsModal
           isOpen={isPhotoOptionsModalOpen}
@@ -4328,8 +3382,6 @@ const initializeAdMob = useCallback(async () => {
           onSelectFromGallery={handleSelectFromGallery}
           onClose={() => setIsPhotoOptionsModalOpen(false)}
         />
-
-
         {renderAdditionalModals()}
       </RootContainer>
       </>
@@ -4339,7 +3391,6 @@ const initializeAdMob = useCallback(async () => {
     const activePlayerSuits = new Set(activePlayer.hand.map(c => c.suit));
     const missingSuit = ALL_SUITS.find(s => !activePlayerSuits.has(s));
     const canAttemptDisco = roundStep === RoundStep.SUIT && activePlayerSuits.size === 3 && !!missingSuit;
-
     if (isWaitingForNextPlayer) {
       return (
         <>
@@ -4370,7 +3421,6 @@ const initializeAdMob = useCallback(async () => {
       </>
     );
   }
-
     const getHeaderClasses = () => {
       const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
       if (settings.theme === UITheme.METRO) {
@@ -4385,7 +3435,6 @@ const initializeAdMob = useCallback(async () => {
       // Classic
       return `${transitionClass} bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1`;
     };
-
     const getHandContainerClasses = () => {
       const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
       if (settings.theme === UITheme.METRO) {
@@ -4400,7 +3449,6 @@ const initializeAdMob = useCallback(async () => {
       // Classic
       return `${transitionClass} bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
     };
-
     const renderActiveSlot = (idx: number) => {
       const commonClasses = "w-20 h-28 flex flex-col items-center justify-center flex-none transition-all duration-300";
       
@@ -4431,7 +3479,6 @@ const initializeAdMob = useCallback(async () => {
           </div>
         );
       }
-
       if (settings.theme === UITheme.BEER) {
         return (
           <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border-2 border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]`} style={{ zIndex: idx }}>
@@ -4445,7 +3492,6 @@ const initializeAdMob = useCallback(async () => {
           </div>
         );
       }
-
       // Classic
       return (
         <div key={`current-${idx}`} className={`${commonClasses} rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]`} style={{ zIndex: idx }}>
@@ -4459,7 +3505,6 @@ const initializeAdMob = useCallback(async () => {
         </div>
       );
     };
-
     return (
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} />
@@ -4499,7 +3544,6 @@ const initializeAdMob = useCallback(async () => {
             {renderQuitButton()}
           </div>
         </div>
-
         {renderSettingsModal()}
         {renderPlayerHandModal()}
         {renderDevModeOrb()}
@@ -4507,17 +3551,12 @@ const initializeAdMob = useCallback(async () => {
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
-
-
-
         <div className="flex-1 flex flex-col min-h-0">
           {/* HAND - Fixed Size */}
           <div className={getHandContainerClasses()}>
             {/* Table Felt Texture */}
             {settings.theme === UITheme.CLASSIC && <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay"></div>}
-
             <p className="relative text-center text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 opacity-70">{t("Huidige Hand")}</p>
-
             <div className="relative flex justify-center items-center py-2 gap-2 sm:gap-3 px-2">
               {settings.mode === GameMode.DIGITAL ? (
                 Array.from({ length: 4 }).map((_, idx) => {
@@ -4526,9 +3565,7 @@ const initializeAdMob = useCallback(async () => {
                   const isObtained = idx < currentCardsCount;
                   // Only show current card pulse if NOT showing feedback (waiting for next player)
                   const isCurrent = idx === currentCardsCount && !feedback;
-
                   if (idx >= 4) return null; // Safety check
-
                   if (isObtained) {
                     const c = digitalCards[idx];
                     const isNewlyAdded = !!lastDrawnCard && c.id === lastDrawnCard.id;
@@ -4554,7 +3591,6 @@ const initializeAdMob = useCallback(async () => {
                     const currentCardsCount = activePlayer.hand.length;
                     const isObtained = idx < currentCardsCount;
                     const isCurrent = idx === currentCardsCount && !feedback;
-
                     if (isObtained) {
                       const isNewlyAdded = !!lastDrawnCard && idx === currentCardsCount - 1;
                       const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
@@ -4585,7 +3621,6 @@ const initializeAdMob = useCallback(async () => {
               )}
             </div>
           </div>
-
           {/* STAGE */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative z-0">
             <div className="text-center mb-6 relative z-10 flex flex-col items-center">
@@ -4605,7 +3640,6 @@ const initializeAdMob = useCallback(async () => {
                 {roundStep === 4 && t("Hetzelfde Teken?")}
               </h2>
             </div>
-
             <div className="relative h-64 w-full flex items-center justify-center perspective-1000 z-0">
               {lastDrawnCard ? (
                 <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" style={settings.cardStyle} />
@@ -4623,7 +3657,6 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         </div>
-
         {/* CONTROLS */}
         <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2 relative z-20">
           {feedback ? (
@@ -4714,7 +3747,6 @@ const initializeAdMob = useCallback(async () => {
       </>
       );
       }
-
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
     
@@ -4725,7 +3757,6 @@ const initializeAdMob = useCallback(async () => {
       animation: 'gradient-xy 16s ease-in-out infinite',
       transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
     } : undefined;
-
     const manualBusSelectionOverlay = isSelectingBusPlayer ? (
       <div className="absolute inset-0 z-[95] bg-black/40 backdrop-blur-xl flex flex-col items-center justify-center p-6" onClick={(e) => { if (e.target === e.currentTarget) setIsSelectingBusPlayer(false); }}>
         <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
@@ -4734,7 +3765,6 @@ const initializeAdMob = useCallback(async () => {
             <h3 className="text-3xl font-black text-white leading-tight">{t("Wie heeft nu de meeste kaarten?")}</h3>
             <p className="text-slate-300 text-sm"></p>
           </div>
-
           <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto">
             {players.filter(p => !p.isImmune).map((p) => (
               <button
@@ -4766,7 +3796,6 @@ const initializeAdMob = useCallback(async () => {
               </button>
             ))}
           </div>
-
           <button
             onClick={() => setIsSelectingBusPlayer(false)}
             className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
@@ -4776,7 +3805,6 @@ const initializeAdMob = useCallback(async () => {
         </div>
       </div>
     ) : null;
-
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       return (
         <>
@@ -4791,12 +3819,10 @@ const initializeAdMob = useCallback(async () => {
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
-
           <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
             <div className="space-y-4 text-left">
               <div className="flex justify-center"><ThemeLabel text={t("een echte piramide")} theme={settings.theme} size="sm" /></div>
               <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">{t("Bouw deze piramide op tafel")}</h2>
-
               <div className="w-full flex flex-col items-center gap-2 mt-2">
                 {Array.from({ length: settings.pyramidRows }, (_, i) => i + 1).map(row => (
                   <div key={row} className="flex gap-2 justify-center">
@@ -4809,7 +3835,6 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 ))}
               </div>
-
               <div className="space-y-2 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-lg font-black text-white">{t("Bouw een Piramide starter guide")}</p>
@@ -4834,44 +3859,26 @@ const initializeAdMob = useCallback(async () => {
                 </div>
               </div>
             </div>
-
             <div className="flex flex-col items-center gap-2">
-
               <button
                 onClick={() => setIsSelectingBusPlayer(true)}
                 className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-[var(--theme-border-radius)] border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg no-calm-override"
               >
-
                 {t("Naar de Bus")}
-
               </button>
-
               <button
-
                 onClick={() => {
-
                   setPyramidMode('digital');
-
                   setFeedback(null);
-
                   setRevealedPyramidCards(new Set());
-
                   setLoserReveal(null);
-
                   setIsPyramidComplete(false);
-
                   generateDigitalPyramid();
-
                 }}
-
                 className="w-full sm:w-auto text-center text-slate-300 font-semibold py-2 px-3 rounded-lg hover:text-white transition-colors underline underline-offset-4 decoration-slate-500/70 self-end"
-
               >
-
                 {t("Toch een Digitale Piramide")}
-
               </button>
-
             </div>
           </div>
         </RootContainer>
@@ -4902,9 +3909,6 @@ const initializeAdMob = useCallback(async () => {
           t={t}
           getSipsText={getSipsText}
         />
-
-
-
         <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl gap-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
           <div className="flex items-center gap-6 overflow-hidden">
             <div className="shrink-0">
@@ -4921,7 +3925,6 @@ const initializeAdMob = useCallback(async () => {
                 {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
               </p>
             </div>
-
             <div className="flex items-center gap-2 py-1">
               {(() => {
                 const victim = findLoser();
@@ -4936,11 +3939,9 @@ const initializeAdMob = useCallback(async () => {
                     return b.hand.length - a.hand.length;
                   })
                   .slice(0, 4);
-
                   return displayedPlayers.map(p => {
                   const isLoser = victim && p.id === victim.id;
                   const hasCards = p.hand.length > 0;
-
                   return (
                     <button key={p.id} onClick={() => setPlayerHandToView(p)} className="flex flex-col items-center shrink-0 hover:scale-105 active:scale-95 transition-transform">
                       <div className={`w-8 h-8 rounded-full border-2 transition-all relative ${isLoser ? 'border-transparent' : hasCards ? 'border-amber-500' : 'border-white/10 opacity-50'} bg-slate-800`}>
@@ -4986,14 +3987,10 @@ const initializeAdMob = useCallback(async () => {
               )}
             </div>
           </div>
-
           <div className="shrink-0">
             {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
         </div>
-
-
-
         {feedback && !pendingMatches && (
           <div className="absolute top-24 left-0 right-0 z-50 flex justify-center pointer-events-none">
             <div className={`mx-4 px-6 py-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl border-2 text-base font-black text-center animate-in zoom-in duration-200 ${feedback.type.includes('success') ? 'bg-green-900/90 border-green-400 text-green-100' : feedback.type === 'error' ? 'bg-red-900/90 border-red-500 text-white' : 'bg-slate-800/90 border-slate-500 text-white'}`}>
@@ -5015,7 +4012,6 @@ const initializeAdMob = useCallback(async () => {
                   type: 'general' | 'self' | 'target';
                   targetName?: string;
                 }
-
                 const groups: GroupedRes[] = [];
                 for (const res of distributeBanner.resolutions) {
                   const type: 'general' | 'self' | 'target' = !res.targetName
@@ -5023,11 +4019,9 @@ const initializeAdMob = useCallback(async () => {
                     : res.targetName === res.name
                     ? 'self'
                     : 'target';
-
                   const existing = groups.find(
                     (g) => g.sips === res.sips && g.type === type && (type !== 'target' || g.targetName === res.targetName)
                   );
-
                   if (existing) {
                     if (!existing.names.includes(res.name)) {
                       existing.names.push(res.name);
@@ -5041,7 +4035,6 @@ const initializeAdMob = useCallback(async () => {
                     });
                   }
                 }
-
                 const renderNames = (names: string[]) => {
                   return names.map((name, i) => (
                     <React.Fragment key={i}>
@@ -5052,13 +4045,11 @@ const initializeAdMob = useCallback(async () => {
                     </React.Fragment>
                   ));
                 };
-
                 return groups.map((g, idx) => {
                   const isLast = idx === groups.length - 1;
                   const punctuation = isLast ? "!" : ", ";
                   const quantifierEn = g.names.length === 2 ? "both" : "all";
                   const quantifierNl = g.names.length === 2 ? "beiden" : "allemaal";
-
                   if (lang === 'en') {
                     if (g.type === 'general') {
                       if (g.names.length > 1) {
@@ -5243,7 +4234,6 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         )}
-
         {/* Manual Proceed Button */}
         {isPyramidComplete && !pendingMatches && (
           <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
@@ -5255,7 +4245,6 @@ const initializeAdMob = useCallback(async () => {
             </button>
           </div>
         )}
-
         {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
         <div
           ref={pyramidContainerRef}
@@ -5278,7 +4267,6 @@ const initializeAdMob = useCallback(async () => {
                 }
                 return -1;
               })();
-
               return pyramid.map((row, rowIndex) => (
                 <div key={rowIndex} className="flex gap-3 justify-center relative">
                   {row.map((card, cardIndex) => {
@@ -5287,7 +4275,6 @@ const initializeAdMob = useCallback(async () => {
                     if (isRevealed && card && settings.mode === GameMode.DIGITAL) {
                       hasMatch = players.some(p => p.hand.some(h => h.rank === card.rank));
                     }
-
                     return (
                       <div
                         key={card ? card.id : `${rowIndex}-${cardIndex}`}
@@ -5329,7 +4316,6 @@ const initializeAdMob = useCallback(async () => {
       </>
       );
       }
-
   // 5. BUS TEAM SELECT
   const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
   const physicalBusBgStyle = {
@@ -5337,13 +4323,11 @@ const initializeAdMob = useCallback(async () => {
     backgroundSize: '240% 240%',
     animation: 'gradient-xy 18s ease-in-out infinite',
   };
-
   const physicalBusBgStyleWon = {
     background: 'radial-gradient(circle at 22% 20%, rgba(250,204,21,0.25), transparent 40%), radial-gradient(circle at 78% 16%, rgba(99,102,241,0.22), transparent 36%), radial-gradient(circle at 46% 74%, rgba(34,197,94,0.2), transparent 42%), linear-gradient(135deg, #0d2430 0%, #0e3d43 28%, #16304f 52%, #2b1b3f 76%, #0f2a45 100%)',
     backgroundSize: '260% 260%',
     animation: 'gradient-xy 22s ease-in-out infinite',
   };
-
   const physicalBusBackgroundStyle: React.CSSProperties = isBusWon ? physicalBusBgStyleWon : physicalBusBgStyle;
   const digitalBusBackgroundStyle: React.CSSProperties = isBusWon
     ? {
@@ -5358,11 +4342,9 @@ const initializeAdMob = useCallback(async () => {
       animation: 'gradient-xy 16s ease-in-out infinite',
       transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
     };
-
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0];
     const baseStyle = resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle;
-
     return (
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={baseStyle as React.CSSProperties} />
@@ -5392,7 +4374,6 @@ const initializeAdMob = useCallback(async () => {
           <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
             <span className="text-white border-b-2 border-red-500">{victim.name}</span>{t(", Wie neem je mee de bus in?")}
           </p>
-
           <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
             <button
               onClick={() => handleSharedBusSelection(null)}
@@ -5436,7 +4417,6 @@ const initializeAdMob = useCallback(async () => {
       </>
       );
       }
-
   // 6. THE BUS
   if (phase === GamePhase.THE_BUS) {
     if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
@@ -5453,7 +4433,6 @@ const initializeAdMob = useCallback(async () => {
         ? 'bg-gradient-to-b from-black/80 via-emerald-950/75 to-black/75 border border-emerald-700/40 shadow-[0_20px_60px_rgba(16,185,129,0.28)]'
         : 'bg-gradient-to-b from-black/85 via-slate-950/85 to-black/80 border border-red-800/40 shadow-[0_20px_60px_rgba(220,38,38,0.35)]'
         } backdrop-blur-xl rounded-3xl p-4 sm:p-6 space-y-6 transition-[background,box-shadow,border-color] duration-700 ease-out`;
-
       return (
         <>
           <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
@@ -5530,13 +4509,11 @@ const initializeAdMob = useCallback(async () => {
                     </div>
                   </div>
                 </div>
-
                 {!isBusWon && (
                   <div className="fixed z-[96] items-center" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
                     {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
                   </div>
                 )}
-
                 <div className="bg-black/40 border border-amber-200/30 rounded-2xl p-4 shadow-[0_16px_40px_rgba(251,191,36,0.18)] animate-in fade-in duration-500 space-y-4">
                   <div className="flex items-center justify-between text-[11px] uppercase font-black tracking-[0.25em] text-amber-200 flex-wrap gap-2">
                     <span className="flex items-center gap-2">
@@ -5572,7 +4549,6 @@ const initializeAdMob = useCallback(async () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3 text-slate-100 text-sm leading-relaxed">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-lg font-black text-white">{t("De Busrit met echte Kaarten")}</p>
@@ -5598,7 +4574,6 @@ const initializeAdMob = useCallback(async () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <button
                     onClick={() => handlePhysicalBusGuess('correct')}
@@ -5615,7 +4590,6 @@ const initializeAdMob = useCallback(async () => {
                     {t("Incorrect")}
                   </button>
                 </div>
-
                 <div className="flex flex-col sm:flex-row items-center sm:justify-end gap-3 min-h-[40px]">
                   <button
                     onClick={() => dispatchGameEvent({ type: 'START_BUS', passengers: busPassengers })}
@@ -5653,7 +4627,6 @@ const initializeAdMob = useCallback(async () => {
       </>
     );
   }
-
     const passengerNames = busPassengers.map(p => p.name).join(' & ');
     const remainingBusCards = isBusWon ? 0 : (() => {
       const currentReveal = busWrongCardIndex !== null ? currentBusIndex + 1 : currentBusIndex;
@@ -5663,7 +4636,6 @@ const initializeAdMob = useCallback(async () => {
       const remainingOldCards = Math.max(0, oldCardsInLayoutCount - currentReveal);
       return remainingOldCards + remainingCurrentPack;
     })();
-
     return (
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={digitalBusBackgroundStyle} />
@@ -5675,7 +4647,6 @@ const initializeAdMob = useCallback(async () => {
           theme={settings.theme}
         >
         {isBusWon && <Confetti />}
-
         {isBusWon && (
           <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
             {/* Top Text - Above Bus */}
@@ -5718,7 +4689,6 @@ const initializeAdMob = useCallback(async () => {
             })()}
           </div>
         )}
-
         {showReshuffleBanner && (
           <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none animate-in fade-in zoom-in duration-300">
             <div className="flex items-center gap-3 px-6 py-3 bg-slate-900/95 border border-red-500/50 text-white rounded-2xl shadow-[0_0_40px_rgba(239,68,68,0.5)] backdrop-blur-xl flex-row animate-[bounce-subtle_2s_ease-in-out_infinite]">
@@ -5732,7 +4702,6 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         )}
-
         {/* Header - Responsive & Stable */}
         <div 
           className="flex-none flex flex-col justify-center px-4 sm:px-5 bg-black border-b border-red-900/30 z-10 shadow-2xl gap-1.5 sm:gap-2" 
@@ -5769,7 +4738,6 @@ const initializeAdMob = useCallback(async () => {
               )}
             </div>
           </div>
-
           {/* Passenger Line - Horizontal, never truncated */}
           <div className={`flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
@@ -5780,13 +4748,11 @@ const initializeAdMob = useCallback(async () => {
             </span>
           </div>
         </div>
-
         {!isBusWon && (
           <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
             {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
           </div>
         )}
-
         {renderSettingsModal()}
         {renderPlayerHandModal()}
         {renderDevModeOrb()}
@@ -5794,8 +4760,6 @@ const initializeAdMob = useCallback(async () => {
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
-
-
         {/* Bus Cards */}
         <div className="flex-1 relative flex items-center bg-transparent overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/20 to-transparent pointer-events-none"></div>
@@ -5816,7 +4780,6 @@ const initializeAdMob = useCallback(async () => {
                 onPointerLeave={() => setPreviewCardId(null)}
               >
                 {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
-
                 <PlayingCard
                   card={card}
                   isFaceDown={!isRevealed && previewCardId !== card.id}
@@ -5828,7 +4791,6 @@ const initializeAdMob = useCallback(async () => {
                       ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
                       : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
                   />
-
                 {/* Icons */}
                 {isHistory && index > 0 && !isReference && !isBusWon && (
                   <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
@@ -5851,7 +4813,6 @@ const initializeAdMob = useCallback(async () => {
             ))}
           </div>
         </div>
-
         {/* Controls */}
         <div className="flex-none bg-black/40 border-t border-white/10 p-4 pb-8 z-20 backdrop-blur-md">
           {feedback && (
@@ -5861,7 +4822,6 @@ const initializeAdMob = useCallback(async () => {
               </div>
             </div>
           )}
-
           <div className="flex items-center justify-center gap-4">
             {isBusDeckExhausted ? (
               <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
@@ -5899,7 +4859,6 @@ const initializeAdMob = useCallback(async () => {
             )}
           </div>
         </div>
-
         <SlideMenuModal
           isOpen={isCardOverviewOpen}
           onClose={() => setIsCardOverviewOpen(false)}
@@ -5923,7 +4882,6 @@ const initializeAdMob = useCallback(async () => {
                   {t("Overzicht van alle 52 kaarten in het huidige actieve pakje.")}
                 </p>
               </div>
-
               <div className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
                 {/* Legend */}
                 <div className="flex items-center gap-4 flex-wrap text-[10px] uppercase font-black tracking-wider border-b border-slate-800/60 pb-3 text-slate-400">
@@ -5944,7 +4902,6 @@ const initializeAdMob = useCallback(async () => {
                     <span>{t("Gedraaid")}</span>
                   </div>
                 </div>
-
                 {/* Cards Grid */}
                 <div className="space-y-4">
                   {[Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES].map(suit => {
@@ -5982,7 +4939,6 @@ const initializeAdMob = useCallback(async () => {
                                 cardStyle = "bg-amber-950/20 border-amber-900/40 border-dashed text-amber-500";
                               }
                             }
-
                             const displayColor = isDiscarded ? 'text-slate-600' : (isRed ? 'text-red-500' : 'text-slate-200');
                             
                             return (
@@ -6015,7 +4971,6 @@ const initializeAdMob = useCallback(async () => {
       </>
       );
       }
-
   // 7. GAME OVER
   if (phase === GamePhase.GAME_OVER) {
     return (
@@ -6037,9 +4992,6 @@ const initializeAdMob = useCallback(async () => {
               </div>
             )}
           </div>
-
-
-
           <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden mb-8 shadow-2xl">
             <div className="grid grid-cols-12 bg-black/40 p-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
               <div className="col-span-1 text-center">#</div>
@@ -6062,7 +5014,6 @@ const initializeAdMob = useCallback(async () => {
               </div>
             ))}
           </div>
-
           <button onClick={handleGameOverContinue} className="w-full bg-white text-black py-5 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.3)] text-lg uppercase tracking-widest hover:scale-105 transition-transform active:scale-95">
             {t("Terug naar Menu")}
           </button>
@@ -6072,7 +5023,6 @@ const initializeAdMob = useCallback(async () => {
       </>
     );
   }
-
   // This fallthrough renders when in results or other unhandled states
   return (
     <>
@@ -6088,5 +5038,4 @@ const initializeAdMob = useCallback(async () => {
     </>
   );
 };
-
 export default App;
