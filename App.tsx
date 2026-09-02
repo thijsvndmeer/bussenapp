@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, useTransition } from 'react';
 import { useGameEngine, GameEngineEvent } from './hooks/useGameEngine';
 import { usePlayerState } from './hooks/usePlayerState';
+import { useGameStore } from './src/store/gameStore';
 import { Card, GamePhase, Player, Rank, RoundStep, Suit, GameMode, GameSettings, CardStyle, UITheme } from './types';
 import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
@@ -444,7 +445,23 @@ const hslToHex = (h: number, s: number, l: number): string => {
 };
 // --- APP COMPONENT ---
 const App: React.FC = () => {
+  const [isPending, startTransition] = useTransition();
   const { t, lang, setLanguage } = useTranslation();
+  
+  // Phase 3: Web Worker Instantiation
+  const engineWorker = useRef<Worker | null>(null);
+  useEffect(() => {
+    engineWorker.current = new Worker(new URL('./src/workers/engine.worker.ts', import.meta.url), { type: 'module' });
+    engineWorker.current.onmessage = (e) => {
+      if (e.data.type === 'DECK_SHUFFLED') {
+         console.log("Worker shuffled deck securely in background");
+      }
+    };
+    return () => {
+      engineWorker.current?.terminate();
+    };
+  }, []);
+
   const getSipsText = (count: number) => `${count} ${count === 1 ? t('slok') : t('slokken')}`;
   // --- STATE ---
   const [settings, setSettings] = useState<GameSettings>(() => {
@@ -1822,13 +1839,17 @@ const initializeAdMob = useCallback(async () => {
       newPyramid.push(rowCards);
     }
     setDeck(currentDeck);
-    setPyramid(newPyramid);
+    startTransition(() => {
+      setPyramid(newPyramid);
+    });
   };
   const initializePyramid = () => {
     triggerHaptic('medium');
     setPhase(GamePhase.PYRAMID);
     setFeedback(null);
-    setRevealedPyramidCards(new Set());
+    startTransition(() => {
+      setRevealedPyramidCards(new Set());
+    });
     setLoserReveal(null);
     setIsPyramidComplete(false);
     
