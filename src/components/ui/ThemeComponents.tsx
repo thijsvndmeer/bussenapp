@@ -6,7 +6,8 @@ export const ThemeLabel: React.FC<{
   theme: UITheme; 
   size?: 'sm' | 'md' | 'lg';
   variant?: 'simple' | 'fancy';
-}> = React.memo(({ text, theme, size = 'sm', variant = 'fancy' }) => {
+  align?: 'left' | 'center' | 'right';
+}> = React.memo(({ text, theme, size = 'sm', variant = 'fancy', align = 'left' }) => {
   const isLg = size === 'lg';
   const isSm = size === 'sm';
   const isSimple = variant === 'simple';
@@ -15,7 +16,7 @@ export const ThemeLabel: React.FC<{
 
   if (theme === UITheme.METRO) {
     return (
-      <div className={`relative flex flex-col items-start ${isLg ? 'gap-3' : 'gap-1.5'}`}>
+      <div className={`relative flex flex-col ${align === 'center' ? 'items-center' : 'items-start'} ${isLg ? 'gap-3' : 'gap-1.5'}`}>
         <div 
           className={`relative z-10 font-mono font-black uppercase tracking-[0.2em] ${textSizeClass}`} 
           style={{ color: 'var(--theme-accent)' }}
@@ -37,7 +38,7 @@ export const ThemeLabel: React.FC<{
 
   if (theme === UITheme.CALM) {
     return (
-      <div className="flex flex-col items-center">
+      <div className={`flex flex-col ${align === 'center' ? 'items-center text-center' : 'items-start text-left'}`}>
         <div 
           className={`${textSizeClass} font-light italic uppercase`}
           style={{ 
@@ -55,7 +56,7 @@ export const ThemeLabel: React.FC<{
     if (isSimple) {
       return (
         <div 
-          className={`${textSizeClass} font-black uppercase tracking-[0.15em]`}
+          className={`${textSizeClass} font-black uppercase tracking-[0.15em] ${align === 'center' ? 'text-center' : 'text-left'}`}
           style={{ color: 'var(--theme-accent)' }}
         >
           {text}
@@ -63,9 +64,9 @@ export const ThemeLabel: React.FC<{
       );
     }
     return (
-      <div className="relative inline-flex flex-col items-center">
+      <div className={`relative inline-flex flex-col ${align === 'center' ? 'items-center' : 'items-start'}`}>
         <div 
-          className={`px-6 py-1 bg-[var(--theme-accent)] ${textSizeClass} font-black uppercase tracking-[0.15em] shadow-[4px_4px_0_rgba(0,0,0,0.3)]`}
+          className={`px-4 sm:px-6 py-1 bg-[var(--theme-accent)] ${textSizeClass} font-black uppercase tracking-[0.15em] shadow-[4px_4px_0_rgba(0,0,0,0.3)]`}
           style={{ color: '#fff', transform: 'rotate(-1deg)' }}
         >
           {text}
@@ -75,7 +76,7 @@ export const ThemeLabel: React.FC<{
   }
 
   return (
-    <div className={`relative z-[60] ${isLg ? 'py-4' : 'py-2'}`}>
+    <div className={`relative z-[60] ${isLg ? 'py-4' : 'py-2'} ${align === 'center' ? 'text-center' : 'text-left'}`}>
       <div 
         className={`${textSizeClass} font-black uppercase tracking-[0.3em]`}
         style={{ 
