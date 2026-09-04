@@ -36,22 +36,26 @@ export const PlayerAvatar: React.FC<{
 
   return (
     <div 
-      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center overflow-hidden relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
+      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
       style={calmStyle}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}
       onContextMenu={(e) => { if (onPointerDown) e.preventDefault(); }}
     >
-      {player?.image ? (
-        <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
-      ) : (
-        <span className="font-black text-white">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
+      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center pointer-events-none">
+        {player?.image ? (
+          <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
+        ) : (
+          <span className="font-black text-white">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
+        )}
+      </div>
+      {glow && (
+        <div 
+          className={`absolute -inset-[2px] rounded-full pointer-events-none ${ringClasses} ${isCalmGlow ? 'animate-pulse' : 'ring-red-500/40 animate-pulse'}`}
+          style={(isCalmGlow && !isDev) ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
+        />
       )}
-      <div 
-        className={`absolute inset-0 rounded-full ${ringClasses} ${glow ? (isCalmGlow ? 'animate-pulse' : 'ring-red-500/20 animate-pulse') : 'border-transparent'}`}
-        style={(isCalmGlow && !isDev) ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
-      ></div>
     </div>
   );
 });

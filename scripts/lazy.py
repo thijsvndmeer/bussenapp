@@ -17,7 +17,7 @@ content = re.sub(r'import SettingsPanel from \'\./components/SettingsPanel\';',
 
 # Replace Modals
 modals = [
-    'QuitConfirmModal', 'PlayerHandModal', 'ColorPickerModal',
+    'QuitConfirmModal', 'ColorPickerModal',
     'PhotoOptionsModal', 'PatchNotesModal', 'HardBusWarningModal',
     'AdLoadingModal', 'SlideMenuModal', 'PyramidMatchModal'
 ]

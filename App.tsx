@@ -29,7 +29,6 @@ import { useAudio } from './hooks/useAudio';
 import { useThrottledResize } from './hooks/useThrottledResize';
 import { CURRENT_APP_VERSION, PATCH_NOTES_SEEN_KEY, getPatchNotesList, hasPatchNotes } from './services/patchNotes';
 import { QuitConfirmModal } from './components/modals/QuitConfirmModal';
-import { PlayerHandModal } from './components/modals/PlayerHandModal';
 import { ColorPickerModal } from './components/modals/ColorPickerModal';
 import { PhotoOptionsModal } from './components/modals/PhotoOptionsModal';
 import { PatchNotesModal } from './components/modals/PatchNotesModal';
@@ -828,6 +827,45 @@ const App: React.FC = () => {
   const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, count: number, initialCount: number }[], bannerPosition?: 'top' | 'bottom' } | null>(null);
   const [loserReveal, setLoserReveal] = useState<{ player: Player, title: string } | null>(null);
   const [playerHandToView, setPlayerHandToView] = useState<Player | null>(null);
+  const [isHandTrayOpen, setIsHandTrayOpen] = useState(false);
+  const [isMoreHandMode, setIsMoreHandMode] = useState(false);
+  const [isHandClosing, setIsHandClosing] = useState(false);
+  const [moreHeaderScroll, setMoreHeaderScroll] = useState<{ canLeft: boolean; canRight: boolean }>({ canLeft: false, canRight: false });
+
+  const handleMoreHeaderScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const canLeft = el.scrollLeft > 4;
+    const canRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setMoreHeaderScroll(prev => {
+      if (prev.canLeft === canLeft && prev.canRight === canRight) return prev;
+      return { canLeft, canRight };
+    });
+  };
+
+  const moreHeaderRef = useCallback((el: HTMLDivElement | null) => {
+    if (el) {
+      const canLeft = el.scrollLeft > 4;
+      const canRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+      setMoreHeaderScroll(prev => {
+        if (prev.canLeft === canLeft && prev.canRight === canRight) return prev;
+        return { canLeft, canRight };
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isHandTrayOpen && isMoreHandMode) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('more-players-scroll-header');
+        if (el) {
+          const canLeft = el.scrollLeft > 4;
+          const canRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+          setMoreHeaderScroll({ canLeft, canRight });
+        }
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [isHandTrayOpen, isMoreHandMode, players.length]);
   const [isPyramidComplete, setIsPyramidComplete] = useState(false);
   const [isSelectingBusPlayer, setIsSelectingBusPlayer] = useState(false);
   const [isPyramidInstructionsCollapsed, setIsPyramidInstructionsCollapsed] = useState(false);
@@ -1590,6 +1628,36 @@ const initializeAdMob = useCallback(async () => {
     return "";
   };
 
+  const getHeaderClasses = () => {
+    const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
+    if (settings.theme === UITheme.METRO) {
+      return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-2xl mx-1' : 'rounded-none mx-0'} border-b-2 border-[var(--theme-accent)] mb-4 z-20`;
+    }
+    if (settings.theme === UITheme.CALM) {
+      return `${transitionClass} bg-white/5 backdrop-blur-md rounded-[2.5rem] border border-white/5 mb-4 z-20 shadow-lg mx-2`;
+    }
+    if (settings.theme === UITheme.BEER) {
+      return `${transitionClass} bg-amber-950/40 backdrop-blur-sm rounded-xl border-2 border-amber-900/50 mb-3 z-20 shadow-md mx-1`;
+    }
+    // Classic
+    return `${transitionClass} bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1`;
+  };
+
+  const getHandContainerClasses = () => {
+    const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
+    if (settings.theme === UITheme.METRO) {
+      return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-3xl' : 'rounded-none'} p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
+    }
+    if (settings.theme === UITheme.CALM) {
+      return `${transitionClass} bg-white/[0.02] rounded-3xl p-3 mb-6 mx-2 border border-white/10 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
+    }
+    if (settings.theme === UITheme.BEER) {
+      return `${transitionClass} bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
+    }
+    // Classic
+    return `${transitionClass} bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
+  };
+
   const handleStartPress = () => {
     if (players.length < 2) return;
     setIsSettingsOpen(false);
@@ -1665,7 +1733,7 @@ const initializeAdMob = useCallback(async () => {
   const handlePhysicalGuess = (correct: boolean) => {
     const sips = roundStep;
     const currentPlayer = activePlayer;
-    const placeholderCard: Card = { suit: Suit.SPADES, rank: Rank.ACE, id: `physical-${Date.now()}` };
+    const placeholderCard: Card = { suit: Suit.SPADES, rank: Rank.ACE, id: `physical-${Date.now()}`, roundIndex: currentPlayer.hand.length };
     if (correct) {
       triggerHaptic('success');
       playSound('success');
@@ -1794,9 +1862,10 @@ const initializeAdMob = useCallback(async () => {
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${t("Drink zelf")} ${getSipsText(sips)}.`, type: 'error' });
     }
+    const cardToAdd = { ...card, roundIndex: card.roundIndex ?? currentPlayer.hand.length };
     updatePlayer(currentPlayer.id, player => ({
       ...player,
-      hand: [...player.hand, card],
+      hand: [...player.hand, cardToAdd],
       drinksTaken: correct ? player.drinksTaken : player.drinksTaken + sips,
     }));
   };
@@ -1835,9 +1904,10 @@ const initializeAdMob = useCallback(async () => {
         drinksTaken: player.drinksTaken + sips,
       }));
     }
+    const cardToAdd = { ...card, roundIndex: card.roundIndex ?? currentPlayer.hand.length };
     updatePlayer(currentPlayer.id, player => ({
       ...player,
-      hand: [...player.hand, card],
+      hand: [...player.hand, cardToAdd],
     }));
   };
   // --- PYRAMID LOGIC ---
@@ -1868,6 +1938,15 @@ const initializeAdMob = useCallback(async () => {
     setLoserReveal(null);
     setIsPyramidComplete(false);
     
+    // Remember each card's position when entering the pyramid
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      hand: p.hand.map((c, i) => ({
+        ...c,
+        roundIndex: c.roundIndex !== undefined ? c.roundIndex : i,
+      })),
+    })));
+
     // Reset double setup state
     setDoubledPyramidCardIds(new Set());
     if (settings.doublePyramidCards) {
@@ -2670,14 +2749,326 @@ const initializeAdMob = useCallback(async () => {
       </div>
     );
   };
-  const renderPlayerHandModal = () => (
-    <PlayerHandModal
-      player={playerHandToView}
-      cardStyle={settings.cardStyle}
-      t={t}
-      onClose={() => setPlayerHandToView(null)}
-    />
-  );
+  const renderActiveSlot = (idx: number, step?: number) => {
+    const commonClasses = "w-20 h-28 flex flex-col items-center justify-center flex-none transition-all duration-300";
+    const slotStep = step ?? (idx + 1);
+    
+    if (settings.theme === UITheme.METRO) {
+      return (
+        <div key={`current-${idx}`} className={`${commonClasses} ${isDiscoActive ? 'rounded-xl' : 'rounded-none'} border-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[4px_4px_0_rgba(0,0,0,0.5)]`} style={{ zIndex: idx }}>
+          <div className="text-[var(--theme-accent)] opacity-80 mb-1">
+            {slotStep === 1 && <Sparkles size={18} />}
+            {slotStep === 2 && <ArrowUpDown size={18} />}
+            {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
+            {slotStep === 4 && <Zap size={18} />}
+          </div>
+          <span className="text-[var(--theme-accent)] font-mono font-black text-xl">_?</span>
+        </div>
+      );
+    }
+    
+    if (settings.theme === UITheme.CALM) {
+      return (
+        <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border border-white/10 bg-white/[0.01]`} style={{ zIndex: idx }}>
+          <div className="text-[var(--theme-accent)] opacity-30 mb-1">
+            {slotStep === 1 && <Sparkles size={18} />}
+            {slotStep === 2 && <ArrowUpDown size={18} />}
+            {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
+            {slotStep === 4 && <Zap size={18} />}
+          </div>
+          <span className="text-[var(--theme-accent)] font-light italic text-xl opacity-60">?</span>
+        </div>
+      );
+    }
+    if (settings.theme === UITheme.BEER) {
+      return (
+        <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border-2 border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]`} style={{ zIndex: idx }}>
+          <div className="text-amber-500 opacity-80 mb-1">
+            {slotStep === 1 && <Sparkles size={20} />}
+            {slotStep === 2 && <ArrowUpDown size={20} />}
+            {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
+            {slotStep === 4 && <Zap size={20} />}
+          </div>
+          <span className="text-amber-500 font-black text-xl">?</span>
+        </div>
+      );
+    }
+    // Classic
+    return (
+      <div key={`current-${idx}`} className={`${commonClasses} rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]`} style={{ zIndex: idx }}>
+        <div className="text-green-500 opacity-60 mb-1">
+          {slotStep === 1 && <Sparkles size={20} />}
+          {slotStep === 2 && <ArrowUpDown size={20} />}
+          {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
+          {slotStep === 4 && <Zap size={20} />}
+        </div>
+        <span className="text-green-500 font-black text-xl drop-shadow-md">?</span>
+      </div>
+    );
+  };
+
+  const handleClosePlayerHand = () => {
+    if (!isHandTrayOpen || isHandClosing) return;
+    setIsHandClosing(true);
+    setTimeout(() => {
+      setIsHandTrayOpen(false);
+      setPlayerHandToView(null);
+      setIsMoreHandMode(false);
+      setIsHandClosing(false);
+      setMoreHeaderScroll({ canLeft: false, canRight: false });
+    }, 200);
+  };
+
+  const handleTogglePlayerHand = (player: Player) => {
+    triggerHaptic('light');
+    if (isHandTrayOpen && playerHandToView?.id === player.id && !isMoreHandMode) {
+      handleClosePlayerHand();
+    } else {
+      setIsHandClosing(false);
+      setIsMoreHandMode(false);
+      setPlayerHandToView(player);
+      setIsHandTrayOpen(true);
+    }
+  };
+
+  const handleOpenMoreHand = () => {
+    triggerHaptic('light');
+    if (isHandTrayOpen && isMoreHandMode) {
+      handleClosePlayerHand();
+    } else {
+      setIsHandClosing(false);
+      setIsMoreHandMode(true);
+      setPlayerHandToView(null);
+      setIsHandTrayOpen(true);
+    }
+  };
+
+  const renderPyramidHandTray = () => {
+    if (!isHandTrayOpen) return null;
+    const currentPlayerObj = playerHandToView ? (players.find(p => p.id === playerHandToView.id) || playerHandToView) : null;
+    const cards = currentPlayerObj ? currentPlayerObj.hand : [];
+    const isClosing = isHandClosing;
+    const animClass = isClosing ? 'animate-hand-tray-exit' : 'animate-hand-tray-enter';
+
+    const victim = findLoser();
+    const sortedPlayers = [...players].sort((a, b) => {
+      if (victim) {
+        if (a.id === victim.id) return -1;
+        if (b.id === victim.id) return 1;
+      }
+      return b.hand.length - a.hand.length;
+    });
+    const morePlayers = sortedPlayers.slice(3);
+
+    return (
+      <>
+        {/* Backdrop overlay: tapping anywhere on screen outside hand closes it */}
+        <div 
+          className={`fixed inset-0 z-30 bg-black/50 backdrop-blur-[3px] transition-opacity duration-200 cursor-pointer ${
+            isClosing ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+          onClick={handleClosePlayerHand}
+        />
+        {/* Hand Tray container matching the round hand component style and size */}
+        <div className="fixed left-0 right-0 z-40 px-2 pointer-events-none" style={{ top: 'calc(var(--safe-top, 0px) + 4.8rem)' }}>
+          <div className="w-full pointer-events-auto">
+            <div className={`${getHandContainerClasses()} ${animClass} !mb-0 shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-white/15`}>
+              {/* Table Felt Texture */}
+              {settings.theme === UITheme.CLASSIC && <div className="absolute inset-0 bg-[#0f172a]/50 mix-blend-overlay pointer-events-none" />}
+              
+              {/* Header inside hand tray - compact to match normal hand header size */}
+              <div className="relative flex items-center justify-between px-1 mb-2 min-h-[28px] gap-2">
+                {isMoreHandMode ? (
+                  /* Profile pictures and names in the header with scroll indicator */
+                  <div className="relative flex-1 min-w-0 flex items-center">
+                    {/* Left edge scroll indicator */}
+                    {moreHeaderScroll.canLeft && (
+                      <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-20 flex items-center pl-0.5 bg-gradient-to-r from-slate-900/90 to-transparent pr-2">
+                        <ChevronLeft size={12} className="text-amber-400 drop-shadow animate-pulse" />
+                      </div>
+                    )}
+
+                    <div 
+                      id="more-players-scroll-header"
+                      ref={moreHeaderRef}
+                      onScroll={handleMoreHeaderScroll}
+                      className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 w-full"
+                      style={{
+                        WebkitMaskImage: moreHeaderScroll.canLeft && moreHeaderScroll.canRight
+                          ? 'linear-gradient(to right, transparent 0px, black 12px, black calc(100% - 16px), transparent 100%)'
+                          : moreHeaderScroll.canRight
+                          ? 'linear-gradient(to right, black calc(100% - 16px), transparent 100%)'
+                          : moreHeaderScroll.canLeft
+                          ? 'linear-gradient(to right, transparent 0px, black 12px)'
+                          : undefined,
+                        maskImage: moreHeaderScroll.canLeft && moreHeaderScroll.canRight
+                          ? 'linear-gradient(to right, transparent 0px, black 12px, black calc(100% - 16px), transparent 100%)'
+                          : moreHeaderScroll.canRight
+                          ? 'linear-gradient(to right, black calc(100% - 16px), transparent 100%)'
+                          : moreHeaderScroll.canLeft
+                          ? 'linear-gradient(to right, transparent 0px, black 12px)'
+                          : undefined,
+                      }}
+                    >
+                      {morePlayers.map((p) => {
+                        const isLoser = victim && p.id === victim.id;
+                        const hasCards = p.hand.length > 0;
+                        const isSelected = playerHandToView?.id === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              triggerHaptic('light');
+                              if (isSelected) {
+                                setPlayerHandToView(null);
+                              } else {
+                                setPlayerHandToView(p);
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                              isSelected
+                                ? 'bg-amber-500/25 border-amber-400 ring-1 ring-amber-400/80 shadow-[0_0_8px_rgba(251,191,36,0.35)]'
+                                : 'bg-black/30 hover:bg-white/10 border-white/10'
+                            }`}
+                          >
+                            <div className="w-5 h-5 rounded-full relative overflow-hidden flex items-center justify-center shrink-0">
+                              {isLoser && (
+                                <div 
+                                  className="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full pointer-events-none"
+                                  style={{ background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)' }}
+                                />
+                              )}
+                              <div className={`w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative z-10 ${isLoser ? 'm-[1px] w-[calc(100%-2px)] h-[calc(100%-2px)]' : 'border border-amber-500'}`}>
+                                {p.image ? (
+                                  <img src={p.image} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-white text-[9px] font-black select-none">
+                                    {p.name.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {isLoser && <Bus size={9} className="text-red-500 shrink-0" />}
+                              <span className="text-[11px] font-bold text-white leading-tight truncate max-w-[70px] sm:max-w-[100px]">{p.name}</span>
+                              <span className={`text-[9px] font-mono font-bold leading-tight ${
+                                isSelected ? 'text-white' : isLoser ? 'text-amber-400' : hasCards ? 'text-amber-400' : 'text-slate-500'
+                              }`}>
+                                {p.hand.length}/4
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right edge scroll indicator */}
+                    {moreHeaderScroll.canRight && (
+                      <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-20 flex items-center pr-0.5 bg-gradient-to-l from-slate-900/90 to-transparent pl-2">
+                        <ChevronRight size={12} className="text-amber-400 drop-shadow animate-pulse" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Single player header */
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {(() => {
+                      const isSingleLoser = victim && currentPlayerObj?.id === victim.id;
+                      return (
+                        <div className={`w-5 h-5 rounded-full relative overflow-hidden flex items-center justify-center shrink-0 ${
+                          isSingleLoser ? 'p-[1px]' : 'border border-amber-500'
+                        }`}>
+                          {isSingleLoser && (
+                            <div 
+                              className="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full pointer-events-none"
+                              style={{ background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)' }}
+                            />
+                          )}
+                          <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative z-10">
+                            {currentPlayerObj?.image ? (
+                              <img src={currentPlayerObj.image} alt={currentPlayerObj.name} className="w-full h-full object-cover pointer-events-none" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white text-[9px] font-black select-none">
+                                {currentPlayerObj?.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <span className="text-[11px] font-bold text-white tracking-wide truncate max-w-[120px] sm:max-w-[180px]">
+                      {currentPlayerObj?.name}
+                    </span>
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 tabular-nums">
+                      {cards.length}/4
+                    </span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest opacity-60 ml-2 hidden sm:inline">
+                      {t("Huidige Hand")}
+                    </span>
+                  </div>
+                )}
+                <button
+                  onClick={handleClosePlayerHand}
+                  className="text-slate-400 hover:text-white p-0.5 rounded-full hover:bg-white/10 transition-colors active:scale-95 cursor-pointer ml-auto shrink-0"
+                  aria-label="Close hand"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Cards row using the EXACT same components as normal hand */}
+              <div className="relative flex justify-center items-center py-2 gap-2 sm:gap-3 px-2">
+                {settings.mode === GameMode.DIGITAL ? (
+                  Array.from({ length: 4 }).map((_, slotIdx) => {
+                    const cardInSlot = cards.find(c => c.roundIndex === slotIdx) ?? (cards.every(c => c.roundIndex === undefined) ? cards[slotIdx] : undefined);
+                    if (cardInSlot) {
+                      return (
+                        <div
+                          key={`${currentPlayerObj?.id || 'hand'}-${cardInSlot.id || slotIdx}`}
+                          className="flex-none transition-transform hover:-translate-y-2 duration-200 origin-bottom animate-card-hand-subtle"
+                          style={{ zIndex: slotIdx }}
+                        >
+                          <PlayingCard card={cardInSlot} size="base" className="shadow-lg" style={settings.cardStyle} />
+                        </div>
+                      );
+                    } else {
+                      return renderActiveSlot(slotIdx);
+                    }
+                  })
+                ) : (
+                  <div className="w-full flex justify-center gap-2 sm:gap-3">
+                    {Array.from({ length: 4 }).map((_, slotIdx) => {
+                      const cardInSlot = cards.find(c => c.roundIndex === slotIdx) ?? (cards.every(c => c.roundIndex === undefined) ? cards[slotIdx] : undefined);
+                      if (cardInSlot) {
+                        return (
+                          <div
+                            key={`${currentPlayerObj?.id || 'hand'}-phys-${cardInSlot.id || slotIdx}`}
+                            className="w-20 h-28 rounded-xl bg-[#1e40af] border-[3px] border-white shadow-lg flex items-center justify-center flex-none overflow-hidden relative animate-card-hand-subtle"
+                            style={{ zIndex: slotIdx }}
+                          >
+                            <div className="absolute inset-0 opacity-60" style={{
+                              backgroundImage: `radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%)`,
+                              backgroundSize: '8px 8px',
+                              backgroundPosition: '0 0, 4px 4px'
+                            }}></div>
+                            <div className="w-[80%] h-[40%] rounded-full border-2 border-white/30 flex items-center justify-center backdrop-blur-[1px] relative z-10">
+                              <span className="text-white/50 font-serif font-bold italic tracking-widest transform -rotate-12 text-[9px]">BUSSEN</span>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return renderActiveSlot(slotIdx);
+                      }
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
   const renderSettingsModal = () => (isSettingsOpen && phase !== GamePhase.SETUP) && (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }}>
       <div className="w-full max-w-sm m-4 relative animate-in zoom-in-50 duration-300">
@@ -2760,7 +3151,10 @@ const initializeAdMob = useCallback(async () => {
                   const updatedPlayers = players.map(p => {
                     const cardsNeeded = 4 - p.hand.length;
                     if (cardsNeeded > 0 && currentDeck.length >= cardsNeeded) {
-                      const newCards = currentDeck.splice(0, cardsNeeded);
+                      const newCards = currentDeck.splice(0, cardsNeeded).map((c, idx) => ({
+                        ...c,
+                        roundIndex: p.hand.length + idx,
+                      }));
                       return { ...p, hand: [...p.hand, ...newCards] };
                     }
                     return p;
@@ -3480,90 +3874,6 @@ const initializeAdMob = useCallback(async () => {
       </>
     );
   }
-    const getHeaderClasses = () => {
-      const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
-      if (settings.theme === UITheme.METRO) {
-        return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-2xl mx-1' : 'rounded-none mx-0'} border-b-2 border-[var(--theme-accent)] mb-4 z-20`;
-      }
-      if (settings.theme === UITheme.CALM) {
-        return `${transitionClass} bg-white/5 backdrop-blur-md rounded-[2.5rem] border border-white/5 mb-4 z-20 shadow-lg mx-2`;
-      }
-      if (settings.theme === UITheme.BEER) {
-        return `${transitionClass} bg-amber-950/40 backdrop-blur-sm rounded-xl border-2 border-amber-900/50 mb-3 z-20 shadow-md mx-1`;
-      }
-      // Classic
-      return `${transitionClass} bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1`;
-    };
-    const getHandContainerClasses = () => {
-      const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
-      if (settings.theme === UITheme.METRO) {
-        return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-3xl' : 'rounded-none'} p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
-      }
-      if (settings.theme === UITheme.CALM) {
-        return `${transitionClass} bg-white/[0.02] rounded-3xl p-3 mb-6 mx-2 border border-white/10 backdrop-blur-md relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
-      }
-      if (settings.theme === UITheme.BEER) {
-        return `${transitionClass} bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
-      }
-      // Classic
-      return `${transitionClass} bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
-    };
-    const renderActiveSlot = (idx: number) => {
-      const commonClasses = "w-20 h-28 flex flex-col items-center justify-center flex-none transition-all duration-300";
-      
-      if (settings.theme === UITheme.METRO) {
-        return (
-          <div key={`current-${idx}`} className={`${commonClasses} ${isDiscoActive ? 'rounded-xl' : 'rounded-none'} border-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[4px_4px_0_rgba(0,0,0,0.5)]`} style={{ zIndex: idx }}>
-            <div className="text-[var(--theme-accent)] opacity-80 mb-1">
-              {roundStep === 1 && <Sparkles size={18} />}
-              {roundStep === 2 && <ArrowUpDown size={18} />}
-              {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
-              {roundStep === 4 && <Zap size={18} />}
-            </div>
-            <span className="text-[var(--theme-accent)] font-mono font-black text-xl">_?</span>
-          </div>
-        );
-      }
-      
-      if (settings.theme === UITheme.CALM) {
-        return (
-          <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border border-white/10 bg-white/[0.01]`} style={{ zIndex: idx }}>
-            <div className="text-[var(--theme-accent)] opacity-30 mb-1">
-              {roundStep === 1 && <Sparkles size={18} />}
-              {roundStep === 2 && <ArrowUpDown size={18} />}
-              {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
-              {roundStep === 4 && <Zap size={18} />}
-            </div>
-            <span className="text-[var(--theme-accent)] font-light italic text-xl opacity-60">?</span>
-          </div>
-        );
-      }
-      if (settings.theme === UITheme.BEER) {
-        return (
-          <div key={`current-${idx}`} className={`${commonClasses} rounded-xl border-2 border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]`} style={{ zIndex: idx }}>
-            <div className="text-amber-500 opacity-80 mb-1">
-              {roundStep === 1 && <Sparkles size={20} />}
-              {roundStep === 2 && <ArrowUpDown size={20} />}
-              {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
-              {roundStep === 4 && <Zap size={20} />}
-            </div>
-            <span className="text-amber-500 font-black text-xl">?</span>
-          </div>
-        );
-      }
-      // Classic
-      return (
-        <div key={`current-${idx}`} className={`${commonClasses} rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]`} style={{ zIndex: idx }}>
-          <div className="text-green-500 opacity-60 mb-1">
-            {roundStep === 1 && <Sparkles size={20} />}
-            {roundStep === 2 && <ArrowUpDown size={20} />}
-            {roundStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
-            {roundStep === 4 && <Zap size={20} />}
-          </div>
-          <span className="text-green-500 font-black text-xl drop-shadow-md">?</span>
-        </div>
-      );
-    };
     return (
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} />
@@ -3604,7 +3914,6 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
         {renderSettingsModal()}
-        {renderPlayerHandModal()}
         {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
@@ -3915,7 +4224,6 @@ const initializeAdMob = useCallback(async () => {
           <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
         {renderSettingsModal()}
-        {renderPlayerHandModal()}
         {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
@@ -3991,10 +4299,10 @@ const initializeAdMob = useCallback(async () => {
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} style={pyramidBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
-        <RootContainer className="p-0" shake={screenShake} disableSafeTop theme={settings.theme}>
+        <RootContainer className="p-2 pb-safe flex flex-col" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderSettingsModal()}
-        {renderPlayerHandModal()}
+        {renderPyramidHandTray()}
         {renderDevModeOrb()}
         {renderAdditionalModals()}
         {renderQuitModal()}
@@ -4011,9 +4319,9 @@ const initializeAdMob = useCallback(async () => {
           t={t}
           getSipsText={getSipsText}
         />
-        <div className="flex-none flex justify-between items-center px-5 pb-4 bg-slate-900/90 backdrop-blur border-b border-white/10 z-10 shadow-2xl gap-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-          <div className="flex items-center gap-6 overflow-hidden">
-            <div className="shrink-0">
+        <div className={`flex-none flex justify-between items-center px-2.5 sm:px-4 py-2 gap-3 sm:gap-4 h-[76px] min-h-[76px] max-h-[76px] box-border ${getHeaderClasses()} !z-35 relative`}>
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0 h-full">
+            <div className="shrink-0 flex flex-col justify-center">
               <div 
                 className="inline-block cursor-pointer"
                 onPointerDown={handleHeaderPointerDown}
@@ -4023,74 +4331,117 @@ const initializeAdMob = useCallback(async () => {
               >
                 <ThemeLabel text={t("Piramide")} theme={settings.theme} size="md" />
               </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 leading-tight">
                 {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
               </p>
             </div>
-            <div className="flex items-center gap-2 py-1">
-              {(() => {
-                const victim = findLoser();
-                // Show top 5 players likely to go in the bus
-                // Sort by hand length (descending) but keep victim always at the front if they exist
-                const displayedPlayers = [...players]
-                  .sort((a, b) => {
+            {!isPyramidDoubleSetup && (
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap shrink-0 h-full">
+                {(() => {
+                  const victim = findLoser();
+                  const sortedPlayers = [...players].sort((a, b) => {
                     if (victim) {
                       if (a.id === victim.id) return -1;
                       if (b.id === victim.id) return 1;
                     }
                     return b.hand.length - a.hand.length;
-                  })
-                  .slice(0, 4);
-                  return displayedPlayers.map(p => {
-                  const isLoser = victim && p.id === victim.id;
-                  const hasCards = p.hand.length > 0;
-                  return (
-                    <button key={p.id} onClick={() => setPlayerHandToView(p)} className="flex flex-col items-center shrink-0 hover:scale-105 active:scale-95 transition-transform">
-                      <div className={`w-8 h-8 rounded-full border-2 transition-all relative ${isLoser ? 'border-transparent' : hasCards ? 'border-amber-500' : 'border-white/10 opacity-50'} bg-slate-800`}>
-                        {isLoser && (
-                          <div className="absolute -inset-[2px] rounded-full z-0 overflow-hidden pointer-events-none">
-                            <div 
-                              className="absolute inset-0 animate-[spin_3s_linear_infinite]"
-                              style={{
-                                background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)',
-                                padding: '2px'
-                              }}
-                            />
-                            <div className="absolute inset-[2px] bg-slate-800 rounded-full" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 rounded-full overflow-hidden z-10 pointer-events-none">
-                          {p.image ? (
-                            <img src={p.image} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white text-[10px] font-black">
-                              {p.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-0.5 mt-1">
-                        {isLoser && <Bus size={10} className="text-red-500" />}
-                        <span className={`text-[10px] font-black ${isLoser ? 'text-amber-400' : hasCards ? 'text-amber-400' : 'text-slate-500'}`}>
-                          {p.hand.length}/4
-                        </span>
-                      </div>
-                    </button>
-                  );
                   });
-                  })()}
-                  {players.length > 4 && (
-                  <div className="flex flex-col items-center justify-center shrink-0 ml-1">
-                  <div className="w-8 h-8 rounded-full bg-slate-800/50 border border-white/5 flex items-center justify-center">
-                    <span className="text-[10px] font-black text-slate-500">+{players.length - 4}</span>
-                  </div>
-                  <div className="mt-1 h-[15px]" /> {/* Spacer to match name height */}
-                </div>
-              )}
-            </div>
+
+                  const hasMore = sortedPlayers.length > 4;
+                  const displayedPlayers = hasMore ? sortedPlayers.slice(0, 3) : sortedPlayers.slice(0, 4);
+
+                  return (
+                    <>
+                      {displayedPlayers.map(p => {
+                        const isLoser = victim && p.id === victim.id;
+                        const hasCards = p.hand.length > 0;
+                        const isSelected = isHandTrayOpen && !isMoreHandMode && playerHandToView?.id === p.id && !isHandClosing;
+                        return (
+                          <button 
+                            key={p.id} 
+                            onClick={() => handleTogglePlayerHand(p)} 
+                            className="flex flex-col items-center justify-center shrink-0 p-0.5 transition-transform active:scale-95 cursor-pointer"
+                          >
+                            <div className="w-9 h-9 flex items-center justify-center relative shrink-0">
+                              {/* Selected Outer Halo */}
+                              {isSelected && (
+                                <div className="absolute -inset-[2px] rounded-full ring-2 ring-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-200" />
+                              )}
+
+                              {/* Avatar Circle - Exactly w-9 h-9 with 2px border for all */}
+                              <div className={`w-9 h-9 rounded-full relative overflow-hidden flex items-center justify-center transition-all duration-200 ${
+                                isLoser
+                                  ? 'p-[2px]'
+                                  : `border-2 ${isSelected ? 'border-white' : hasCards ? 'border-amber-500' : 'border-white/20 opacity-60'}`
+                              }`}>
+                                {isLoser && (
+                                  <div 
+                                    className="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full pointer-events-none"
+                                    style={{
+                                      background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)'
+                                    }}
+                                  />
+                                )}
+                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative z-10">
+                                  {p.image ? (
+                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-white text-[11px] font-black select-none">
+                                      {p.name.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-0.5 mt-0.5 leading-none">
+                              {isLoser && <Bus size={10} className="text-red-500 shrink-0" />}
+                              <span className={`text-[10px] font-black tabular-nums leading-none ${
+                                isSelected ? 'text-white' : isLoser ? 'text-amber-400' : hasCards ? 'text-amber-400' : 'text-slate-500'
+                              }`}>
+                                {p.hand.length}/4
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      {hasMore && (
+                        <button
+                          onClick={handleOpenMoreHand}
+                          className="flex flex-col items-center justify-center shrink-0 p-0.5 transition-transform active:scale-95 cursor-pointer"
+                          title={t("Meer spelers")}
+                          aria-label={t("Meer spelers")}
+                        >
+                          <div className="w-9 h-9 flex items-center justify-center relative shrink-0">
+                            {/* Selected Outer Halo */}
+                            {isHandTrayOpen && isMoreHandMode && !isHandClosing && (
+                              <div className="absolute -inset-[2px] rounded-full ring-2 ring-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-200" />
+                            )}
+                            <div className={`w-9 h-9 rounded-full bg-slate-800/80 border-2 transition-all flex items-center justify-center hover:border-amber-400/80 hover:bg-slate-700/80 ${
+                              isHandTrayOpen && isMoreHandMode && !isHandClosing
+                                ? 'border-white text-white'
+                                : 'border-white/20 text-amber-400'
+                            }`}>
+                              <span className="text-[11px] font-black tracking-tight">+{sortedPlayers.length - 3}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-0.5 mt-0.5 leading-none">
+                            <span className={`text-[10px] font-bold leading-none ${
+                              isHandTrayOpen && isMoreHandMode && !isHandClosing ? 'text-white' : 'text-slate-400'
+                            }`}>
+                              {t("Meer")}
+                            </span>
+                          </div>
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
           </div>
-          <div className="shrink-0">
-            {renderDevMenu()}{renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
+          <div className="shrink-0 flex items-center gap-1">
+            {renderDevMenu()}
+            {renderQuitButton()}
           </div>
         </div>
         {feedback && !pendingMatches && (
@@ -4431,19 +4782,19 @@ const initializeAdMob = useCallback(async () => {
     animation: 'gradient-xy 22s ease-in-out infinite',
   };
   const physicalBusBackgroundStyle: React.CSSProperties = isBusWon ? physicalBusBgStyleWon : physicalBusBgStyle;
-  const digitalBusBackgroundStyle: React.CSSProperties = isBusWon
+  const digitalBusBackgroundStyle: React.CSSProperties | undefined = isBusWon
     ? {
       background: 'radial-gradient(circle at 16% 18%, rgba(251,191,36,0.22), transparent 40%), radial-gradient(circle at 84% 14%, rgba(168,85,247,0.24), transparent 36%), radial-gradient(circle at 48% 78%, rgba(34,211,238,0.2), transparent 42%), linear-gradient(135deg, #0b1f33 0%, #123a55 24%, #0c3b35 50%, #2d1f45 74%, #0b2c4c 100%)',
       backgroundSize: '260% 260%',
       animation: 'gradient-xy 20s ease-in-out infinite',
       transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
     }
-    : {
+    : (settings.theme === UITheme.CLASSIC ? {
       background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
       backgroundSize: '240% 240%',
       animation: 'gradient-xy 16s ease-in-out infinite',
       transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
-    };
+    } : undefined);
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0];
     const baseStyle = resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle;
@@ -4463,7 +4814,6 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
           {renderSettingsModal()}
-          {renderPlayerHandModal()}
           {renderDevModeOrb()}
           {renderAdditionalModals()}
           {renderQuitModal()}
@@ -4719,7 +5069,6 @@ const initializeAdMob = useCallback(async () => {
             </div>
           )}
           {renderSettingsModal()}
-          {renderPlayerHandModal()}
           {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
@@ -4743,9 +5092,9 @@ const initializeAdMob = useCallback(async () => {
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={digitalBusBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
-          className="p-0 relative" 
+          className="p-0 relative flex flex-col" 
           shake={screenShake} 
-          disableSafeTop 
+          isDiscoActive={isDiscoActive}
           theme={settings.theme}
         >
         {isBusWon && <Confetti />}
@@ -4805,71 +5154,68 @@ const initializeAdMob = useCallback(async () => {
           </div>
         )}
         {/* Header - Responsive & Stable */}
-        <div 
-          className="flex-none flex flex-col justify-center px-4 sm:px-5 bg-black border-b border-red-900/30 z-10 shadow-2xl gap-1.5 sm:gap-2" 
-          style={{ paddingTop: 'calc(0.85rem + var(--safe-top, 0px))', paddingBottom: '0.85rem' }}
-        >
-          <div className="w-full flex items-center justify-between gap-3">
-            <div className="shrink-0 flex items-center">
-              <div 
-                className="pointer-events-auto cursor-pointer"
-                onPointerDown={handleHeaderPointerDown}
-                onPointerUp={handleHeaderPointerUpOrLeave}
-                onPointerLeave={handleHeaderPointerUpOrLeave}
-                onContextMenu={(e) => e.preventDefault()}
-              >
-                <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+        <div className="flex-none px-2 sm:px-4 pt-2">
+          <div 
+            className={`flex flex-col justify-center p-3 sm:px-5 gap-1.5 sm:gap-2 ${getHeaderClasses()} !mb-0`}
+          >
+            <div className="w-full flex items-center justify-between gap-3">
+              <div className="shrink-0 flex items-center">
+                <div 
+                  className="pointer-events-auto cursor-pointer"
+                  onPointerDown={handleHeaderPointerDown}
+                  onPointerUp={handleHeaderPointerUpOrLeave}
+                  onPointerLeave={handleHeaderPointerUpOrLeave}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end shrink-0 min-w-0">
+                {renderDevMenu()}
+                <button 
+                  onClick={() => setIsCardOverviewOpen(true)}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-white/10 bg-white/5 text-slate-200 shrink-0 ${
+                    remainingBusCards > 0 && !isBusWon ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                >
+                  <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
+                  <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
+                </button>
+                {settings.busDecks > 1 && (
+                  <div className={`flex items-center gap-1 px-2 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest shrink-0 transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-white/10 bg-white/5 text-slate-200'}`}>
+                    <span>{t("Pakje")}</span>
+                    <span className={`tabular-nums ${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
+                  </div>
+                )}
+                {!isBusWon && renderQuitButton()}
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end shrink-0 min-w-0 pr-8">
-              {renderDevMenu()}
-              <button 
-                onClick={() => setIsCardOverviewOpen(true)}
-                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-red-900/40 bg-red-900/10 text-slate-200 shrink-0 ${
-                  remainingBusCards > 0 && !isBusWon ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}
-              >
-                <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
-                <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
-              </button>
-              {settings.busDecks > 1 && (
-                <div className={`flex items-center gap-1 px-2 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest shrink-0 transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-red-900/40 bg-red-900/10 text-slate-200'}`}>
-                  <span>{t("Pakje")}</span>
-                  <span className={`tabular-nums ${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
-                </div>
-              )}
+            {/* Passenger Line - Horizontal, never truncated */}
+            <div className={`flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+              <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
+                {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}:
+              </span>
+              <span className="text-white font-black break-words">
+                {passengerNames}
+              </span>
             </div>
           </div>
-          {/* Passenger Line - Horizontal, never truncated */}
-          <div className={`flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
-              {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}:
-            </span>
-            <span className="text-white font-black break-words">
-              {passengerNames}
-            </span>
-          </div>
         </div>
-        {!isBusWon && (
-          <div className="fixed z-[96]" style={{ top: 'calc(var(--safe-top, 0px) + 1rem)', right: '1rem' }}>
-            {renderQuitButton("w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm")}
-          </div>
-        )}
         {renderSettingsModal()}
-        {renderPlayerHandModal()}
         {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
         {/* Bus Cards */}
-        <div className="flex-1 relative flex items-center bg-transparent overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black/20 to-transparent pointer-events-none"></div>
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black/60 via-black/20 to-transparent pointer-events-none" />
+        <div className="flex-1 relative flex items-center bg-transparent overflow-hidden w-full">
           <div
             ref={busScrollRef}
-            className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-10"
+            className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-6"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%)',
+              maskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%)',
+            }}
           >
             {busCardStates.map(({ card, index, isBase, isHistory, isReference, isFocused, isRevealed, containerClass, isWrong }) => (
               <div
@@ -4916,66 +5262,68 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
         {/* Controls */}
-        <div className="flex-none bg-black/40 border-t border-white/10 p-4 pb-8 z-20 backdrop-blur-md">
-          {feedback && (
-            <div className="mb-6 flex justify-center pointer-events-none">
-              <div 
-                key={feedback.text}
-                className={`px-8 py-3 rounded-[var(--theme-border-radius)] font-black text-lg shadow-2xl border-2 backdrop-blur-md ${
-                  feedback.type === 'error' 
-                    ? 'bg-red-950/90 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-feedback-error no-calm-override' 
-                    : feedback.type === 'success' 
-                    ? 'bg-emerald-950/90 text-emerald-100 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-feedback-success no-calm-override' 
-                    : 'bg-slate-800 text-white border-slate-600 animate-feedback-success'
-                }`}
-              >
-                {feedback.text}
-              </div>
-            </div>
-          )}
-          <div className="flex items-center justify-center gap-4">
-            {isBusDeckExhausted ? (
-              <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
-                {t("Pakje leeg – pak een nieuw deck om verder te gaan")}
-              </div>
-            ) : busWrongCardIndex === null && !isBusWon ? (
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex items-center justify-center gap-4">
-                  <button onClick={() => handleBusGuess('HIGHER')} className={getBusGuessBtnClasses('HIGHER')}>
-                    <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
-                    <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
-                  </button>
-                  <button onClick={() => handleBusGuess('LOWER')} className={getBusGuessBtnClasses('LOWER')}>
-                    <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
-                    <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
-                  </button>
+        <div className="flex-none w-full bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-4 pb-safe pb-6 px-4 z-20">
+          <div className="max-w-md mx-auto w-full">
+            {feedback && (
+              <div className="mb-6 flex justify-center pointer-events-none">
+                <div 
+                  key={feedback.text}
+                  className={`px-8 py-3 rounded-[var(--theme-border-radius)] font-black text-lg shadow-2xl border-2 backdrop-blur-md ${
+                    feedback.type === 'error' 
+                      ? 'bg-red-950/90 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-feedback-error no-calm-override' 
+                      : feedback.type === 'success' 
+                      ? 'bg-emerald-950/90 text-emerald-100 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-feedback-success no-calm-override' 
+                      : 'bg-slate-800 text-white border-slate-600 animate-feedback-success'
+                  }`}
+                >
+                  {feedback.text}
                 </div>
-                {(() => {
-                  const prevCard = busCards[currentBusIndex - 1];
-                  const cardText = prevCard ? getRankString(prevCard.rank) : '';
-                  return (
-                    <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>
-                      {t("GELIJK")}{cardText ? ` (${cardText})` : ''}
-                    </button>
-                  );
-                })()}
-              </div>
-            ) : isBusWon ? (
-              <button
-                onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
-                className="w-full text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle"
-                style={{
-                  background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
-                  backgroundSize: '200% 200%',
-                  animation: 'end-gradient 3s linear infinite',
-                }}
-              >
-                {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
-              </button>
-            ) : (
-              <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
               </div>
             )}
+            <div className="flex items-center justify-center gap-4">
+              {isBusDeckExhausted ? (
+                <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
+                  {t("Pakje leeg – pak een nieuw deck om verder te gaan")}
+                </div>
+              ) : busWrongCardIndex === null && !isBusWon ? (
+                <div className="flex flex-col gap-3 w-full">
+                  <div className="flex items-center justify-center gap-4">
+                    <button onClick={() => handleBusGuess('HIGHER')} className={getBusGuessBtnClasses('HIGHER')}>
+                      <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
+                      <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
+                    </button>
+                    <button onClick={() => handleBusGuess('LOWER')} className={getBusGuessBtnClasses('LOWER')}>
+                      <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
+                      <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
+                    </button>
+                  </div>
+                  {(() => {
+                    const prevCard = busCards[currentBusIndex - 1];
+                    const cardText = prevCard ? getRankString(prevCard.rank) : '';
+                    return (
+                      <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>
+                        {t("GELIJK")}{cardText ? ` (${cardText})` : ''}
+                      </button>
+                    );
+                  })()}
+                </div>
+              ) : isBusWon ? (
+                <button
+                  onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
+                  className="w-full text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle"
+                  style={{
+                    background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
+                    backgroundSize: '200% 200%',
+                    animation: 'end-gradient 3s linear infinite',
+                  }}
+                >
+                  {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
+                </button>
+              ) : (
+                <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <SlideMenuModal
@@ -5147,7 +5495,6 @@ const initializeAdMob = useCallback(async () => {
     <>
       <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
       {renderSettingsModal()}
-      {renderPlayerHandModal()}
       {renderDevModeOrb()}
         {renderAdditionalModals()}
 {renderQuitModal()}

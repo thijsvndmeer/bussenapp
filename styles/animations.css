@@ -202,6 +202,47 @@
   animation: feedbackErrorIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
+@keyframes handTraySlideDown {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -22px, 0) scale(0.96);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, 3px, 0) scale(1.01);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-hand-tray-enter {
+  will-change: transform, opacity, filter;
+  animation: handTraySlideDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes handTraySlideUp {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -20px, 0) scale(0.96);
+    filter: blur(2px);
+  }
+}
+
+.animate-hand-tray-exit {
+  will-change: transform, opacity, filter;
+  animation: handTraySlideUp 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 @keyframes cardHandSubtle {
   0% {
     opacity: 0.3;

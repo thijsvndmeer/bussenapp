@@ -31,6 +31,7 @@ export interface Card {
   suit: Suit;
   rank: Rank;
   id: string;
+  roundIndex?: number;
 }
 
 export interface Player {
