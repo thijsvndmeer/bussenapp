@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo, useTransition } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useTransition } from 'react';
 import { useGameEngine, GameEngineEvent } from './hooks/useGameEngine';
 import { usePlayerState } from './hooks/usePlayerState';
 import { useGameStore } from './src/store/gameStore';
@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -800,8 +800,19 @@ const App: React.FC = () => {
     return { nl: { success: [], failure: [], loser: [] }, en: { success: [], failure: [], loser: [] } };
   });
   const [isPhraseEditorOpen, setIsPhraseEditorOpen] = useState(false);
+  const [isPhraseEditorClosing, setIsPhraseEditorClosing] = useState(false);
   const [editorCategory, setEditorCategory] = useState<PhraseCategory>('success');
   const [editingPhraseText, setEditingPhraseText] = useState('');
+
+  const handlePhraseEditorBack = useCallback(() => {
+    if (isPhraseEditorClosing) return;
+    setIsPhraseEditorClosing(true);
+    triggerHaptic('tick');
+    setTimeout(() => {
+      setIsPhraseEditorOpen(false);
+      setIsPhraseEditorClosing(false);
+    }, 140);
+  }, [isPhraseEditorClosing]);
   // Round 1-4 State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [roundStep, setRoundStep] = useState<RoundStep>(RoundStep.RED_BLACK);
@@ -1495,7 +1506,7 @@ const initializeAdMob = useCallback(async () => {
       const base = "py-4 rounded-none font-black text-lg border-2 shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2";
       if (type === 'RED' || type === 'HIGHER' || type === 'BETWEEN' || type === 'MATCH') return `${base} bg-[var(--theme-accent)] text-slate-950 border-white`;
       if (type === 'BLACK' || type === 'LOWER' || type === 'OUTSIDE' || type === 'NO_MATCH') return `${base} bg-slate-900 text-[var(--theme-accent)] border-[var(--theme-accent)]`;
-      if (type === 'EQUAL') return `col-span-2 py-3 rounded-none font-mono text-xs font-black bg-slate-900 text-slate-300 border-2 border-slate-700 shadow-[4px_4px_0_rgba(0,0,0,0.8)]`;
+      if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider border-2 shadow-[2px_2px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 bg-zinc-800 text-zinc-100 border-zinc-600";
     }
     if (isBeer) {
       const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
@@ -1507,7 +1518,7 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'OUTSIDE') return `${base} bg-gradient-to-br from-stone-800 to-amber-950 border-amber-600/50 text-amber-100 shadow-[0_6px_20px_rgba(120,53,15,0.3)]`;
       if (type === 'MATCH') return `${base} bg-gradient-to-br from-amber-500 to-amber-800 border-amber-300 text-white shadow-[0_6px_20px_rgba(245,158,11,0.4)]`;
       if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-stone-800 to-amber-950 border-amber-700/50 text-amber-100 shadow-[0_6px_20px_rgba(0,0,0,0.4)]`;
-      if (type === 'EQUAL') return `col-span-2 py-3 text-xs font-bold rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300 hover:bg-amber-900/50 transition-colors`;
+      if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2 border-t bg-gradient-to-br from-stone-700 to-stone-900 border-stone-500 text-stone-200 shadow-[0_4px_12px_rgba(0,0,0,0.4)]";
     }
     if (isCalm) {
       const base = "py-4 rounded-2xl font-black text-lg backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-lg";
@@ -1529,7 +1540,7 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'OUTSIDE') return `${base} bg-orange-950/50 hover:bg-orange-950/70 border-orange-500/30 text-orange-200 shadow-[0_4px_20px_rgba(249,115,22,0.2)] no-calm-override`;
       if (type === 'MATCH') return `${base} bg-purple-950/50 hover:bg-purple-950/70 border-purple-500/30 text-purple-200 shadow-[0_4px_20px_rgba(168,85,247,0.2)] no-calm-override`;
       if (type === 'NO_MATCH') return `${base} bg-pink-950/50 hover:bg-pink-950/70 border-pink-500/30 text-pink-200 shadow-[0_4px_20px_rgba(236,72,153,0.2)] no-calm-override`;
-      if (type === 'EQUAL') return `col-span-2 bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:text-white transition-colors no-calm-override`;
+      if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-md bg-slate-800/70 hover:bg-slate-800/90 border-slate-600/50 text-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.3)] no-calm-override";
     }
     // Default (Classic)
     const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
@@ -1551,7 +1562,7 @@ const initializeAdMob = useCallback(async () => {
     if (type === 'OUTSIDE') return `${base} bg-gradient-to-br from-orange-600 to-orange-800 border-orange-400 text-white`;
     if (type === 'MATCH') return `${base} bg-gradient-to-br from-purple-600 to-purple-800 border-purple-400 text-white`;
     if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-pink-600 to-pink-800 border-pink-400 text-white`;
-    if (type === 'EQUAL') return `col-span-2 bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors`;
+    if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2 border-t bg-gradient-to-br from-slate-700 to-slate-800 border-slate-500 text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)]";
     return base;
   };
   const getBusGuessBtnClasses = (type: 'HIGHER' | 'LOWER' | 'EQUAL') => {
@@ -1578,6 +1589,7 @@ const initializeAdMob = useCallback(async () => {
     if (type === 'EQUAL') return "w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95";
     return "";
   };
+
   const handleStartPress = () => {
     if (players.length < 2) return;
     setIsSettingsOpen(false);
@@ -1696,7 +1708,8 @@ const initializeAdMob = useCallback(async () => {
           const low = Math.min(c1.rank, c2.rank);
           const high = Math.max(c1.rank, c2.rank);
           if (guess === 'BETWEEN') return c.rank > low && c.rank < high;
-          return c.rank < low || c.rank > high || c.rank === low || c.rank === high;
+          if (guess === 'OUTSIDE') return c.rank < low || c.rank > high;
+          if (guess === 'ON_IT') return c.rank === low || c.rank === high;
         } else if (r === RoundStep.SUIT) {
           const hasSuit = activePlayer.hand.some(h => h.suit === c.suit);
           return (guess === 'MATCH' && hasSuit) || (guess === 'NO_MATCH' && !hasSuit);
@@ -1727,7 +1740,8 @@ const initializeAdMob = useCallback(async () => {
           if (c1 && c2) {
             const low = Math.min(c1.rank, c2.rank);
             const high = Math.max(c1.rank, c2.rank);
-            card.rank = guess === 'BETWEEN' ? Math.floor((low + high) / 2) : 14;
+            card.rank = guess === 'BETWEEN' ? Math.floor((low + high) / 2) : 
+                        guess === 'ON_IT' ? low : 14;
           } else card.rank = 14;
         } else if (r === RoundStep.SUIT) {
           const b = activePlayer.hand[0];
@@ -1757,7 +1771,8 @@ const initializeAdMob = useCallback(async () => {
         const low = Math.min(c1.rank, c2.rank);
         const high = Math.max(c1.rank, c2.rank);
         if (guess === 'BETWEEN') correct = card.rank > low && card.rank < high;
-        else correct = card.rank < low || card.rank > high || card.rank === low || card.rank === high;
+        else if (guess === 'OUTSIDE') correct = card.rank < low || card.rank > high;
+        else if (guess === 'ON_IT') correct = card.rank === low || card.rank === high;
       }
     }
     else if (roundStep === RoundStep.SUIT) {
@@ -2802,7 +2817,13 @@ const initializeAdMob = useCallback(async () => {
     <>
         <SlideMenuModal
           isOpen={isMoreSettingsOpen}
-          onClose={() => setIsMoreSettingsOpen(false)}
+          onClose={() => {
+            setIsMoreSettingsOpen(false);
+            setIsPhraseEditorOpen(false);
+            setIsPhraseEditorClosing(false);
+          }}
+          onBackdropClick={isPhraseEditorOpen ? handlePhraseEditorBack : undefined}
+          className="relative w-full max-w-sm m-4 flex flex-col max-h-[85vh]"
         >
           {({ close }) => (
             <>
@@ -2835,7 +2856,10 @@ const initializeAdMob = useCallback(async () => {
                 <div className="flex flex-col gap-3 w-full pt-2">
                   <h4 className="text-white font-medium">{t("Berichten aanpassen")}</h4>
                   <button
-                    onClick={() => { setIsMoreSettingsOpen(false); setIsPhraseEditorOpen(true); }}
+                    onClick={() => {
+                      setIsPhraseEditorOpen(true);
+                      setIsPhraseEditorClosing(false);
+                    }}
                     className="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors shadow-inner border border-slate-700 flex items-center justify-center gap-2 active:scale-95"
                   >
                     <Pencil size={16} /> {t("Berichten bewerken")}
@@ -3112,113 +3136,119 @@ const initializeAdMob = useCallback(async () => {
                   {t("Sluiten")}
                 </button>
               </div>
-            </>
-          )}
-        </SlideMenuModal>
-        {/* Phrase Editor Modal */}
-        <SlideMenuModal
-          isOpen={isPhraseEditorOpen}
-          onClose={() => { setIsPhraseEditorOpen(false); setIsMoreSettingsOpen(true); }}
-          className="bg-slate-900 border border-slate-700 rounded-3xl w-full h-[90vh] max-w-lg m-2 flex flex-col shadow-2xl overflow-hidden"
-          backdropClassName="bg-black/90 backdrop-blur-md"
-        >
-          {({ close }) => (
-            <>
-              <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-800/50 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Pencil size={20} className="text-red-500" />
-                  <h3 className="text-lg font-black text-white uppercase tracking-wider">{t("Berichten")} ({lang.toUpperCase()})</h3>
-                </div>
-                <button onClick={close} className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-full cursor-pointer">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex gap-2 p-3 bg-slate-900 overflow-x-auto snap-x hide-scrollbar border-b border-slate-800 shrink-0">
-                {(['success', 'failure', 'loser'] as PhraseCategory[]).map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setEditorCategory(cat)}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold snap-center whitespace-nowrap transition-all ${editorCategory === cat ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                  >
-                    {t(cat === 'success' ? "Goed" : cat === 'failure' ? "Fout" : "Bus Loser")}
-                  </button>
-                ))}
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">
-                {(() => {
-                  const effectivePhrases = getEffectivePhrases(editorCategory);
-                  return effectivePhrases.map((phrase, idx) => (
-                    <div key={`${editorCategory}-${idx}`} className="flex justify-between items-center bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 group">
-                      <span className="text-white font-medium text-sm pr-2">{phrase}</span>
+
+              {/* Phrase Editor Overlay */}
+              {isPhraseEditorOpen && (
+                <div className={`absolute inset-0 z-20 bg-slate-900 flex flex-col rounded-3xl overflow-hidden ${isPhraseEditorClosing ? 'animate-slide-right-exit pointer-events-none' : 'animate-slide-left-enter'}`}>
+                  {/* Header */}
+                  <div className="flex justify-between items-center border-b border-slate-800 p-6 shrink-0 bg-slate-900">
+                    <h3 className="text-xl font-black text-white uppercase tracking-wider">{t("Berichten")} ({lang.toUpperCase()})</h3>
+                    <button
+                      onClick={handlePhraseEditorBack}
+                      className="text-slate-500 hover:text-white transition-colors cursor-pointer"
+                      title={t("Terug")}
+                      aria-label={t("Terug")}
+                    >
+                      <ArrowLeft size={24} />
+                    </button>
+                  </div>
+                  {/* Category Filter */}
+                  <div className="px-6 py-3 bg-slate-900 border-b border-slate-800 shrink-0">
+                    <div className="flex bg-slate-800 p-1 rounded-2xl gap-1 border border-slate-700">
+                      {(['success', 'failure', 'loser'] as PhraseCategory[]).map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setEditorCategory(cat)}
+                          className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all cursor-pointer text-center ${
+                            editorCategory === cat
+                              ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-md border border-red-500/40'
+                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-transparent'
+                          }`}
+                        >
+                          {t(cat === 'success' ? "Goed" : cat === 'failure' ? "Fout" : "Bus Loser")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Phrases List */}
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2.5 bg-slate-900 min-h-0">
+                    {(() => {
+                      const effectivePhrases = getEffectivePhrases(editorCategory);
+                      return effectivePhrases.map((phrase, idx) => (
+                        <div key={`${editorCategory}-${idx}`} className="flex justify-between items-center bg-slate-800 p-3.5 rounded-xl border border-slate-700 group">
+                          <span className="text-white font-medium text-sm pr-2 break-words">{phrase}</span>
+                          <button
+                            onClick={() => {
+                              const newPhrases = { ...customPhrases };
+                              if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
+                              newPhrases[lang][editorCategory] = effectivePhrases.filter((_, i) => i !== idx);
+                              setCustomPhrases(newPhrases);
+                              localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                              triggerHaptic('medium');
+                            }}
+                            className="text-slate-500 hover:text-red-400 p-1 transition-colors shrink-0 cursor-pointer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                  {/* Add Input & Reset */}
+                  <div className="p-6 border-t border-slate-800 bg-slate-900 space-y-3 shrink-0">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editingPhraseText}
+                        onChange={(e) => setEditingPhraseText(e.target.value)}
+                        placeholder={t("Nieuw bericht toevoegen...")}
+                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-red-500 placeholder:text-slate-500"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && editingPhraseText.trim()) {
+                            const newPhrases = { ...customPhrases };
+                            if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
+                            newPhrases[lang][editorCategory] = [...getEffectivePhrases(editorCategory), editingPhraseText.trim()];
+                            setCustomPhrases(newPhrases);
+                            localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                            setEditingPhraseText('');
+                            triggerHaptic('success');
+                          }
+                        }}
+                      />
                       <button
                         onClick={() => {
-                          const newPhrases = { ...customPhrases };
-                          if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
-                          newPhrases[lang][editorCategory] = effectivePhrases.filter((_, i) => i !== idx);
+                          if (editingPhraseText.trim()) {
+                            const newPhrases = { ...customPhrases };
+                            if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
+                            newPhrases[lang][editorCategory] = [...getEffectivePhrases(editorCategory), editingPhraseText.trim()];
+                            setCustomPhrases(newPhrases);
+                            localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
+                            setEditingPhraseText('');
+                            triggerHaptic('success');
+                          }
+                        }}
+                        className="bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white rounded-xl px-5 flex items-center justify-center transition-all active:scale-95 shadow-md cursor-pointer border border-red-500/30"
+                      >
+                        <Plus size={22} />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newPhrases = { ...customPhrases };
+                        if (newPhrases[lang]) {
+                          newPhrases[lang][editorCategory] = [];
                           setCustomPhrases(newPhrases);
                           localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
                           triggerHaptic('medium');
-                        }}
-                        className="text-slate-500 hover:text-red-400 p-1 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ));
-                })()}
-              </div>
-              <div className="p-4 border-t border-slate-800 bg-slate-800/30 space-y-3 shrink-0">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={editingPhraseText}
-                    onChange={(e) => setEditingPhraseText(e.target.value)}
-                    placeholder={t("Nieuw bericht toevoegen...")}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && editingPhraseText.trim()) {
-                        const newPhrases = { ...customPhrases };
-                        if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
-                        newPhrases[lang][editorCategory] = [...getEffectivePhrases(editorCategory), editingPhraseText.trim()];
-                        setCustomPhrases(newPhrases);
-                        localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
-                        setEditingPhraseText('');
-                        triggerHaptic('success');
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      if (editingPhraseText.trim()) {
-                        const newPhrases = { ...customPhrases };
-                        if (!newPhrases[lang]) newPhrases[lang] = { success: [...DEFAULT_PHRASES[lang].success], failure: [...DEFAULT_PHRASES[lang].failure], loser: [...DEFAULT_PHRASES[lang].loser] };
-                        newPhrases[lang][editorCategory] = [...getEffectivePhrases(editorCategory), editingPhraseText.trim()];
-                        setCustomPhrases(newPhrases);
-                        localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
-                        setEditingPhraseText('');
-                        triggerHaptic('success');
-                      }
-                    }}
-                    className="bg-red-600 text-white rounded-xl px-4 flex items-center justify-center hover:bg-red-500 transition-colors active:scale-95 shadow-lg"
-                  >
-                    <Plus size={24} />
-                  </button>
+                        }
+                      }}
+                      className="w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <RotateCcw size={14} /> {t("Herstel standaardberichten")}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => {
-                    const newPhrases = { ...customPhrases };
-                    if (newPhrases[lang]) {
-                      newPhrases[lang][editorCategory] = [];
-                      setCustomPhrases(newPhrases);
-                      localStorage.setItem(CUSTOM_PHRASES_KEY, JSON.stringify(newPhrases));
-                      triggerHaptic('medium');
-                    }
-                  }}
-                  className="w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <RotateCcw size={14} /> {t("Herstel standaardberichten")}
-                </button>
-              </div>
+              )}
             </>
           )}
         </SlideMenuModal>
@@ -3280,8 +3310,16 @@ const initializeAdMob = useCallback(async () => {
             className={`text-5xl font-black tracking-tighter uppercase cursor-pointer select-none transition-all duration-300 ${
               headerArmed || devModeArmed
                 ? 'text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 drop-shadow-[0_2px_15px_rgba(59,130,246,0.7)]'
-                : 'text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 drop-shadow-[0_2px_10px_rgba(220,38,38,0.5)] animated-gradient-text'
+                : 'text-[var(--theme-accent,#ef4444)]'
             }`}
+            style={
+              headerArmed || devModeArmed
+                ? undefined
+                : {
+                    color: 'var(--theme-accent, #ef4444)',
+                    textShadow: '0 2px 12px var(--theme-accent-glow, rgba(220,38,38,0.5))',
+                  }
+            }
             onPointerDown={handleHeaderPointerDown}
             onPointerUp={handleHeaderPointerUpOrLeave}
             onPointerLeave={handleHeaderPointerUpOrLeave}
@@ -3590,7 +3628,7 @@ const initializeAdMob = useCallback(async () => {
                   if (isObtained) {
                     const c = digitalCards[idx];
                     const isNewlyAdded = !!lastDrawnCard && c.id === lastDrawnCard.id;
-                    const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
+                    const animClass = isNewlyAdded ? 'animate-card-hand-slot-in' : 'animate-card-hand-subtle';
                     return (
                       <div
                         key={`${activePlayer.id}-${c.id}`}
@@ -3614,7 +3652,7 @@ const initializeAdMob = useCallback(async () => {
                     const isCurrent = idx === currentCardsCount && !feedback;
                     if (isObtained) {
                       const isNewlyAdded = !!lastDrawnCard && idx === currentCardsCount - 1;
-                      const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
+                      const animClass = isNewlyAdded ? 'animate-card-hand-slot-in' : 'animate-card-hand-subtle';
                       return (
                         <div
                           key={`${activePlayer.id}-phys-${idx}`}
@@ -3663,7 +3701,13 @@ const initializeAdMob = useCallback(async () => {
             </div>
             <div className="relative h-64 w-full flex items-center justify-center perspective-1000 z-0">
               {lastDrawnCard ? (
-                <PlayingCard card={lastDrawnCard} size="lg" className="animate-pop shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" style={settings.cardStyle} />
+                <PlayingCard 
+                  key={lastDrawnCard.id} 
+                  card={lastDrawnCard} 
+                  size="lg" 
+                  className="animate-card-hand-enter shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)]" 
+                  style={settings.cardStyle} 
+                />
               ) : (
                 settings.mode === GameMode.DIGITAL ? (
                   <div className="w-48 h-64 border-4 border-dashed border-slate-700/50 rounded-2xl flex items-center justify-center bg-slate-900/30">
@@ -3681,14 +3725,21 @@ const initializeAdMob = useCallback(async () => {
         {/* CONTROLS */}
         <div className="flex-none w-full max-w-md mx-auto pt-2 pb-6 px-2 relative z-20">
           {feedback ? (
-            <div className="space-y-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="space-y-4">
               <div
                 key={feedback.text}
-                className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-xl backdrop-blur-md animate-pop ${feedback.type === 'success' ? 'bg-emerald-900/80 border-emerald-500 text-emerald-100' : 'bg-red-900/80 border-red-500 text-white animate-shake'}`}
+                className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-2xl backdrop-blur-md ${
+                  feedback.type === 'success'
+                    ? 'bg-emerald-950/90 border-emerald-400 text-emerald-100 shadow-[0_0_35px_rgba(16,185,129,0.3)] animate-feedback-success'
+                    : 'bg-red-950/90 border-red-400 text-white shadow-[0_0_35px_rgba(239,68,68,0.3)] animate-feedback-error'
+                }`}
               >
                 {feedback.text}
               </div>
-              <button onClick={() => dispatchGameEvent({ type: 'NEXT_PLAYER' })} className="w-full bg-white hover:bg-slate-200 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+              <button 
+                onClick={() => dispatchGameEvent({ type: 'NEXT_PLAYER' })} 
+                className="w-full bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100 fill-mode-both"
+              >
                 {t("Volgende")} <ArrowRight size={20} strokeWidth={3} />
               </button>
             </div>
@@ -3710,31 +3761,61 @@ const initializeAdMob = useCallback(async () => {
                     <button onClick={() => handleDigitalGuess('BLACK')} className={getGuessBtnClasses('BLACK')}>{t("ZWART")}</button>
                   </>
                 )}
-                {roundStep === 2 && (
-                  <>
-                    <button onClick={() => handleDigitalGuess('HIGHER')} className={getGuessBtnClasses('HIGHER')}>
-                      <ChevronUp size={24} strokeWidth={3} />
-                      <span>{t("HOGER")}</span>
-                    </button>
-                    <button onClick={() => handleDigitalGuess('LOWER')} className={getGuessBtnClasses('LOWER')}>
-                      <ChevronDown size={24} strokeWidth={3} />
-                      <span>{t("LAGER")}</span>
-                    </button>
-                    <button onClick={() => handleDigitalGuess('EQUAL')} className={getGuessBtnClasses('EQUAL')}>{t("GELIJK")}</button>
-                  </>
-                )}
-                {roundStep === 3 && (
-                  <>
-                    <button onClick={() => handleDigitalGuess('BETWEEN')} className={getGuessBtnClasses('BETWEEN')}>
-                      <Minimize2 size={20} strokeWidth={3} />
-                      <span>{t("BINNEN")}</span>
-                    </button>
-                    <button onClick={() => handleDigitalGuess('OUTSIDE')} className={getGuessBtnClasses('OUTSIDE')}>
-                      <Maximize2 size={20} strokeWidth={3} />
-                      <span>{t("BUITEN")}</span>
-                    </button>
-                  </>
-                )}
+                {roundStep === 2 && (() => {
+                  const baseCard = activePlayer?.hand?.[0];
+                  const cardText = baseCard ? getRankString(baseCard.rank) : '';
+                  return (
+                    <>
+                      <div className="col-span-2 flex justify-center">
+                        <button 
+                          type="button" 
+                          onClick={() => handleDigitalGuess('EQUAL')} 
+                          className={getGuessBtnClasses('EQUAL')}
+                        >
+                          <Equal size={15} strokeWidth={2.5} />
+                          <span>{t("GELIJK")}{cardText ? ` (${cardText})` : ''}</span>
+                        </button>
+                      </div>
+                      <button onClick={() => handleDigitalGuess('HIGHER')} className={getGuessBtnClasses('HIGHER')}>
+                        <ChevronUp size={24} strokeWidth={3} />
+                        <span>{t("HOGER")}</span>
+                      </button>
+                      <button onClick={() => handleDigitalGuess('LOWER')} className={getGuessBtnClasses('LOWER')}>
+                        <ChevronDown size={24} strokeWidth={3} />
+                        <span>{t("LAGER")}</span>
+                      </button>
+                    </>
+                  );
+                })()}
+                {roundStep === 3 && (() => {
+                  const c1 = activePlayer?.hand?.[0];
+                  const c2 = activePlayer?.hand?.[1];
+                  const boundaryText = c1 && c2 
+                    ? (c1.rank === c2.rank ? getRankString(c1.rank) : `${getRankString(Math.min(c1.rank, c2.rank))}/${getRankString(Math.max(c1.rank, c2.rank))}`)
+                    : '';
+                  return (
+                    <>
+                      <div className="col-span-2 flex justify-center">
+                        <button 
+                          type="button" 
+                          onClick={() => handleDigitalGuess('ON_IT')} 
+                          className={getGuessBtnClasses('ON_IT')}
+                        >
+                          <Target size={15} strokeWidth={2.5} />
+                          <span>{t("EROP")}{boundaryText ? ` (${boundaryText})` : ''}</span>
+                        </button>
+                      </div>
+                      <button onClick={() => handleDigitalGuess('BETWEEN')} className={getGuessBtnClasses('BETWEEN')}>
+                        <Minimize2 size={20} strokeWidth={3} />
+                        <span>{t("BINNEN")}</span>
+                      </button>
+                      <button onClick={() => handleDigitalGuess('OUTSIDE')} className={getGuessBtnClasses('OUTSIDE')}>
+                        <Maximize2 size={20} strokeWidth={3} />
+                        <span>{t("BUITEN")}</span>
+                      </button>
+                    </>
+                  );
+                })()}
                 {roundStep === 4 && (
                   <>
                     <button onClick={() => handleDigitalGuess('MATCH')} className={getGuessBtnClasses('MATCH')}>
@@ -4838,7 +4919,16 @@ const initializeAdMob = useCallback(async () => {
         <div className="flex-none bg-black/40 border-t border-white/10 p-4 pb-8 z-20 backdrop-blur-md">
           {feedback && (
             <div className="mb-6 flex justify-center pointer-events-none">
-              <div className={`px-8 py-3 rounded-[var(--theme-border-radius)] font-black text-lg shadow-2xl border-2 transition-all animate-pop ${feedback.type === 'error' ? 'bg-red-600 text-white border-red-400 no-calm-override' : feedback.type === 'success' ? 'bg-emerald-600 text-white border-emerald-400 no-calm-override' : 'bg-slate-800 text-white border-slate-600'}`}>
+              <div 
+                key={feedback.text}
+                className={`px-8 py-3 rounded-[var(--theme-border-radius)] font-black text-lg shadow-2xl border-2 backdrop-blur-md ${
+                  feedback.type === 'error' 
+                    ? 'bg-red-950/90 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-feedback-error no-calm-override' 
+                    : feedback.type === 'success' 
+                    ? 'bg-emerald-950/90 text-emerald-100 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-feedback-success no-calm-override' 
+                    : 'bg-slate-800 text-white border-slate-600 animate-feedback-success'
+                }`}
+              >
                 {feedback.text}
               </div>
             </div>
@@ -4860,7 +4950,15 @@ const initializeAdMob = useCallback(async () => {
                     <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
                   </button>
                 </div>
-                <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>{t("GELIJK")}</button>
+                {(() => {
+                  const prevCard = busCards[currentBusIndex - 1];
+                  const cardText = prevCard ? getRankString(prevCard.rank) : '';
+                  return (
+                    <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>
+                      {t("GELIJK")}{cardText ? ` (${cardText})` : ''}
+                    </button>
+                  );
+                })()}
               </div>
             ) : isBusWon ? (
               <button

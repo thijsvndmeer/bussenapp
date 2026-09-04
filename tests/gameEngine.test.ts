@@ -3,6 +3,20 @@ import { renderHook, act } from '@testing-library/react';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { Player, Suit, Rank, GamePhase } from '../types';
 
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = String(value); },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; },
+    length: 0,
+    key: (i: number) => Object.keys(store)[i] ?? null,
+  };
+})();
+Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
+
 describe('Player State & Game Engine Logic', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -113,5 +127,52 @@ describe('Player State & Game Engine Logic', () => {
     expect(Rank.TWO).toBe(2);
     expect(Rank.ACE).toBe(14);
     expect(Rank.KING).toBe(13);
+  });
+
+  describe('Round 3 (Inside / Outside / On It) boundary rules', () => {
+    const evaluateRound3Guess = (
+      c1Rank: number,
+      c2Rank: number,
+      drawnRank: number,
+      guess: 'BETWEEN' | 'OUTSIDE' | 'ON_IT'
+    ): boolean => {
+      const low = Math.min(c1Rank, c2Rank);
+      const high = Math.max(c1Rank, c2Rank);
+      if (guess === 'BETWEEN') return drawnRank > low && drawnRank < high;
+      if (guess === 'OUTSIDE') return drawnRank < low || drawnRank > high;
+      if (guess === 'ON_IT') return drawnRank === low || drawnRank === high;
+      return false;
+    };
+
+    it('rejects BETWEEN and OUTSIDE when drawn rank matches either boundary (e.g. 3 or 9 with hand 3+9)', () => {
+      // Hand: 3 and 9. Drawn: 3
+      expect(evaluateRound3Guess(3, 9, 3, 'BETWEEN')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 3, 'OUTSIDE')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 3, 'ON_IT')).toBe(true);
+
+      // Hand: 3 and 9. Drawn: 9
+      expect(evaluateRound3Guess(3, 9, 9, 'BETWEEN')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 9, 'OUTSIDE')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 9, 'ON_IT')).toBe(true);
+    });
+
+    it('handles strictly inside guesses correctly', () => {
+      // Hand: 3 and 9. Drawn: 5
+      expect(evaluateRound3Guess(3, 9, 5, 'BETWEEN')).toBe(true);
+      expect(evaluateRound3Guess(3, 9, 5, 'OUTSIDE')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 5, 'ON_IT')).toBe(false);
+    });
+
+    it('handles strictly outside guesses correctly', () => {
+      // Hand: 3 and 9. Drawn: 2 (below)
+      expect(evaluateRound3Guess(3, 9, 2, 'BETWEEN')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 2, 'OUTSIDE')).toBe(true);
+      expect(evaluateRound3Guess(3, 9, 2, 'ON_IT')).toBe(false);
+
+      // Hand: 3 and 9. Drawn: 10 (above)
+      expect(evaluateRound3Guess(3, 9, 10, 'BETWEEN')).toBe(false);
+      expect(evaluateRound3Guess(3, 9, 10, 'OUTSIDE')).toBe(true);
+      expect(evaluateRound3Guess(3, 9, 10, 'ON_IT')).toBe(false);
+    });
   });
 });

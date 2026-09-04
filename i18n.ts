@@ -155,6 +155,7 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "GELIJK": "EQUAL",
         "BINNEN": "INSIDE",
         "BUITEN": "OUTSIDE",
+        "EROP": "ON IT",
         "ZELFDE": "SAME",
         "ANDERS": "DIFFERENT",
         "DISCO!": "DISCO!",

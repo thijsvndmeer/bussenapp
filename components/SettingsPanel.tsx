@@ -364,6 +364,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
     setSwitchDrag(null);
     if (nextVal !== settings.sharedBus) {
+      triggerHaptic('tick');
       const newCommitted = { ...committedValuesRef.current, sharedBus: nextVal };
       if (onCommitSettings) onCommitSettings(newCommitted);
       onSettingsChange('sharedBus', nextVal);
@@ -718,6 +719,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div 
                   onClick={() => {
                     if (disabled) return;
+                    triggerHaptic('tick');
                     const newCommitted = { ...committedValuesRef.current, sharedBus: true };
                     if (onCommitSettings) onCommitSettings(newCommitted);
                     onSettingsChange('sharedBus', true);
@@ -747,6 +749,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     role="switch"
                     aria-checked={settings.sharedBus}
                     tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        if (disabled) return;
+                        const nextVal = !settings.sharedBus;
+                        triggerHaptic('tick');
+                        const newCommitted = { ...committedValuesRef.current, sharedBus: nextVal };
+                        if (onCommitSettings) onCommitSettings(newCommitted);
+                        onSettingsChange('sharedBus', nextVal);
+                      }
+                    }}
                     onPointerDown={handleSwitchPointerDown}
                     onPointerMove={handleSwitchPointerMove}
                     onPointerUp={handleSwitchPointerUp}
