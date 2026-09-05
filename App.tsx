@@ -1102,13 +1102,36 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-btn-bg', accentHex);
       root.style.setProperty('--theme-btn-sec-text', accentHex);
       root.style.setProperty('--theme-card-border', `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+      root.style.setProperty('--theme-border-radius', '20px');
+    } else if (settings.theme === UITheme.STARS) {
+      root.style.setProperty('--theme-accent', '#c084fc');
+      root.style.setProperty('--theme-accent-glow', 'rgba(192, 132, 252, 0.28)');
+      root.style.setProperty('--theme-btn-bg', 'linear-gradient(180deg, #1e1138 0%, #0d061c 100%)');
+      root.style.setProperty('--theme-btn-sec-text', '#f3e8ff');
+      root.style.setProperty('--theme-card-border', '1px solid rgba(192, 132, 252, 0.18)');
+      root.style.setProperty('--theme-border-radius', '16px');
+    } else if (settings.theme === UITheme.METRO) {
+      root.style.setProperty('--theme-accent', '#fb7185');
+      root.style.setProperty('--theme-accent-glow', 'rgba(251, 113, 133, 0.15)');
+      root.style.setProperty('--theme-btn-bg', '#fb7185');
+      root.style.setProperty('--theme-btn-sec-text', '#a3a3a3');
+      root.style.setProperty('--theme-card-border', '1.5px solid #27272a');
+      root.style.setProperty('--theme-border-radius', '6px');
+    } else if (settings.theme === UITheme.BEER) {
+      root.style.setProperty('--theme-accent', '#f59e0b');
+      root.style.setProperty('--theme-accent-glow', 'rgba(245, 158, 11, 0.35)');
+      root.style.setProperty('--theme-btn-bg', '#008200');
+      root.style.setProperty('--theme-btn-sec-text', '#ffffff');
+      root.style.setProperty('--theme-card-border', '1px solid rgba(226, 232, 240, 0.2)');
+      root.style.setProperty('--theme-border-radius', '12px');
     } else {
-      // Clean up variables when switching theme
+      // Classic clean up
       root.style.removeProperty('--theme-accent');
       root.style.removeProperty('--theme-accent-glow');
       root.style.removeProperty('--theme-btn-bg');
       root.style.removeProperty('--theme-btn-sec-text');
       root.style.removeProperty('--theme-card-border');
+      root.style.removeProperty('--theme-border-radius');
     }
   }, [settings.theme, settings.calmAccentColor]);
   // Main hydration effect on component mount
@@ -2825,6 +2848,21 @@ const initializeAdMob = useCallback(async () => {
     const commonClasses = "w-20 h-28 flex flex-col items-center justify-center flex-none transition-all duration-300";
     const slotStep = step ?? (idx + 1);
     
+    if (settings.theme === UITheme.STARS) {
+      return (
+        <div key={`current-${idx}`} className={`${commonClasses} rounded-2xl border border-purple-400/40 bg-[#060412]/90 shadow-[0_0_25px_rgba(168,85,247,0.25)] relative overflow-hidden`} style={{ zIndex: idx }}>
+          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
+          <div className="text-purple-300 opacity-90 mb-1 drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]">
+            {slotStep === 1 && <Sparkles size={18} />}
+            {slotStep === 2 && <ArrowUpDown size={18} />}
+            {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
+            {slotStep === 4 && <Zap size={18} />}
+          </div>
+          <span className="text-purple-200 font-sans font-black text-xl tracking-wider drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">?</span>
+        </div>
+      );
+    }
+
     if (settings.theme === UITheme.METRO) {
       return (
         <div key={`current-${idx}`} className={`${commonClasses} ${isDiscoActive ? 'rounded-xl' : 'rounded-none'} border-2 border-[var(--theme-accent)] bg-[var(--theme-accent)]/10 shadow-[4px_4px_0_rgba(0,0,0,0.5)]`} style={{ zIndex: idx }}>
@@ -4421,7 +4459,7 @@ const initializeAdMob = useCallback(async () => {
             <div className="flex flex-col items-center gap-2">
               <button
                 onClick={() => setIsSelectingBusPlayer(true)}
-                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-[var(--theme-border-radius)] border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg no-calm-override"
+                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-[var(--theme-border-radius)] border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
               >
                 {t("Naar de Bus")}
               </button>
@@ -4841,7 +4879,7 @@ const initializeAdMob = useCallback(async () => {
           <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
             <button
               onClick={proceedToBus}
-              className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-[var(--theme-border-radius)] shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle no-calm-override"
+              className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-[var(--theme-border-radius)] shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
             >
               <Bus size={28} /> {t(" NAAR DE BUS ")} <ArrowRight size={28} strokeWidth={3} />
             </button>
