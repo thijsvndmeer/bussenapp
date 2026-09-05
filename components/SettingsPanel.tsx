@@ -150,7 +150,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => {
   const [isBusExpanded, setIsBusExpanded] = useState<boolean>(() => settings.busLength > 12);
 
-  const activeAccentColor = settings?.theme === 'calm' ? (settings.calmAccentColor || '#fb7185') : '#ef4444';
+  const activeAccentColor = 
+    settings?.theme === 'calm' ? (settings.calmAccentColor || '#fb7185') :
+    settings?.theme === 'stars' ? '#c084fc' :
+    settings?.theme === 'metro' ? '#fb7185' :
+    settings?.theme === 'beer' ? '#f59e0b' : '#ef4444';
   const isAccentBlueish = isColorBlueish(activeAccentColor);
 
   const sliders: SliderConfig[] = [
