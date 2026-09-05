@@ -24,20 +24,26 @@ export const PlayerAvatar: React.FC<{
   const isThemeGlow = glow && !player?.isDev;
   const isDev = !!player?.isDev;
 
-  const borderColor = isDev ? 'border-green-400/30' : (isThemeGlow ? '' : 'border-slate-600/50');
-  const shadowEffect = isDev ? '' : (isThemeGlow ? '' : 'shadow-md');
-  const animationEffect = isDev ? '' : '';
   const accentColor = player?.avatarColor;
-  const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : (accentColor ? '' : 'from-black to-slate-900');
+  const hasAccentBorder = !isThemeGlow && !isDev && Boolean(accentColor);
+  const borderColor = isDev ? 'border-green-400/30' : (isThemeGlow || hasAccentBorder ? '' : 'border-slate-600/50');
+  const shadowEffect = isDev ? '' : (isThemeGlow || hasAccentBorder ? '' : 'shadow-md');
+  const animationEffect = isDev ? '' : '';
+  const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
   const customBgStyle = (!player?.image && accentColor) ? {
-    background: `linear-gradient(135deg, ${accentColor}33 0%, ${accentColor}88 50%, ${accentColor}44 100%)`,
+    background: `radial-gradient(circle at 35% 35%, ${accentColor}18 0%, #0a0b10 60%, #000000 100%)`,
   } : undefined;
 
-  const glowStyle = (isThemeGlow && !isDev) ? {
-    borderColor: 'var(--theme-accent, #ef4444)',
-    boxShadow: '0 0 30px var(--theme-accent-glow, rgba(239,68,68,0.4))',
+  const glowStyle: React.CSSProperties = {
     ...customBgStyle,
-  } : customBgStyle;
+    ...(isThemeGlow && !isDev ? {
+      borderColor: 'var(--theme-accent, #ef4444)',
+      boxShadow: '0 0 30px var(--theme-accent-glow, rgba(239,68,68,0.4))',
+    } : hasAccentBorder ? {
+      borderColor: accentColor,
+      boxShadow: `0 0 10px ${accentColor}33`,
+    } : {}),
+  };
 
   return (
     <div 

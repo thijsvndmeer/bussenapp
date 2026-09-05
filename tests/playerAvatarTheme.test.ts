@@ -11,4 +11,10 @@ describe('PlayerAvatar Theme Support', () => {
     expect(content).toContain('var(--theme-accent');
     expect(content).toContain('var(--theme-accent-glow');
   });
+
+  it('keeps avatar background predominantly black with accent color as border accent', () => {
+    expect(content).toContain("'from-black to-slate-900'");
+    expect(content).not.toContain('${accentColor}88');
+    expect(content).toContain('borderColor: accentColor');
+  });
 });
