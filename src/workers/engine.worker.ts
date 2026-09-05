@@ -1,4 +1,4 @@
-import { Card } from '../types';
+import { Card } from '../../types';
 
 self.onmessage = (e) => {
   const { type, payload } = e.data;

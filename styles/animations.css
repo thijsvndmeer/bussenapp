@@ -437,3 +437,94 @@
   content-visibility: auto;
   contain-intrinsic-size: 1000px;
 }
+
+/* ==========================================
+   GALAXY & STARS ANIMATIONS
+   ========================================== */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.35); }
+}
+
+@keyframes shooting-star {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-45deg);
+    opacity: 0;
+    width: 0px;
+  }
+  10% {
+    opacity: 1;
+    width: 140px;
+  }
+  30% {
+    transform: translate3d(500px, 500px, 0) rotate(-45deg);
+    opacity: 0;
+    width: 0px;
+  }
+  100% {
+    transform: translate3d(500px, 500px, 0) rotate(-45deg);
+    opacity: 0;
+    width: 0px;
+  }
+}
+
+@keyframes galaxy-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cosmic-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(56, 189, 248, 0.2);
+    border-color: rgba(192, 132, 252, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(192, 132, 252, 0.8), 0 0 60px rgba(56, 189, 248, 0.4), inset 0 0 25px rgba(168, 85, 247, 0.4);
+    border-color: rgba(232, 121, 249, 0.9);
+  }
+}
+
+@keyframes cosmic-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes hyperspace-warp {
+  0% {
+    transform: scale(0.1) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle var(--twinkle-duration, 3s) ease-in-out infinite var(--twinkle-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.animate-shooting-star {
+  animation: shooting-star 6s ease-out infinite;
+}
+
+.animate-galaxy-spin {
+  animation: galaxy-spin 25s linear infinite;
+  will-change: transform;
+}
+
+.animate-cosmic-pulse {
+  animation: cosmic-pulse 2.5s ease-in-out infinite;
+}
+
+.animate-cosmic-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background-size: 200% 100%;
+  animation: cosmic-shimmer 2.5s infinite;
+  will-change: background-position;
+}
+

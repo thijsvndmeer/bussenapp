@@ -70,6 +70,7 @@ export enum UITheme {
   METRO = 'metro',
   CALM = 'calm',
   BEER = 'beer',
+  STARS = 'stars',
 }
 
 export enum CardStyle {
@@ -77,6 +78,7 @@ export enum CardStyle {
   DARK = 'DARK',
   CLASSIC = 'CLASSIC',
   NEON = 'NEON',
+  GALAXY = 'GALAXY',
 }
 
 export interface GameSettings {

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { GamePhase } from '../types';
+import { GamePhase } from '../../types';
 
 interface GameState {
   phase: GamePhase;

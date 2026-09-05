@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target, Lock, Star } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -21,6 +21,7 @@ import { resizeImage, cropToSquareDataUrl } from './src/lib/utils/image';
 import { Confetti } from './src/components/backgrounds/Confetti';
 import { CalmBackground } from './src/components/backgrounds/CalmBackground';
 import { BeerBackground } from './src/components/backgrounds/BeerBackground';
+import { GalaxyBackground } from './src/components/backgrounds/GalaxyBackground';
 import { PlayerAvatar } from './src/components/ui/PlayerAvatar';
 import { ThemeLabel, ThemeHeader } from './src/components/ui/ThemeComponents';
 
@@ -36,6 +37,7 @@ import { HardBusWarningModal } from './components/modals/HardBusWarningModal';
 import { AdLoadingModal } from './components/modals/AdLoadingModal';
 import { SlideMenuModal } from './components/modals/SlideMenuModal';
 import { PyramidMatchModal } from './components/modals/PyramidMatchModal';
+import { GalaxyCelebrationModal } from './components/modals/GalaxyCelebrationModal';
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
 const ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -131,6 +133,7 @@ const GAME_STATE_KEY = 'bus-app-game-state-v1';
 const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collapsed-v1';
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
+const GALAXY_UNLOCKED_KEY = 'bus-app-galaxy-unlocked-v1';
 const PATCH_NOTES_VERSION = CURRENT_APP_VERSION;
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -304,6 +307,7 @@ const PersistentBackground: React.FC<{
         {theme === UITheme.CALM && <CalmBackground accentColor={calmAccentColor} />}
         {theme === UITheme.BEER && <BeerBackground />}
         {theme === UITheme.METRO && <MetroBackground />}
+        {theme === UITheme.STARS && <GalaxyBackground />}
       </div>
       {/* 3. Global Texture Overlay */}
       {showTexture && (
@@ -633,7 +637,8 @@ const App: React.FC = () => {
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
                 {t(previewDeckStyle === CardStyle.MODERN ? "Modern" : 
                    previewDeckStyle === CardStyle.DARK ? "Donker" : 
-                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" : "Neon")} {t("Stijl")}
+                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" :
+                   previewDeckStyle === CardStyle.GALAXY ? "Galaxy" : "Neon")} {t("Stijl")}
               </h3>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{t("Volledig Deck Voorbeeld")}</p>
             </div>
@@ -742,6 +747,15 @@ const App: React.FC = () => {
   }, [newPlayerName, players]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
+  const [isGalaxyUnlocked, setIsGalaxyUnlocked] = useState<boolean>(() => {
+    if (!storageAvailable) return false;
+    try {
+      return localStorage.getItem(GALAXY_UNLOCKED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isGalaxyCelebrationOpen, setIsGalaxyCelebrationOpen] = useState(false);
   const [isMatchModalClosing, setIsMatchModalClosing] = useState(false);
   const [lastAddedPlayerId, setLastAddedPlayerId] = useState<string | null>(null);
   // Bus Decks Slider State (More Settings)
@@ -1054,7 +1068,7 @@ const initializeAdMob = useCallback(async () => {
   }, [storageAvailable, setPlayers, setNewPlayerName, setNewPlayerImage]);
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer');
+    root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer', 'theme-stars');
     root.classList.add(`theme-${settings.theme}`, 'theme-transition');
     if (settings.theme === UITheme.CALM) {
       const accentHex = settings.calmAccentColor || '#fb7185'; // Default light red
@@ -1539,7 +1553,20 @@ const initializeAdMob = useCallback(async () => {
     const isMetro = settings.theme === UITheme.METRO;
     const isBeer = settings.theme === UITheme.BEER;
     const isCalm = settings.theme === UITheme.CALM;
+    const isStars = settings.theme === UITheme.STARS;
     const cardStyle = settings.cardStyle;
+    if (isStars) {
+      const base = "py-4 rounded-2xl font-black text-lg backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-lg";
+      if (type === 'RED') return `${base} bg-rose-950/70 hover:bg-rose-900/70 border-rose-500/50 text-rose-100 shadow-[0_4px_25px_rgba(244,63,94,0.35)]`;
+      if (type === 'BLACK') return `${base} bg-cyan-950/70 hover:bg-cyan-900/70 border-cyan-500/50 text-cyan-100 shadow-[0_4px_25px_rgba(6,182,212,0.35)]`;
+      if (type === 'HIGHER') return `${base} bg-purple-950/70 hover:bg-purple-900/70 border-purple-500/50 text-purple-100 shadow-[0_4px_25px_rgba(168,85,247,0.35)]`;
+      if (type === 'LOWER') return `${base} bg-blue-950/70 hover:bg-blue-900/70 border-blue-500/50 text-blue-100 shadow-[0_4px_25px_rgba(59,130,246,0.35)]`;
+      if (type === 'BETWEEN') return `${base} bg-indigo-950/70 hover:bg-indigo-900/70 border-indigo-500/50 text-indigo-100 shadow-[0_4px_25px_rgba(99,102,241,0.35)]`;
+      if (type === 'OUTSIDE') return `${base} bg-pink-950/70 hover:bg-pink-900/70 border-pink-500/50 text-pink-100 shadow-[0_4px_25px_rgba(236,72,153,0.35)]`;
+      if (type === 'MATCH') return `${base} bg-purple-900/70 hover:bg-purple-800/70 border-purple-400/60 text-purple-100 shadow-[0_4px_25px_rgba(168,85,247,0.4)]`;
+      if (type === 'NO_MATCH') return `${base} bg-slate-900/80 hover:bg-slate-800/80 border-slate-700/60 text-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.4)]`;
+      if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-md bg-purple-950/80 hover:bg-purple-900/90 border-purple-400/60 text-purple-200 shadow-[0_0_20px_rgba(168,85,247,0.4)]";
+    }
     if (isMetro) {
       const base = "py-4 rounded-none font-black text-lg border-2 shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2";
       if (type === 'RED' || type === 'HIGHER' || type === 'BETWEEN' || type === 'MATCH') return `${base} bg-[var(--theme-accent)] text-slate-950 border-white`;
@@ -1607,6 +1634,12 @@ const initializeAdMob = useCallback(async () => {
     const isMetro = settings.theme === UITheme.METRO;
     const isBeer = settings.theme === UITheme.BEER;
     const isCalm = settings.theme === UITheme.CALM;
+    const isStars = settings.theme === UITheme.STARS;
+    if (isStars) {
+      if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-purple-950/80 via-slate-900/90 to-purple-950/80 hover:from-purple-900/90 hover:to-purple-900/90 text-purple-200 py-6 rounded-2xl font-black border border-purple-500/50 shadow-[0_0_25px_rgba(168,85,247,0.4)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-cyan-950/80 via-slate-900/90 to-cyan-950/80 hover:from-cyan-900/90 hover:to-cyan-900/90 text-cyan-200 py-6 rounded-2xl font-black border border-cyan-500/50 shadow-[0_0_25px_rgba(6,182,212,0.4)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'EQUAL') return "w-full bg-slate-950/80 border border-purple-400/40 text-purple-200 hover:text-white py-3 text-xs font-bold rounded-xl backdrop-blur-xl transition-colors active:scale-95 shadow-[0_0_15px_rgba(168,85,247,0.25)]";
+    }
     if (isMetro) {
       if (type === 'HIGHER') return "group flex-1 bg-[var(--theme-accent)] text-slate-950 py-6 rounded-none font-black border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
       if (type === 'LOWER') return "group flex-1 bg-slate-900 text-[var(--theme-accent)] py-6 rounded-none font-black border-2 border-[var(--theme-accent)] shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
@@ -1630,6 +1663,9 @@ const initializeAdMob = useCallback(async () => {
 
   const getHeaderClasses = () => {
     const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
+    if (settings.theme === UITheme.STARS) {
+      return `${transitionClass} bg-black/40 backdrop-blur-xl rounded-2xl border border-purple-500/30 mb-3 z-20 shadow-[0_0_20px_rgba(168,85,247,0.2)] mx-1`;
+    }
     if (settings.theme === UITheme.METRO) {
       return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-2xl mx-1' : 'rounded-none mx-0'} border-b-2 border-[var(--theme-accent)] mb-4 z-20`;
     }
@@ -1645,6 +1681,9 @@ const initializeAdMob = useCallback(async () => {
 
   const getHandContainerClasses = () => {
     const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
+    if (settings.theme === UITheme.STARS) {
+      return `${transitionClass} bg-[#030014]/60 rounded-2xl p-3 mb-6 border border-purple-500/30 backdrop-blur-xl relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-[0_0_20px_rgba(168,85,247,0.15)]`;
+    }
     if (settings.theme === UITheme.METRO) {
       return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-3xl' : 'rounded-none'} p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
     }
@@ -2591,6 +2630,12 @@ const initializeAdMob = useCallback(async () => {
         setIsBusWon(true);
         playSound('celebrate');
         setImmunePlayerId(busPassengers[0].id);
+        const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
+        if (settings.busLength >= 20 && isFirstTry) {
+          setIsGalaxyUnlocked(true);
+          try { localStorage.setItem(GALAXY_UNLOCKED_KEY, 'true'); } catch {}
+          setIsGalaxyCelebrationOpen(true);
+        }
       } else {
         setFeedback(null);
         setCurrentBusIndex(prev => prev + 1);
@@ -2631,6 +2676,12 @@ const initializeAdMob = useCallback(async () => {
         setImmunePlayerId(busPassengers[0].id);
         setPhysicalBusPosition(settings.busLength);
         setFeedback({ text: t('Je hebt de bus overleefd! Vrijstelling!'), type: 'success' });
+        const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
+        if (settings.busLength >= 20 && isFirstTry) {
+          setIsGalaxyUnlocked(true);
+          try { localStorage.setItem(GALAXY_UNLOCKED_KEY, 'true'); } catch {}
+          setIsGalaxyCelebrationOpen(true);
+        }
         return;
       }
       setPhysicalBusPosition(nextPosition + 1);
@@ -3314,6 +3365,36 @@ const initializeAdMob = useCallback(async () => {
                       );
                     })}
                   </div>
+                  {/* Full-width Stars Theme Button (only if unlocked) */}
+                  {isGalaxyUnlocked && (() => {
+                    const isStarsActive = settings.theme === UITheme.STARS;
+                    return (
+                      <div className="bg-slate-800/70 p-1 rounded-2xl border border-slate-700/50 mt-1">
+                        <button
+                          onClick={() => {
+                            if (isStarsActive) return;
+                            const n = { ...settings, theme: UITheme.STARS };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            triggerHaptic('heavy');
+                          }}
+                          className={`w-full py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 relative overflow-hidden ${
+                            isStarsActive
+                              ? 'font-bold rounded-xl shadow-md border border-purple-400/40 text-purple-100'
+                              : 'text-purple-300/80 hover:text-purple-100 rounded-xl active:scale-[0.98]'
+                          }`}
+                          style={{
+                            background: isStarsActive
+                              ? 'linear-gradient(135deg, #0c0020 0%, #1a0533 40%, #0a0a2e 70%, #050015 100%)'
+                              : 'linear-gradient(135deg, #080018 0%, #0f0025 50%, #060618 100%)',
+                          }}
+                        >
+                          <span className="relative z-10">{t("Stars")}</span>
+                          {!isStarsActive && <Video size={10} className="text-amber-400 shrink-0 relative z-10" />}
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {settings.theme === UITheme.CALM && (
                   <div className="flex flex-col gap-3 w-full pt-2 animate-in slide-in-from-top-2 duration-300">
@@ -3440,8 +3521,42 @@ const initializeAdMob = useCallback(async () => {
                             style === CardStyle.CLASSIC ? "Klassiek" : "Neon")}
                         </span>
                         </div>
-                        ))}
+                      ))}
                   </div>
+                  {/* Full-width Galaxy Card Style Button (only if unlocked) */}
+                  {isGalaxyUnlocked && (() => {
+                    const isGalaxyStyleActive = settings.cardStyle === CardStyle.GALAXY;
+                    return (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (isGalaxyStyleActive) return;
+                          const n = { ...settings, cardStyle: CardStyle.GALAXY };
+                          setSettings(n);
+                          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                          triggerHaptic('heavy');
+                        }}
+                        className={`w-full py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all cursor-pointer overflow-hidden select-none mt-3 ${
+                          isGalaxyStyleActive
+                            ? 'border-purple-400/40 shadow-md'
+                            : 'border-purple-500/20 hover:border-purple-400/40 active:scale-[0.99]'
+                        }`}
+                        style={{
+                          background: isGalaxyStyleActive
+                            ? 'linear-gradient(135deg, #0c0020 0%, #1a0533 40%, #0a0a2e 70%, #050015 100%)'
+                            : 'linear-gradient(135deg, #080018 0%, #0f0025 50%, #060618 100%)',
+                        }}
+                      >
+                        <div className="scale-[0.55] h-16 flex items-center justify-center">
+                          <PlayingCard card={PREVIEW_CARD} size="base" style={CardStyle.GALAXY} className="shadow-2xl" />
+                        </div>
+                        <span className={`text-xs font-black uppercase tracking-widest ${isGalaxyStyleActive ? 'text-purple-100' : 'text-purple-300/80'}`}>
+                          {t("Galaxy")}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {/* Bus Pakjes / Decks Slider */}
                 <div className="flex flex-col gap-2 w-full pt-2">
@@ -3690,6 +3805,19 @@ const initializeAdMob = useCallback(async () => {
             setShowHardBusWarning(false);
             confirmStart(settings.physicalMode ? GameMode.PHYSICAL : GameMode.DIGITAL);
           }}
+        />
+        <GalaxyCelebrationModal
+          isOpen={isGalaxyCelebrationOpen}
+          onClose={() => setIsGalaxyCelebrationOpen(false)}
+          onEquipBoth={() => {
+            const n = { ...settings, theme: UITheme.STARS, cardStyle: CardStyle.GALAXY };
+            setSettings(n);
+            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+            setIsGalaxyCelebrationOpen(false);
+            triggerHaptic('heavy');
+          }}
+          t={t}
+          lang={lang}
         />
     </>
   );

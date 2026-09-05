@@ -75,6 +75,27 @@ export const ThemeLabel: React.FC<{
     );
   }
 
+  if (theme === UITheme.STARS) {
+    return (
+      <div className={`relative flex flex-col ${align === 'center' ? 'items-center text-center' : 'items-start text-left'} ${isLg ? 'py-3' : 'py-1'}`}>
+        <div 
+          className={`${textSizeClass} font-black uppercase tracking-[0.25em] flex items-center gap-1.5`}
+          style={{ 
+            color: '#f3e8ff',
+            textShadow: '0 0 10px rgba(192, 132, 252, 0.8), 0 0 20px rgba(56, 189, 248, 0.4)'
+          }}
+        >
+          <span>{text}</span>
+        </div>
+        {!isSimple && (
+          <div className="flex w-full items-center gap-1 mt-1 opacity-60">
+            <div className={`h-px bg-gradient-to-r from-purple-400 via-cyan-400 to-transparent ${isLg ? 'w-32' : 'w-16'}`} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`relative z-[60] ${isLg ? 'py-4' : 'py-2'} ${align === 'center' ? 'text-center' : 'text-left'}`}>
       <div 
@@ -96,6 +117,16 @@ export const ThemeHeader: React.FC<{
   className?: string; 
   as?: 'h1' | 'h2' | 'p' 
 }> = React.memo(({ text, theme, className = "", as: Component = 'h2' }) => {
+  if (theme === UITheme.STARS) {
+    return (
+      <Component 
+        className={`font-black tracking-wider uppercase bg-gradient-to-r from-purple-200 via-pink-200 to-cyan-200 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(192,132,252,0.6)] ${className}`}
+        style={{ fontFamily: "'Outfit', sans-serif" }}
+      >
+        {text}
+      </Component>
+    );
+  }
   if (theme === UITheme.METRO) {
     return (
       <Component 
