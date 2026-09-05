@@ -134,6 +134,20 @@ const PYRAMID_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-pyramid-instructions-collaps
 const BUS_INSTRUCTIONS_COLLAPSED_KEY = 'bus-app-bus-instructions-collapsed-v1';
 const GAME_SETTINGS_KEY = 'bus-app-game-settings-v1';
 const GALAXY_UNLOCKED_KEY = 'bus-app-galaxy-unlocked-v1';
+const AVATAR_COLORS = [
+  '#e11d48', // rose
+  '#f97316', // orange
+  '#eab308', // amber
+  '#22c55e', // emerald
+  '#14b8a6', // teal
+  '#06b6d4', // cyan
+  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#a855f7', // purple
+  '#ec4899', // pink
+  '#f43f5e', // coral
+] as const;
 const PATCH_NOTES_VERSION = CURRENT_APP_VERSION;
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 const queueStorageWrite = (key: string, value: string, label: string) => {
@@ -1472,7 +1486,14 @@ const initializeAdMob = useCallback(async () => {
       adtjes: 0,
       isDealer: false,
       isImmune: false,
-      image: newPlayerImage || undefined
+      image: newPlayerImage || undefined,
+      avatarColor: (() => {
+        if (newPlayerImage) return undefined;
+        const used = new Set(players.map(p => p.avatarColor).filter(Boolean));
+        const available = AVATAR_COLORS.filter(c => !used.has(c));
+        const pool = available.length > 0 ? available : AVATAR_COLORS;
+        return pool[Math.floor(Math.random() * pool.length)];
+      })(),
     });
     setNewPlayerName('');
     setNewPlayerImage(null);

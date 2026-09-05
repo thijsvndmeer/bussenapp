@@ -27,12 +27,17 @@ export const PlayerAvatar: React.FC<{
   const borderColor = isDev ? 'border-green-400/30' : (isCalmGlow ? '' : (glow ? 'border-red-500' : 'border-slate-600/50'));
   const shadowEffect = isDev ? '' : (isCalmGlow ? '' : (glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md'));
   const animationEffect = isDev ? '' : '';
-  const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
+  const accentColor = player?.avatarColor;
+  const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : (accentColor ? '' : 'from-black to-slate-900');
+  const customBgStyle = (!player?.image && accentColor) ? {
+    background: `linear-gradient(135deg, ${accentColor}33 0%, ${accentColor}88 50%, ${accentColor}44 100%)`,
+  } : undefined;
 
   const calmStyle = (isCalmGlow && !isDev) ? {
     borderColor: 'var(--theme-accent)',
-    boxShadow: '0 0 40px var(--theme-accent-glow)'
-  } : undefined;
+    boxShadow: '0 0 40px var(--theme-accent-glow)',
+    ...customBgStyle,
+  } : customBgStyle;
 
   return (
     <div 
@@ -47,7 +52,7 @@ export const PlayerAvatar: React.FC<{
         {player?.image ? (
           <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
         ) : (
-          <span className="font-black text-white">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
+          <span className="font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
         )}
       </div>
       {glow && (

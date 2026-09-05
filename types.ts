@@ -44,6 +44,7 @@ export interface Player {
   isDealer: boolean;
   isImmune?: boolean; // Immunity from the bus for the next game
   image?: string; // Base64 image string
+  avatarColor?: string; // Accent color for default avatar
   isDev?: boolean; // Developer mode enabled for this player
 }
 
