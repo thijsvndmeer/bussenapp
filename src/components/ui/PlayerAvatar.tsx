@@ -21,11 +21,11 @@ export const PlayerAvatar: React.FC<{
   const borderClasses = size === 'xl' ? 'border-4' : 'border-2';
   const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
   
-  const isCalmGlow = glow && theme === UITheme.CALM;
+  const isThemeGlow = glow && !player?.isDev;
   const isDev = !!player?.isDev;
 
-  const borderColor = isDev ? 'border-green-400/30' : (isCalmGlow ? '' : (glow ? 'border-red-500' : 'border-slate-600/50'));
-  const shadowEffect = isDev ? '' : (isCalmGlow ? '' : (glow ? 'shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'shadow-md'));
+  const borderColor = isDev ? 'border-green-400/30' : (isThemeGlow ? '' : 'border-slate-600/50');
+  const shadowEffect = isDev ? '' : (isThemeGlow ? '' : 'shadow-md');
   const animationEffect = isDev ? '' : '';
   const accentColor = player?.avatarColor;
   const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : (accentColor ? '' : 'from-black to-slate-900');
@@ -33,16 +33,16 @@ export const PlayerAvatar: React.FC<{
     background: `linear-gradient(135deg, ${accentColor}33 0%, ${accentColor}88 50%, ${accentColor}44 100%)`,
   } : undefined;
 
-  const calmStyle = (isCalmGlow && !isDev) ? {
-    borderColor: 'var(--theme-accent)',
-    boxShadow: '0 0 40px var(--theme-accent-glow)',
+  const glowStyle = (isThemeGlow && !isDev) ? {
+    borderColor: 'var(--theme-accent, #ef4444)',
+    boxShadow: '0 0 30px var(--theme-accent-glow, rgba(239,68,68,0.4))',
     ...customBgStyle,
   } : customBgStyle;
 
   return (
     <div 
       className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
-      style={calmStyle}
+      style={glowStyle}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}
@@ -57,8 +57,10 @@ export const PlayerAvatar: React.FC<{
       </div>
       {glow && (
         <div 
-          className={`absolute -inset-[2px] rounded-full pointer-events-none ${ringClasses} ${isCalmGlow ? 'animate-pulse' : 'ring-red-500/40 animate-pulse'}`}
-          style={(isCalmGlow && !isDev) ? { boxShadow: '0 0 0 4px var(--theme-accent-glow)' } : undefined}
+          className={`absolute -inset-[2px] rounded-full pointer-events-none ${ringClasses} ${isThemeGlow ? 'animate-pulse' : 'ring-red-500/40 animate-pulse'}`}
+          style={(isThemeGlow && !isDev) ? { 
+            boxShadow: '0 0 0 3px var(--theme-accent-glow, rgba(239,68,68,0.4))' 
+          } : undefined}
         />
       )}
     </div>
