@@ -290,19 +290,19 @@ input:disabled,
 }
 
 .theme-stars {
-  --theme-bg: #02000d;
-  --theme-card-bg: rgba(12, 8, 32, 0.75);
-  --theme-card-border: 1px solid rgba(168, 85, 247, 0.35);
+  --theme-bg: #020008;
+  --theme-card-bg: rgba(6, 4, 18, 0.85);
+  --theme-card-border: 1px solid rgba(192, 132, 252, 0.18);
   --theme-font: 'Outfit', sans-serif;
   --theme-text: #f8fafc;
   --theme-text-secondary: #c084fc;
   --theme-accent: #c084fc;
-  --theme-accent-glow: rgba(192, 132, 252, 0.45);
-  --theme-btn-bg: #9333ea;
+  --theme-accent-glow: rgba(192, 132, 252, 0.28);
+  --theme-btn-bg: linear-gradient(180deg, #1e1138 0%, #0d061c 100%);
   --theme-btn-text: #ffffff;
-  --theme-btn-sec-bg: rgba(168, 85, 247, 0.2);
+  --theme-btn-sec-bg: rgba(255, 255, 255, 0.04);
   --theme-btn-sec-text: #f3e8ff;
-  --theme-border-radius: 18px;
+  --theme-border-radius: 16px;
 }
 
 
@@ -330,6 +330,12 @@ input:disabled,
 .theme-metro .bg-animated-gradient,
 .theme-metro .from-slate-800 {
   background: #0d0d0d !important;
+  background-image: none !important;
+  animation: none !important;
+}
+.theme-stars .bg-animated-gradient,
+.theme-stars .from-slate-800 {
+  background: #020008 !important;
   background-image: none !important;
   animation: none !important;
 }
@@ -396,17 +402,18 @@ input:disabled,
 .theme-metro * { font-family: 'Inter', sans-serif !important; }
 .theme-calm * { font-family: 'Outfit', sans-serif !important; }
 .theme-beer * { font-family: 'Inter', sans-serif !important; }
+.theme-stars * { font-family: 'Outfit', sans-serif !important; }
 
 /* Card & Panel Overrides */
-.theme-metro .glass-panel, .theme-calm .glass-panel, .theme-beer .glass-panel,
-.theme-metro .bg-slate-900, .theme-calm .bg-slate-900, .theme-beer .bg-slate-900,
-.theme-metro .bg-slate-950, .theme-calm .bg-slate-950, .theme-beer .bg-slate-950,
-.theme-metro .bg-slate-900\/60, .theme-calm .bg-slate-900\/60, .theme-beer .bg-slate-900\/60,
-.theme-metro .bg-slate-800\/40, .theme-calm .bg-slate-800\/40, .theme-beer .bg-slate-800\/40,
-.theme-metro .bg-slate-800\/70, .theme-calm .bg-slate-800\/70, .theme-beer .bg-slate-800\/70,
-.theme-metro .bg-slate-900\/50, .theme-calm .bg-slate-900\/50, .theme-beer .bg-slate-900\/50,
-.theme-metro .bg-slate-800\/50, .theme-calm .bg-slate-800\/50, .theme-beer .bg-slate-800\/50,
-.theme-metro .bg-slate-900\/30, .theme-calm .bg-slate-900\/30, .theme-beer .bg-slate-900\/30 {
+.theme-metro .glass-panel, .theme-calm .glass-panel, .theme-beer .glass-panel, .theme-stars .glass-panel,
+.theme-metro .bg-slate-900, .theme-calm .bg-slate-900, .theme-beer .bg-slate-900, .theme-stars .bg-slate-900,
+.theme-metro .bg-slate-950, .theme-calm .bg-slate-950, .theme-beer .bg-slate-950, .theme-stars .bg-slate-950,
+.theme-metro .bg-slate-900\/60, .theme-calm .bg-slate-900\/60, .theme-beer .bg-slate-900\/60, .theme-stars .bg-slate-900\/60,
+.theme-metro .bg-slate-800\/40, .theme-calm .bg-slate-800\/40, .theme-beer .bg-slate-800\/40, .theme-stars .bg-slate-800\/40,
+.theme-metro .bg-slate-800\/70, .theme-calm .bg-slate-800\/70, .theme-beer .bg-slate-800\/70, .theme-stars .bg-slate-800\/70,
+.theme-metro .bg-slate-900\/50, .theme-calm .bg-slate-900\/50, .theme-beer .bg-slate-900\/50, .theme-stars .bg-slate-900\/50,
+.theme-metro .bg-slate-800\/50, .theme-calm .bg-slate-800\/50, .theme-beer .bg-slate-800\/50, .theme-stars .bg-slate-800\/50,
+.theme-metro .bg-slate-900\/30, .theme-calm .bg-slate-900\/30, .theme-beer .bg-slate-900\/30, .theme-stars .bg-slate-900\/30 {
   background: var(--theme-card-bg) !important;
   border: var(--theme-card-border) !important;
   border-radius: var(--theme-border-radius) !important;
@@ -417,7 +424,8 @@ input:disabled,
 /* Input elements (exclude range inputs so slider tracks stay visible) */
 .theme-metro input:not([type="range"]), 
 .theme-calm input:not([type="range"]), 
-.theme-beer input:not([type="range"]) {
+.theme-beer input:not([type="range"]),
+.theme-stars input:not([type="range"]) {
   background-color: var(--theme-card-bg) !important;
   border: var(--theme-card-border) !important;
   color: var(--theme-text) !important;
@@ -427,6 +435,7 @@ input:disabled,
 .theme-metro input[type="range"],
 .theme-calm input[type="range"],
 .theme-beer input[type="range"],
+.theme-stars input[type="range"],
 input[type="range"].custom-slider-invisible {
   background: transparent !important;
   background-color: transparent !important;
@@ -436,12 +445,12 @@ input[type="range"].custom-slider-invisible {
 }
 
 /* Text colors */
-.theme-metro .text-white, .theme-calm .text-white, .theme-beer .text-white,
-.theme-metro .text-slate-100, .theme-calm .text-slate-100, .theme-beer .text-slate-100 {
+.theme-metro .text-white, .theme-calm .text-white, .theme-beer .text-white, .theme-stars .text-white,
+.theme-metro .text-slate-100, .theme-calm .text-slate-100, .theme-beer .text-slate-100, .theme-stars .text-slate-100 {
   color: var(--theme-text) !important;
 }
-.theme-metro .text-slate-400, .theme-calm .text-slate-400, .theme-beer .text-slate-400,
-.theme-metro .text-slate-500, .theme-calm .text-slate-500, .theme-beer .text-slate-500 {
+.theme-metro .text-slate-400, .theme-calm .text-slate-400, .theme-beer .text-slate-400, .theme-stars .text-slate-400,
+.theme-metro .text-slate-500, .theme-calm .text-slate-500, .theme-beer .text-slate-500, .theme-stars .text-slate-500 {
   color: var(--theme-text-secondary) !important;
 }
 
@@ -488,6 +497,21 @@ input[type="range"].custom-slider-invisible {
   box-shadow: 0 4px 15px var(--theme-accent-glow) !important;
 }
 
+/* Stars Primary Action Buttons */
+.theme-stars button.bg-gradient-to-r.from-red-600:not(.no-calm-override),
+.theme-stars button.bg-white:not(.bg-white\/10):not(.no-calm-override),
+.theme-stars button.bg-gradient-to-b.from-emerald-500:not(.no-calm-override),
+.theme-stars button.bg-gradient-to-b.from-red-600:not(.no-calm-override),
+.theme-stars button.bg-gradient-to-r.from-emerald-500:not(.no-calm-override),
+.theme-stars button.bg-gradient-to-r.from-amber-500:not(.no-calm-override) {
+  background: var(--theme-btn-bg) !important;
+  background-image: var(--theme-btn-bg) !important;
+  color: var(--theme-btn-text) !important;
+  border: 1px solid rgba(192, 132, 252, 0.35) !important;
+  border-radius: var(--theme-border-radius) !important;
+  box-shadow: 0 0 20px var(--theme-accent-glow) !important;
+}
+
 /* Secondary Action Buttons */
 .theme-metro button.bg-slate-800,
 .theme-metro button.bg-slate-800\/80 {
@@ -514,10 +538,25 @@ input[type="range"].custom-slider-invisible {
   border-radius: var(--theme-border-radius) !important;
 }
 
+.theme-stars button.bg-slate-800,
+.theme-stars button.bg-slate-800\/80 {
+  background: var(--theme-btn-sec-bg) !important;
+  color: var(--theme-btn-sec-text) !important;
+  border: var(--theme-card-border) !important;
+  border-radius: var(--theme-border-radius) !important;
+}
+.theme-stars button.bg-slate-800:hover,
+.theme-stars button.bg-slate-800\/80:hover {
+  background: rgba(192, 132, 252, 0.1) !important;
+  color: #ffffff !important;
+  border-color: rgba(192, 132, 252, 0.3) !important;
+}
+
 .theme-classic .always-white,
 .theme-metro .always-white,
 .theme-calm .always-white,
 .theme-beer .always-white,
+.theme-stars .always-white,
 .always-white {
   color: #ffffff !important;
 }
@@ -525,6 +564,7 @@ input[type="range"].custom-slider-invisible {
 .theme-metro .always-bg-red,
 .theme-calm .always-bg-red,
 .theme-beer .always-bg-red,
+.theme-stars .always-bg-red,
 .always-bg-red {
   background-color: #dc2626 !important;
   background-image: none !important;
@@ -536,12 +576,16 @@ input[type="range"].custom-slider-invisible {
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
-/* Richer accent fill and visible recommendation across all themes (Calm, Metro, Beer) */
+/* Richer accent fill and visible recommendation across all themes (Calm, Metro, Beer, Stars) */
 .theme-calm .slider-active-fill,
 .theme-metro .slider-active-fill,
 .theme-beer .slider-active-fill,
 .slider-active-fill {
   opacity: 0.85 !important;
+}
+.theme-stars .slider-active-fill {
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.8), rgba(192, 132, 252, 0.95)) !important;
+  opacity: 0.9 !important;
 }
 
 .theme-calm .slider-recommended-segment-blue,
