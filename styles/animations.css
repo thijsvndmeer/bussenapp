@@ -30,6 +30,7 @@
 }
 
 .animate-pyramid-ring-pulse {
+  will-change: transform, opacity;
   animation: ring-pulse-red 0.8s cubic-bezier(0, 0, 0.2, 1) infinite;
   border: 4px solid #ff3c3c !important;
   border-radius: 12px;
@@ -37,11 +38,11 @@
 
 @keyframes fallDown {
   0% {
-    transform: translateY(0) rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
     opacity: 1;
   }
   100% {
-    transform: translateY(150vh) rotate(45deg);
+    transform: translate3d(0, 150vh, 0) rotate(45deg);
     opacity: 0;
   }
 }
@@ -49,87 +50,212 @@
 @keyframes driveIn {
   0% {
     opacity: 0;
-    transform: translateX(-150vw) rotate(-8deg);
+    transform: translate3d(-150vw, 0, 0) rotate(-8deg);
   }
   40% {
     opacity: 1;
   }
   100% {
     opacity: 1;
-    transform: translateX(0) rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
 }
 
 @keyframes fadeInText {
   0% {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.9) translate3d(0, 20px, 0);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1) translate3d(0, 0, 0);
   }
 }
 
 @keyframes slideInFromTop {
-  0% { transform: translateY(-50px) scale(0.85); opacity: 0; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
+  0% { transform: translate3d(0, -50px, 0) scale(0.85); opacity: 0; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
 }
 
 @keyframes slideInFromBottom {
-  0% { transform: translateY(50px) scale(0.85); opacity: 0; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
+  0% { transform: translate3d(0, 50px, 0) scale(0.85); opacity: 0; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
 }
 
 @keyframes slideOutToTop {
-  0% { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(-50px) scale(0.85); opacity: 0; }
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  100% { transform: translate3d(0, -50px, 0) scale(0.85); opacity: 0; }
 }
 
 @keyframes slideOutToBottom {
-  0% { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(50px) scale(0.85); opacity: 0; }
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  100% { transform: translate3d(0, 50px, 0) scale(0.85); opacity: 0; }
 }
 
-.animate-slide-in-top { animation: slideInFromTop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-.animate-slide-in-bottom { animation: slideInFromBottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-.animate-slide-out-top { animation: slideOutToTop 0.4s ease-in forwards; }
-.animate-slide-out-bottom { animation: slideOutToBottom 0.4s ease-in forwards; }
+.animate-slide-in-top { will-change: transform, opacity;
+  animation: slideInFromTop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.animate-slide-in-bottom { will-change: transform, opacity;
+  animation: slideInFromBottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.animate-slide-out-top { will-change: transform, opacity;
+  animation: slideOutToTop 0.4s ease-in forwards; }
+.animate-slide-out-bottom { will-change: transform, opacity;
+  animation: slideOutToBottom 0.4s ease-in forwards; }
 
 @keyframes cardHandEnter {
   0% {
     opacity: 0;
-    transform: translateY(-28px) scale(1.15) rotate(-4deg);
+    transform: translate3d(0, -28px, 0) scale(1.15) rotate(-4deg);
     filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.4));
   }
   65% {
     opacity: 1;
-    transform: translateY(2px) scale(0.98) rotate(1deg);
+    transform: translate3d(0, 2px, 0) scale(0.98) rotate(1deg);
     filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.25));
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
   }
 }
 
 .animate-card-hand-enter {
+  will-change: transform, opacity;
   animation: cardHandEnter 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes cardHandSlotIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.88) rotate(-3deg);
+    filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.35));
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -4px, 0) scale(1.04) rotate(1deg);
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22));
+  }
+  85% {
+    transform: translate3d(0, 1px, 0) scale(0.99) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+  }
+}
+
+.animate-card-hand-slot-in {
+  will-change: transform, opacity;
+  animation: cardHandSlotIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes feedbackSuccessIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(0, -4px, 0) scale(1.04);
+  }
+  75% {
+    transform: translate3d(0, 1px, 0) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-feedback-success {
+  will-change: transform, opacity;
+  animation: feedbackSuccessIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.25) forwards;
+}
+
+@keyframes feedbackErrorIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.92);
+  }
+  25% {
+    opacity: 1;
+    transform: translate3d(-7px, -2px, 0) scale(1.02);
+  }
+  45% {
+    transform: translate3d(7px, 1px, 0) scale(1.01);
+  }
+  65% {
+    transform: translate3d(-4px, 0, 0) scale(1);
+  }
+  85% {
+    transform: translate3d(3px, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-feedback-error {
+  will-change: transform, opacity;
+  animation: feedbackErrorIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes handTraySlideDown {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -22px, 0) scale(0.96);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, 3px, 0) scale(1.01);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-hand-tray-enter {
+  will-change: transform, opacity, filter;
+  animation: handTraySlideDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes handTraySlideUp {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -20px, 0) scale(0.96);
+    filter: blur(2px);
+  }
+}
+
+.animate-hand-tray-exit {
+  will-change: transform, opacity, filter;
+  animation: handTraySlideUp 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes cardHandSubtle {
   0% {
     opacity: 0.3;
-    transform: translateY(-5px) scale(0.99);
+    transform: translate3d(0, -5px, 0) scale(0.99);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 .animate-card-hand-subtle {
+  will-change: transform, opacity;
   animation: cardHandSubtle 0.15s ease-out forwards;
 }
 
@@ -156,10 +282,12 @@
 }
 
 .animate-fast-subtle-pop {
+  will-change: transform, opacity;
   animation: fastSubtlePopIn 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-fast-subtle-pop-out {
+  will-change: transform, opacity;
   animation: fastSubtlePopOut 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -174,10 +302,12 @@
 }
 
 .animate-fast-fade-in {
+  will-change: transform, opacity;
   animation: fastFadeIn 0.1s ease-out forwards;
 }
 
 .animate-fast-fade-out {
+  will-change: transform, opacity;
   animation: fastFadeOut 0.1s ease-out forwards;
 }
 
@@ -193,8 +323,8 @@
 }
 
 @keyframes bounce-subtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -5px, 0); }
 }
 
 @keyframes slow-hue-rotate {
@@ -205,19 +335,19 @@
 @keyframes playerCardExit {
   0% {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
     max-height: 80px;
     margin-bottom: 0;
   }
   30% {
     opacity: 0.8;
-    transform: translateX(-6px) scale(0.98);
+    transform: translate3d(-6px, 0, 0) scale(0.98);
     max-height: 80px;
     margin-bottom: 0;
   }
   100% {
     opacity: 0;
-    transform: translateX(50px) scale(0.85);
+    transform: translate3d(50px, 0, 0) scale(0.85);
     max-height: 0;
     margin-top: 0;
     margin-bottom: -8px;
@@ -228,6 +358,7 @@
 }
 
 .animate-player-card-exit {
+  will-change: transform, opacity;
   animation: playerCardExit 0.22s cubic-bezier(0.2, 0, 0, 1) forwards;
   pointer-events: none;
   overflow: hidden;
@@ -236,31 +367,49 @@
 @keyframes slideLeftEnter {
   0% {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translate3d(24px, 0, 0);
   }
   100% {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes slideLeftExit {
   0% {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   100% {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translate3d(-24px, 0, 0);
+  }
+}
+
+@keyframes slideRightExit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
   }
 }
 
 .animate-slide-left-enter {
+  will-change: transform, opacity;
   animation: slideLeftEnter 0.14s cubic-bezier(0.12, 0.9, 0.24, 1) forwards;
 }
 
 .animate-slide-left-exit {
+  will-change: transform, opacity;
   animation: slideLeftExit 0.12s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.animate-slide-right-exit {
+  will-change: transform, opacity;
+  animation: slideRightExit 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes backdropFadeIn {
@@ -274,11 +423,108 @@
 }
 
 .animate-backdrop-fade-in {
+  will-change: transform, opacity;
   animation: backdropFadeIn 0.14s ease-out forwards;
 }
 
 .animate-backdrop-fade-out {
+  will-change: transform, opacity;
   animation: backdropFadeOut 0.12s ease-in forwards;
 }
 
+/* --- Performance Utilities --- */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1000px;
+}
+
+/* ==========================================
+   GALAXY & STARS ANIMATIONS
+   ========================================== */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.35); }
+}
+
+@keyframes shooting-star {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-45deg);
+    opacity: 0;
+    width: 0px;
+  }
+  10% {
+    opacity: 1;
+    width: 140px;
+  }
+  30% {
+    transform: translate3d(500px, 500px, 0) rotate(-45deg);
+    opacity: 0;
+    width: 0px;
+  }
+  100% {
+    transform: translate3d(500px, 500px, 0) rotate(-45deg);
+    opacity: 0;
+    width: 0px;
+  }
+}
+
+@keyframes galaxy-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cosmic-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(56, 189, 248, 0.2);
+    border-color: rgba(192, 132, 252, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(192, 132, 252, 0.8), 0 0 60px rgba(56, 189, 248, 0.4), inset 0 0 25px rgba(168, 85, 247, 0.4);
+    border-color: rgba(232, 121, 249, 0.9);
+  }
+}
+
+@keyframes cosmic-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes hyperspace-warp {
+  0% {
+    transform: scale(0.1) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle var(--twinkle-duration, 3s) ease-in-out infinite var(--twinkle-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.animate-shooting-star {
+  animation: shooting-star 6s ease-out infinite;
+}
+
+.animate-galaxy-spin {
+  animation: galaxy-spin 25s linear infinite;
+  will-change: transform;
+}
+
+.animate-cosmic-pulse {
+  animation: cosmic-pulse 2.5s ease-in-out infinite;
+}
+
+.animate-cosmic-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background-size: 200% 100%;
+  animation: cosmic-shimmer 2.5s infinite;
+  will-change: background-position;
+}
 

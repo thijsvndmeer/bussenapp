@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { create } from 'zustand';
 import { GamePhase, Player } from '../types';
 
 type NormalizedPlayers = {
@@ -20,92 +21,95 @@ const normalizePlayers = (players: Player[]): NormalizedPlayers => ({
 const denormalizePlayers = ({ byId, order }: NormalizedPlayers): Player[] =>
   order.map(id => byId[id]).filter((player): player is Player => Boolean(player));
 
-export const usePlayerState = () => {
-  const [playerState, setPlayerState] = useState<NormalizedPlayers>(() => normalizePlayers([]));
+interface PlayerStore {
+  playerState: NormalizedPlayers;
+  setPlayers: (nextPlayers: PlayerListUpdater) => void;
+  addPlayer: (player: Player) => void;
+  removePlayer: (playerId: string) => void;
+  updatePlayer: (playerId: string, updater: PlayerUpdater) => void;
+  updatePlayers: (updates: Record<string, PlayerUpdater>) => void;
+  reorderPlayers: (fromIndex: number, toIndex: number) => void;
+}
 
-  const players = useMemo(() => denormalizePlayers(playerState), [playerState]);
+export const usePlayerStore = create<PlayerStore>((set, get) => ({
+  playerState: normalizePlayers([]),
+  
+  setPlayers: (nextPlayers) => set(state => {
+    const currentPlayers = denormalizePlayers(state.playerState);
+    const resolvedPlayers = typeof nextPlayers === 'function' ? nextPlayers(currentPlayers) : nextPlayers;
+    return { playerState: normalizePlayers(resolvedPlayers) };
+  }),
 
-  const setPlayers = useCallback((nextPlayers: PlayerListUpdater) => {
-    setPlayerState(currentState => {
-      const currentPlayers = denormalizePlayers(currentState);
-      const resolvedPlayers = typeof nextPlayers === 'function' ? nextPlayers(currentPlayers) : nextPlayers;
-      return normalizePlayers(resolvedPlayers);
-    });
-  }, []);
+  addPlayer: (player) => set(state => ({
+    playerState: {
+      byId: { ...state.playerState.byId, [player.id]: player },
+      order: [...state.playerState.order, player.id],
+    }
+  })),
 
-  const addPlayer = useCallback((player: Player) => {
-    setPlayerState(currentState => ({
-      byId: { ...currentState.byId, [player.id]: player },
-      order: [...currentState.order, player.id],
-    }));
-  }, []);
-
-  const removePlayer = useCallback((playerId: string) => {
-    setPlayerState(currentState => {
-      if (!currentState.byId[playerId]) return currentState;
-      const { [playerId]: _removed, ...byId } = currentState.byId;
-      return {
+  removePlayer: (playerId) => set(state => {
+    if (!state.playerState.byId[playerId]) return state;
+    const { [playerId]: _removed, ...byId } = state.playerState.byId;
+    return {
+      playerState: {
         byId,
-        order: currentState.order.filter(id => id !== playerId),
-      };
-    });
-  }, []);
-
-  const updatePlayer = useCallback((playerId: string, updater: PlayerUpdater) => {
-    setPlayerState(currentState => {
-      const currentPlayer = currentState.byId[playerId];
-      if (!currentPlayer) return currentState;
-      const nextPlayer = updater(currentPlayer);
-      if (nextPlayer === currentPlayer) return currentState;
-      return {
-        ...currentState,
-        byId: { ...currentState.byId, [playerId]: nextPlayer },
-      };
-    });
-  }, []);
-
-  const updatePlayers = useCallback((updates: Record<string, PlayerUpdater>) => {
-    setPlayerState(currentState => {
-      let changed = false;
-      const byId = { ...currentState.byId };
-
-      Object.entries(updates).forEach(([playerId, updater]) => {
-        const currentPlayer = byId[playerId];
-        if (!currentPlayer) return;
-        const nextPlayer = updater(currentPlayer);
-        if (nextPlayer !== currentPlayer) {
-          byId[playerId] = nextPlayer;
-          changed = true;
-        }
-      });
-
-      return changed ? { ...currentState, byId } : currentState;
-    });
-  }, []);
-
-  const reorderPlayers = useCallback((fromIndex: number, toIndex: number) => {
-    setPlayerState(currentState => {
-      if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= currentState.order.length || toIndex >= currentState.order.length) {
-        return currentState;
+        order: state.playerState.order.filter(id => id !== playerId),
       }
-      const order = [...currentState.order];
-      const [movedPlayerId] = order.splice(fromIndex, 1);
-      order.splice(toIndex, 0, movedPlayerId);
-      return { ...currentState, order };
-    });
-  }, []);
+    };
+  }),
 
+  updatePlayer: (playerId, updater) => set(state => {
+    const currentPlayer = state.playerState.byId[playerId];
+    if (!currentPlayer) return state;
+    const nextPlayer = updater(currentPlayer);
+    if (nextPlayer === currentPlayer) return state;
+    return {
+      playerState: {
+        ...state.playerState,
+        byId: { ...state.playerState.byId, [playerId]: nextPlayer },
+      }
+    };
+  }),
+
+  updatePlayers: (updates) => set(state => {
+    let changed = false;
+    const byId = { ...state.playerState.byId };
+    Object.entries(updates).forEach(([playerId, updater]) => {
+      const currentPlayer = byId[playerId];
+      if (!currentPlayer) return;
+      const nextPlayer = updater(currentPlayer);
+      if (nextPlayer !== currentPlayer) {
+        byId[playerId] = nextPlayer;
+        changed = true;
+      }
+    });
+    return changed ? { playerState: { ...state.playerState, byId } } : state;
+  }),
+
+  reorderPlayers: (fromIndex, toIndex) => set(state => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= state.playerState.order.length || toIndex >= state.playerState.order.length) {
+      return state;
+    }
+    const order = [...state.playerState.order];
+    const [movedPlayerId] = order.splice(fromIndex, 1);
+    order.splice(toIndex, 0, movedPlayerId);
+    return { playerState: { ...state.playerState, order } };
+  }),
+}));
+
+export const usePlayerState = () => {
+  const store = usePlayerStore();
+  const players = useMemo(() => denormalizePlayers(store.playerState), [store.playerState]);
   return {
     players,
-    setPlayers,
-    addPlayer,
-    removePlayer,
-    updatePlayer,
-    updatePlayers,
-    reorderPlayers,
+    setPlayers: store.setPlayers,
+    addPlayer: store.addPlayer,
+    removePlayer: store.removePlayer,
+    updatePlayer: store.updatePlayer,
+    updatePlayers: store.updatePlayers,
+    reorderPlayers: store.reorderPlayers,
   };
 };
-
 
 export type GameEngineEvent =
   | { type: 'START_BUS'; passengers: Player[]; showEntrance?: boolean }
@@ -133,10 +137,27 @@ type ScheduledTimerKey =
   | 'pyramid-warning-cooldown'
   | string;
 
+interface EngineStore {
+  phase: GamePhase;
+  setPhase: (phase: GamePhase) => void;
+}
+
+export const useEngineStore = create<EngineStore>((set) => ({
+  phase: GamePhase.SETUP,
+  setPhase: (phase) => set({ phase }),
+}));
+
 export function useGameEngine(initialPhase: GamePhase) {
-  const [phase, setPhaseState] = useState<GamePhase>(initialPhase);
+  const phase = useEngineStore(s => s.phase);
+  const setPhaseState = useEngineStore(s => s.setPhase);
+  
   const timersRef = useRef<Map<ScheduledTimerKey, ReturnType<typeof setTimeout>>>(new Map());
   const handlerRef = useRef<EventHandler | null>(null);
+
+  // Initialize phase once if needed
+  useEffect(() => {
+     setPhaseState(initialPhase);
+  }, []);
 
   const clearScheduled = useCallback((key?: ScheduledTimerKey) => {
     if (key) {
@@ -153,7 +174,7 @@ export function useGameEngine(initialPhase: GamePhase) {
   const transitionToPhase = useCallback((nextPhase: GamePhase) => {
     clearScheduled();
     setPhaseState(nextPhase);
-  }, [clearScheduled]);
+  }, [clearScheduled, setPhaseState]);
 
   const registerEventHandler = useCallback((handler: EventHandler) => {
     handlerRef.current = handler;

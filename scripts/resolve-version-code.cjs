@@ -1,5 +1,6 @@
 // scripts/resolve-version-code.cjs
 const fs = require('fs');
+const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
@@ -159,60 +160,199 @@ async function getGooglePlayMaxVersionCode(serviceAccountJson, packageName) {
   return null;
 }
 
-function getGitMaxVersionCode() {
+function parseSemver(versionStr) {
+  const match = String(versionStr).trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);
+  if (!match) return null;
+  return {
+    major: parseInt(match[1], 10),
+    minor: parseInt(match[2], 10),
+    patch: parseInt(match[3], 10),
+    prerelease: match[4] || null,
+  };
+}
+
+function formatSemver(parsed) {
+  const base = `${parsed.major}.${parsed.minor}.${parsed.patch}`;
+  return parsed.prerelease ? `${base}-${parsed.prerelease}` : base;
+}
+
+function semverToCode(versionStr) {
+  const parsed = parseSemver(versionStr);
+  if (!parsed) {
+    const numeric = parseInt(String(versionStr).replace(/[^0-9]/g, ''), 10);
+    return isNaN(numeric) ? 1 : numeric;
+  }
+  return parseInt(`${parsed.major}${parsed.minor}${parsed.patch}`, 10);
+}
+
+function getGitTagsList(cwd = process.cwd()) {
   try {
-    const tags = execSync('git tag -l "v*"', { encoding: 'utf8' }).trim().split('\n');
-    const codes = [];
-    for (const tag of tags) {
-      const match = tag.trim().match(/^v?(\d+)\.(\d+)\.(\d+)$/);
-      if (match) {
-        codes.push(parseInt(`${match[1]}${match[2]}${match[3]}`, 10));
+    const raw = execSync('git tag -l "v*"', { cwd, encoding: 'utf8' }).trim();
+    if (!raw) return [];
+    return raw.split('\n').map(t => t.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function getGitMaxVersionInfo(cwd = process.cwd()) {
+  const tags = getGitTagsList(cwd);
+  let maxCode = 0;
+  let maxTag = null;
+  let maxParsed = null;
+
+  for (const tag of tags) {
+    const parsed = parseSemver(tag);
+    if (parsed) {
+      const code = semverToCode(tag);
+      if (code > maxCode) {
+        maxCode = code;
+        maxTag = tag;
+        maxParsed = parsed;
       }
     }
-    return codes.length > 0 ? Math.max(...codes) : 0;
-  } catch {
-    return 0;
+  }
+  return { maxCode, maxTag, maxParsed };
+}
+
+function resolveNextVersionState(baseVersion, gitMaxInfo, playMaxCode) {
+  const parsedBase = parseSemver(baseVersion) || { major: 1, minor: 0, patch: 0 };
+  const baseCode = semverToCode(baseVersion);
+  const maxRemoteCode = Math.max(gitMaxInfo.maxCode || 0, playMaxCode || 0);
+
+  let finalCode = baseCode;
+  let finalVersion = formatSemver(parsedBase);
+
+  if (finalCode <= maxRemoteCode) {
+    finalCode = maxRemoteCode + 1;
+    // Derive new semver if git tag or remote exists
+    if (gitMaxInfo.maxParsed) {
+      const candidatePatch = gitMaxInfo.maxParsed.patch + 1;
+      finalVersion = `${gitMaxInfo.maxParsed.major}.${gitMaxInfo.maxParsed.minor}.${candidatePatch}`;
+    } else {
+      finalVersion = `${parsedBase.major}.${parsedBase.minor}.${parsedBase.patch + 1}`;
+    }
+  }
+
+  return {
+    baseVersion,
+    baseCode,
+    maxRemoteCode,
+    finalCode,
+    finalVersion,
+    hasCollision: baseCode <= maxRemoteCode,
+  };
+}
+
+function syncVersionToFiles(newVersion, newCode, rootDir = process.cwd()) {
+  const pkgPath = path.join(rootDir, 'package.json');
+  const pkgLockPath = path.join(rootDir, 'package-lock.json');
+  const gradlePath = path.join(rootDir, 'android/app/build.gradle');
+
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    pkg.version = newVersion;
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+    console.log(`[VersionResolver] Updated ${pkgPath} -> version: ${newVersion}`);
+  }
+
+  if (fs.existsSync(pkgLockPath)) {
+    try {
+      const pkgLock = JSON.parse(fs.readFileSync(pkgLockPath, 'utf8'));
+      pkgLock.version = newVersion;
+      if (pkgLock.packages && pkgLock.packages['']) {
+        pkgLock.packages[''].version = newVersion;
+      }
+      fs.writeFileSync(pkgLockPath, JSON.stringify(pkgLock, null, 2) + '\n');
+      console.log(`[VersionResolver] Updated ${pkgLockPath} -> version: ${newVersion}`);
+    } catch (e) {
+      console.warn(`[VersionResolver] Note: could not update package-lock.json:`, e.message);
+    }
+  }
+
+  if (fs.existsSync(gradlePath)) {
+    let gradleContent = fs.readFileSync(gradlePath, 'utf8');
+    gradleContent = gradleContent.replace(
+      /versionCode\s+\(System\.getenv\("VERSION_CODE"\)\s*\?\s*Integer\.parseInt\(System\.getenv\("VERSION_CODE"\)\)\s*:\s*\d+\)/,
+      `versionCode (System.getenv("VERSION_CODE") ? Integer.parseInt(System.getenv("VERSION_CODE")) : ${newCode})`
+    );
+    gradleContent = gradleContent.replace(
+      /versionName\s+\(System\.getenv\("VERSION_NAME"\)\s*\?:\s*"[^"]+"\)/,
+      `versionName (System.getenv("VERSION_NAME") ?: "${newVersion}")`
+    );
+    fs.writeFileSync(gradlePath, gradleContent);
+    console.log(`[VersionResolver] Updated ${gradlePath} fallback values -> code: ${newCode}, name: ${newVersion}`);
   }
 }
 
 async function main() {
-  const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-  const baseVersion = pkg.version;
-  const baseVersionCode = parseInt(pkg.version.replace(/[^0-9]/g, ''), 10);
+  const args = process.argv.slice(2);
+  const isCheckMode = args.includes('--check') || args.includes('-c');
+  const isWriteMode = args.includes('--write') || args.includes('-w');
+  const bumpIdx = args.indexOf('--bump');
+  const bumpType = bumpIdx !== -1 ? args[bumpIdx + 1] : null;
 
-  const gitMax = getGitMaxVersionCode();
+  const pkgPath = path.resolve(process.cwd(), './package.json');
+  if (!fs.existsSync(pkgPath)) {
+    console.error('[VersionResolver] package.json not found!');
+    process.exit(1);
+  }
+
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  let baseVersion = pkg.version;
+
+  if (bumpType) {
+    const parsed = parseSemver(baseVersion) || { major: 1, minor: 0, patch: 0 };
+    if (bumpType === 'major') parsed.major += 1, parsed.minor = 0, parsed.patch = 0;
+    else if (bumpType === 'minor') parsed.minor += 1, parsed.patch = 0;
+    else parsed.patch += 1;
+    baseVersion = formatSemver(parsed);
+  }
+
+  const gitMaxInfo = getGitMaxVersionInfo();
   const playConfig = process.env.PLAY_CONFIG_JSON || process.env.PLAY_JSON || '';
   const playMax = playConfig ? await getGooglePlayMaxVersionCode(playConfig, 'com.bussen.app') : null;
 
-  const maxKnown = Math.max(gitMax, playMax || 0);
+  const state = resolveNextVersionState(baseVersion, gitMaxInfo, playMax);
 
-  console.log(`[VersionResolver] package.json version: ${baseVersion} (code: ${baseVersionCode})`);
-  console.log(`[VersionResolver] Highest Git tag version code: ${gitMax}`);
+  console.log(`[VersionResolver] Base version: ${state.baseVersion} (code: ${state.baseCode})`);
+  console.log(`[VersionResolver] Highest Git tag version code: ${gitMaxInfo.maxCode} (tag: ${gitMaxInfo.maxTag || 'none'})`);
   if (playMax !== null) {
     console.log(`[VersionResolver] Google Play live max version code: ${playMax}`);
   }
 
-  let finalCode = baseVersionCode;
-  if (finalCode <= maxKnown) {
-    finalCode = maxKnown + 1;
-    console.log(`[VersionResolver] ⚠️ Version code collision detected (${baseVersionCode} <= ${maxKnown})! Auto-bumping version code to: ${finalCode}`);
+  if (state.hasCollision) {
+    console.log(`[VersionResolver] ⚠️ Version code collision detected (${state.baseCode} <= ${state.maxRemoteCode})! Auto-resolved to version: ${state.finalVersion}, code: ${state.finalCode}`);
+    if (isCheckMode) {
+      console.error(`[VersionResolver] Check failed: package.json version ${state.baseVersion} collides with deployed code ${state.maxRemoteCode}`);
+      process.exit(1);
+    }
   } else {
-    console.log(`[VersionResolver] ✅ Version code ${finalCode} is unique and valid.`);
+    console.log(`[VersionResolver] ✅ Version ${state.finalVersion} (code ${state.finalCode}) is unique and valid.`);
   }
 
-  let finalVersion = baseVersion;
-  const digits = String(finalCode);
-  if (digits.length >= 3) {
-    finalVersion = `${digits[0]}.${digits[1]}.${digits.slice(2)}`;
+  if (isWriteMode) {
+    syncVersionToFiles(state.finalVersion, state.finalCode);
   }
 
   if (process.env.GITHUB_OUTPUT) {
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${finalVersion}\nversion_code=${finalCode}\n`);
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${state.finalVersion}\nversion_code=${state.finalCode}\n`);
   }
-  console.log(`[VersionResolver] Output -> version=${finalVersion}, version_code=${finalCode}`);
+  console.log(`[VersionResolver] Output -> version=${state.finalVersion}, version_code=${state.finalCode}`);
 }
 
-main().catch(err => {
-  console.error('[VersionResolver] Error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('[VersionResolver] Error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  parseSemver,
+  formatSemver,
+  semverToCode,
+  getGitMaxVersionInfo,
+  resolveNextVersionState,
+  syncVersionToFiles,
+};

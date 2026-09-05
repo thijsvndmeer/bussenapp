@@ -31,6 +31,7 @@ export interface Card {
   suit: Suit;
   rank: Rank;
   id: string;
+  roundIndex?: number;
 }
 
 export interface Player {
@@ -43,6 +44,7 @@ export interface Player {
   isDealer: boolean;
   isImmune?: boolean; // Immunity from the bus for the next game
   image?: string; // Base64 image string
+  avatarColor?: string; // Accent color for default avatar
   isDev?: boolean; // Developer mode enabled for this player
 }
 
@@ -69,6 +71,7 @@ export enum UITheme {
   METRO = 'metro',
   CALM = 'calm',
   BEER = 'beer',
+  STARS = 'stars',
 }
 
 export enum CardStyle {
@@ -76,6 +79,7 @@ export enum CardStyle {
   DARK = 'DARK',
   CLASSIC = 'CLASSIC',
   NEON = 'NEON',
+  GALAXY = 'GALAXY',
 }
 
 export interface GameSettings {

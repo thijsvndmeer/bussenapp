@@ -4,6 +4,7 @@ import { triggerHaptic } from '../../services/haptics';
 export interface SlideMenuModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onBackdropClick?: () => void;
   children: React.ReactNode | ((helpers: { close: () => void }) => React.ReactNode);
   className?: string;
   backdropClassName?: string;
@@ -13,6 +14,7 @@ export interface SlideMenuModalProps {
 export const SlideMenuModal: React.FC<SlideMenuModalProps> = ({
   isOpen,
   onClose,
+  onBackdropClick,
   children,
   className = 'w-full max-w-sm m-4 flex flex-col max-h-[85vh]',
   backdropClassName = 'bg-black/80 backdrop-blur-md',
@@ -30,6 +32,7 @@ export const SlideMenuModal: React.FC<SlideMenuModalProps> = ({
 
   const handleClose = () => {
     if (isClosing) return;
+    triggerHaptic('tick');
     setIsClosing(true);
     setTimeout(() => {
       onClose();
@@ -50,7 +53,11 @@ export const SlideMenuModal: React.FC<SlideMenuModalProps> = ({
       }`}
       onClick={(e) => {
         if (closeOnBackdropClick && e.target === e.currentTarget) {
-          handleClose();
+          if (onBackdropClick) {
+            onBackdropClick();
+          } else {
+            handleClose();
+          }
         }
       }}
     >
