@@ -23,7 +23,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   # -------------------------------------------------------------
@@ -46,14 +46,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Resolve Version & Auto-Bump Version Code
-        id: pkg
-        env:
-          PLAY_CONFIG_JSON: ${{ secrets.PLAY_CONFIG_JSON }}
-        run: |
-          git fetch --tags --force
-          node scripts/resolve-version-code.cjs
+          cache: 'npm'
 
       - name: Determine Google Play Track
         id: determine_track
@@ -66,14 +59,12 @@ jobs:
             echo "track=beta" >> $GITHUB_OUTPUT
           fi
 
-      - name: Validate Release Version & Patch Notes (Prod only)
+      - name: Validate Patch Notes Gates (Prod only)
         if: ${{ steps.determine_track.outputs.track == 'production' }}
         run: |
           git fetch --tags --force
-          CURRENT_VERSION="${{ steps.pkg.outputs.version }}"
           LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
 
-          echo "Current resolved version: $CURRENT_VERSION (code: ${{ steps.pkg.outputs.version_code }})"
           echo "Latest release tag: $LATEST_TAG"
 
           if [ -n "$LATEST_TAG" ]; then
@@ -91,13 +82,21 @@ jobs:
             exit 1
           fi
 
-          echo "Release gates passed: Version is resolved and What's New notes are updated."
+          echo "Release gates passed: What's New notes are updated."
+
+      - name: Resolve Version & Auto-Bump Version Code
+        id: pkg
+        env:
+          PLAY_CONFIG_JSON: ${{ secrets.PLAY_CONFIG_JSON }}
+        run: |
+          git fetch --tags --force
+          node scripts/resolve-version-code.cjs
 
   # -------------------------------------------------------------
-  # 2. TYPECHECK & LINT
+  # 2. TYPECHECK & UNIT TESTS (Parallel)
   # -------------------------------------------------------------
-  typecheck:
-    name: TypeScript Typecheck
+  test-and-typecheck:
+    name: Test & Typecheck
     needs: validate
     runs-on: ubuntu-latest
     steps:
@@ -116,8 +115,11 @@ jobs:
       - name: Typecheck TypeScript
         run: npm run typecheck
 
+      - name: Run Vitest Unit Tests
+        run: npm run test:ci
+
   # -------------------------------------------------------------
-  # 3. BUILD WEB ASSETS
+  # 3. BUILD WEB ASSETS (Parallel)
   # -------------------------------------------------------------
   build-web:
     name: Build Web Assets
@@ -135,6 +137,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Sync Resolved Version to Package
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            pkg.version = '${{ needs.validate.outputs.version }}';
+            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
 
       - name: Build Web App
         env:
@@ -156,7 +167,7 @@ jobs:
   # -------------------------------------------------------------
   build-android:
     name: Build & Sign Android (AAB)
-    needs: [validate, typecheck, build-web]
+    needs: [validate, test-and-typecheck, build-web]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -173,7 +184,11 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '21'
-          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
 
       - name: Install dependencies
         run: npm ci
