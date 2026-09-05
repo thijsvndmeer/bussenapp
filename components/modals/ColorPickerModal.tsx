@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { SlideMenuModal } from './SlideMenuModal';
+import { triggerHaptic } from '../../services/haptics';
 
 const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
-  if (!result) return { h: 43, s: 95, l: 65 };
+  if (!result) return { h: 352, s: 80, l: 75 };
 
   const r = parseInt(result[1], 16) / 255;
   const g = parseInt(result[2], 16) / 255;
@@ -35,17 +36,19 @@ const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
   }
 
   return {
-    h: Math.round(h * 360),
+    h: Math.round(h * 360) % 360,
     s: Math.round(s * 100),
     l: Math.round(l * 100),
   };
 };
 
 const hslToHex = (h: number, s: number, l: number): string => {
-  const normL = l / 100;
-  const a = (s * Math.min(normL, 1 - normL)) / 100;
+  const normH = ((h % 360) + 360) % 360;
+  const normS = Math.max(0, Math.min(100, s)) / 100;
+  const normL = Math.max(0, Math.min(100, l)) / 100;
+  const a = normS * Math.min(normL, 1 - normL);
   const f = (n: number) => {
-    const k = (n + h / 30) % 12;
+    const k = (n + normH / 30) % 12;
     const color = normL - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
     return Math.round(255 * color)
       .toString(16)
@@ -62,6 +65,16 @@ interface ColorPickerModalProps {
   onSave: (newColor: string) => void;
 }
 
+const CALM_PRESETS = [
+  { name: 'Rose', hue: 352 },
+  { name: 'Amber', hue: 43 },
+  { name: 'Emerald', hue: 156 },
+  { name: 'Teal', hue: 172 },
+  { name: 'Sky', hue: 199 },
+  { name: 'Indigo', hue: 235 },
+  { name: 'Lavender', hue: 275 },
+];
+
 export const ColorPickerModal: React.FC<ColorPickerModalProps> = React.memo(({
   isOpen,
   currentColor,
@@ -69,106 +82,171 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = React.memo(({
   onClose,
   onSave,
 }) => {
-  const [tempColor, setTempColor] = useState(currentColor || '#fb7185');
+  const initialHsl = useMemo(() => hexToHsl(currentColor || '#fb7185'), [currentColor]);
+  const [hue, setHue] = useState<number>(initialHsl.h);
+  const [isDragging, setIsDragging] = useState(false);
+  const wheelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setTempColor(currentColor || '#fb7185');
+      const parsed = hexToHsl(currentColor || '#fb7185');
+      setHue(parsed.h);
     }
   }, [isOpen, currentColor]);
 
+  // Always force 75% brightness (lightness) and 80% saturation for Calm theme
+  const tempColor = useMemo(
+    () => hslToHex(hue, 80, 75),
+    [hue]
+  );
+
+  // Position of handle on circular color track (r = 38.5% radius)
   const { pinX, pinY } = useMemo(() => {
-    const hsl = hexToHsl(tempColor);
-    const angleRad = ((hsl.h - 90) * Math.PI) / 180;
-    const r = 38;
+    const angleRad = ((hue - 90) * Math.PI) / 180;
+    const r = 38.5;
     return {
       pinX: 50 + r * Math.cos(angleRad),
       pinY: 50 + r * Math.sin(angleRad),
     };
-  }, [tempColor]);
+  }, [hue]);
 
-  if (!isOpen) return null;
-
-  const handleWheelTouch = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent) => {
-    const target = document.getElementById('calm-popup-wheel');
-    if (!target) return;
-    const rect = target.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
-    const x = clientX - rect.left - rect.width / 2;
-    const y = clientY - rect.top - rect.height / 2;
+  const updateHueFromPointer = useCallback((clientX: number, clientY: number) => {
+    if (!wheelRef.current) return;
+    const rect = wheelRef.current.getBoundingClientRect();
+    const x = clientX - (rect.left + rect.width / 2);
+    const y = clientY - (rect.top + rect.height / 2);
 
     let angleDeg = Math.round(Math.atan2(y, x) * (180 / Math.PI));
     angleDeg = (angleDeg + 90 + 360) % 360;
 
-    const hex = hslToHex(angleDeg, 80, 75);
-    setTempColor(hex);
+    setHue(angleDeg);
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    updateHueFromPointer(e.clientX, e.clientY);
+    triggerHaptic('subtle');
   };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    updateHueFromPointer(e.clientX, e.clientY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      setIsDragging(false);
+      triggerHaptic('subtle');
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <SlideMenuModal
       isOpen={isOpen}
       onClose={onClose}
-      className="bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl w-full max-w-xs m-4 flex flex-col items-center gap-6"
+      className="bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl w-full max-w-xs m-4 flex flex-col items-center gap-5"
       backdropClassName="bg-black/80 backdrop-blur-md"
     >
       {({ close }) => (
         <>
-          <div className="text-center space-y-1.5 w-full">
+          <div className="text-center space-y-1 w-full">
             <h3 className="text-lg font-black text-white uppercase tracking-wider">{t('Kleur Kiezer')}</h3>
             <p className="text-slate-400 text-xs">{t('Sleep op het wiel om een kleur te kiezen')}</p>
           </div>
 
-          {/* Color Wheel Container */}
+          {/* Color Wheel Donut Container */}
           <div
             id="calm-popup-wheel"
-            className="relative w-48 h-48 cursor-crosshair select-none touch-none rounded-full"
-            onMouseDown={(e) => {
-              handleWheelTouch(e);
-              const onMouseMove = (moveEvent: MouseEvent) => handleWheelTouch(moveEvent);
-              const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-              };
-              window.addEventListener('mousemove', onMouseMove);
-              window.addEventListener('mouseup', onMouseUp);
-            }}
-            onTouchStart={(e) => {
-              handleWheelTouch(e);
-              const onTouchMove = (moveEvent: TouchEvent) => handleWheelTouch(moveEvent);
-              const onTouchEnd = () => {
-                window.removeEventListener('touchmove', onTouchMove);
-                window.removeEventListener('touchend', onTouchEnd);
-              };
-              window.addEventListener('touchmove', onTouchMove);
-              window.addEventListener('touchend', onTouchEnd);
-            }}
-            style={{
-              background: `
-                radial-gradient(circle closest-side, #ffffff 0%, transparent 60%),
-                conic-gradient(
-                  from 0deg,
-                  #ff4d4d,
-                  #ff9933,
-                  #ffff33,
-                  #33cc33,
-                  #3399ff,
-                  #9933ff,
-                  #ff33cc,
-                  #ff4d4d
-                )
-              `,
-              boxShadow: '0 0 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.3)',
-            }}
+            ref={wheelRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            className="relative w-52 h-52 cursor-pointer select-none touch-none rounded-full flex items-center justify-center p-1"
           >
-            {/* Center Thumb */}
+            {/* 1. Full 360° Hue Spectrum Ring with Donut Cutout (Fixed 75% Brightness) */}
             <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border-2 border-white shadow-lg pointer-events-none transition-transform"
+              className="absolute inset-0 rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.5),inset_0_0_12px_rgba(0,0,0,0.4)]"
+              style={{
+                background: `conic-gradient(
+                  from 0deg,
+                  hsl(0, 80%, 75%),
+                  hsl(30, 80%, 75%),
+                  hsl(60, 80%, 75%),
+                  hsl(90, 80%, 75%),
+                  hsl(120, 80%, 75%),
+                  hsl(150, 80%, 75%),
+                  hsl(180, 80%, 75%),
+                  hsl(210, 80%, 75%),
+                  hsl(240, 80%, 75%),
+                  hsl(270, 80%, 75%),
+                  hsl(300, 80%, 75%),
+                  hsl(330, 80%, 75%),
+                  hsl(360, 80%, 75%)
+                )`,
+                WebkitMaskImage: 'radial-gradient(circle, transparent 56%, black 57%)',
+                maskImage: 'radial-gradient(circle, transparent 56%, black 57%)',
+              }}
+            />
+
+            {/* Subtle inner track border overlay */}
+            <div className="absolute inset-0 rounded-full border border-white/15 pointer-events-none" />
+
+            {/* 2. Center Preview Disc (Clean solid color swatch, zero text) */}
+            <div
+              className="relative w-24 h-24 rounded-full border-2 border-white/25 shadow-[0_4px_16px_rgba(0,0,0,0.4)] transition-colors pointer-events-none z-10"
               style={{ backgroundColor: tempColor }}
+            />
+
+            {/* 3. Pointer Handle (Pinned on Ring Track, Interactive) */}
+            <div
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-[3px] border-white shadow-[0_2px_12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(0,0,0,0.3)] pointer-events-none z-20 transition-transform ${
+                isDragging ? 'scale-125 ring-2 ring-white/60' : 'scale-100'
+              }`}
+              style={{
+                left: `${pinX}%`,
+                top: `${pinY}%`,
+                backgroundColor: tempColor,
+              }}
             />
           </div>
 
-          {/* Current Selection Bar */}
+          {/* Quick Preset Swatches */}
+          <div className="flex justify-between items-center w-full px-1">
+            {CALM_PRESETS.map((preset) => {
+              const presetHex = hslToHex(preset.hue, 80, 75);
+              const isSelected = Math.abs(hue - preset.hue) <= 4;
+              return (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    setHue(preset.hue);
+                    triggerHaptic('subtle');
+                  }}
+                  className={`w-7 h-7 rounded-full border-2 transition-all active:scale-90 flex items-center justify-center cursor-pointer ${
+                    isSelected ? 'border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.6)]' : 'border-transparent opacity-75 hover:opacity-100'
+                  }`}
+                  style={{ backgroundColor: presetHex }}
+                  title={preset.name}
+                >
+                  {isSelected && <span className="text-slate-950 font-black text-[10px]">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Current Selection Bar (Clean swatch + label, zero color id text) */}
           <div className="flex items-center gap-4 w-full bg-slate-800/40 p-3 rounded-2xl border border-slate-700/30">
             <div
               className="w-12 h-12 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center transition-colors shrink-0"
@@ -180,19 +258,22 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = React.memo(({
           </div>
 
           {/* Actions */}
-          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+          <div className="grid grid-cols-2 gap-3 w-full pt-1">
             <button
+              type="button"
               onClick={close}
               className="py-3 rounded-2xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors text-sm active:scale-95 transition-transform cursor-pointer"
             >
               {t('Annuleren')}
             </button>
             <button
+              type="button"
               onClick={() => {
+                triggerHaptic('medium');
                 close();
                 setTimeout(() => onSave(tempColor), 100);
               }}
-              className="py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm active:scale-95 transition-transform cursor-pointer"
+              className="py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm active:scale-95 transition-transform cursor-pointer shadow-lg shadow-white/10"
             >
               {t('Opslaan')}
             </button>
@@ -204,3 +285,4 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = React.memo(({
 });
 
 ColorPickerModal.displayName = 'ColorPickerModal';
+

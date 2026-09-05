@@ -1,6 +1,7 @@
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 export type HapticType =
+  | 'subtle'
   | 'tick'
   | 'light'
   | 'medium'
@@ -12,9 +13,11 @@ export type HapticType =
 
 const HAPTIC_DEDUPLICATION_WINDOW_MS = 150;
 const HAPTIC_TICK_DEDUPLICATION_WINDOW_MS = 35;
+const HAPTIC_SUBTLE_DEDUPLICATION_WINDOW_MS = 25;
 const lastTriggeredAtByType = new Map<HapticType, number>();
 
 const webVibrationPatterns: Record<HapticType, VibratePattern> = {
+  subtle: 3,
   tick: 5,
   light: 15,
   medium: 40,
@@ -27,11 +30,22 @@ const webVibrationPatterns: Record<HapticType, VibratePattern> = {
 
 const triggerNativeHaptic = async (type: HapticType) => {
   switch (type) {
+    case 'subtle':
+      try {
+        await Haptics.vibrate({ duration: 3 });
+      } catch {
+        try {
+          await Haptics.impact({ style: ImpactStyle.Light });
+        } catch {}
+      }
+      break;
     case 'tick':
       try {
         await Haptics.vibrate({ duration: 5 });
       } catch {
-        await Haptics.impact({ style: ImpactStyle.Light });
+        try {
+          await Haptics.impact({ style: ImpactStyle.Light });
+        } catch {}
       }
       break;
     case 'light':
@@ -69,7 +83,8 @@ const triggerWebVibration = (type: HapticType) => {
 export const triggerHaptic = async (type: HapticType) => {
   const now = Date.now();
   const lastTriggeredAt = lastTriggeredAtByType.get(type) ?? 0;
-  const deduplicationWindow = type === 'tick' ? HAPTIC_TICK_DEDUPLICATION_WINDOW_MS : HAPTIC_DEDUPLICATION_WINDOW_MS;
+  const deduplicationWindow = type === 'subtle' ? HAPTIC_SUBTLE_DEDUPLICATION_WINDOW_MS :
+    type === 'tick' ? HAPTIC_TICK_DEDUPLICATION_WINDOW_MS : HAPTIC_DEDUPLICATION_WINDOW_MS;
 
   if (now - lastTriggeredAt < deduplicationWindow) {
     return;

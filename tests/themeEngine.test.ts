@@ -10,8 +10,20 @@ describe('Theme Engine CSS', () => {
     expect(cssContent).toContain('.theme-stars {');
     expect(cssContent).toMatch(/--theme-bg:\s*#020008/);
     expect(cssContent).toMatch(/--theme-card-bg:\s*rgba\(6,\s*4,\s*18,\s*0\.85\)/);
-    expect(cssContent).toMatch(/--theme-accent:\s*#c084fc/);
-    expect(cssContent).toMatch(/--theme-accent-glow:\s*rgba\(192,\s*132,\s*252,\s*0\.28\)/);
+    expect(cssContent).toMatch(/--theme-accent:\s*#f1f5f9/);
+    expect(cssContent).toMatch(/--theme-accent-secondary:\s*#c084fc/);
+    expect(cssContent).toMatch(/--theme-accent-gradient:\s*linear-gradient\(135deg,\s*#f1f5f9/);
+    expect(cssContent).toMatch(/--theme-accent-glow:\s*rgba\(192,\s*132,\s*252,\s*0\.3\)/);
+  });
+
+  it('uses purple/light-white gradient for .theme-stars slider fill', () => {
+    expect(cssContent).toContain('.theme-stars .slider-active-fill');
+    expect(cssContent).toMatch(/\.theme-stars \.slider-active-fill\s*\{\s*background:\s*linear-gradient\(90deg,\s*#f1f5f9/);
+  });
+
+  it('preserves pill shape for rounded-full buttons under .theme-stars', () => {
+    expect(cssContent).toContain('.theme-stars button.rounded-full');
+    expect(cssContent).toMatch(/\.theme-stars button\.rounded-full[\s\S]*?border-radius:\s*9999px/);
   });
 
   it('suppresses bg-animated-gradient under .theme-stars to prevent red/blue bleed', () => {

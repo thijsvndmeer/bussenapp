@@ -18,4 +18,12 @@ describe('GalaxyBackground Component', () => {
   it('uses deep obsidian canvas without light gradient wash', () => {
     expect(content).toContain('#010005');
   });
+
+  it('contains no text labels to maintain a pure dark void', () => {
+    expect(content).not.toContain('<text');
+    expect(content).not.toContain('CASSIOPEIA');
+    expect(content).not.toContain('CYGNUS');
+    expect(content).not.toContain('URSA MAJOR');
+    expect(content).not.toContain('ORION');
+  });
 });

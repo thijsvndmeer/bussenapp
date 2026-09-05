@@ -38,6 +38,7 @@ import { AdLoadingModal } from './components/modals/AdLoadingModal';
 import { SlideMenuModal } from './components/modals/SlideMenuModal';
 import { PyramidMatchModal } from './components/modals/PyramidMatchModal';
 import { GalaxyCelebrationModal } from './components/modals/GalaxyCelebrationModal';
+import { ScrollIndicatorContainer, getThemeScrollColors } from './src/components/ui/ScrollIndicatorContainer';
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
 const ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -246,12 +247,12 @@ const BusTransitionOverlay: React.FC<{
           <div className="relative w-48 h-48 mb-8">
             <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40 no-calm-override"></div>
             <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75 no-calm-override"></div>
-            <div className="relative w-48 h-48 rounded-full bg-gradient-to-b from-slate-900 to-black border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
-              {loserReveal.player.image ? (
-                <img src={loserReveal.player.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" alt="" />
-              ) : (
-                <span className="text-7xl font-black text-white">{loserReveal.player.name.charAt(0)}</span>
-              )}
+            <div className="relative w-48 h-48 rounded-full border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
+              <PlayerAvatar
+                player={loserReveal.player}
+                size="custom"
+                className="w-full h-full text-7xl"
+              />
             </div>
           </div>
           <h1 className="text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">
@@ -278,11 +279,11 @@ const BusTransitionOverlay: React.FC<{
               <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
                 <span className="text-amber-400 font-black text-sm uppercase tracking-widest mb-3 opacity-90">{t("Speler")} {i + 1}</span>
                 <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5">
-                  {p.image ? (
-                    <img src={p.image} className="w-full h-full object-cover animate-[spin_8s_linear_infinite]" alt="" />
-                  ) : (
-                    <div className="w-full h-full bg-slate-800 flex items-center justify-center text-5xl font-black animate-[spin_8s_linear_infinite]">{p.name.charAt(0)}</div>
-                  )}
+                  <PlayerAvatar
+                    player={p}
+                    size="custom"
+                    className="w-full h-full text-5xl"
+                  />
                 </div>
                 <div className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-md">{p.name}</div>
               </div>
@@ -390,6 +391,7 @@ const RootContainer: React.FC<RootContainerProps> = ({ children, className = '',
         version={PATCH_NOTES_VERSION}
         patchNotes={patchNotes}
         t={t}
+        theme={theme}
         onClose={() => setIsPatchNotesOpen(false)}
       />
       {children}
@@ -460,6 +462,226 @@ const hslToHex = (h: number, s: number, l: number): string => {
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 };
+
+interface CalmAccentColorPickerProps {
+  accentColor: string;
+  onColorChange: (newColor: string) => void;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onClose: () => void;
+  t: (key: string) => string;
+}
+
+const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo(({
+  accentColor,
+  onColorChange,
+  isOpen,
+  onToggleOpen,
+  onClose,
+  t
+}) => {
+  const presets = [
+    { name: t('Lichtrood'), value: '#fb7185' },
+    { name: t('Goud'), value: '#fbcd53' },
+    { name: t('Periwinkle'), value: '#818cf8' },
+    { name: t('Munt'), value: '#2dd4bf' },
+  ];
+
+  const presetValues = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
+  const isCustomActive = !presetValues.includes((accentColor || '#fb7185').toLowerCase());
+  const isPickerSelected = isCustomActive || isOpen;
+
+  const lastCustomHue = useRef<number>(
+    isCustomActive ? hexToHsl(accentColor || '#fb7185').h : 280
+  );
+
+  const [hue, setHue] = useState<number>(() => {
+    if (isCustomActive) return hexToHsl(accentColor || '#fb7185').h;
+    return lastCustomHue.current;
+  });
+
+  // Track the actual committed color for the pipette button
+  const [committedColor, setCommittedColor] = useState<string>(() => accentColor || '#fb7185');
+
+  // Preview hue for the slider thumb ONLY while sliding
+  const [thumbHue, setThumbHue] = useState<number>(() => hue);
+
+  const lastCommittedColor = useRef<string>(accentColor || '#fb7185');
+  const lastHapticHue = useRef<number>(hue);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const col = accentColor || '#fb7185';
+    const isCustom = !presetValues.includes(col.toLowerCase());
+    if (isCustom) {
+      const h = hexToHsl(col).h;
+      lastCustomHue.current = h;
+      setHue(h);
+      setThumbHue(h);
+    }
+    setCommittedColor(col);
+    lastCommittedColor.current = col;
+  }, [accentColor]);
+
+  const applyColorDirect = (hex: string) => {
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+    const rgb = result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 251, g: 113, b: 133 };
+
+    const yiq = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+    const btnTextColor = yiq >= 165 ? '#090514' : '#ffffff';
+    const root = document.documentElement;
+    root.classList.remove('theme-transition');
+    root.style.setProperty('--theme-accent', hex);
+    root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`);
+    root.style.setProperty('--theme-btn-bg', hex);
+    root.style.setProperty('--theme-btn-text', btnTextColor);
+    root.style.setProperty('--theme-btn-sec-text', hex);
+    root.style.setProperty('--theme-card-border', `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+  };
+
+  // While sliding: update ONLY the local slider thumb hue.
+  // ABSOLUTELY NO color changes to app, theme, pipette button, or settings!
+  const handleSliderInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const val = Number((e.target as HTMLInputElement).value);
+    setHue(val);
+    setThumbHue(val);
+    lastCustomHue.current = val;
+
+    if (Math.abs(val - lastHapticHue.current) >= 30) {
+      triggerHaptic('subtle');
+      lastHapticHue.current = val;
+    }
+  };
+
+  // ONLY ON RELEASE: apply color to app theme, pipette button, and persist to settings!
+  const commitColor = (val: number) => {
+    const newColor = hslToHex(val, 80, 75);
+    setHue(val);
+    setThumbHue(val);
+    setCommittedColor(newColor);
+    lastCustomHue.current = val;
+    if (lastCommittedColor.current.toLowerCase() === newColor.toLowerCase()) return;
+    lastCommittedColor.current = newColor;
+    applyColorDirect(newColor);
+    onColorChange(newColor);
+    triggerHaptic('subtle');
+  };
+
+  // Native HTML DOM 'change' event fires ONLY when slider is released (unlike React synthetic onChange)
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const handleNativeChange = () => {
+      commitColor(Number(el.value));
+    };
+    el.addEventListener('change', handleNativeChange);
+    return () => {
+      el.removeEventListener('change', handleNativeChange);
+    };
+  }, []);
+
+  const handlePresetSelect = (presetHex: string) => {
+    onClose(); // Hide bar when preset is selected!
+    lastCommittedColor.current = presetHex;
+    setCommittedColor(presetHex);
+    applyColorDirect(presetHex);
+    onColorChange(presetHex);
+    triggerHaptic('subtle');
+  };
+
+  const handlePickerButtonClick = () => {
+    if (isPickerSelected && isOpen) {
+      onToggleOpen();
+    } else {
+      onToggleOpen();
+      if (!isCustomActive) {
+        const customHex = hslToHex(lastCustomHue.current, 80, 75);
+        setHue(lastCustomHue.current);
+        setThumbHue(lastCustomHue.current);
+        setCommittedColor(customHex);
+        lastCommittedColor.current = customHex;
+        applyColorDirect(customHex);
+        onColorChange(customHex);
+      }
+      triggerHaptic('subtle');
+    }
+  };
+
+  // Bar should ONLY show when picker color is selected!
+  const isBarVisible = isPickerSelected && isOpen;
+
+  return (
+    <div className="flex flex-col bg-slate-800/70 p-2.5 rounded-2xl border border-slate-700/50 gap-2.5">
+      <div className="flex justify-between items-center">
+        {presets.map(colorOpt => {
+          const isColorActive = !isPickerSelected && (accentColor || '#fb7185').toLowerCase() === colorOpt.value.toLowerCase();
+          return (
+            <button
+              key={colorOpt.value}
+              onClick={() => handlePresetSelect(colorOpt.value)}
+              title={colorOpt.name}
+              className={`w-8 h-8 rounded-full relative transition-all active:scale-90 border-2 ${
+                isColorActive ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-transparent opacity-60 hover:opacity-100'
+              }`}
+              style={{ backgroundColor: colorOpt.value }}
+            >
+              {isColorActive && (
+                <span className="absolute inset-0 flex items-center justify-center text-slate-950 font-bold text-xs">✓</span>
+              )}
+            </button>
+          );
+        })}
+        {/* Custom Color Picker Button */}
+        <button
+          onClick={handlePickerButtonClick}
+          title={t('Aangepast')}
+          className={`w-8 h-8 rounded-full relative transition-all active:scale-90 border-2 flex items-center justify-center ${
+            isPickerSelected ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-transparent opacity-60 hover:opacity-100'
+          }`}
+          style={{ backgroundColor: committedColor }}
+        >
+          <Pipette size={12} className="text-slate-950" />
+        </button>
+      </div>
+
+      {/* Expandable Thin Horizontal Bar Slider - ONLY shown when picker color is selected */}
+      {isBarVisible && (
+        <div className="pt-2 pb-1 px-1 border-t border-slate-700/40 animate-hand-tray-enter">
+          <div className="relative w-full flex items-center h-6">
+            <div 
+              className="w-full h-2.5 rounded-full border border-white/20 shadow-inner pointer-events-none"
+              style={{
+                background: 'linear-gradient(to right, hsl(0, 80%, 75%), hsl(30, 80%, 75%), hsl(60, 80%, 75%), hsl(90, 80%, 75%), hsl(120, 80%, 75%), hsl(150, 80%, 75%), hsl(180, 80%, 75%), hsl(210, 80%, 75%), hsl(240, 80%, 75%), hsl(270, 80%, 75%), hsl(300, 80%, 75%), hsl(330, 80%, 75%), hsl(360, 80%, 75%))',
+              }}
+            />
+            <input
+              ref={inputRef}
+              type="range"
+              min="0"
+              max="360"
+              value={hue}
+              style={{ '--calm-thumb-color': hslToHex(thumbHue, 80, 75) } as React.CSSProperties}
+              onInput={handleSliderInput}
+              onChange={handleSliderInput}
+              onPointerUp={(e) => commitColor(Number((e.target as HTMLInputElement).value))}
+              onMouseUp={(e) => commitColor(Number((e.target as HTMLInputElement).value))}
+              onTouchEnd={(e) => commitColor(Number((e.target as HTMLInputElement).value))}
+              onKeyUp={(e) => commitColor(Number((e.target as HTMLInputElement).value))}
+              className="calm-hue-slider absolute inset-0 w-full h-full cursor-pointer touch-none"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
 // --- APP COMPONENT ---
 const App: React.FC = () => {
   const [isPending, startTransition] = useTransition();
@@ -660,7 +882,12 @@ const App: React.FC = () => {
               <X size={20} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <ScrollIndicatorContainer
+            orientation="vertical"
+            theme={settings.theme}
+            className="flex-1 min-h-0"
+            scrollClassName="pr-2 custom-scrollbar"
+          >
             <div className="grid grid-cols-2 gap-6 pb-10">
               {/* Back Preview (Achterkant) First */}
               <div className="flex flex-col items-center gap-3">
@@ -674,7 +901,7 @@ const App: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </ScrollIndicatorContainer>
           <button
             onClick={() => setPreviewDeckStyle(null)}
             className="mt-6 w-full py-4 bg-white text-black font-black rounded-2xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
@@ -688,7 +915,10 @@ const App: React.FC = () => {
   // Quit confirmation state
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
-  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(() => {
+    const presets = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
+    return !presets.includes((settings.calmAccentColor || '#fb7185').toLowerCase());
+  });
   const [tempColor, setTempColor] = useState('#fb7185');
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
@@ -785,7 +1015,7 @@ const App: React.FC = () => {
     const prevRounded = Math.round(draftBusDecks);
     const newRounded = Math.round(clamped);
     if (newRounded !== prevRounded) {
-      triggerHaptic('tick');
+      triggerHaptic('subtle');
     }
     setDraftBusDecks(clamped);
   };
@@ -795,7 +1025,7 @@ const App: React.FC = () => {
     setDraftBusDecks(rounded);
     if (rounded !== (settings.busDecks || 1)) {
       setSettings(prev => ({ ...prev, busDecks: rounded }));
-      triggerHaptic('tick');
+      triggerHaptic('subtle');
     }
   };
   // Dev Tools State
@@ -1095,21 +1325,30 @@ const initializeAdMob = useCallback(async () => {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
-      } : { r: 251, g: 205, b: 83 };
+      } : { r: 251, g: 113, b: 133 };
       
+      const yiq = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+      const btnTextColor = yiq >= 165 ? '#090514' : '#ffffff';
+
       root.style.setProperty('--theme-accent', accentHex);
       root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`);
       root.style.setProperty('--theme-btn-bg', accentHex);
+      root.style.setProperty('--theme-btn-text', btnTextColor);
       root.style.setProperty('--theme-btn-sec-text', accentHex);
       root.style.setProperty('--theme-card-border', `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
       root.style.setProperty('--theme-border-radius', '20px');
+      root.style.removeProperty('--theme-accent-gradient');
+      root.style.removeProperty('--theme-accent-secondary');
     } else if (settings.theme === UITheme.STARS) {
-      root.style.setProperty('--theme-accent', '#c084fc');
-      root.style.setProperty('--theme-accent-glow', 'rgba(192, 132, 252, 0.28)');
-      root.style.setProperty('--theme-btn-bg', 'linear-gradient(180deg, #1e1138 0%, #0d061c 100%)');
-      root.style.setProperty('--theme-btn-sec-text', '#f3e8ff');
+      root.style.setProperty('--theme-accent', '#f1f5f9');
+      root.style.setProperty('--theme-accent-secondary', '#c084fc');
+      root.style.setProperty('--theme-accent-gradient', 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 40%, #e9d5ff 70%, #c084fc 100%)');
+      root.style.setProperty('--theme-accent-glow', 'rgba(192, 132, 252, 0.3)');
+      root.style.setProperty('--theme-btn-bg', '#f1f5f9');
+      root.style.setProperty('--theme-btn-text', '#090514');
+      root.style.setProperty('--theme-btn-sec-text', '#c084fc');
       root.style.setProperty('--theme-card-border', '1px solid rgba(192, 132, 252, 0.18)');
-      root.style.setProperty('--theme-border-radius', '16px');
+      root.style.setProperty('--theme-border-radius', '20px');
     } else if (settings.theme === UITheme.METRO) {
       root.style.setProperty('--theme-accent', '#fb7185');
       root.style.setProperty('--theme-accent-glow', 'rgba(251, 113, 133, 0.15)');
@@ -1117,6 +1356,8 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-btn-sec-text', '#a3a3a3');
       root.style.setProperty('--theme-card-border', '1.5px solid #27272a');
       root.style.setProperty('--theme-border-radius', '6px');
+      root.style.removeProperty('--theme-accent-gradient');
+      root.style.removeProperty('--theme-accent-secondary');
     } else if (settings.theme === UITheme.BEER) {
       root.style.setProperty('--theme-accent', '#f59e0b');
       root.style.setProperty('--theme-accent-glow', 'rgba(245, 158, 11, 0.35)');
@@ -1124,9 +1365,13 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-btn-sec-text', '#ffffff');
       root.style.setProperty('--theme-card-border', '1px solid rgba(226, 232, 240, 0.2)');
       root.style.setProperty('--theme-border-radius', '12px');
+      root.style.removeProperty('--theme-accent-gradient');
+      root.style.removeProperty('--theme-accent-secondary');
     } else {
       // Classic clean up
       root.style.removeProperty('--theme-accent');
+      root.style.removeProperty('--theme-accent-secondary');
+      root.style.removeProperty('--theme-accent-gradient');
       root.style.removeProperty('--theme-accent-glow');
       root.style.removeProperty('--theme-btn-bg');
       root.style.removeProperty('--theme-btn-sec-text');
@@ -1601,15 +1846,15 @@ const initializeAdMob = useCallback(async () => {
     const cardStyle = settings.cardStyle;
     if (isStars) {
       const base = "py-4 rounded-2xl font-black text-lg backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-lg";
-      if (type === 'RED') return `${base} bg-rose-950/70 hover:bg-rose-900/70 border-rose-500/50 text-rose-100 shadow-[0_4px_25px_rgba(244,63,94,0.35)]`;
-      if (type === 'BLACK') return `${base} bg-cyan-950/70 hover:bg-cyan-900/70 border-cyan-500/50 text-cyan-100 shadow-[0_4px_25px_rgba(6,182,212,0.35)]`;
-      if (type === 'HIGHER') return `${base} bg-purple-950/70 hover:bg-purple-900/70 border-purple-500/50 text-purple-100 shadow-[0_4px_25px_rgba(168,85,247,0.35)]`;
-      if (type === 'LOWER') return `${base} bg-blue-950/70 hover:bg-blue-900/70 border-blue-500/50 text-blue-100 shadow-[0_4px_25px_rgba(59,130,246,0.35)]`;
-      if (type === 'BETWEEN') return `${base} bg-indigo-950/70 hover:bg-indigo-900/70 border-indigo-500/50 text-indigo-100 shadow-[0_4px_25px_rgba(99,102,241,0.35)]`;
-      if (type === 'OUTSIDE') return `${base} bg-pink-950/70 hover:bg-pink-900/70 border-pink-500/50 text-pink-100 shadow-[0_4px_25px_rgba(236,72,153,0.35)]`;
-      if (type === 'MATCH') return `${base} bg-purple-900/70 hover:bg-purple-800/70 border-purple-400/60 text-purple-100 shadow-[0_4px_25px_rgba(168,85,247,0.4)]`;
-      if (type === 'NO_MATCH') return `${base} bg-slate-900/80 hover:bg-slate-800/80 border-slate-700/60 text-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.4)]`;
-      if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border shadow-md bg-purple-950/80 hover:bg-purple-900/90 border-purple-400/60 text-purple-200 shadow-[0_0_20px_rgba(168,85,247,0.4)]";
+      if (type === 'RED') return `${base} bg-rose-950/40 hover:bg-rose-950/60 border-rose-400/25 text-white shadow-[0_4px_20px_rgba(244,63,94,0.12)]`;
+      if (type === 'BLACK') return `${base} bg-slate-900/60 hover:bg-slate-800/60 border-slate-700/30 text-white shadow-[0_4px_20px_rgba(0,0,0,0.3)]`;
+      if (type === 'HIGHER') return `${base} bg-purple-950/40 hover:bg-purple-950/60 border-purple-400/25 text-white shadow-[0_4px_20px_rgba(168,85,247,0.12)]`;
+      if (type === 'LOWER') return `${base} bg-indigo-950/40 hover:bg-indigo-950/60 border-indigo-400/25 text-white shadow-[0_4px_20px_rgba(99,102,241,0.12)]`;
+      if (type === 'BETWEEN') return `${base} bg-violet-950/40 hover:bg-violet-950/60 border-violet-400/25 text-white shadow-[0_4px_20px_rgba(139,92,246,0.12)]`;
+      if (type === 'OUTSIDE') return `${base} bg-fuchsia-950/40 hover:bg-fuchsia-950/60 border-fuchsia-400/25 text-white shadow-[0_4px_20px_rgba(217,70,239,0.12)]`;
+      if (type === 'MATCH') return `${base} bg-purple-900/40 hover:bg-purple-800/50 border-purple-400/30 text-white shadow-[0_4px_20px_rgba(168,85,247,0.15)]`;
+      if (type === 'NO_MATCH') return `${base} bg-slate-900/50 hover:bg-slate-800/60 border-slate-700/30 text-white shadow-[0_4px_20px_rgba(0,0,0,0.2)]`;
+      if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider backdrop-blur-xl active:scale-95 transition-transform flex items-center justify-center gap-2 border bg-purple-950/40 hover:bg-purple-900/60 border-purple-400/25 text-white shadow-[0_0_15px_rgba(168,85,247,0.12)]";
     }
     if (isMetro) {
       const base = "py-4 rounded-none font-black text-lg border-2 shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2";
@@ -1680,9 +1925,9 @@ const initializeAdMob = useCallback(async () => {
     const isCalm = settings.theme === UITheme.CALM;
     const isStars = settings.theme === UITheme.STARS;
     if (isStars) {
-      if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-purple-950/80 via-slate-900/90 to-purple-950/80 hover:from-purple-900/90 hover:to-purple-900/90 text-purple-200 py-6 rounded-2xl font-black border border-purple-500/50 shadow-[0_0_25px_rgba(168,85,247,0.4)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
-      if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-cyan-950/80 via-slate-900/90 to-cyan-950/80 hover:from-cyan-900/90 hover:to-cyan-900/90 text-cyan-200 py-6 rounded-2xl font-black border border-cyan-500/50 shadow-[0_0_25px_rgba(6,182,212,0.4)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
-      if (type === 'EQUAL') return "w-full bg-slate-950/80 border border-purple-400/40 text-purple-200 hover:text-white py-3 text-xs font-bold rounded-xl backdrop-blur-xl transition-colors active:scale-95 shadow-[0_0_15px_rgba(168,85,247,0.25)]";
+      if (type === 'HIGHER') return "group flex-1 bg-purple-950/40 hover:bg-purple-950/60 text-white py-6 rounded-2xl font-black border border-purple-400/25 shadow-[0_4px_20px_rgba(168,85,247,0.15)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'LOWER') return "group flex-1 bg-indigo-950/40 hover:bg-indigo-950/60 text-white py-6 rounded-2xl font-black border border-indigo-400/25 shadow-[0_4px_20px_rgba(99,102,241,0.15)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
+      if (type === 'EQUAL') return "w-full bg-slate-950/40 border border-white/20 text-white hover:text-white py-3 text-xs font-bold rounded-xl backdrop-blur-xl transition-colors active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]";
     }
     if (isMetro) {
       if (type === 'HIGHER') return "group flex-1 bg-[var(--theme-accent)] text-slate-950 py-6 rounded-none font-black border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] flex flex-col items-center active:translate-x-0.5 active:translate-y-0.5 transition-all";
@@ -1708,7 +1953,7 @@ const initializeAdMob = useCallback(async () => {
   const getHeaderClasses = () => {
     const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
     if (settings.theme === UITheme.STARS) {
-      return `${transitionClass} bg-black/40 backdrop-blur-xl rounded-2xl border border-purple-500/30 mb-3 z-20 shadow-[0_0_20px_rgba(168,85,247,0.2)] mx-1`;
+      return `${transitionClass} bg-purple-950/20 backdrop-blur-xl rounded-[2.5rem] border border-purple-300/10 mb-4 z-20 shadow-lg mx-2`;
     }
     if (settings.theme === UITheme.METRO) {
       return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-2xl mx-1' : 'rounded-none mx-0'} border-b-2 border-[var(--theme-accent)] mb-4 z-20`;
@@ -1726,7 +1971,7 @@ const initializeAdMob = useCallback(async () => {
   const getHandContainerClasses = () => {
     const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
     if (settings.theme === UITheme.STARS) {
-      return `${transitionClass} bg-[#030014]/60 rounded-2xl p-3 mb-6 border border-purple-500/30 backdrop-blur-xl relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-[0_0_20px_rgba(168,85,247,0.15)]`;
+      return `${transitionClass} bg-purple-950/[0.12] rounded-3xl p-3 mb-6 mx-2 border border-purple-300/10 backdrop-blur-xl relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-[0_4px_30px_rgba(147,51,234,0.08)]`;
     }
     if (settings.theme === UITheme.METRO) {
       return `${transitionClass} bg-[#0d0d0d] ${isDiscoActive ? 'rounded-3xl' : 'rounded-none'} p-3 mb-6 border-y border-[var(--theme-accent)]/30 relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
@@ -2805,21 +3050,7 @@ const initializeAdMob = useCallback(async () => {
       lang={lang}
     />
   );
-  const renderColorPickerModal = () => (
-    <ColorPickerModal
-      isOpen={isColorPickerOpen}
-      currentColor={settings.calmAccentColor || '#fb7185'}
-      t={t}
-      onClose={() => setIsColorPickerOpen(false)}
-      onSave={(newColor) => {
-        const n = { ...settings, calmAccentColor: newColor };
-        setSettings(n);
-        queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-        setIsColorPickerOpen(false);
-        triggerHaptic('medium');
-      }}
-    />
-  );
+  const renderColorPickerModal = () => null;
   const renderQuitModal = () => (
     <QuitConfirmModal
       isOpen={showQuitConfirm}
@@ -2850,15 +3081,14 @@ const initializeAdMob = useCallback(async () => {
     
     if (settings.theme === UITheme.STARS) {
       return (
-        <div key={`current-${idx}`} className={`${commonClasses} rounded-2xl border border-purple-400/40 bg-[#060412]/90 shadow-[0_0_25px_rgba(168,85,247,0.25)] relative overflow-hidden`} style={{ zIndex: idx }}>
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
-          <div className="text-purple-300 opacity-90 mb-1 drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]">
+        <div key={`current-${idx}`} className={`${commonClasses} rounded-2xl border border-white/20 bg-purple-950/20 backdrop-blur-md shadow-[0_4px_20px_rgba(255,255,255,0.1)] relative overflow-hidden`} style={{ zIndex: idx }}>
+          <div className="text-white/80 mb-1">
             {slotStep === 1 && <Sparkles size={18} />}
             {slotStep === 2 && <ArrowUpDown size={18} />}
             {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={10} className="rotate-180" /><ArrowRight size={10} /></div>}
             {slotStep === 4 && <Zap size={18} />}
           </div>
-          <span className="text-purple-200 font-sans font-black text-xl tracking-wider drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">?</span>
+          <span className="text-white font-light italic text-xl">?</span>
         </div>
       );
     }
@@ -2969,6 +3199,7 @@ const initializeAdMob = useCallback(async () => {
       return b.hand.length - a.hand.length;
     });
     const morePlayers = sortedPlayers.slice(3);
+    const themeScrollColors = getThemeScrollColors(settings.theme);
 
     return (
       <>
@@ -2993,8 +3224,17 @@ const initializeAdMob = useCallback(async () => {
                   <div className="relative flex-1 min-w-0 flex items-center">
                     {/* Left edge scroll indicator */}
                     {moreHeaderScroll.canLeft && (
-                      <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-20 flex items-center pl-0.5 bg-gradient-to-r from-slate-900/90 to-transparent pr-2">
-                        <ChevronLeft size={12} className="text-amber-400 drop-shadow animate-pulse" />
+                      <div 
+                        className="pointer-events-none absolute left-0 top-0 bottom-0 z-20 flex items-center pl-0.5 pr-2 transition-opacity duration-200"
+                        style={{ background: `linear-gradient(to right, ${themeScrollColors.gradientFrom}, transparent)` }}
+                      >
+                        <ChevronLeft 
+                          size={12} 
+                          style={{
+                            color: themeScrollColors.accent,
+                            filter: `drop-shadow(0 0 4px ${themeScrollColors.glow})`,
+                          }} 
+                        />
                       </div>
                     )}
 
@@ -3048,14 +3288,13 @@ const initializeAdMob = useCallback(async () => {
                                   style={{ background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)' }}
                                 />
                               )}
-                              <div className={`w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative z-10 ${isLoser ? 'm-[1px] w-[calc(100%-2px)] h-[calc(100%-2px)]' : 'border border-amber-500'}`}>
-                                {p.image ? (
-                                  <img src={p.image} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-white text-[9px] font-black select-none">
-                                    {p.name.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
+                              <div className={`w-full h-full rounded-full overflow-hidden flex items-center justify-center relative z-10 ${isLoser ? 'm-[1px] w-[calc(100%-2px)] h-[calc(100%-2px)]' : 'border border-amber-500'}`}>
+                                <PlayerAvatar
+                                  player={p}
+                                  size="custom"
+                                  className="w-full h-full text-[9px]"
+                                  theme={settings.theme}
+                                />
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
@@ -3074,8 +3313,17 @@ const initializeAdMob = useCallback(async () => {
 
                     {/* Right edge scroll indicator */}
                     {moreHeaderScroll.canRight && (
-                      <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-20 flex items-center pr-0.5 bg-gradient-to-l from-slate-900/90 to-transparent pl-2">
-                        <ChevronRight size={12} className="text-amber-400 drop-shadow animate-pulse" />
+                      <div 
+                        className="pointer-events-none absolute right-0 top-0 bottom-0 z-20 flex items-center pr-0.5 pl-2 transition-opacity duration-200"
+                        style={{ background: `linear-gradient(to left, ${themeScrollColors.gradientFrom}, transparent)` }}
+                      >
+                        <ChevronRight 
+                          size={12} 
+                          style={{
+                            color: themeScrollColors.accent,
+                            filter: `drop-shadow(0 0 4px ${themeScrollColors.glow})`,
+                          }} 
+                        />
                       </div>
                     )}
                   </div>
@@ -3094,14 +3342,13 @@ const initializeAdMob = useCallback(async () => {
                               style={{ background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #f59e0b)' }}
                             />
                           )}
-                          <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative z-10">
-                            {currentPlayerObj?.image ? (
-                              <img src={currentPlayerObj.image} alt={currentPlayerObj.name} className="w-full h-full object-cover pointer-events-none" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white text-[9px] font-black select-none">
-                                {currentPlayerObj?.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                          <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative z-10">
+                            <PlayerAvatar
+                              player={currentPlayerObj}
+                              size="custom"
+                              className="w-full h-full text-[9px]"
+                              theme={settings.theme}
+                            />
                           </div>
                         </div>
                       );
@@ -3338,19 +3585,30 @@ const initializeAdMob = useCallback(async () => {
                   <X size={24} />
                 </button>
               </div>
-              {/* Scrollable Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Scrollable Body with Theme-Dependent Scroll Indicators */}
+              <ScrollIndicatorContainer
+                orientation="vertical"
+                theme={settings.theme}
+                className="flex-1 min-h-0"
+                scrollClassName="p-6 space-y-6"
+              >
                 <div className="flex flex-col gap-3 w-full">
                   <h4 className="text-white font-medium">{t("Taal / Language")}</h4>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setLanguage('nl')}
+                      onClick={() => {
+                        setLanguage('nl');
+                        triggerHaptic('subtle');
+                      }}
                       className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'nl' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
                     >
                       <span className="text-white text-lg font-bold">🇳🇱 NL</span>
                     </button>
                     <button
-                      onClick={() => setLanguage('en')}
+                      onClick={() => {
+                        setLanguage('en');
+                        triggerHaptic('subtle');
+                      }}
                       className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${lang === 'en' ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`}
                     >
                       <span className="text-white text-lg font-bold">🇬🇧 EN</span>
@@ -3414,7 +3672,7 @@ const initializeAdMob = useCallback(async () => {
                           onClick={() => {
                             if (settings.theme === tName) return;
                             setThemeToUnlock(tName);
-                            triggerHaptic('light');
+                            triggerHaptic('subtle');
                           }}
                           className={`flex-1 py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 ${btnStyle}`}
                         >
@@ -3435,12 +3693,12 @@ const initializeAdMob = useCallback(async () => {
                             const n = { ...settings, theme: UITheme.STARS };
                             setSettings(n);
                             queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                            triggerHaptic('heavy');
+                            triggerHaptic('subtle');
                           }}
                           className={`w-full py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 relative overflow-hidden ${
                             isStarsActive
-                              ? 'font-bold rounded-xl shadow-md border border-purple-400/40 text-purple-100'
-                              : 'text-purple-300/80 hover:text-purple-100 rounded-xl active:scale-[0.98]'
+                              ? 'font-bold rounded-xl shadow-md border border-white/50 text-white'
+                              : 'text-slate-300 hover:text-white rounded-xl active:scale-[0.98]'
                           }`}
                           style={{
                             background: isStarsActive
@@ -3458,58 +3716,18 @@ const initializeAdMob = useCallback(async () => {
                 {settings.theme === UITheme.CALM && (
                   <div className="flex flex-col gap-3 w-full pt-2 animate-in slide-in-from-top-2 duration-300">
                     <h4 className="text-white font-medium">{t("Calm Accent Kleur")}</h4>
-                    <div className="flex bg-slate-800/70 p-2 rounded-2xl gap-3 border border-slate-700/50 justify-between items-center">
-                      {[
-                        { name: t('Lichtrood'), value: '#fb7185' },
-                        { name: t('Goud'), value: '#fbcd53' },
-                        { name: t('Periwinkle'), value: '#818cf8' },
-                        { name: t('Munt'), value: '#2dd4bf' },
-                      ].map(colorOpt => {
-                        const isColorActive = (settings.calmAccentColor || '#fb7185') === colorOpt.value;
-                        return (
-                          <button
-                            key={colorOpt.value}
-                            onClick={() => {
-                              const n = { ...settings, calmAccentColor: colorOpt.value };
-                              setSettings(n);
-                              queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                              triggerHaptic('light');
-                            }}
-                            title={colorOpt.name}
-                            className={`w-8 h-8 rounded-full relative transition-all active:scale-90 border-2 ${
-                              isColorActive ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-transparent opacity-60 hover:opacity-100'
-                            }`}
-                            style={{ backgroundColor: colorOpt.value }}
-                          >
-                            {isColorActive && (
-                              <span className="absolute inset-0 flex items-center justify-center text-slate-950 font-bold text-xs">✓</span>
-                            )}
-                          </button>
-                        );
-                      })}
-                      {/* Custom Color Picker Button */}
-                      {(() => {
-                        const presets = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
-                        const isCustomActive = !presets.includes(settings.calmAccentColor || '#fb7185');
-                        const activeColor = settings.calmAccentColor || '#fb7185';
-                        return (
-                          <button
-                            onClick={() => {
-                              setTempColor(activeColor);
-                              setIsColorPickerOpen(true);
-                              triggerHaptic('light');
-                            }}
-                            title={t('Aangepast')}
-                            className={`w-8 h-8 rounded-full relative transition-all active:scale-90 border-2 flex items-center justify-center ${
-                              isCustomActive ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-transparent opacity-60 hover:opacity-100'
-                            }`}
-                            style={{ backgroundColor: activeColor }}
-                          >
-                            <Pipette size={12} className="text-slate-950" />
-                          </button>
-                        );
-                      })()}
-                    </div>
+                    <CalmAccentColorPicker
+                      accentColor={settings.calmAccentColor || '#fb7185'}
+                      onColorChange={(newColor) => {
+                        const n = { ...settings, calmAccentColor: newColor };
+                        setSettings(n);
+                        queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                      }}
+                      isOpen={isColorPickerOpen}
+                      onToggleOpen={() => setIsColorPickerOpen(prev => !prev)}
+                      onClose={() => setIsColorPickerOpen(false)}
+                      t={t}
+                    />
                   </div>
                 )}
                 <div className="flex flex-col gap-3 w-full pt-2">
@@ -3526,7 +3744,7 @@ const initializeAdMob = useCallback(async () => {
                             const n = { ...settings, cardStyle: style };
                             setSettings(n);
                             queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                            triggerHaptic('heavy');
+                            triggerHaptic('subtle');
                             longPressTimerRef.current = null;
                           }, 3000);
                         }}
@@ -3545,12 +3763,12 @@ const initializeAdMob = useCallback(async () => {
                         onClick={async () => {
                           if (settings.cardStyle === style) return;
                           setStyleToUnlock(style);
-                          triggerHaptic('light');
+                          triggerHaptic('subtle');
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             setStyleToUnlock(style);
-                            triggerHaptic('light');
+                            triggerHaptic('subtle');
                           }
                         }}
                         className={`py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all cursor-pointer ${settings.cardStyle === style ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-red-500/50' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-600'}`}
@@ -3560,7 +3778,7 @@ const initializeAdMob = useCallback(async () => {
                           onClick={(e) => {
                             e.stopPropagation();
                             setPreviewDeckStyle(style);
-                            triggerHaptic('light');
+                            triggerHaptic('subtle');
                           }}
                           className="absolute top-2 left-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
                         >
@@ -3594,7 +3812,7 @@ const initializeAdMob = useCallback(async () => {
                           const n = { ...settings, cardStyle: CardStyle.GALAXY };
                           setSettings(n);
                           queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                          triggerHaptic('heavy');
+                          triggerHaptic('subtle');
                         }}
                         className={`w-full py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all cursor-pointer overflow-hidden select-none mt-3 ${
                           isGalaxyStyleActive
@@ -3627,7 +3845,7 @@ const initializeAdMob = useCallback(async () => {
                         const next = ((Math.round(draftBusDecks)) % 5) + 1;
                         setDraftBusDecks(next);
                         setSettings(prev => ({ ...prev, busDecks: next }));
-                        triggerHaptic('tick');
+                        triggerHaptic('subtle');
                       }}
                       className="text-xs sm:text-sm font-black text-white px-2 py-0.5 rounded-lg border bg-slate-800 border-slate-700 active:scale-95 transition-all cursor-pointer"
                     >
@@ -3644,7 +3862,7 @@ const initializeAdMob = useCallback(async () => {
                         }`}
                         style={{
                           width: `calc(8px + (100% - 16px) * ${(draftBusDecks - 1) / 4})`,
-                          backgroundColor: 'var(--theme-accent, #ef4444)',
+                          background: 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))',
                           opacity: 0.85
                         }}
                       />
@@ -3674,7 +3892,7 @@ const initializeAdMob = useCallback(async () => {
                       }`}
                       style={{
                         left: `calc(8px + (100% - 16px) * ${(draftBusDecks - 1) / 4})`,
-                        backgroundColor: 'var(--theme-accent, #ef4444)'
+                        background: 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))'
                       }}
                     />
                     {/* Invisible Range Input for Drag & Touch Interaction */}
@@ -3694,7 +3912,7 @@ const initializeAdMob = useCallback(async () => {
                     />
                   </div>
                 </div>
-              </div>
+              </ScrollIndicatorContainer>
               {/* Footer */}
               <div className="p-6 border-t border-slate-800 shrink-0">
                 <button
@@ -3738,8 +3956,13 @@ const initializeAdMob = useCallback(async () => {
                       ))}
                     </div>
                   </div>
-                  {/* Phrases List */}
-                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2.5 bg-slate-900 min-h-0">
+                  {/* Phrases List with Theme-Dependent Scroll Indicators */}
+                  <ScrollIndicatorContainer
+                    orientation="vertical"
+                    theme={settings.theme}
+                    className="flex-1 min-h-0 bg-slate-900"
+                    scrollClassName="px-6 py-4 space-y-2.5"
+                  >
                     {(() => {
                       const effectivePhrases = getEffectivePhrases(editorCategory);
                       return effectivePhrases.map((phrase, idx) => (
@@ -3761,7 +3984,7 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                       ));
                     })()}
-                  </div>
+                  </ScrollIndicatorContainer>
                   {/* Add Input & Reset */}
                   <div className="p-6 border-t border-slate-800 bg-slate-900 space-y-3 shrink-0">
                     <div className="flex gap-2">
@@ -3950,6 +4173,7 @@ const initializeAdMob = useCallback(async () => {
             t={t}
             immunePlayerId={immunePlayerId}
             lastAddedPlayerId={lastAddedPlayerId}
+            theme={settings.theme}
           />
         </div>
         {immunePlayerId && players.find(p => p.id === immunePlayerId) && (
@@ -3992,13 +4216,72 @@ const initializeAdMob = useCallback(async () => {
               <Check size={24} strokeWidth={4} className={canAddPlayer ? 'text-green-100' : 'text-slate-500'} />
             </button>
           </div>
-          <button
-            onClick={handleStartPress}
-            disabled={players.length < 2}
-            className="w-full bg-gradient-to-r from-red-600 to-red-800 disabled:opacity-50 disabled:grayscale text-white font-black text-xl py-5 rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95 hover:brightness-110 border-t border-red-400"
-          >
-            <Play fill="currentColor" size={24} /> {t("START SPEL")}
-          </button>
+          {settings.theme === UITheme.STARS ? (
+            <button
+              onClick={handleStartPress}
+              disabled={players.length < 2}
+              className="w-full py-3.5 pl-8 pr-2.5 rounded-full bg-[#f1f5f9] text-[#090514] font-medium text-sm sm:text-base tracking-[0.18em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(192,132,252,0.3)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-purple-300/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale no-calm-override"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              <span>{t("START SPEL")}</span>
+              <div className="w-10 h-10 rounded-full bg-[#090514]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#090514]/15 transition-all">
+                <Play size={18} fill="currentColor" className="text-[#090514] ml-0.5" />
+              </div>
+            </button>
+          ) : settings.theme === UITheme.CALM ? (
+            <button
+              onClick={handleStartPress}
+              disabled={players.length < 2}
+              className="w-full py-3.5 pl-8 pr-2.5 rounded-full font-medium text-sm sm:text-base tracking-[0.18em] uppercase active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed no-calm-override"
+              style={{
+                backgroundColor: 'var(--theme-accent, #fb7185)',
+                color: 'var(--theme-btn-text, #ffffff)',
+                boxShadow: '0 8px 30px var(--theme-accent-glow, rgba(251, 113, 133, 0.35))',
+                fontFamily: "'Outfit', sans-serif",
+              }}
+            >
+              <span>{t("START SPEL")}</span>
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.15)' }}
+              >
+                <Play size={18} fill="currentColor" className="ml-0.5" style={{ color: 'var(--theme-btn-text, #ffffff)' }} />
+              </div>
+            </button>
+          ) : settings.theme === UITheme.METRO ? (
+            <button
+              onClick={handleStartPress}
+              disabled={players.length < 2}
+              className="w-full py-3.5 pl-8 pr-2.5 rounded-none bg-[var(--theme-accent)] text-slate-950 font-mono font-black text-sm sm:text-base tracking-widest uppercase border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-between group cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <span>{t("START SPEL")}</span>
+              <div className="w-10 h-10 rounded-none bg-slate-950/20 flex items-center justify-center group-hover:scale-110 transition-all">
+                <Play size={18} fill="currentColor" className="text-slate-950 ml-0.5" />
+              </div>
+            </button>
+          ) : settings.theme === UITheme.BEER ? (
+            <button
+              onClick={handleStartPress}
+              disabled={players.length < 2}
+              className="w-full py-3.5 pl-8 pr-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-slate-950 font-black text-sm sm:text-base tracking-wider uppercase shadow-[0_6px_20px_rgba(245,158,11,0.4)] border-t border-amber-300 active:scale-95 transition-all flex items-center justify-between group cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <span>{t("START SPEL")}</span>
+              <div className="w-10 h-10 rounded-xl bg-slate-950/20 flex items-center justify-center group-hover:scale-110 transition-all">
+                <Play size={18} fill="currentColor" className="text-slate-950 ml-0.5" />
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={handleStartPress}
+              disabled={players.length < 2}
+              className="w-full py-3.5 pl-8 pr-2.5 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black text-sm sm:text-base tracking-[0.18em] uppercase shadow-[0_8px_25px_rgba(220,38,38,0.4)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border-t border-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <span>{t("START SPEL")}</span>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/30 transition-all">
+                <Play size={18} fill="currentColor" className="text-white ml-0.5" />
+              </div>
+            </button>
+          )}
           <SettingsPanel
             isOpen={isSettingsOpen}
             settings={settings}
@@ -4087,15 +4370,9 @@ const initializeAdMob = useCallback(async () => {
           </div>
           <div className="flex items-center gap-2">
             {renderDevMenu()}
-            <div className="flex gap-3">
-              <div className="flex flex-col items-end px-3 border-r border-white/10">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Op")}</span>
-                <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
-              </div>
-              <div className="flex flex-col items-end pl-1">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Uit")}</span>
-                <span className="text-emerald-400 font-black font-mono text-lg leading-none drop-shadow-sm"><ArrowRight size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksDistributed}</span>
-              </div>
+            <div className="flex flex-col items-end px-2">
+              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Slokken gedronken")}</span>
+              <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
             </div>
             {renderQuitButton()}
           </div>
@@ -4363,18 +4640,24 @@ const initializeAdMob = useCallback(async () => {
             <h3 className="text-3xl font-black text-white leading-tight">{t("Wie heeft nu de meeste kaarten?")}</h3>
             <p className="text-slate-300 text-sm"></p>
           </div>
-          <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto">
+          <ScrollIndicatorContainer
+            orientation="vertical"
+            theme={settings.theme}
+            className="max-h-[50vh]"
+            scrollClassName="flex flex-col gap-3"
+          >
             {players.filter(p => !p.isImmune).map((p) => (
               <button
                 key={p.id}
                 onClick={() => handleManualBusPassengerSelect(p)}
                 className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-2xl p-3 text-left hover:border-amber-400 hover:bg-amber-500/10 transition-all active:scale-95"
               >
-                <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
-                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
-                    <span className="w-full h-full flex items-center justify-center text-white font-black text-lg">{p.name.charAt(0)}</span>
-                  )}
-                </div>
+                <PlayerAvatar
+                  player={p}
+                  size="custom"
+                  className="w-12 h-12 text-lg"
+                  theme={settings.theme}
+                />
                 <span className="text-white font-bold truncate">{p.name}</span>
               </button>
             ))}
@@ -4384,16 +4667,17 @@ const initializeAdMob = useCallback(async () => {
                 disabled
                 className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-2xl p-3 text-left cursor-not-allowed opacity-50"
               >
-                <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden border border-slate-500 grayscale">
-                  {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : (
-                    <span className="w-full h-full flex items-center justify-center text-white/70 font-black text-lg">{p.name.charAt(0)}</span>
-                  )}
-                </div>
+                <PlayerAvatar
+                  player={p}
+                  size="custom"
+                  className="w-12 h-12 text-lg grayscale opacity-70"
+                  theme={settings.theme}
+                />
                 <span className="text-white/70 font-bold truncate line-through">{p.name}</span>
                 <Shield size={20} className="text-yellow-400 ml-auto" />
               </button>
             ))}
-          </div>
+          </ScrollIndicatorContainer>
           <button
             onClick={() => setIsSelectingBusPlayer(false)}
             className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
@@ -4569,14 +4853,13 @@ const initializeAdMob = useCallback(async () => {
                                     }}
                                   />
                                 )}
-                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-800 flex items-center justify-center relative z-10">
-                                  {p.image ? (
-                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-white text-[11px] font-black select-none">
-                                      {p.name.charAt(0).toUpperCase()}
-                                    </div>
-                                  )}
+                                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative z-10">
+                                  <PlayerAvatar
+                                    player={p}
+                                    size="custom"
+                                    className="w-full h-full text-[11px]"
+                                    theme={settings.theme}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -5006,14 +5289,19 @@ const initializeAdMob = useCallback(async () => {
           {renderQuitModal()}
           {renderAdLoadingModal()}
           {renderColorPickerModal()}
-          <div className="w-24 h-24 rounded-full bg-red-900 border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
-            {victim.image ? <img src={victim.image} className="w-full h-full object-cover" /> : <Users size={40} className="text-white" />}
+          <div className="w-24 h-24 rounded-full border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
+            <PlayerAvatar player={victim} size="custom" className="w-full h-full text-4xl" theme={settings.theme} />
           </div>
           <div className="mb-4"><ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" /></div>
           <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
             <span className="text-white border-b-2 border-red-500">{victim.name}</span>{t(", Wie neem je mee de bus in?")}
           </p>
-          <div className="w-full max-w-sm space-y-3 overflow-y-auto max-h-[50vh] px-2">
+          <ScrollIndicatorContainer
+            orientation="vertical"
+            theme={settings.theme}
+            className="w-full max-w-sm max-h-[50vh]"
+            scrollClassName="space-y-3 px-2"
+          >
             <button
               onClick={() => handleSharedBusSelection(null)}
               className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
@@ -5027,9 +5315,7 @@ const initializeAdMob = useCallback(async () => {
                 className="w-full bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between text-white font-bold text-sm hover:bg-red-900/50 border border-white/5 hover:border-red-500 transition-all shadow-lg active:scale-95"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-slate-500">
-                    {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : null}
-                  </div>
+                  <PlayerAvatar player={p} size="custom" className="w-10 h-10 text-base" theme={settings.theme} />
                   <span className="text-lg">{p.name}</span>
                 </div>
                 <HeartPulse size={20} className="text-red-500" />
@@ -5042,15 +5328,13 @@ const initializeAdMob = useCallback(async () => {
                 className="w-full bg-slate-900/40 p-4 rounded-2xl flex items-center justify-between text-white/50 font-bold text-sm border border-white/5 shadow-lg cursor-not-allowed opacity-60"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-slate-500 grayscale">
-                    {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : null}
-                  </div>
+                  <PlayerAvatar player={p} size="custom" className="w-10 h-10 text-base grayscale opacity-60" theme={settings.theme} />
                   <span className="text-lg line-through">{p.name}</span>
                 </div>
                 <Shield size={20} className="text-yellow-400" />
               </button>
             ))}
-          </div>
+          </ScrollIndicatorContainer>
         </div>
       </RootContainer>
       </>
@@ -5536,7 +5820,12 @@ const initializeAdMob = useCallback(async () => {
                   {t("Overzicht van alle 52 kaarten in het huidige actieve pakje.")}
                 </p>
               </div>
-              <div className="flex-1 overflow-y-auto pr-1 space-y-4 custom-scrollbar">
+              <ScrollIndicatorContainer
+                orientation="vertical"
+                theme={settings.theme}
+                className="flex-1 min-h-0"
+                scrollClassName="pr-1 space-y-4 custom-scrollbar"
+              >
                 {/* Legend */}
                 <div className="flex items-center gap-4 flex-wrap text-[10px] uppercase font-black tracking-wider border-b border-slate-800/60 pb-3 text-slate-400">
                   <div className="flex items-center gap-1.5">
@@ -5611,7 +5900,7 @@ const initializeAdMob = useCallback(async () => {
                     );
                   })}
                 </div>
-              </div>
+              </ScrollIndicatorContainer>
               <button
                 onClick={close}
                 className="mt-6 w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shrink-0 shadow-lg shadow-red-900/30 border border-red-500/30 cursor-pointer"
@@ -5656,9 +5945,7 @@ const initializeAdMob = useCallback(async () => {
               <div key={p.id} className={`grid grid-cols-12 p-4 items-center border-b border-white/5 ${p.id === immunePlayerId ? 'bg-yellow-500/10' : ''}`}>
                 <div className="col-span-1 text-center font-black text-slate-500 text-lg">{i + 1}</div>
                 <div className="col-span-7 font-bold text-white text-base truncate flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden shrink-0 border border-white/10">
-                    {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : null}
-                  </div>
+                  <PlayerAvatar player={p} size="sm" theme={settings.theme} />
                   {p.name}
                   {p.id === immunePlayerId && <Shield size={14} className="text-yellow-400" />}
                 </div>

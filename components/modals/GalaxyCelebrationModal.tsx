@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardStyle, Rank, Suit } from '../../types';
 import PlayingCard from '../PlayingCard';
-import { Sparkles, Star, Award, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { triggerHaptic } from '../../services/haptics';
 
 interface GalaxyCelebrationModalProps {
@@ -31,7 +31,7 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
   t,
   lang = 'nl',
 }) => {
-  const [phase, setPhase] = useState<'blackout' | 'warp' | 'reveal'>('blackout');
+  const [phase, setPhase] = useState<'blackout' | 'singularity' | 'supernova' | 'reveal'>('blackout');
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,156 +39,203 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
       return;
     }
 
+    // Step 1: Blackout & Deep Gravitational Gathering
     triggerHaptic('majorLoss');
+    const singularityTimer = setTimeout(() => {
+      setPhase('singularity');
+      triggerHaptic('medium');
+    }, 150);
 
-    const warpTimer = setTimeout(() => {
-      setPhase('warp');
+    // Step 2: Celestial Supernova Detonation
+    const supernovaTimer = setTimeout(() => {
+      setPhase('supernova');
       triggerHaptic('heavy');
-    }, 600);
+    }, 900);
 
+    // Step 3: Sovereign Reveal
     const revealTimer = setTimeout(() => {
       setPhase('reveal');
       triggerHaptic('success');
-    }, 1500);
+    }, 1850);
 
     return () => {
-      clearTimeout(warpTimer);
+      clearTimeout(singularityTimer);
+      clearTimeout(supernovaTimer);
       clearTimeout(revealTimer);
     };
   }, [isOpen]);
+
+  // Luxury starlight field
+  const celestialStars = useMemo(() => {
+    return Array.from({ length: 42 }).map((_, i) => ({
+      id: i,
+      x: (i * 19 + 17) % 96 + 2,
+      y: (i * 23 + 13) % 94 + 3,
+      size: (i % 3 === 0) ? 2 : (i % 2 === 0) ? 1.5 : 1,
+      opacity: (i % 3 === 0) ? 0.85 : 0.45,
+      delay: (i % 6) * 0.5,
+      duration: (i % 4) + 2.5,
+      color: i % 4 === 0 ? '#fef08a' : i % 2 === 0 ? '#c084fc' : '#f8fafc',
+    }));
+  }, []);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center overflow-hidden select-none isolate">
-      {/* 1. Full Pitch Black Takeover Backdrop */}
-      <div className="absolute inset-0 bg-black transition-opacity duration-700 opacity-100" />
+      {/* 1. Deep Obsidian Void Base */}
+      <div className="absolute inset-0 bg-[#010005] transition-opacity duration-700 opacity-100" />
 
-      {/* 2. Hyperspace Starburst & Warp Lines */}
-      {phase !== 'blackout' && (
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-          {/* Radial light burst */}
-          <div className="absolute w-[800px] h-[800px] rounded-full bg-gradient-to-r from-purple-600/30 via-cyan-500/20 to-pink-500/30 blur-3xl animate-pulse" />
-
-          {/* Starlight streaks expanding from center */}
-          {Array.from({ length: 32 }).map((_, i) => {
-            const rot = (i / 32) * 360;
+      {/* 2. Singularity Phase: Gravitational Collapse into Central Diamond Core */}
+      {phase === 'singularity' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none isolate">
+          {/* Gravitational Inward Streaks */}
+          {Array.from({ length: 24 }).map((_, i) => {
+            const rot = (i / 24) * 360;
             return (
               <div
                 key={i}
-                className="absolute top-1/2 left-1/2 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent origin-left opacity-60"
+                className="absolute top-1/2 left-1/2 h-[1px] bg-gradient-to-r from-transparent via-purple-300/40 to-white/90 origin-left animate-singularity-collapse"
                 style={{
-                  width: `${Math.random() * 250 + 150}px`,
+                  width: `${(i % 3) * 60 + 140}px`,
                   transform: `rotate(${rot}deg) translate3d(20px, 0, 0)`,
-                  animation: 'hyperspace-warp 2s cubic-bezier(0.1, 0.8, 0.2, 1) infinite',
-                  animationDelay: `${(i % 5) * 0.12}s`,
+                  animationDelay: `${(i % 4) * 0.04}s`,
                 }}
               />
             );
           })}
+
+          {/* Rotating Astrolabe Ring Gathering Inward */}
+          <div 
+            className="absolute w-44 h-44 rounded-full border border-purple-400/20 animate-galaxy-spin opacity-40"
+            style={{ animationDuration: '40s' }}
+          />
+          <div 
+            className="absolute w-28 h-28 rounded-full border border-dashed border-amber-300/25 animate-galaxy-spin opacity-50"
+            style={{ animationDuration: '25s', animationDirection: 'reverse' }}
+          />
+
+          {/* Pure Optical Diamond Singularity */}
+          <div className="relative flex items-center justify-center animate-singularity-gather">
+            <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_#ffffff,0_0_60px_#c084fc,0_0_120px_#a855f7]" />
+            <div className="absolute w-20 h-[1.5px] bg-white/80 blur-[0.5px]" />
+            <div className="absolute h-20 w-[1.5px] bg-white/80 blur-[0.5px]" />
+          </div>
         </div>
       )}
 
-      {/* 3. Twinkling Galaxy Starfield Overlay */}
+      {/* 3. Supernova Phase: Sovereign Shockwaves & Ethereal Violet Bloom */}
+      {(phase === 'supernova' || phase === 'reveal') && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden isolate">
+          {/* Supernova Shockwave Rings */}
+          <div className="absolute w-[380px] h-[380px] rounded-full border border-purple-200/90 shadow-[0_0_40px_rgba(192,132,252,0.8)] animate-supernova-shockwave" />
+          <div 
+            className="absolute w-[320px] h-[320px] rounded-full border border-dashed border-amber-200/50 animate-supernova-shockwave"
+            style={{ animationDelay: '0.12s' }}
+          />
+          <div 
+            className="absolute w-[440px] h-[440px] rounded-full border border-white/40 animate-supernova-shockwave"
+            style={{ animationDelay: '0.22s' }}
+          />
+
+          {/* Deep Violet / Amethyst Core Bloom */}
+          <div className="absolute w-[600px] h-[600px] rounded-full bg-radial from-purple-600/45 via-purple-950/20 to-transparent blur-3xl animate-supernova-bloom" />
+
+          {/* Starlight Compass Beams */}
+          <div className="absolute w-screen h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent animate-celestial-beam" />
+          <div className="absolute h-screen w-[1.5px] bg-gradient-to-b from-transparent via-purple-300/60 to-transparent animate-celestial-beam" />
+        </div>
+      )}
+
+      {/* 4. Ambient Twinkling Cosmic Dust Field (Active during reveal) */}
       {phase === 'reveal' && (
-        <div className="absolute inset-0 pointer-events-none animate-in fade-in duration-1000">
-          {Array.from({ length: 50 }).map((_, i) => (
+        <div className="absolute inset-0 pointer-events-none animate-in fade-in duration-1000 isolate">
+          {celestialStars.map((star) => (
             <div
-              key={i}
+              key={star.id}
               className="absolute rounded-full animate-star-twinkle"
               style={{
-                left: `${(i * 17 + 23) % 96}%`,
-                top: `${(i * 29 + 11) % 96}%`,
-                width: `${(i % 3) + 1.5}px`,
-                height: `${(i % 3) + 1.5}px`,
-                backgroundColor: i % 2 === 0 ? '#c084fc' : '#38bdf8',
-                boxShadow: '0 0 6px currentColor',
-                '--twinkle-duration': `${(i % 4) + 1.5}s`,
-                '--twinkle-delay': `${(i % 5) * 0.4}s`,
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                backgroundColor: star.color,
+                boxShadow: star.size > 1.5 ? `0 0 6px ${star.color}` : 'none',
+                opacity: star.opacity,
+                '--twinkle-duration': `${star.duration}s`,
+                '--twinkle-delay': `${star.delay}s`,
               } as React.CSSProperties}
             />
           ))}
         </div>
       )}
 
-      {/* 4. Epic Announcement Dialogue Card */}
+      {/* 5. Epic Dark Stars Dialogue (Awwwards-Tier Double-Bezel Architecture) */}
       {phase === 'reveal' && (
-        <div className="relative z-10 w-full max-w-md mx-4 p-6 sm:p-8 rounded-[2.5rem] bg-gradient-to-b from-[#09051d]/90 via-[#030014]/95 to-black/95 border-2 border-purple-500/50 shadow-[0_0_60px_rgba(168,85,247,0.4),inset_0_0_30px_rgba(56,189,248,0.15)] flex flex-col items-center text-center animate-in zoom-in-95 duration-500 max-h-[90vh] overflow-y-auto">
-          {/* Top Cosmic Badge */}
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-950/80 border border-purple-400/50 shadow-[0_0_20px_rgba(192,132,252,0.5)] mb-4 animate-bounce-subtle">
-            <Sparkles size={14} className="text-amber-300 animate-spin" style={{ animationDuration: '6s' }} />
-            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-purple-200">
-              {lang === 'en' ? 'LEGENDARY ACHIEVEMENT' : 'LEGENDARISCHE PRESTATIE'}
-            </span>
-            <Star size={14} className="text-cyan-300 fill-cyan-300" />
-          </div>
-
-          {/* Main Massive Title */}
-          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-1 drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]">
-            {lang === 'en' ? '20 Cards on the First Try!' : '20 Kaarten in 1x Overleefd!'}
-          </h2>
-
-          {/* Super Rare Odds */}
-          <div className="mb-4">
-            <span className="text-xs font-black uppercase tracking-widest text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/40 shadow-[0_0_12px_rgba(52,211,153,0.3)]">
-              {lang === 'en' ? '<0.001% CHANCE! INSANE!' : '<0.001% KANS! ONMOGELIJK!'}
-            </span>
-          </div>
-
-          {/* Subtitle / Unlock details */}
-          <p className="text-slate-300 text-sm leading-relaxed mb-6 px-2 max-w-sm">
-            {lang === 'en'
-              ? 'You mastered the ultimate challenge! You have unlocked the secret '
-              : 'Je hebt de ultieme uitdaging overwonnen! Je hebt het geheime '}
-            <span className="text-purple-300 font-bold drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]">
-              &apos;Stars&apos; {lang === 'en' ? 'theme' : 'thema'}
-            </span>
-            {lang === 'en' ? ' and the animated ' : ' en de geanimeerde '}
-            <span className="text-cyan-300 font-bold drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">
-              &apos;Galaxy&apos; {lang === 'en' ? 'card style' : 'kaartstijl'}
-            </span>
-            {lang === 'en' ? '!' : '!'}
-          </p>
-
-          {/* Live Animated Card Previews */}
-          <div className="relative mb-8 flex items-center justify-center gap-4 py-2">
-            {/* Ambient Back Glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-pink-600/20 to-cyan-600/30 blur-2xl -z-10 rounded-full" />
+        <div className="relative z-10 w-full max-w-sm sm:max-w-md mx-4 p-1.5 rounded-[2.5rem] bg-gradient-to-b from-purple-400/25 via-white/5 to-purple-950/30 border border-purple-300/20 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in-95 duration-700 ease-out max-h-[92vh] flex flex-col">
+          <div className="w-full h-full rounded-[calc(2.5rem-0.375rem)] bg-[#04010a]/95 p-6 sm:p-7 flex flex-col items-center text-center overflow-y-auto border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]">
             
-            <div className="transform -rotate-6 hover:rotate-0 transition-transform duration-300 scale-90 sm:scale-100">
-              <PlayingCard card={SAMPLE_GALAXY_ACE} size="md" style={CardStyle.GALAXY} highlight />
+            {/* Main Editorial Title */}
+            <h2 className="text-2xl sm:text-3xl font-light italic tracking-[0.12em] uppercase text-white mt-1 mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              {lang === 'en' ? 'Cosmic Mastery' : 'Kosmische Meester'}
+            </h2>
+
+            {/* Subtitle description */}
+            <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed mb-6 max-w-xs font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              {lang === 'en' ? (
+                <>You overcame impossible odds. Unlocked the secret <strong className="font-medium text-purple-200">Stars Theme</strong> and animated <strong className="font-medium text-purple-200">Galaxy Cards</strong>.</>
+              ) : (
+                <>Je hebt het onmogelijke overleefd. Ontgrendeld: <strong className="font-medium text-purple-200">Stars Thema</strong> en geanimeerde <strong className="font-medium text-purple-200">Galaxy Kaarten</strong>.</>
+              )}
+            </p>
+
+            {/* Exhibition Floating Pedestal */}
+            <div className="relative mb-7 flex items-center justify-center gap-4 sm:gap-6 py-4 w-full">
+              {/* Plinth Ambient Light & Shadow */}
+              <div className="absolute bottom-1 w-52 h-6 bg-purple-500/25 blur-xl rounded-full pointer-events-none" />
+              <div className="absolute inset-0 bg-radial from-purple-600/15 via-transparent to-transparent pointer-events-none" />
+
+              {/* Floating Ace */}
+              <div className="animate-card-pedestal-1 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
+                <PlayingCard card={SAMPLE_GALAXY_ACE} size="md" style={CardStyle.GALAXY} highlight />
+              </div>
+
+              {/* Floating King (Backside Astrolabe) */}
+              <div className="animate-card-pedestal-2 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
+                <PlayingCard card={SAMPLE_GALAXY_KING} size="md" style={CardStyle.GALAXY} isFaceDown />
+              </div>
             </div>
 
-            <div className="transform rotate-6 hover:rotate-0 transition-transform duration-300 scale-90 sm:scale-100">
-              <PlayingCard card={SAMPLE_GALAXY_KING} size="md" style={CardStyle.GALAXY} isFaceDown />
+            {/* Nested Island Buttons */}
+            <div className="flex flex-col w-full gap-2.5">
+              {/* Primary Action Button: Button-in-Button */}
+              <button
+                onClick={() => {
+                  triggerHaptic('heavy');
+                  onEquipBoth();
+                }}
+                className="w-full py-2.5 pl-6 pr-2 rounded-full bg-[#f1f5f9] text-[#090514] font-medium text-xs tracking-[0.15em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(192,132,252,0.3)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-purple-300/30 no-calm-override"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                <span>{lang === 'en' ? 'Equip Stars & Galaxy' : 'Activeer Stars & Galaxy'}</span>
+                <div className="w-8 h-8 rounded-full bg-[#090514]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#090514]/15 transition-all">
+                  <Check size={16} className="text-[#090514]" />
+                </div>
+              </button>
+
+              {/* Secondary Minimalist Pill */}
+              <button
+                onClick={() => {
+                  triggerHaptic('light');
+                  onClose();
+                }}
+                className="w-full py-2.5 px-4 rounded-full text-slate-400 hover:text-white font-light text-xs tracking-wider transition-colors hover:bg-white/5 cursor-pointer"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                {lang === 'en' ? 'Keep Current Setup' : 'Later Instellen'}
+              </button>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col w-full gap-3">
-            {/* Primary: Equip Both Now */}
-            <button
-              onClick={() => {
-                triggerHaptic('heavy');
-                onEquipBoth();
-              }}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 hover:from-purple-500 hover:via-pink-500 hover:to-cyan-500 text-white font-black text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(168,85,247,0.6)] border border-white/40 active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer"
-            >
-              <Sparkles size={18} className="text-amber-300 group-hover:rotate-12 transition-transform" />
-              <span>{lang === 'en' ? 'Equip Stars & Galaxy Now' : 'Direct Stars & Galaxy Instellen'}</span>
-              <Check size={18} className="text-white" />
-            </button>
-
-            {/* Secondary: Dismiss / Continue */}
-            <button
-              onClick={() => {
-                triggerHaptic('light');
-                onClose();
-              }}
-              className="w-full py-3 px-4 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white font-bold text-xs uppercase tracking-widest border border-slate-700/60 transition-colors cursor-pointer"
-            >
-              {lang === 'en' ? 'Awesome, Keep Current Setup' : 'Geweldig, Later Instellen'}
-            </button>
           </div>
         </div>
       )}

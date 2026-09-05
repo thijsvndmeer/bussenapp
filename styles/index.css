@@ -4,17 +4,17 @@
 @property --theme-accent {
   syntax: '<color>';
   inherits: true;
-  initial-value: hsl(180, 65%, 45%);
+  initial-value: hsl(270, 70%, 65%);
 }
 @property --theme-accent-glow {
   syntax: '<color>';
   inherits: true;
-  initial-value: hsla(180, 65%, 45%, 0.15);
+  initial-value: hsla(270, 70%, 65%, 0.15);
 }
 @property --theme-btn-bg {
   syntax: '<color>';
   inherits: true;
-  initial-value: hsl(180, 65%, 45%);
+  initial-value: hsl(270, 70%, 65%);
 }
 
 html,
@@ -294,15 +294,17 @@ input:disabled,
   --theme-card-bg: rgba(6, 4, 18, 0.85);
   --theme-card-border: 1px solid rgba(192, 132, 252, 0.18);
   --theme-font: 'Outfit', sans-serif;
-  --theme-text: #f8fafc;
+  --theme-text: #f1f5f9;
   --theme-text-secondary: #c084fc;
-  --theme-accent: #c084fc;
-  --theme-accent-glow: rgba(192, 132, 252, 0.28);
-  --theme-btn-bg: linear-gradient(180deg, #1e1138 0%, #0d061c 100%);
-  --theme-btn-text: #ffffff;
-  --theme-btn-sec-bg: rgba(255, 255, 255, 0.04);
-  --theme-btn-sec-text: #f3e8ff;
-  --theme-border-radius: 16px;
+  --theme-accent: #f1f5f9;
+  --theme-accent-secondary: #c084fc;
+  --theme-accent-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 40%, #e9d5ff 70%, #c084fc 100%);
+  --theme-accent-glow: rgba(192, 132, 252, 0.3);
+  --theme-btn-bg: #f1f5f9;
+  --theme-btn-text: #090514;
+  --theme-btn-sec-bg: rgba(192, 132, 252, 0.08);
+  --theme-btn-sec-text: #c084fc;
+  --theme-border-radius: 20px;
 }
 
 
@@ -504,12 +506,17 @@ input[type="range"].custom-slider-invisible {
 .theme-stars button.bg-gradient-to-b.from-red-600:not(.no-calm-override),
 .theme-stars button.bg-gradient-to-r.from-emerald-500:not(.no-calm-override),
 .theme-stars button.bg-gradient-to-r.from-amber-500:not(.no-calm-override) {
-  background: var(--theme-btn-bg) !important;
-  background-image: var(--theme-btn-bg) !important;
-  color: var(--theme-btn-text) !important;
-  border: 1px solid rgba(192, 132, 252, 0.35) !important;
-  border-radius: var(--theme-border-radius) !important;
+  background: var(--theme-btn-bg, #f1f5f9) !important;
+  background-image: none !important;
+  color: var(--theme-btn-text, #090514) !important;
+  border: 1px solid rgba(241, 245, 249, 0.4) !important;
+  border-radius: var(--theme-border-radius);
   box-shadow: 0 0 20px var(--theme-accent-glow) !important;
+}
+
+.theme-stars button.rounded-full,
+.theme-stars .rounded-full {
+  border-radius: 9999px !important;
 }
 
 /* Secondary Action Buttons */
@@ -542,14 +549,14 @@ input[type="range"].custom-slider-invisible {
 .theme-stars button.bg-slate-800\/80 {
   background: var(--theme-btn-sec-bg) !important;
   color: var(--theme-btn-sec-text) !important;
-  border: var(--theme-card-border) !important;
-  border-radius: var(--theme-border-radius) !important;
+  border: 1px solid rgba(192, 132, 252, 0.25) !important;
+  border-radius: var(--theme-border-radius);
 }
 .theme-stars button.bg-slate-800:hover,
 .theme-stars button.bg-slate-800\/80:hover {
-  background: rgba(192, 132, 252, 0.1) !important;
-  color: #ffffff !important;
-  border-color: rgba(192, 132, 252, 0.3) !important;
+  background: rgba(192, 132, 252, 0.18) !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(192, 132, 252, 0.45) !important;
 }
 
 .theme-classic .always-white,
@@ -584,7 +591,7 @@ input[type="range"].custom-slider-invisible {
   opacity: 0.85 !important;
 }
 .theme-stars .slider-active-fill {
-  background: linear-gradient(90deg, rgba(168, 85, 247, 0.8), rgba(192, 132, 252, 0.95)) !important;
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 40%, #e9d5ff 70%, #c084fc 100%) !important;
   opacity: 0.9 !important;
 }
 
@@ -629,7 +636,7 @@ input[type="range"].custom-slider-invisible {
   width: 16px;
   height: 16px;
   border-radius: 9999px;
-  background: var(--theme-accent, #ef4444);
+  background: var(--theme-accent-gradient, var(--theme-accent, #ef4444));
   cursor: grab;
   margin-top: -4px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), 0 0 4px var(--theme-accent, #ef4444);
@@ -652,7 +659,7 @@ input[type="range"].custom-slider-invisible {
   width: 16px;
   height: 16px;
   border-radius: 9999px;
-  background: var(--theme-accent, #ef4444);
+  background: var(--theme-accent-gradient, var(--theme-accent, #ef4444));
   cursor: grab;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), 0 0 4px var(--theme-accent, #ef4444);
   border: 2px solid white;
@@ -722,6 +729,66 @@ input[type="range"].custom-slider-invisible {
 
 .custom-slider-invisible:active::-moz-range-thumb {
   cursor: grabbing;
+}
+
+/* Calm Theme Expandable Hue Bar Slider */
+.calm-hue-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  touch-action: none;
+  margin: 0;
+  padding: 0;
+  outline: none;
+}
+
+.calm-hue-slider::-webkit-slider-runnable-track {
+  background: transparent;
+  border: none;
+  height: 12px;
+}
+
+.calm-hue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--calm-thumb-color, var(--theme-accent, #fb7185));
+  cursor: grab;
+  margin-top: -4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.15);
+  border: 2.5px solid #ffffff;
+  transition: transform 0.15s ease;
+}
+
+.calm-hue-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+.calm-hue-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+  height: 12px;
+}
+
+.calm-hue-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--calm-thumb-color, var(--theme-accent, #fb7185));
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  cursor: grab;
+  transition: transform 0.15s ease;
+}
+
+.calm-hue-slider:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.2);
 }
 
 

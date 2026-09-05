@@ -448,21 +448,21 @@
 
 @keyframes shooting-star {
   0% {
-    transform: translate3d(0, 0, 0) rotate(-45deg);
+    transform: translate3d(0, 0, 0) rotate(35deg);
     opacity: 0;
     width: 0px;
   }
-  10% {
+  8% {
     opacity: 1;
     width: 140px;
   }
-  30% {
-    transform: translate3d(500px, 500px, 0) rotate(-45deg);
+  24% {
+    transform: translate3d(400px, 280px, 0) rotate(35deg);
     opacity: 0;
     width: 0px;
   }
   100% {
-    transform: translate3d(500px, 500px, 0) rotate(-45deg);
+    transform: translate3d(400px, 280px, 0) rotate(35deg);
     opacity: 0;
     width: 0px;
   }
@@ -475,11 +475,11 @@
 
 @keyframes cosmic-pulse {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(192, 132, 252, 0.2);
     border-color: rgba(192, 132, 252, 0.5);
   }
   50% {
-    box-shadow: 0 0 35px rgba(192, 132, 252, 0.8), 0 0 60px rgba(56, 189, 248, 0.4), inset 0 0 25px rgba(168, 85, 247, 0.4);
+    box-shadow: 0 0 35px rgba(192, 132, 252, 0.8), 0 0 50px rgba(168, 85, 247, 0.4), inset 0 0 25px rgba(168, 85, 247, 0.4);
     border-color: rgba(232, 121, 249, 0.9);
   }
 }
@@ -526,5 +526,127 @@
   background-size: 200% 100%;
   animation: cosmic-shimmer 2.5s infinite;
   will-change: background-position;
+}
+
+@keyframes cosmic-nebula-1 {
+  0% { transform: translate3d(-6%, -6%, 0) scale(1); }
+  33% { transform: translate3d(8%, -2%, 0) scale(1.12); }
+  66% { transform: translate3d(2%, 10%, 0) scale(0.92); }
+  100% { transform: translate3d(-6%, -6%, 0) scale(1); }
+}
+
+@keyframes cosmic-nebula-2 {
+  0% { transform: translate3d(8%, 8%, 0) scale(1.08); }
+  33% { transform: translate3d(-6%, 12%, 0) scale(0.94); }
+  66% { transform: translate3d(4%, -4%, 0) scale(1.14); }
+  100% { transform: translate3d(8%, 8%, 0) scale(1.08); }
+}
+
+@keyframes cosmic-nebula-3 {
+  0% { transform: translate3d(-4%, 10%, 0) scale(0.96); }
+  50% { transform: translate3d(10%, -8%, 0) scale(1.10); }
+  100% { transform: translate3d(-4%, 10%, 0) scale(0.96); }
+}
+
+.animate-nebula-1 {
+  animation: cosmic-nebula-1 32s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-nebula-2 {
+  animation: cosmic-nebula-2 42s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-nebula-3 {
+  animation: cosmic-nebula-3 50s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes constellation-shimmer {
+  0%, 100% { opacity: 0.16; }
+  50% { opacity: 0.36; }
+}
+
+.animate-constellation {
+  animation: constellation-shimmer 9s ease-in-out infinite;
+  will-change: opacity;
+}
+
+
+/* Epic Stars Unlock Cinematic Choreography */
+@keyframes singularity-gather {
+  0% { transform: scale(0); opacity: 0; filter: blur(10px); }
+  60% { transform: scale(1.3); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes singularity-ring-collapse {
+  0% { transform: scale(3) rotate(0deg); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: scale(0.1) rotate(180deg); opacity: 0; }
+}
+
+@keyframes supernova-shockwave {
+  0% { transform: scale(0.1); opacity: 1; border-width: 3px; }
+  40% { opacity: 0.85; }
+  100% { transform: scale(4.5); opacity: 0; border-width: 0.5px; }
+}
+
+@keyframes supernova-core-bloom {
+  0% { transform: scale(0.2); opacity: 1; filter: blur(0px); }
+  40% { transform: scale(1.8); opacity: 0.9; filter: blur(25px); }
+  100% { transform: scale(3.5); opacity: 0; filter: blur(60px); }
+}
+
+@keyframes celestial-cross-beam {
+  0% { transform: scaleX(0); opacity: 0; }
+  30% { transform: scaleX(1); opacity: 0.9; }
+  100% { transform: scaleX(1.8); opacity: 0; }
+}
+
+@keyframes card-hover-pedestal-1 {
+  0%, 100% { transform: translateY(0px) rotate(-6deg); }
+  50% { transform: translateY(-10px) rotate(-4.5deg); }
+}
+
+@keyframes card-hover-pedestal-2 {
+  0%, 100% { transform: translateY(0px) rotate(6deg); }
+  50% { transform: translateY(-12px) rotate(7.5deg); }
+}
+
+.animate-singularity-gather {
+  animation: singularity-gather 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-singularity-collapse {
+  animation: singularity-ring-collapse 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-supernova-shockwave {
+  animation: supernova-shockwave 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-supernova-bloom {
+  animation: supernova-core-bloom 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-celestial-beam {
+  animation: celestial-cross-beam 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-card-pedestal-1 {
+  animation: card-hover-pedestal-1 4.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-card-pedestal-2 {
+  animation: card-hover-pedestal-2 5.2s ease-in-out infinite 0.5s;
+  will-change: transform;
 }
 

@@ -2,30 +2,33 @@ import React from 'react';
 import { Player, UITheme } from '../../../types';
 
 export const PlayerAvatar: React.FC<{ 
-  player?: Player; 
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  player?: Player | any; 
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'custom';
   glow?: boolean;
   className?: string;
   theme?: UITheme;
+  style?: React.CSSProperties;
   onPointerDown?: (e: React.PointerEvent) => void;
   onPointerUp?: (e: React.PointerEvent) => void;
   onPointerLeave?: (e: React.PointerEvent) => void;
-}> = React.memo(({ player, size = 'md', glow = false, className = "", theme = UITheme.CLASSIC, onPointerDown, onPointerUp, onPointerLeave }) => {
+}> = React.memo(({ player, size = 'md', glow = false, className = "", theme = UITheme.CLASSIC, style, onPointerDown, onPointerUp, onPointerLeave }) => {
   const sizeClasses = {
+    xs: 'w-5 h-5 text-[9px]',
     sm: 'w-8 h-8 text-[10px]',
     md: 'w-10 h-10 text-base',
     lg: 'w-11 h-11 text-lg',
     xl: 'w-32 h-32 text-5xl',
+    custom: '',
   };
 
-  const borderClasses = size === 'xl' ? 'border-4' : 'border-2';
+  const borderClasses = size === 'custom' ? '' : (size === 'xl' ? 'border-4' : (size === 'xs' ? 'border' : 'border-2'));
   const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
   
   const isThemeGlow = glow && !player?.isDev;
   const isDev = !!player?.isDev;
 
-  const borderColor = isDev ? 'border-green-400/30' : (isThemeGlow ? '' : 'border-slate-600/50');
-  const shadowEffect = isDev ? '' : (isThemeGlow ? '' : 'shadow-md');
+  const borderColor = size === 'custom' ? '' : (isDev ? 'border-green-400/30' : (isThemeGlow ? '' : 'border-slate-600/50'));
+  const shadowEffect = size === 'custom' ? '' : (isDev ? '' : (isThemeGlow ? '' : 'shadow-md'));
   const animationEffect = isDev ? '' : '';
   const accentColor = player?.avatarColor;
   const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
@@ -39,6 +42,7 @@ export const PlayerAvatar: React.FC<{
       borderColor: 'var(--theme-accent, #ef4444)',
       boxShadow: '0 0 30px var(--theme-accent-glow, rgba(239,68,68,0.4))',
     } : {}),
+    ...style,
   };
 
   return (

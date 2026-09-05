@@ -152,7 +152,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const activeAccentColor = 
     settings?.theme === 'calm' ? (settings.calmAccentColor || '#fb7185') :
-    settings?.theme === 'stars' ? '#c084fc' :
+    settings?.theme === 'stars' ? '#f1f5f9' :
     settings?.theme === 'metro' ? '#fb7185' :
     settings?.theme === 'beer' ? '#f59e0b' : '#ef4444';
   const isAccentBlueish = isColorBlueish(activeAccentColor);
@@ -262,7 +262,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     const newRounded = Math.round(val);
     if (newRounded !== lastRoundedRef.current[key]) {
       lastRoundedRef.current[key] = newRounded;
-      triggerHaptic('tick');
+      triggerHaptic('subtle');
     }
     setDraftValues(prev => ({ ...prev, [key]: val }));
   };
@@ -317,7 +317,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
 
     if (targetVal !== currentVal) {
-      triggerHaptic('tick');
+      triggerHaptic('subtle');
       setDraftValues(prev => ({ ...prev, [key]: targetVal }));
       const newCommitted = {
         ...committedValuesRef.current,
@@ -368,7 +368,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
     setSwitchDrag(null);
     if (nextVal !== settings.sharedBus) {
-      triggerHaptic('tick');
+      triggerHaptic('subtle');
       const newCommitted = { ...committedValuesRef.current, sharedBus: nextVal };
       if (onCommitSettings) onCommitSettings(newCommitted);
       onSettingsChange('sharedBus', nextVal);
@@ -421,14 +421,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
     if (isDrag && typeof currentDragProgress === 'number') {
       if (startProgress === 0 && currentDragProgress > 0.25) {
-        triggerHaptic('tick');
+        triggerHaptic('subtle');
         if (!isOpen) onToggleOpen();
       } else if (startProgress === 1 && currentDragProgress < 0.75) {
-        triggerHaptic('tick');
+        triggerHaptic('subtle');
         if (isOpen) onToggleOpen();
       }
     } else {
-      triggerHaptic('tick');
+      triggerHaptic('subtle');
       onToggleOpen();
     }
   };
@@ -617,38 +617,30 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     }`}
                     style={{ 
                       width: posPct,
-                      backgroundColor: 'var(--theme-accent, #ef4444)',
+                      background: 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))',
                       opacity: 0.85,
                     }} 
                   />
 
                   {/* Recommended segment glow on slider (mixes with active fill) */}
                   {rec && (() => {
-                    const isLowest = rec.startVal === s.min;
-                    const isHighest = rec.endVal === s.max;
                     const startPct = (rec.startVal - s.min) / (s.max - s.min);
                     const endPct = (rec.endVal - s.min) / (s.max - s.min);
                     return (
                       <div 
-                        className={`absolute top-0 bottom-0 pointer-events-none z-10 transition-all duration-300 ease-out ${isLowest ? 'left-0' : ''} ${isHighest ? 'right-0' : ''}`}
+                        className={`absolute top-0 bottom-0 pointer-events-none z-10 transition-all duration-300 ease-out`}
                         style={{
-                          left: isLowest ? '0' : `calc(8px + (100% - 16px) * ${startPct})`,
-                          width: isLowest 
-                            ? `calc(8px + (100% - 16px) * ${endPct})`
-                            : isHighest 
-                              ? undefined
-                              : `calc((100% - 16px) * ${endPct - startPct})`
+                          left: `calc(8px + (100% - 16px) * ${startPct})`,
+                          right: `calc(8px + (100% - 16px) * ${1 - endPct})`,
                         }}
                       >
-                        <div className={`w-full h-full ${
-                          isAccentBlueish
-                            ? `slider-recommended-segment-red bg-red-500/45 shadow-[0_0_6px_rgba(239,68,68,0.4)] ${
-                                isLowest ? 'border-r border-red-400/50' : isHighest ? 'border-l border-red-400/50' : 'border-x border-red-400/50'
-                              }`
-                            : `slider-recommended-segment-blue bg-blue-500/45 shadow-[0_0_6px_rgba(59,130,246,0.4)] ${
-                                isLowest ? 'border-r border-blue-400/50' : isHighest ? 'border-l border-blue-400/50' : 'border-x border-blue-400/50'
-                              }`
-                        }`} />
+                        <div 
+                          className={`w-full h-full rounded-sm opacity-60 ${
+                            isAccentBlueish
+                              ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
+                              : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.7)]'
+                          }`} 
+                        />
                       </div>
                     );
                   })()}
@@ -656,7 +648,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
                 {/* Switch threshold lines where numbers actually flip (e.g. 3.5, 4.5, etc.) */}
                 <div className="absolute inset-x-0 h-3 flex items-center pointer-events-none z-10">
-                  {Array.from({ length: s.max - s.min }, (_, i) => s.min + i + 0.5).map(thresh => {
+                  {Array.from({ length: s.max - s.min }).map((_, i) => {
+                    const thresh = s.min + i + 0.5;
                     const threshFraction = (thresh - s.min) / (s.max - s.min);
                     const isPast = draftValues[s.key] >= thresh;
                     return (
@@ -686,9 +679,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   }`}
                   style={{
                     left: posPct,
-                    backgroundColor: isRecommendedSelected 
+                    background: isRecommendedSelected 
                       ? (isAccentBlueish ? '#ef4444' : '#3b82f6') 
-                      : 'var(--theme-accent, #ef4444)'
+                      : 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))'
                   }}
                 />
 
@@ -723,7 +716,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div 
                   onClick={() => {
                     if (disabled) return;
-                    triggerHaptic('tick');
+                    triggerHaptic('subtle');
                     const newCommitted = { ...committedValuesRef.current, sharedBus: true };
                     if (onCommitSettings) onCommitSettings(newCommitted);
                     onSettingsChange('sharedBus', true);
@@ -758,7 +751,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         e.preventDefault();
                         if (disabled) return;
                         const nextVal = !settings.sharedBus;
-                        triggerHaptic('tick');
+                        triggerHaptic('subtle');
                         const newCommitted = { ...committedValuesRef.current, sharedBus: nextVal };
                         if (onCommitSettings) onCommitSettings(newCommitted);
                         onSettingsChange('sharedBus', nextVal);
@@ -780,8 +773,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         : 'bg-slate-800 border border-slate-700'
                     }`}
                     style={{
-                      backgroundColor: isVisualActive 
-                        ? (playerCount > 3 ? undefined : 'var(--theme-accent, #ef4444)')
+                      background: isVisualActive 
+                        ? (playerCount > 3 ? undefined : 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))')
                         : undefined
                     }}
                   >

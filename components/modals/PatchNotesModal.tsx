@@ -1,6 +1,8 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { SlideMenuModal } from './SlideMenuModal';
+import { ScrollIndicatorContainer } from '../../src/components/ui/ScrollIndicatorContainer';
+import { UITheme } from '../../types';
 
 interface PatchNotesModalProps {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface PatchNotesModalProps {
   patchNotes: string[];
   t: (key: string) => string;
   onClose: () => void;
+  theme?: UITheme;
 }
 
 export const PatchNotesModal: React.FC<PatchNotesModalProps> = React.memo(({
@@ -16,6 +19,7 @@ export const PatchNotesModal: React.FC<PatchNotesModalProps> = React.memo(({
   patchNotes,
   t,
   onClose,
+  theme = UITheme.CLASSIC,
 }) => {
   return (
     <SlideMenuModal
@@ -37,7 +41,12 @@ export const PatchNotesModal: React.FC<PatchNotesModalProps> = React.memo(({
               🪙 Update {version}
             </h1>
           </div>
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <ScrollIndicatorContainer
+            orientation="vertical"
+            theme={theme}
+            className="flex-1 min-h-0"
+            scrollClassName="pr-2 custom-scrollbar"
+          >
             {patchNotes.length > 0 ? (
               <ul className="space-y-3 text-slate-300 text-sm leading-relaxed mb-4">
                 {patchNotes.map((note, index) => (
@@ -55,7 +64,7 @@ export const PatchNotesModal: React.FC<PatchNotesModalProps> = React.memo(({
                 {t('Geen nieuwe patch notes beschikbaar.')}
               </p>
             )}
-          </div>
+          </ScrollIndicatorContainer>
           <button
             onClick={close}
             className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black rounded-xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"

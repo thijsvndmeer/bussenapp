@@ -72,6 +72,7 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "Kleur Kiezer": "Kleurkiezer",
         "Sleep op het wiel om een kleur te kiezen": "Sleep over het wiel om een kleur te kiezen",
         "Geselecteerde Kleur": "Geselecteerde kleur",
+        "Helderheid": "Helderheid",
         "Opslaan": "Opslaan",
         "Aanpassen": "Aanpassen",
         "Toch Starten": "Toch Starten",
@@ -90,7 +91,8 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "aan": "aan",
         "MATCH!": "MATCH!",
         "Sleep of tik om uit te delen": "Sleep of tik om uit te delen",
-        "Slachtoffers": "Slachtoffers"
+        "Slachtoffers": "Slachtoffers",
+        "Slokken gedronken": "Slokken gedronken"
     },
     en: {
         "Kaartstijl": "Card Style",
@@ -135,6 +137,7 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "Kleur Kiezer": "Color Picker",
         "Sleep op het wiel om een kleur te kiezen": "Drag on the wheel to choose a color",
         "Geselecteerde Kleur": "Selected Color",
+        "Helderheid": "Brightness",
         "Opslaan": "Save",
         "Profielfoto kiezen": "Choose profile picture",
         "Maak foto": "Take photo",
@@ -151,7 +154,8 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "Terug": "Back",
         "Start": "Start",
         "Aan de beurt": "This player's turn",
-        "Op": "Took",
+        "Op": "Sips drunk",
+        "Slokken gedronken": "Sips drunk",
         "Uit": "Gave",
         "kaarten": "cards",
         "Huidige Hand": "Current Hand",

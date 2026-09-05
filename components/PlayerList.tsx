@@ -1,7 +1,8 @@
 import React from 'react';
 import { Users } from 'lucide-react';
-import { Player } from '../types';
+import { Player, UITheme } from '../types';
 import { PlayerCard } from './PlayerCard';
+import { ScrollIndicatorContainer } from '../src/components/ui/ScrollIndicatorContainer';
 
 type PlayerListProps = {
   players: Player[];
@@ -14,6 +15,7 @@ type PlayerListProps = {
   t: (value: string) => string;
   immunePlayerId?: string | null;
   lastAddedPlayerId?: string | null;
+  theme?: UITheme;
 };
 
 export const PlayerList: React.FC<PlayerListProps> = ({
@@ -27,8 +29,15 @@ export const PlayerList: React.FC<PlayerListProps> = ({
   t,
   immunePlayerId,
   lastAddedPlayerId,
+  theme = UITheme.CLASSIC,
 }) => (
-  <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2 scroll-smooth">
+  <ScrollIndicatorContainer
+    orientation="vertical"
+    theme={theme}
+    scrollRef={listRef}
+    className="flex-1 min-h-0"
+    scrollClassName="p-3 space-y-2 scroll-smooth"
+  >
     {players.map((player, index) => (
       <PlayerCard
         key={player.id}
@@ -52,5 +61,5 @@ export const PlayerList: React.FC<PlayerListProps> = ({
         <span className="font-bold text-sm uppercase tracking-widest">{t("Start met toevoegen")}</span>
       </div>
     )}
-  </div>
+  </ScrollIndicatorContainer>
 );

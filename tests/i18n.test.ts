@@ -44,5 +44,7 @@ describe('i18n Translation System', () => {
     // Dutch override lookup
     expect(dictionaries.nl['Creative']).toBe('Neon');
     expect(dictionaries.nl['metro']).toBe('Bus');
+    expect(dictionaries.nl['Slokken gedronken']).toBe('Slokken gedronken');
+    expect(dictionaries.en['Slokken gedronken']).toBe('Sips drunk');
   });
 });

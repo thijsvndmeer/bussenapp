@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import PlayingCard from '../PlayingCard';
 import { triggerHaptic } from '../../services/haptics';
 import { CardStyle } from '../../types';
+import { PlayerAvatar } from '../../src/components/ui/PlayerAvatar';
 
 export interface PyramidMatchModalProps {
   pendingMatches: {
@@ -354,12 +355,12 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                       }`}
                     >
                       <div className="relative">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white/20 bg-slate-800 flex items-center justify-center font-black text-white text-xl sm:text-2xl overflow-hidden shadow-lg group-hover:border-emerald-400/60 group-hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] group-hover:scale-105 group-active:scale-95 transition-all pointer-events-none">
-                          {m.player.image ? (
-                            <img src={m.player.image} className="w-full h-full object-cover pointer-events-none" />
-                          ) : (
-                            m.player.name.charAt(0)
-                          )}
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white/20 flex items-center justify-center overflow-hidden shadow-lg group-hover:border-emerald-400/60 group-hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] group-hover:scale-105 group-active:scale-95 transition-all pointer-events-none">
+                          <PlayerAvatar
+                            player={m.player}
+                            size="custom"
+                            className="w-full h-full text-xl sm:text-2xl"
+                          />
                         </div>
 
                         {m.count > 1 && (
@@ -428,19 +429,19 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                       }`}
                     >
                       <div
-                        className={`${sizeClass} rounded-full flex items-center justify-center font-bold text-white overflow-hidden shadow-lg transition-all pointer-events-none ${
+                        className={`${sizeClass} rounded-full flex items-center justify-center overflow-hidden shadow-lg transition-all pointer-events-none ${
                           isHovered
-                            ? 'bg-emerald-500 ring-4 ring-emerald-400/50 shadow-[0_10px_25px_rgba(52,211,153,0.6)] grayscale-0 opacity-100'
+                            ? 'ring-4 ring-emerald-400/50 shadow-[0_10px_25px_rgba(52,211,153,0.6)] grayscale-0 opacity-100'
                             : isSource
-                            ? 'bg-slate-800 border-2 border-white/10'
-                            : 'bg-slate-800 border-2 border-white/20'
+                            ? 'border-2 border-white/10'
+                            : 'border-2 border-white/20'
                         }`}
                       >
-                        {p.image ? (
-                          <img src={p.image} className="w-full h-full object-cover pointer-events-none" />
-                        ) : (
-                          p.name.charAt(0)
-                        )}
+                        <PlayerAvatar
+                          player={p}
+                          size="custom"
+                          className="w-full h-full"
+                        />
                       </div>
                       <span
                         className={`${textClass} truncate pointer-events-none transition-colors ${
@@ -481,19 +482,17 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
           <div className="flex flex-col items-center gap-2 -mt-1 relative">
             <div className="relative">
               <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center font-black text-white text-xl overflow-hidden transition-all shadow-[0_15px_30px_rgba(0,0,0,0.5)] ${
+                className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden transition-all shadow-[0_15px_30px_rgba(0,0,0,0.5)] ${
                   hoveredTargetId
                     ? 'scale-110 border-4 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)]'
                     : 'border-2 border-white'
                 }`}
               >
-                {draggingPlayer.image ? (
-                  <img src={draggingPlayer.image} className="w-full h-full object-cover bg-slate-800" />
-                ) : (
-                  <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                    {draggingPlayer.name.charAt(0)}
-                  </div>
-                )}
+                <PlayerAvatar
+                  player={draggingPlayer}
+                  size="custom"
+                  className="w-full h-full text-xl"
+                />
               </div>
 
               {(() => {
