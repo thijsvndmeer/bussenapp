@@ -89,4 +89,21 @@ describe('Settings & Modals Theme Harmony', () => {
     const patchNotesContent = fs.readFileSync(patchNotesFile, 'utf-8');
     expect(patchNotesContent).toContain('ScrollIndicatorContainer');
   });
+
+  it('unifies switch style and switch theme modals into shared renderUnlockModal and removes bottom gradient line', () => {
+    const appFile = path.resolve(__dirname, '../App.tsx');
+    const appContent = fs.readFileSync(appFile, 'utf-8');
+
+    // Both style and theme unlock modals delegate to renderUnlockModal
+    expect(appContent).toContain('const renderUnlockModal = ({');
+    expect(appContent).toMatch(/const renderStyleUnlockModal = \(\) => {[\s\S]*?return renderUnlockModal\(\{/);
+    expect(appContent).toMatch(/const renderThemeUnlockModal = \(\) => {[\s\S]*?return renderUnlockModal\(\{/);
+
+    // 3D watch video button styling with bevel shadow and push-down active state
+    expect(appContent).toContain('shadow-[0_8px_0_rgb(180,83,9)]');
+    expect(appContent).toContain('active:translate-y-1 active:shadow-none');
+
+    // No bottom gradient line
+    expect(appContent).not.toContain('bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mt-4');
+  });
 });

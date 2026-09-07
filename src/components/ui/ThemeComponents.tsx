@@ -7,7 +7,8 @@ export const ThemeLabel: React.FC<{
   size?: 'sm' | 'md' | 'lg';
   variant?: 'simple' | 'fancy';
   align?: 'left' | 'center' | 'right';
-}> = React.memo(({ text, theme, size = 'sm', variant = 'fancy', align = 'left' }) => {
+  showCursor?: boolean;
+}> = React.memo(({ text, theme, size = 'sm', variant = 'fancy', align = 'left', showCursor = false }) => {
   const isLg = size === 'lg';
   const isSm = size === 'sm';
   const isSimple = variant === 'simple';
@@ -23,7 +24,7 @@ export const ThemeLabel: React.FC<{
         >
           <span className="opacity-40 mr-1.5">{isLg ? '>>' : '>'}</span>
           {text}
-          {isLg && <span className="inline-block ml-4 w-3 h-6 bg-[var(--theme-accent)] animate-pulse" />}
+          {isLg && showCursor && <span className="inline-block ml-4 w-3 h-6 bg-[var(--theme-accent)] animate-pulse" />}
         </div>
         {!isSimple && (
           <div className="flex w-full items-center gap-1">

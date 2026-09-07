@@ -16,6 +16,11 @@
   inherits: true;
   initial-value: hsl(270, 70%, 65%);
 }
+@property --theme-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f59e0b;
+}
 
 html,
 body {
@@ -280,11 +285,13 @@ input:disabled,
   --theme-font: 'Inter', sans-serif;
   --theme-text: #ffffff;
   --theme-text-secondary: #9edc9e;
-  --theme-accent: #dc2626;
-  --theme-accent-glow: rgba(220, 38, 38, 0.4);
+  --theme-accent: #ff3333;
+  --theme-accent-glow: rgba(255, 51, 51, 0.4);
+  --theme-tertiary: #f59e0b;
+  --theme-accent-tertiary: #f59e0b;
   --theme-btn-bg: #008200;
   --theme-btn-text: #ffffff;
-  --theme-btn-sec-bg: #dc2626;
+  --theme-btn-sec-bg: #ff3333;
   --theme-btn-sec-text: #ffffff;
   --theme-border-radius: 12px;
 }
@@ -423,15 +430,67 @@ input:disabled,
   -webkit-backdrop-filter: blur(12px) !important;
 }
 
+/* Stars Theme Specular Obsidian Glass & Panels (Double-Bezel Architecture) */
+.theme-stars .glass-panel,
+.theme-stars .bg-slate-900,
+.theme-stars .bg-slate-950,
+.theme-stars .bg-slate-900\/60,
+.theme-stars .bg-slate-800\/40,
+.theme-stars .bg-slate-800\/70,
+.theme-stars .bg-slate-900\/50,
+.theme-stars .bg-slate-800\/50,
+.theme-stars .bg-slate-900\/30,
+.theme-stars [data-player-item] > div {
+  background: rgba(7, 3, 18, 0.78) !important;
+  border: 1px solid rgba(192, 132, 252, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: var(--theme-border-radius) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.85),
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+              inset 0 0 24px 0 rgba(147, 51, 234, 0.04) !important;
+}
+
+.theme-stars [data-player-item] > div:hover {
+  border-color: rgba(192, 132, 252, 0.3) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 20px 45px -8px rgba(0, 0, 0, 0.9),
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+              0 0 20px rgba(192, 132, 252, 0.12) !important;
+}
+
+.theme-stars .border-slate-700,
+.theme-stars .border-slate-700\/50,
+.theme-stars .border-slate-800 {
+  border-color: rgba(192, 132, 252, 0.18) !important;
+}
+
 /* Input elements (exclude range inputs so slider tracks stay visible) */
 .theme-metro input:not([type="range"]), 
 .theme-calm input:not([type="range"]), 
-.theme-beer input:not([type="range"]),
-.theme-stars input:not([type="range"]) {
+.theme-beer input:not([type="range"]) {
   background-color: var(--theme-card-bg) !important;
   border: var(--theme-card-border) !important;
   color: var(--theme-text) !important;
   border-radius: var(--theme-border-radius) !important;
+}
+
+/* Stars Input Elements */
+.theme-stars input:not([type="range"]) {
+  background-color: rgba(8, 4, 20, 0.75) !important;
+  border: 1px solid rgba(192, 132, 252, 0.18) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: var(--theme-text) !important;
+  border-radius: var(--theme-border-radius) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.theme-stars input:not([type="range"]):focus {
+  border-color: rgba(192, 132, 252, 0.5) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  outline: none !important;
 }
 
 .theme-metro input[type="range"],

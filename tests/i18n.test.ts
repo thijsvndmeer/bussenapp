@@ -46,5 +46,11 @@ describe('i18n Translation System', () => {
     expect(dictionaries.nl['metro']).toBe('Bus');
     expect(dictionaries.nl['Slokken gedronken']).toBe('Slokken gedronken');
     expect(dictionaries.en['Slokken gedronken']).toBe('Sips drunk');
+    expect(dictionaries.nl['Slokken uitgedeeld']).toBe('Slokken uitgedeeld');
+    expect(dictionaries.en['Slokken uitgedeeld']).toBe('Sips distributed');
+    expect(dictionaries.nl['Gedronken']).toBe('Gedronken');
+    expect(dictionaries.en['Gedronken']).toBe('Drunk');
+    expect(dictionaries.nl['Uitgedeeld']).toBe('Uitgedeeld');
+    expect(dictionaries.en['Uitgedeeld']).toBe('Distributed');
   });
 });

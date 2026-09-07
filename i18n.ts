@@ -92,7 +92,14 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "MATCH!": "MATCH!",
         "Sleep of tik om uit te delen": "Sleep of tik om uit te delen",
         "Slachtoffers": "Slachtoffers",
-        "Slokken gedronken": "Slokken gedronken"
+        "Slokken gedronken": "Slokken gedronken",
+        "Slokken uitgedeeld": "Slokken uitgedeeld",
+        "Gedronken": "Gedronken",
+        "Uitgedeeld": "Uitgedeeld",
+        "Laat los om aan jezelf te geven!": "Laat los om aan jezelf te geven!",
+        "Laat los!": "Laat los!",
+        "Houd 3s vast": "Houd 3s vast",
+        "NAAR DE BUS": "NAAR DE BUS"
     },
     en: {
         "Kaartstijl": "Card Style",
@@ -301,7 +308,7 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "Alle stokken zijn op!": "All decks are empty!",
         "De busrit is voorbij, niemand heeft gewonnen...": "The bus ride is over, nobody won...",
         "Ritten": "Rides",
-        "Gedronken": "Sips taken",
+        "Gedronken": "Drunk",
         "Leaderboard": "Leaderboard",
         "Rood of Zwart?": "Red or Black?",
         "Hoger of Lager?": "Higher or Lower?",
@@ -446,7 +453,12 @@ export const dictionaries: Record<Language, Record<string, string>> = {
         "uitdelen": "to distribute",
         "aan": "to",
         "Sleep of tik om uit te delen": "Drag or tap to distribute",
-        "Slachtoffers": "Victims"
+        "Slachtoffers": "Victims",
+        "Slokken uitgedeeld": "Sips distributed",
+        "Uitgedeeld": "Distributed",
+        "Laat los om aan jezelf te geven!": "Release to give to yourself!",
+        "Laat los!": "Release!",
+        "Houd 3s vast": "Hold 3s"
     }
 };
 

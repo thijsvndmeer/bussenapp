@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target, Lock, Star } from 'lucide-react';
+import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target, Lock, Star, Gift } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -741,12 +741,24 @@ const App: React.FC = () => {
     } catch (e) {
     }
   }, [settings]);
-  const renderStyleUnlockModal = () => {
-    if (!styleToUnlock) return null;
+  const renderUnlockModal = ({
+    isOpen,
+    onClose,
+    title,
+    description,
+    onUnlock,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    description: React.ReactNode;
+    onUnlock: () => Promise<void> | void;
+  }) => {
+    if (!isOpen) return null;
     return (
       <SlideMenuModal
-        isOpen={!!styleToUnlock}
-        onClose={() => setStyleToUnlock(null)}
+        isOpen={isOpen}
+        onClose={onClose}
         className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center text-center relative"
         backdropClassName="p-4 bg-black/70 backdrop-blur-md"
       >
@@ -759,25 +771,17 @@ const App: React.FC = () => {
               </div>
             </div>
             <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
-              {t("Stijl Wisselen")}
+              {title}
             </h3>
             
             <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
-              {t("Kijk een korte video om direct over te schakelen naar de")} <span className="text-amber-400 font-bold">{t(styleToUnlock === CardStyle.MODERN ? "Modern" : styleToUnlock === CardStyle.DARK ? "Donker" : styleToUnlock === CardStyle.CLASSIC ? "Klassiek" : "Neon")}</span> {t("stijl!")}
+              {description}
             </p>
             <div className="w-full flex flex-col gap-3">
               <button
                 onClick={async () => {
-                  const style = styleToUnlock;
                   close();
-                  setStyleToUnlock(null);
-                  const played = await showRewardedAd();
-                  if (played) {
-                    const n = { ...settings, cardStyle: style };
-                    setSettings(n);
-                    queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                    triggerHaptic('heavy');
-                  }
+                  await onUnlock();
                 }}
                 className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-[0_8px_0_rgb(180,83,9)] hover:brightness-110 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override cursor-pointer"
               >
@@ -791,70 +795,72 @@ const App: React.FC = () => {
                 {t("Nee bedankt")}
               </button>
             </div>
-            
-            <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mt-4" />
           </div>
         )}
       </SlideMenuModal>
     );
   };
+
+  const renderStyleUnlockModal = () => {
+    if (!styleToUnlock) return null;
+    const styleName = styleToUnlock === CardStyle.MODERN ? "Modern" :
+                      styleToUnlock === CardStyle.DARK ? "Donker" :
+                      styleToUnlock === CardStyle.CLASSIC ? "Klassiek" :
+                      styleToUnlock === CardStyle.GALAXY ? "Galaxy" : "Neon";
+    return renderUnlockModal({
+      isOpen: !!styleToUnlock,
+      onClose: () => setStyleToUnlock(null),
+      title: t("Stijl Wisselen"),
+      description: (
+        <>
+          {t("Kijk een korte video om direct over te schakelen naar de")}{" "}
+          <span className="text-amber-400 font-bold">{t(styleName)}</span>{" "}
+          {t("stijl!")}
+        </>
+      ),
+      onUnlock: async () => {
+        const style = styleToUnlock;
+        setStyleToUnlock(null);
+        const played = await showRewardedAd();
+        if (played) {
+          const n = { ...settings, cardStyle: style };
+          setSettings(n);
+          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+          triggerHaptic('heavy');
+        }
+      },
+    });
+  };
+
   const renderThemeUnlockModal = () => {
     if (!themeToUnlock) return null;
     const themeName = themeToUnlock === UITheme.CLASSIC ? "Klassiek" :
                       themeToUnlock === UITheme.METRO ? "Bus" :
-                      themeToUnlock === UITheme.CALM ? "Rustig" : "Bier";
-    return (
-      <SlideMenuModal
-        isOpen={!!themeToUnlock}
-        onClose={() => setThemeToUnlock(null)}
-        className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center text-center relative"
-        backdropClassName="p-4 bg-black/70 backdrop-blur-md"
-      >
-        {({ close }) => (
-          <div className="pt-10 pb-6 px-8 flex flex-col items-center">
-            {/* Reward Icon / Graphic */}
-            <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-xl relative z-10 border border-amber-200/50">
-                <Clapperboard size={48} className="text-amber-950" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
-              {t("Thema Wisselen")}
-            </h3>
-            
-            <p className="text-slate-400 text-sm leading-relaxed mb-8 px-2">
-              {t("Kijk een korte video om direct over te schakelen naar het")} <span className="text-amber-400 font-bold">{t(themeName)}</span> {t("thema!")}
-            </p>
-            <div className="w-full flex flex-col gap-3">
-              <button
-                onClick={async () => {
-                  const theme = themeToUnlock;
-                  close();
-                  setThemeToUnlock(null);
-                  const played = await showRewardedAd();
-                  if (played) {
-                    const n = { ...settings, theme };
-                    setSettings(n);
-                    queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
-                    triggerHaptic('heavy');
-                  }
-                }}
-                className="w-full py-5 bg-gradient-to-r from-amber-400 to-amber-600 text-amber-950 font-black rounded-2xl shadow-xl hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-3 no-calm-override cursor-pointer"
-              >
-                <Play size={22} fill="currentColor" /> {t("Video Kijken")}
-              </button>
-              
-              <button
-                onClick={close}
-                className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors cursor-pointer"
-              >
-                {t("Nee bedankt")}
-              </button>
-            </div>
-          </div>
-        )}
-      </SlideMenuModal>
-    );
+                      themeToUnlock === UITheme.CALM ? "Rustig" :
+                      themeToUnlock === UITheme.STARS ? "Sterren" : "Bier";
+    return renderUnlockModal({
+      isOpen: !!themeToUnlock,
+      onClose: () => setThemeToUnlock(null),
+      title: t("Thema Wisselen"),
+      description: (
+        <>
+          {t("Kijk een korte video om direct over te schakelen naar het")}{" "}
+          <span className="text-amber-400 font-bold">{t(themeName)}</span>{" "}
+          {t("thema!")}
+        </>
+      ),
+      onUnlock: async () => {
+        const theme = themeToUnlock;
+        setThemeToUnlock(null);
+        const played = await showRewardedAd();
+        if (played) {
+          const n = { ...settings, theme };
+          setSettings(n);
+          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+          triggerHaptic('heavy');
+        }
+      },
+    });
   };
   const renderDeckPreview = () => {
     if (!previewDeckStyle) return null;
@@ -929,6 +935,7 @@ const App: React.FC = () => {
   const { phase, transitionToPhase: setPhase, dispatch: dispatchGameEvent, registerEventHandler: registerGameEventHandler, schedule: scheduleGameEvent } = useGameEngine(GamePhase.SETUP);
   const [deck, setDeck] = useState<Card[]>([]);
   const [immunePlayerId, setImmunePlayerId] = useState<string | null>(null);
+  const [busPassengers, setBusPassengers] = useState<Player[]>([]);
   const [devModeArmed, setDevModeArmed] = useState(false);
   const [headerArmed, setHeaderArmed] = useState(false);
   const [iconArmed, setIconArmed] = useState(false);
@@ -942,8 +949,19 @@ const App: React.FC = () => {
       if (phase !== GamePhase.SETUP) {
         setDevModeArmed(true);
       }
+      if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) {
+        if (busPassengers.length > 0) {
+          const anyDev = busPassengers.some(p => p.isDev);
+          busPassengers.forEach(p => {
+            updatePlayer(p.id, prev => ({ ...prev, isDev: !anyDev }));
+          });
+        } else if (players.length > 0) {
+          updatePlayer(players[0].id, prev => ({ ...prev, isDev: !prev.isDev }));
+        }
+        triggerHaptic('success');
+      }
     }, 1500);
-  }, [phase, triggerHaptic]);
+  }, [phase, busPassengers, players, updatePlayer, triggerHaptic]);
   const handleHeaderPointerUpOrLeave = useCallback(() => {
     if (headerPressTimerRef.current) clearTimeout(headerPressTimerRef.current);
   }, []);
@@ -968,13 +986,24 @@ const App: React.FC = () => {
     const isArmed = devModeArmed || (phase === GamePhase.SETUP && headerArmed && iconArmed);
     if (!isArmed) return;
     avatarPressTimerRef.current = setTimeout(() => {
-      updatePlayer(player.id, p => ({ ...p, isDev: !p.isDev }));
+      if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) {
+        const anyDev = busPassengers.some(p => p.isDev);
+        if (busPassengers.length > 0) {
+          busPassengers.forEach(p => {
+            updatePlayer(p.id, prev => ({ ...prev, isDev: !anyDev }));
+          });
+        } else {
+          updatePlayer(player.id, p => ({ ...p, isDev: !p.isDev }));
+        }
+      } else {
+        updatePlayer(player.id, p => ({ ...p, isDev: !p.isDev }));
+      }
       triggerHaptic('success');
       setDevModeArmed(false);
       setHeaderArmed(false);
       setIconArmed(false);
     }, 1500);
-  }, [devModeArmed, headerArmed, iconArmed, phase, updatePlayer, triggerHaptic]);
+  }, [devModeArmed, headerArmed, iconArmed, phase, busPassengers, updatePlayer, triggerHaptic]);
   const handleAvatarPointerUpOrLeave = useCallback(() => {
     if (avatarPressTimerRef.current) clearTimeout(avatarPressTimerRef.current);
   }, []);
@@ -1136,7 +1165,6 @@ const App: React.FC = () => {
   const [warningCooldown, setWarningCooldown] = useState(false);
   // Bus State
   const [busDriver, setBusDriver] = useState<Player | null>(null);
-  const [busPassengers, setBusPassengers] = useState<Player[]>([]);
   const [busCards, setBusCards] = useState<Card[]>([]);
   const [currentBusIndex, setCurrentBusIndex] = useState(1);
   const [busWrongCardIndex, setBusWrongCardIndex] = useState<number | null>(null);
@@ -1339,6 +1367,8 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-border-radius', '20px');
       root.style.removeProperty('--theme-accent-gradient');
       root.style.removeProperty('--theme-accent-secondary');
+      root.style.removeProperty('--theme-tertiary');
+      root.style.removeProperty('--theme-accent-tertiary');
     } else if (settings.theme === UITheme.STARS) {
       root.style.setProperty('--theme-accent', '#f1f5f9');
       root.style.setProperty('--theme-accent-secondary', '#c084fc');
@@ -1349,6 +1379,8 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-btn-sec-text', '#c084fc');
       root.style.setProperty('--theme-card-border', '1px solid rgba(192, 132, 252, 0.18)');
       root.style.setProperty('--theme-border-radius', '20px');
+      root.style.removeProperty('--theme-tertiary');
+      root.style.removeProperty('--theme-accent-tertiary');
     } else if (settings.theme === UITheme.METRO) {
       root.style.setProperty('--theme-accent', '#fb7185');
       root.style.setProperty('--theme-accent-glow', 'rgba(251, 113, 133, 0.15)');
@@ -1358,10 +1390,15 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-border-radius', '6px');
       root.style.removeProperty('--theme-accent-gradient');
       root.style.removeProperty('--theme-accent-secondary');
+      root.style.removeProperty('--theme-tertiary');
+      root.style.removeProperty('--theme-accent-tertiary');
     } else if (settings.theme === UITheme.BEER) {
-      root.style.setProperty('--theme-accent', '#f59e0b');
-      root.style.setProperty('--theme-accent-glow', 'rgba(245, 158, 11, 0.35)');
+      root.style.setProperty('--theme-accent', '#ff3333');
+      root.style.setProperty('--theme-accent-glow', 'rgba(255, 51, 51, 0.4)');
+      root.style.setProperty('--theme-tertiary', '#f59e0b');
+      root.style.setProperty('--theme-accent-tertiary', '#f59e0b');
       root.style.setProperty('--theme-btn-bg', '#008200');
+      root.style.setProperty('--theme-btn-sec-bg', '#ff3333');
       root.style.setProperty('--theme-btn-sec-text', '#ffffff');
       root.style.setProperty('--theme-card-border', '1px solid rgba(226, 232, 240, 0.2)');
       root.style.setProperty('--theme-border-radius', '12px');
@@ -1373,6 +1410,8 @@ const initializeAdMob = useCallback(async () => {
       root.style.removeProperty('--theme-accent-secondary');
       root.style.removeProperty('--theme-accent-gradient');
       root.style.removeProperty('--theme-accent-glow');
+      root.style.removeProperty('--theme-tertiary');
+      root.style.removeProperty('--theme-accent-tertiary');
       root.style.removeProperty('--theme-btn-bg');
       root.style.removeProperty('--theme-btn-sec-text');
       root.style.removeProperty('--theme-card-border');
@@ -2313,7 +2352,25 @@ const initializeAdMob = useCallback(async () => {
     }
   };
   const warningCooldownRef = useRef(false);
-  const triggerPyramidWarning = (customText?: string) => {
+  const alreadyFlippedWarningCooldownRef = useRef(0);
+  const isAlreadyFlippedActiveRef = useRef(false);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerPyramidWarning = (customText?: string, cooldownMs?: number) => {
+    const isAlreadyFlipped =
+      customText === t("Deze kaart is al omgedraaid!") ||
+      customText === "Deze kaart is al omgedraaid!" ||
+      customText === "This card has already been flipped!";
+
+    const NOTIFICATION_DURATION_MS = 1200;
+
+    if (isAlreadyFlipped) {
+      if (isAlreadyFlippedActiveRef.current || Date.now() < alreadyFlippedWarningCooldownRef.current) {
+        return;
+      }
+      alreadyFlippedWarningCooldownRef.current = Date.now() + NOTIFICATION_DURATION_MS;
+      isAlreadyFlippedActiveRef.current = true;
+    }
+
     if (warningCooldownRef.current) return;
     warningCooldownRef.current = true;
     triggerHaptic('warning');
@@ -2321,13 +2378,22 @@ const initializeAdMob = useCallback(async () => {
     if (!customText) {
       setPulseValidCards(true);
     }
-    setTimeout(() => {
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => {
       setFeedback(null);
       setPulseValidCards(false);
-    }, 1200);
-    setTimeout(() => {
-      warningCooldownRef.current = false;
-    }, 350);
+      isAlreadyFlippedActiveRef.current = false;
+      if (isAlreadyFlipped) {
+        warningCooldownRef.current = false;
+      }
+    }, NOTIFICATION_DURATION_MS);
+
+    if (!isAlreadyFlipped) {
+      const effectiveCooldown = cooldownMs ?? 350;
+      setTimeout(() => {
+        warningCooldownRef.current = false;
+      }, effectiveCooldown);
+    }
   };
   const pyramidContainerRef = useRef<HTMLDivElement>(null);
   const pyramidContentRef = useRef<HTMLDivElement>(null);
@@ -2875,7 +2941,7 @@ const initializeAdMob = useCallback(async () => {
     if (guess === 'HIGHER' && isHigher) correct = true;
     if (guess === 'LOWER' && isLower) correct = true;
     if (guess === 'EQUAL' && isEqual) correct = true;
-    const isDevPassenger = busPassengers.some(p => p.isDev);
+    const isDevPassenger = busPassengers.some(p => p.isDev) || players.some(p => p.isDev) || devModeArmed;
     if (devSettings.alwaysWin && isDevPassenger && !correct) {
       const validIndex = busDeck.findIndex(c => {
          if (guess === 'HIGHER') return c.rank > prevCard.rank;
@@ -3353,24 +3419,50 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                       );
                     })()}
-                    <span className="text-[11px] font-bold text-white tracking-wide truncate max-w-[120px] sm:max-w-[180px]">
+                    <span className="text-[11px] font-bold text-white tracking-wide truncate max-w-[80px] sm:max-w-[160px]">
                       {currentPlayerObj?.name}
-                    </span>
-                    <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 tabular-nums">
-                      {cards.length}/4
                     </span>
                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest opacity-60 ml-2 hidden sm:inline">
                       {t("Huidige Hand")}
                     </span>
                   </div>
                 )}
-                <button
-                  onClick={handleClosePlayerHand}
-                  className="text-slate-400 hover:text-white p-0.5 rounded-full hover:bg-white/10 transition-colors active:scale-95 cursor-pointer ml-auto shrink-0"
-                  aria-label="Close hand"
-                >
-                  <X size={15} />
-                </button>
+                <div className="flex items-center gap-2 sm:gap-3.5 ml-auto shrink-0">
+                  {currentPlayerObj && (
+                    <div className="flex items-center gap-2 sm:gap-3.5 text-right">
+                      {/* Sips drunk */}
+                      <div className="flex flex-col items-end leading-none" title={t("Slokken gedronken")}>
+                        <span className="text-[8px] sm:text-[9px] text-slate-400 uppercase font-bold tracking-wider whitespace-nowrap">
+                          <span className="hidden sm:inline">{t("Slokken gedronken")}</span>
+                          <span className="sm:hidden">{t("Gedronken")}</span>
+                        </span>
+                        <span className="text-red-400 font-black font-mono text-xs sm:text-sm md:text-base leading-tight drop-shadow-sm flex items-center gap-1 mt-0.5">
+                          <Beer size={12} className="shrink-0" />
+                          {currentPlayerObj.drinksTaken}
+                        </span>
+                      </div>
+
+                      {/* Sips distributed */}
+                      <div className="flex flex-col items-end leading-none" title={t("Slokken uitgedeeld")}>
+                        <span className="text-[8px] sm:text-[9px] text-slate-400 uppercase font-bold tracking-wider whitespace-nowrap">
+                          <span className="hidden sm:inline">{t("Slokken uitgedeeld")}</span>
+                          <span className="sm:hidden">{t("Uitgedeeld")}</span>
+                        </span>
+                        <span className="text-emerald-400 font-black font-mono text-xs sm:text-sm md:text-base leading-tight drop-shadow-sm flex items-center gap-1 mt-0.5">
+                          <Gift size={12} className="shrink-0" />
+                          {currentPlayerObj.drinksDistributed}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleClosePlayerHand}
+                    className="text-slate-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors active:scale-95 cursor-pointer shrink-0 ml-0.5"
+                    aria-label="Close hand"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
               </div>
 
               {/* Cards row using the EXACT same components as normal hand */}
@@ -3463,26 +3555,110 @@ const initializeAdMob = useCallback(async () => {
       <X size={14} />
     </button>
   );
+  const renderToTheBusButton = (onClick: () => void, extraClasses: string = '') => {
+    const label = t("NAAR DE BUS");
+    if (settings.theme === UITheme.STARS) {
+      return (
+        <button
+          onClick={onClick}
+          className={`w-full py-3.5 pl-8 pr-2.5 rounded-full bg-[#f1f5f9] text-[#090514] font-medium text-sm sm:text-base tracking-[0.18em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(192,132,252,0.3)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-purple-300/30 no-calm-override ${extraClasses}`}
+          style={{ fontFamily: "'Outfit', sans-serif" }}
+        >
+          <span>{label}</span>
+          <div className="w-10 h-10 rounded-full bg-[#090514]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#090514]/15 transition-all">
+            <Bus size={20} className="text-[#090514]" />
+          </div>
+        </button>
+      );
+    }
+    if (settings.theme === UITheme.CALM) {
+      return (
+        <button
+          onClick={onClick}
+          className={`w-full py-3.5 pl-8 pr-2.5 rounded-full font-medium text-sm sm:text-base tracking-[0.18em] uppercase active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer no-calm-override ${extraClasses}`}
+          style={{
+            backgroundColor: 'var(--theme-accent, #fb7185)',
+            color: 'var(--theme-btn-text, #ffffff)',
+            boxShadow: '0 8px 30px var(--theme-accent-glow, rgba(251, 113, 133, 0.35))',
+            fontFamily: "'Outfit', sans-serif",
+          }}
+        >
+          <span>{label}</span>
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.15)' }}
+          >
+            <Bus size={20} style={{ color: 'var(--theme-btn-text, #ffffff)' }} />
+          </div>
+        </button>
+      );
+    }
+    if (settings.theme === UITheme.METRO) {
+      return (
+        <button
+          onClick={onClick}
+          className={`w-full py-3.5 pl-8 pr-2.5 rounded-none bg-[var(--theme-accent)] text-slate-950 font-mono font-black text-sm sm:text-base tracking-widest uppercase border-2 border-white shadow-[4px_4px_0_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-between group cursor-pointer ${extraClasses}`}
+        >
+          <span>{label}</span>
+          <div className="w-10 h-10 rounded-none bg-slate-950/20 flex items-center justify-center group-hover:scale-110 transition-all">
+            <Bus size={20} className="text-slate-950" />
+          </div>
+        </button>
+      );
+    }
+    if (settings.theme === UITheme.BEER) {
+      return (
+        <button
+          onClick={onClick}
+          className={`w-full py-3.5 pl-8 pr-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-slate-950 font-black text-sm sm:text-base tracking-wider uppercase shadow-[0_6px_20px_rgba(245,158,11,0.4)] border-t border-amber-300 active:scale-95 transition-all flex items-center justify-between group cursor-pointer ${extraClasses}`}
+        >
+          <span>{label}</span>
+          <div className="w-10 h-10 rounded-xl bg-slate-950/20 flex items-center justify-center group-hover:scale-110 transition-all">
+            <Bus size={20} className="text-slate-950" />
+          </div>
+        </button>
+      );
+    }
+    return (
+      <button
+        onClick={onClick}
+        className={`w-full py-3.5 pl-8 pr-2.5 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black text-sm sm:text-base tracking-[0.18em] uppercase shadow-[0_8px_25px_rgba(220,38,38,0.4)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border-t border-red-400 ${extraClasses}`}
+      >
+        <span>{label}</span>
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/30 transition-all">
+          <Bus size={20} className="text-white" />
+        </div>
+      </button>
+    );
+  };
   // Global Dev Menu logic
   const isDevMenuVisible = (() => {
-    if (!players.some(p => p.isDev)) return false;
+    if (!players.some(p => p.isDev) && !devModeArmed) return false;
     if (phase === GamePhase.PYRAMID) return false;
-    if (phase === GamePhase.ROUNDS_1_4) return !!activePlayer?.isDev;
-    if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) return busPassengers.some(p => p.isDev);
+    if (phase === GamePhase.ROUNDS_1_4) return !!activePlayer?.isDev || devModeArmed;
+    if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) return busPassengers.some(p => p.isDev) || players.some(p => p.isDev) || devModeArmed;
     return false;
   })();
   const renderDevMenu = (className = "") => {
     if (!isDevMenuVisible) return null;
     return (
-      <div className={`relative flex items-center z-[100] ${className}`}>
+      <div 
+        className={`relative flex items-center z-[100] ${className}`}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         {/* Backdrop for outside click dismissal */}
         {isDevMenuOpen && (
           <div 
             className="fixed inset-0 z-[105]" 
             onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(false); }} 
+            onPointerDown={(e) => { e.stopPropagation(); setIsDevMenuOpen(false); }}
           />
         )}
-        <div className={`fixed left-1/2 -translate-x-1/2 top-16 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:translate-x-0 sm:mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_20px_rgba(34,197,94,0.3)] backdrop-blur-xl transition-all duration-200 origin-center sm:origin-top-right z-[110] max-w-[95vw] ${isDevMenuOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}>
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`fixed left-1/2 -translate-x-1/2 top-16 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:translate-x-0 sm:mt-2 flex items-center gap-1.5 bg-slate-900/95 border border-green-500/40 rounded-full px-3 py-1.5 shadow-[0_0_20px_rgba(34,197,94,0.3)] backdrop-blur-xl transition-all duration-200 origin-center sm:origin-top-right z-[110] max-w-[95vw] ${isDevMenuOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
+        >
             <button 
               onClick={(e) => { e.stopPropagation(); setDevSettings(p => ({ ...p, alwaysWin: !p.alwaysWin })); }}
               className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${devSettings.alwaysWin ? 'bg-green-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
@@ -3554,7 +3730,8 @@ const initializeAdMob = useCallback(async () => {
           </div>
         <button 
           onClick={(e) => { e.stopPropagation(); setIsDevMenuOpen(!isDevMenuOpen); }}
-          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm relative z-[111]"
+          onPointerDown={(e) => { e.stopPropagation(); }}
+          className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-green-400 hover:text-green-300 hover:bg-slate-800/70 transition-all active:scale-90 backdrop-blur-sm relative z-[111] cursor-pointer touch-manipulation"
         >
           {isDevMenuOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
@@ -4740,13 +4917,8 @@ const initializeAdMob = useCallback(async () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <button
-                onClick={() => setIsSelectingBusPlayer(true)}
-                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black py-3 rounded-[var(--theme-border-radius)] border border-red-400/60 shadow-lg active:scale-95 transition-all text-base sm:text-lg"
-              >
-                {t("Naar de Bus")}
-              </button>
+            <div className="flex flex-col items-center gap-2 w-full">
+              {renderToTheBusButton(() => setIsSelectingBusPlayer(true))}
               <button
                 onClick={() => {
                   setPyramidMode('digital');
@@ -4784,6 +4956,8 @@ const initializeAdMob = useCallback(async () => {
           pendingMatches={pendingMatches}
           players={players}
           cardStyle={settings.cardStyle}
+          theme={settings.theme}
+          calmAccentColor={settings.calmAccentColor}
           isClosing={isMatchModalClosing}
           onResolveMatch={resolveMatch}
           onDismiss={dismissMatchModal}
@@ -5159,13 +5333,10 @@ const initializeAdMob = useCallback(async () => {
         )}
         {/* Manual Proceed Button */}
         {isPyramidComplete && !pendingMatches && (
-          <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500">
-            <button
-              onClick={proceedToBus}
-              className="bg-gradient-to-r from-red-600 to-red-800 text-white text-xl font-black px-12 py-4 rounded-[var(--theme-border-radius)] shadow-[0_0_50px_rgba(220,38,38,0.6)] flex items-center gap-3 hover:scale-105 transition-transform active:scale-95 ring-4 ring-red-500/30 animate-bounce-subtle"
-            >
-              <Bus size={28} /> {t(" NAAR DE BUS ")} <ArrowRight size={28} strokeWidth={3} />
-            </button>
+          <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500 px-4">
+            <div className="w-full max-w-xs sm:max-w-sm animate-bounce-subtle">
+              {renderToTheBusButton(proceedToBus, 'shadow-2xl hover:scale-105')}
+            </div>
           </div>
         )}
         {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
@@ -5289,10 +5460,22 @@ const initializeAdMob = useCallback(async () => {
           {renderQuitModal()}
           {renderAdLoadingModal()}
           {renderColorPickerModal()}
-          <div className="w-24 h-24 rounded-full border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)]">
+          <div 
+            className="w-24 h-24 rounded-full border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)] cursor-pointer"
+            onPointerDown={() => victim && handleAvatarPointerDown(victim)}
+            onPointerUp={handleAvatarPointerUpOrLeave}
+            onPointerLeave={handleAvatarPointerUpOrLeave}
+          >
             <PlayerAvatar player={victim} size="custom" className="w-full h-full text-4xl" theme={settings.theme} />
           </div>
-          <div className="mb-4"><ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" /></div>
+          <div 
+            className="mb-4 cursor-pointer"
+            onPointerDown={handleHeaderPointerDown}
+            onPointerUp={handleHeaderPointerUpOrLeave}
+            onPointerLeave={handleHeaderPointerUpOrLeave}
+          >
+            <ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" showCursor={false} />
+          </div>
           <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
             <span className="text-white border-b-2 border-red-500">{victim.name}</span>{t(", Wie neem je mee de bus in?")}
           </p>
@@ -5419,10 +5602,27 @@ const initializeAdMob = useCallback(async () => {
                   <div className="space-y-1 text-center md:text-left mr-10">
                     <p className="text-[11px] uppercase font-black tracking-[0.25em] text-red-300">{t("Fysieke bus")}</p>
                     <div className="flex items-center justify-center md:justify-start gap-2">
-                      <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">{t("De Busrit")}</h2>
+                      <h2 
+                        className="text-3xl sm:text-4xl font-black text-white leading-tight cursor-pointer"
+                        onPointerDown={handleHeaderPointerDown}
+                        onPointerUp={handleHeaderPointerUpOrLeave}
+                        onPointerLeave={handleHeaderPointerUpOrLeave}
+                      >
+                        {t("De Busrit")}
+                      </h2>
                     </div>
                     {!isBusWon && (
-                      <p className="text-slate-300 text-sm">{t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span></p>
+                      <p 
+                        className="text-slate-300 text-sm cursor-pointer"
+                        onPointerDown={() => {
+                          const target = busPassengers[0] || players[0];
+                          if (target) handleAvatarPointerDown(target);
+                        }}
+                        onPointerUp={handleAvatarPointerUpOrLeave}
+                        onPointerLeave={handleAvatarPointerUpOrLeave}
+                      >
+                        {t("Passagier")}{busPassengers.length > 1 ? 's' : ''}: <span className="text-white font-black">{passengerNames || 'Onbekend'}</span>
+                      </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 self-start md:self-center">
@@ -5625,11 +5825,12 @@ const initializeAdMob = useCallback(async () => {
           </div>
         )}
         {/* Header - Responsive & Stable */}
-        <div className="flex-none px-2 sm:px-4 pt-2">
+        <div className="flex-none px-2 sm:px-4 pt-2 relative z-30">
           <div 
-            className={`flex flex-col justify-center p-3 sm:px-5 gap-1.5 sm:gap-2 ${getHeaderClasses()} !mb-0`}
+            className={`flex items-center justify-between p-3 sm:px-5 gap-3 ${getHeaderClasses()} !mb-0`}
           >
-            <div className="w-full flex items-center justify-between gap-3">
+            {/* Left: Title & Passenger */}
+            <div className={`flex flex-col justify-center min-w-0 gap-1 sm:gap-1.5 ${settings.theme === UITheme.CALM ? 'ml-3 sm:ml-4' : ''}`}>
               <div className="shrink-0 flex items-center">
                 <div 
                   className="pointer-events-auto cursor-pointer"
@@ -5638,37 +5839,47 @@ const initializeAdMob = useCallback(async () => {
                   onPointerLeave={handleHeaderPointerUpOrLeave}
                   onContextMenu={(e) => e.preventDefault()}
                 >
-                  <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" />
+                  <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" showCursor={false} />
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end shrink-0 min-w-0">
-                {renderDevMenu()}
-                <button 
-                  onClick={() => setIsCardOverviewOpen(true)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-white/10 bg-white/5 text-slate-200 shrink-0 ${
-                    remainingBusCards > 0 && !isBusWon ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
-                  <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
-                </button>
-                {settings.busDecks > 1 && (
-                  <div className={`flex items-center gap-1 px-2 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest shrink-0 transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-white/10 bg-white/5 text-slate-200'}`}>
-                    <span>{t("Pakje")}</span>
-                    <span className={`tabular-nums ${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
-                  </div>
-                )}
-                {!isBusWon && renderQuitButton()}
+              {/* Passenger Line - Horizontal, never truncated */}
+              <div 
+                className={`flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-opacity duration-300 pointer-events-auto cursor-pointer ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                onPointerDown={() => {
+                  const target = busPassengers[0] || players[0];
+                  if (target) handleAvatarPointerDown(target);
+                }}
+                onPointerUp={handleAvatarPointerUpOrLeave}
+                onPointerLeave={handleAvatarPointerUpOrLeave}
+              >
+                <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
+                  {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}:
+                </span>
+                <span className="text-white font-black break-words">
+                  {passengerNames}
+                </span>
               </div>
             </div>
-            {/* Passenger Line - Horizontal, never truncated */}
-            <div className={`flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-              <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
-                {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}:
-              </span>
-              <span className="text-white font-black break-words">
-                {passengerNames}
-              </span>
+
+            {/* Right: Actions / Counter / Quit - Vertically Centered */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end shrink-0 min-w-0">
+              {renderDevMenu()}
+              <button 
+                onClick={() => setIsCardOverviewOpen(true)}
+                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 hover:bg-white/5 cursor-pointer border-white/10 bg-white/5 text-slate-200 shrink-0 ${
+                  remainingBusCards > 0 && !isBusWon ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
+                <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
+              </button>
+              {settings.busDecks > 1 && (
+                <div className={`flex items-center gap-1 px-2 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest shrink-0 transition-opacity duration-300 ${isBusWon ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-white/10 bg-white/5 text-slate-200'}`}>
+                  <span>{t("Pakje")}</span>
+                  <span className={`tabular-nums ${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
+                </div>
+              )}
+              {!isBusWon && renderQuitButton()}
             </div>
           </div>
         </div>
@@ -5694,9 +5905,10 @@ const initializeAdMob = useCallback(async () => {
                 ref={el => busCardRefs.current[index] = el}
                 className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass} ${isBusWon ? 'animate-[fallDown_1.5s_cubic-bezier(0.55,0.085,0.68,0.53)_forwards]' : ''}`}
                 style={isBusWon ? { animationDelay: `${index * 0.15}s` } : undefined}
-                onPointerDown={() => devSettings.peekCards && busPassengers.some(p => p.isDev) && setPreviewCardId(card.id)}
+                onPointerDown={() => devSettings.peekCards && (busPassengers.some(p => p.isDev) || players.some(p => p.isDev) || devModeArmed) && setPreviewCardId(card.id)}
                 onPointerUp={() => setPreviewCardId(null)}
                 onPointerLeave={() => setPreviewCardId(null)}
+                onPointerCancel={() => setPreviewCardId(null)}
               >
                 {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
                 <PlayingCard
@@ -5735,66 +5947,62 @@ const initializeAdMob = useCallback(async () => {
         {/* Controls */}
         <div className="flex-none w-full bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-4 pb-safe pb-6 px-4 z-20">
           <div className="max-w-md mx-auto w-full">
-            {feedback && (
-              <div className="mb-6 flex justify-center pointer-events-none">
-                <div 
+            {feedback ? (
+              <div className="w-full">
+                <div
                   key={feedback.text}
-                  className={`px-8 py-3 rounded-[var(--theme-border-radius)] font-black text-lg shadow-2xl border-2 backdrop-blur-md ${
-                    feedback.type === 'error' 
-                      ? 'bg-red-950/90 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] animate-feedback-error no-calm-override' 
-                      : feedback.type === 'success' 
-                      ? 'bg-emerald-950/90 text-emerald-100 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-feedback-success no-calm-override' 
-                      : 'bg-slate-800 text-white border-slate-600 animate-feedback-success'
+                  className={`p-4 rounded-2xl text-center font-black text-lg border-2 shadow-2xl backdrop-blur-md ${
+                    feedback.type === 'success' || feedback.type === 'info'
+                      ? 'bg-emerald-950/90 border-emerald-400 text-emerald-100 shadow-[0_0_35px_rgba(16,185,129,0.3)] animate-feedback-success'
+                      : 'bg-red-950/90 border-red-400 text-white shadow-[0_0_35px_rgba(239,68,68,0.3)] animate-feedback-error'
                   }`}
                 >
                   {feedback.text}
                 </div>
               </div>
-            )}
-            <div className="flex items-center justify-center gap-4">
-              {isBusDeckExhausted ? (
-                <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
-                  {t("Pakje leeg – pak een nieuw deck om verder te gaan")}
-                </div>
-              ) : busWrongCardIndex === null && !isBusWon ? (
-                <div className="flex flex-col gap-3 w-full">
-                  <div className="flex items-center justify-center gap-4">
-                    <button onClick={() => handleBusGuess('HIGHER')} className={getBusGuessBtnClasses('HIGHER')}>
-                      <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
-                      <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
-                    </button>
-                    <button onClick={() => handleBusGuess('LOWER')} className={getBusGuessBtnClasses('LOWER')}>
-                      <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
-                      <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
-                    </button>
+            ) : (
+              <div className="flex items-center justify-center gap-4">
+                {isBusDeckExhausted ? (
+                  <div className="text-center w-full text-red-200 font-black text-sm uppercase tracking-[0.2em] bg-red-900/30 border border-red-800 rounded-2xl px-4 py-3">
+                    {t("Pakje leeg – pak een nieuw deck om verder te gaan")}
                   </div>
-                  {(() => {
-                    const prevCard = busCards[currentBusIndex - 1];
-                    const cardText = prevCard ? getRankString(prevCard.rank) : '';
-                    return (
-                      <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>
-                        {t("GELIJK")}{cardText ? ` (${cardText})` : ''}
+                ) : busWrongCardIndex === null && !isBusWon ? (
+                  <div className="flex flex-col gap-3 w-full">
+                    <div className="flex items-center justify-center gap-4">
+                      <button onClick={() => handleBusGuess('HIGHER')} className={getBusGuessBtnClasses('HIGHER')}>
+                        <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
+                        <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
                       </button>
-                    );
-                  })()}
-                </div>
-              ) : isBusWon ? (
-                <button
-                  onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
-                  className="w-full text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle"
-                  style={{
-                    background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
-                    backgroundSize: '200% 200%',
-                    animation: 'end-gradient 3s linear infinite',
-                  }}
-                >
-                  {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
-                </button>
-              ) : (
-                <div className="text-center w-full text-red-600 font-black text-xl animate-pulse uppercase tracking-widest">
-                </div>
-              )}
-            </div>
+                      <button onClick={() => handleBusGuess('LOWER')} className={getBusGuessBtnClasses('LOWER')}>
+                        <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
+                        <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
+                      </button>
+                    </div>
+                    {(() => {
+                      const prevCard = busCards[currentBusIndex - 1];
+                      const cardText = prevCard ? getRankString(prevCard.rank) : '';
+                      return (
+                        <button onClick={() => handleBusGuess('EQUAL')} className={getBusGuessBtnClasses('EQUAL')}>
+                          {t("GELIJK")}{cardText ? ` (${cardText})` : ''}
+                        </button>
+                      );
+                    })()}
+                  </div>
+                ) : isBusWon ? (
+                  <button
+                    onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
+                    className="w-full text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle"
+                    style={{
+                      background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
+                      backgroundSize: '200% 200%',
+                      animation: 'end-gradient 3s linear infinite',
+                    }}
+                  >
+                    {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
+                  </button>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
         <SlideMenuModal

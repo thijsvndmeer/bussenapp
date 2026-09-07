@@ -39,4 +39,12 @@ describe('Theme Engine CSS', () => {
     expect(cssContent).toContain('.theme-stars *');
     expect(cssContent).toMatch(/\.theme-stars\s+button/);
   });
+
+  it('contains light heineken red accent and beer color tertiary for .theme-beer', () => {
+    expect(cssContent).toContain('.theme-beer {');
+    expect(cssContent).toMatch(/--theme-accent:\s*#ff3333/);
+    expect(cssContent).toMatch(/--theme-tertiary:\s*#f59e0b/);
+    expect(cssContent).toMatch(/--theme-accent-tertiary:\s*#f59e0b/);
+    expect(cssContent).toMatch(/--theme-btn-sec-bg:\s*#ff3333/);
+  });
 });

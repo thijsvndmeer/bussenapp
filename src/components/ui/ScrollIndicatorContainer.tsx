@@ -30,9 +30,9 @@ export const getThemeScrollColors = (theme: UITheme = UITheme.CLASSIC) => {
       };
     case UITheme.BEER:
       return {
-        accent: '#f59e0b',
+        accent: 'var(--theme-accent, #ff3333)',
         gradientFrom: 'rgba(2, 32, 12, 0.95)',
-        glow: 'rgba(245, 158, 11, 0.35)',
+        glow: 'var(--theme-accent-glow, rgba(255, 51, 51, 0.4))',
       };
     case UITheme.STARS:
       return {
