@@ -650,3 +650,470 @@
   will-change: transform;
 }
 
+/* --- CINEMATIC REAL MOVING BUS CHOREOGRAPHY (3.2s) --- */
+
+/* 1. Vehicle Movement Across Screen */
+@keyframes busDriveSequence {
+  0% {
+    transform: translate3d(-125vw, 0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  28% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  74% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  80% {
+    transform: translate3d(20px, 0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(130vw, 0, 0);
+    opacity: 0;
+  }
+}
+
+/* 2. Chassis Suspension Physics (Braking dip, rebound, idle rumble, acceleration squat) */
+@keyframes busSuspensionTilt {
+  0%, 20% {
+    transform: rotate(-1deg) translateY(-2px);
+  }
+  24% {
+    transform: rotate(0deg) translateY(0);
+  }
+  /* Heavy brake: front dips down */
+  28% {
+    transform: rotate(-3.5deg) translateY(6px);
+  }
+  /* Rebound up */
+  33% {
+    transform: rotate(2deg) translateY(-4px);
+  }
+  /* Settle */
+  38% {
+    transform: rotate(-0.5deg) translateY(2px);
+  }
+  43% {
+    transform: rotate(0deg) translateY(0);
+  }
+  /* Engine idle vibration */
+  49% { transform: translateY(-1.5px); }
+  55% { transform: translateY(1px); }
+  61% { transform: translateY(-1px); }
+  67% { transform: translateY(1.5px); }
+  72% { transform: translateY(0); }
+  /* Gas stomp: rear squats, nose lifts */
+  78% {
+    transform: rotate(3deg) translateY(4px);
+  }
+  /* Speed away */
+  86%, 100% {
+    transform: rotate(0.5deg) translateY(-2px);
+  }
+}
+
+/* 3. Physical Wheel Rotation (Spins during drive, stops during park, spins fast on departure) */
+@keyframes busWheelRoll {
+  0% {
+    transform: rotate(0deg);
+  }
+  28% {
+    transform: rotate(1080deg);
+  }
+  28.1%, 74% {
+    transform: rotate(1080deg);
+  }
+  100% {
+    transform: rotate(2520deg);
+  }
+}
+
+/* 4. Moving Road Stripes */
+@keyframes busRoadMove {
+  0% {
+    background-position: 0px 0px;
+  }
+  28% {
+    background-position: -240px 0px;
+  }
+  28.1%, 74% {
+    background-position: -240px 0px;
+  }
+  100% {
+    background-position: -680px 0px;
+  }
+}
+
+/* 5. Exhaust Smoke Puffs */
+@keyframes exhaustCloud1 {
+  0%, 25% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3);
+  }
+  30% {
+    opacity: 0.85;
+    transform: translate3d(-18px, -6px, 0) scale(0.8);
+  }
+  44% {
+    opacity: 0;
+    transform: translate3d(-50px, -18px, 0) scale(1.6);
+  }
+  74% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3);
+  }
+  80% {
+    opacity: 0.9;
+    transform: translate3d(-25px, -8px, 0) scale(1.1);
+  }
+  95% {
+    opacity: 0;
+    transform: translate3d(-70px, -24px, 0) scale(2);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes exhaustCloud2 {
+  0%, 27% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3);
+  }
+  33% {
+    opacity: 0.75;
+    transform: translate3d(-22px, -10px, 0) scale(0.9);
+  }
+  48% {
+    opacity: 0;
+    transform: translate3d(-60px, -22px, 0) scale(1.8);
+  }
+  76% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3);
+  }
+  82% {
+    opacity: 0.85;
+    transform: translate3d(-30px, -12px, 0) scale(1.2);
+  }
+  98% {
+    opacity: 0;
+    transform: translate3d(-80px, -28px, 0) scale(2.2);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 6. Hazard Blinker */
+@keyframes busHazardFlash {
+  0%, 48% {
+    opacity: 1;
+  }
+  49%, 100% {
+    opacity: 0.2;
+  }
+}
+
+/* 7. Stamp / Banner Entrance */
+@keyframes busStampImpact {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) translateY(-25px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(0.95) translateY(3px);
+  }
+  82% {
+    transform: scale(1.03) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-bus-drive {
+  animation: busDriveSequence 3.2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-bus-suspension {
+  animation: busSuspensionTilt 3.2s ease-in-out forwards;
+  will-change: transform;
+}
+
+.animate-bus-wheel {
+  animation: busWheelRoll 3.2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.animate-bus-road {
+  animation: busRoadMove 3.2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  will-change: background-position;
+}
+
+.animate-bus-exhaust-1 {
+  animation: exhaustCloud1 3.2s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-bus-exhaust-2 {
+  animation: exhaustCloud2 3.2s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-bus-hazard {
+  animation: busHazardFlash 0.5s ease-in-out infinite;
+}
+
+.animate-bus-stamp {
+  animation: busStampImpact 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* --- BUS CRASH THROUGH CARDS, HARD BRAKE, REVERSE TO CENTER, THEN DRIVE OUT --- */
+@keyframes busCrashAcross {
+  0% {
+    transform: translate3d(-130vw, 0, 0);
+  }
+  14% {
+    /* Fast drive across knocking cards away, stays on screen without driving outside */
+    transform: translate3d(2vw, 0, 0);
+  }
+  16.5% {
+    /* Hard brake with nose dip, stays completely visible on screen */
+    transform: translate3d(3vw, 3px, 0) rotate(-2.8deg);
+  }
+  21% {
+    /* Shift into reverse, chassis pitches slightly back */
+    transform: translate3d(1.5vw, -1px, 0) rotate(1.2deg);
+  }
+  28% {
+    /* Reverses back smoothly to dead center */
+    transform: translate3d(0vw, 0, 0) rotate(0deg);
+  }
+  28%, 80% {
+    /* Parked rock-solid at center while player is showcased and boarded */
+    transform: translate3d(0vw, 0, 0) rotate(0deg);
+  }
+  81% {
+    /* Passenger boarded, engine revs & slight squat */
+    transform: translate3d(0vw, 0, 0) rotate(-0.5deg);
+  }
+  85% {
+    /* Accelerating launch forward */
+    transform: translate3d(3vw, 0, 0) rotate(-0.8deg);
+  }
+  100% {
+    /* Drives completely out of the screen to the right */
+    transform: translate3d(145vw, 0, 0) rotate(0deg);
+  }
+}
+
+.animate-bus-crash {
+  animation: busCrashAcross 6.4s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  will-change: transform;
+}
+
+/* Wheels: Fast forward roll -> skid lock during hard brake -> reverse roll -> stop while parked -> drive out forward */
+@keyframes busCrashWheelRoll {
+  0% {
+    transform: rotate(0deg);
+  }
+  14% {
+    transform: rotate(1500deg);
+  }
+  16.5% {
+    /* Locked skidding wheels during hard brake */
+    transform: rotate(1500deg);
+  }
+  21% {
+    transform: rotate(1470deg);
+  }
+  28% {
+    /* Reversing wheel rotation */
+    transform: rotate(1150deg);
+  }
+  28%, 80% {
+    /* Stopped while parked */
+    transform: rotate(1150deg);
+  }
+  100% {
+    /* Forward drive-out rotation */
+    transform: rotate(2950deg);
+  }
+}
+
+.animate-bus-crash-wheel {
+  animation: busCrashWheelRoll 6.4s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Crash mode road track movement */
+@keyframes busCrashRoadMove {
+  0% {
+    background-position: 0px 0px;
+  }
+  14% {
+    background-position: -240px 0px;
+  }
+  16.5% {
+    background-position: -240px 0px;
+  }
+  28% {
+    background-position: -120px 0px;
+  }
+  28%, 80% {
+    background-position: -120px 0px;
+  }
+  100% {
+    background-position: -960px 0px;
+  }
+}
+
+.animate-bus-crash-road {
+  animation: busCrashRoadMove 6.4s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  will-change: background-position;
+}
+
+/* Crash mode chassis subtle suspension */
+@keyframes busCrashSuspension {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-bus-crash-suspension {
+  animation: busCrashSuspension 6.4s linear forwards;
+  will-change: transform;
+}
+
+/* Chassis impact reaction when player lands on the bus */
+@keyframes busChassisBounce {
+  0% {
+    transform: translateY(0);
+  }
+  28% {
+    transform: translateY(11px) rotate(0.9deg);
+  }
+  55% {
+    transform: translateY(-4px) rotate(-0.4deg);
+  }
+  80% {
+    transform: translateY(2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-bus-chassis-bounce {
+  animation: busChassisBounce 0.55s cubic-bezier(0.17, 0.89, 0.32, 1.25) forwards;
+  will-change: transform;
+}
+
+/* Bus layout cards deal-in cascade */
+@keyframes busCardDealIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-bus-card-deal {
+  animation: busCardDealIn 0.8s ease-out both;
+  will-change: opacity;
+}
+
+/* Loser player profile pic drops down from header, stays big ABOVE bus, then moves into bus and hops in */
+@keyframes playerDropIntoBus {
+  0% {
+    /* Starting up at header */
+    transform: translate3d(0, -48vh, 0) scale(0.65);
+    opacity: 0.9;
+  }
+  18% {
+    /* Floating clearly and high ABOVE the bus roof, so avatar and text badge are well above bus */
+    transform: translate3d(0, -36vh, 0) scale(2.4);
+    opacity: 1;
+  }
+  66% {
+    /* Held prominently ABOVE the bus roof for clear focus */
+    transform: translate3d(0, -36vh, 0) scale(2.4);
+    opacity: 1;
+  }
+  82% {
+    /* Moves down into the center of the bus */
+    transform: translate3d(0, 0vh, 0) scale(1.15);
+    opacity: 1;
+  }
+  90% {
+    /* Hops up slightly before plunging in */
+    transform: translate3d(0, -3vh, 0) scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    /* Hops down directly into the center of the bus */
+    transform: translate3d(0, 8vh, 0) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.animate-player-bus-jump {
+  animation: playerDropIntoBus 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Badge fade and pop for player reveal */
+@keyframes playerJumpBadge {
+  0%, 8% {
+    opacity: 0;
+    transform: scale(0.9) translateY(6px);
+  }
+  18%, 66% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  78%, 100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(12px);
+  }
+}
+
+.animate-player-jump-badge {
+  animation: playerJumpBadge 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* --- THE BUS HEADER ENTRANCE --- */
+@keyframes busHeaderEnter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-bus-header-enter {
+  animation: busHeaderEnter 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity;
+}
+
+

@@ -8,6 +8,7 @@ export type SoundEffect =
   | 'playerRemove'
   | 'celebrate'
   | 'busEnter'
+  | 'busBrake'
   | 'busStep'
   | 'busFail'
   | 'reshuffle'
@@ -129,8 +130,29 @@ export const useAudio = () => {
           setTimeout(() => playTone({ frequency: 980, duration: 0.18, type: 'sine', volume: 0.08 }), 140);
           break;
         case 'busEnter':
-          playTone({ frequency: 110, duration: 0.18, type: 'sawtooth', volume: 0.12 });
-          setTimeout(() => playTone({ frequency: 220, duration: 0.22, type: 'triangle', volume: 0.09 }), 90);
+          // 1. Engine rumble approach
+          playTone({ frequency: 95, duration: 0.35, type: 'sawtooth', volume: 0.12 });
+          setTimeout(() => playTone({ frequency: 140, duration: 0.3, type: 'triangle', volume: 0.1 }), 100);
+          // 2. Brake friction hiss as bus stops at center (750ms)
+          setTimeout(() => {
+            playTone({ frequency: 480, duration: 0.15, type: 'sawtooth', volume: 0.07 });
+            playTone({ frequency: 380, duration: 0.18, type: 'sine', volume: 0.06 });
+          }, 750);
+          // 3. Double bus horn toot-toot (1000ms & 1200ms)
+          setTimeout(() => {
+            playTone({ frequency: 440, duration: 0.14, type: 'triangle', volume: 0.14 });
+            playTone({ frequency: 554, duration: 0.14, type: 'sine', volume: 0.1 });
+            setTimeout(() => {
+              playTone({ frequency: 440, duration: 0.2, type: 'triangle', volume: 0.14 });
+              playTone({ frequency: 554, duration: 0.2, type: 'sine', volume: 0.1 });
+            }, 180);
+          }, 1000);
+          break;
+        case 'busBrake':
+          // High-pitch tire screech friction followed by heavy brake skid
+          playTone({ frequency: 820, duration: 0.28, type: 'sawtooth', volume: 0.12, attack: 0.01, decay: 0.25 });
+          setTimeout(() => playTone({ frequency: 620, duration: 0.2, type: 'sawtooth', volume: 0.1 }), 60);
+          setTimeout(() => playTone({ frequency: 320, duration: 0.3, type: 'triangle', volume: 0.1 }), 140);
           break;
         case 'busStep':
           playTone({ frequency: 320 + Math.random() * 80, duration: 0.1, type: 'triangle', volume: 0.1 });

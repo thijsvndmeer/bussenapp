@@ -6,6 +6,7 @@ export type SoundEffect =
   | 'playerRemove'
   | 'celebrate'
   | 'busEnter'
+  | 'busBrake'
   | 'busStep'
   | 'busFail'
   | 'reshuffle'

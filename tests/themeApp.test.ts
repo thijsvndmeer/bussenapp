@@ -94,4 +94,76 @@ describe('App Theme Synchronization', () => {
     expect(appContent).toContain('<ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" showCursor={false} />');
     expect(appContent).toContain('<ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" showCursor={false} />');
   });
+
+  it('implements epic cinematic To the Bus transition animations and overlay UI with moving parts', () => {
+    const animPath = path.resolve(__dirname, '../styles/animations.css');
+    const animContent = fs.readFileSync(animPath, 'utf-8');
+
+    // Keyframe animations and utility classes for real moving vehicle physics
+    expect(animContent).toContain('@keyframes busDriveSequence');
+    expect(animContent).toContain('@keyframes busSuspensionTilt');
+    expect(animContent).toContain('@keyframes busWheelRoll');
+    expect(animContent).toContain('@keyframes busRoadMove');
+    expect(animContent).toContain('@keyframes exhaustCloud1');
+    expect(animContent).toContain('@keyframes busHazardFlash');
+    expect(animContent).toContain('@keyframes busStampImpact');
+    expect(animContent).toContain('.animate-bus-drive');
+    expect(animContent).toContain('.animate-bus-suspension');
+    expect(animContent).toContain('.animate-bus-wheel');
+    expect(animContent).toContain('.animate-bus-road');
+    expect(animContent).toContain('.animate-bus-exhaust-1');
+    expect(animContent).toContain('.animate-bus-hazard');
+    expect(animContent).toContain('.animate-bus-stamp');
+
+    // AnimatedPartyBus component
+    const busPath = path.resolve(__dirname, '../components/AnimatedPartyBus.tsx');
+    expect(fs.existsSync(busPath)).toBe(true);
+    const busContent = fs.readFileSync(busPath, 'utf-8');
+    expect(busContent).toContain('animate-bus-drive');
+    expect(busContent).toContain('animate-bus-suspension');
+    expect(busContent).toContain('animate-bus-wheel');
+    expect(busContent).toContain('animate-bus-exhaust-1');
+    expect(busContent).toContain('animate-bus-hazard');
+    expect(busContent).toContain('PlayerAvatar');
+
+    // BusTransitionOverlay implementation in App.tsx
+    expect(appContent).toContain('AnimatedPartyBus');
+    expect(appContent).toContain('BusTransitionOverlay');
+    expect(appContent).toContain('animate-bus-stamp');
+    expect(appContent).toContain('{isDuo ? t("Samen in de bus!") : t("Naar de Bus!")}');
+  });
+
+  it('implements bus crash through pyramid cards, header morph, and staggered bus card deal-in', () => {
+    const animPath = path.resolve(__dirname, '../styles/animations.css');
+    const animContent = fs.readFileSync(animPath, 'utf-8');
+
+    // Crash and deal keyframes and classes
+    expect(animContent).toContain('@keyframes busCrashAcross');
+    expect(animContent).toContain('.animate-bus-crash');
+    expect(animContent).toContain('@keyframes busCrashWheelRoll');
+    expect(animContent).toContain('.animate-bus-crash-wheel');
+    expect(animContent).toContain('@keyframes busCrashSuspension');
+    expect(animContent).toContain('.animate-bus-crash-suspension');
+    expect(animContent).toContain('@keyframes busCardDealIn');
+    expect(animContent).toContain('.animate-bus-card-deal');
+
+    // AnimatedPartyBus supports crash mode
+    const busPath = path.resolve(__dirname, '../components/AnimatedPartyBus.tsx');
+    const busContent = fs.readFileSync(busPath, 'utf-8');
+    expect(busContent).toContain('isCrash?: boolean');
+    expect(busContent).toContain('animate-bus-crash-wheel');
+
+    // App.tsx crash sequence, header morph, card scatter, and card deal-in cascade
+    const appPath = path.resolve(__dirname, '../App.tsx');
+    const appContent = fs.readFileSync(appPath, 'utf-8');
+    expect(appContent).toContain('isBusCrashing');
+    expect(appContent).toContain('pyramidScatterCards');
+    expect(appContent).toContain('setPyramidScatterCards(true)');
+    expect(appContent).toContain('{isBusCrashing ? (');
+    expect(appContent).toContain('animate-bus-crash');
+    expect(appContent).toContain('isCrash={true}');
+    expect(appContent).toContain('animate-bus-card-deal');
+    expect(appContent).toContain('animationDelay: `${index * 0.08}s`');
+  });
 });
+

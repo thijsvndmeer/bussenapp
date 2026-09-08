@@ -38,6 +38,7 @@ import { AdLoadingModal } from './components/modals/AdLoadingModal';
 import { SlideMenuModal } from './components/modals/SlideMenuModal';
 import { PyramidMatchModal } from './components/modals/PyramidMatchModal';
 import { GalaxyCelebrationModal } from './components/modals/GalaxyCelebrationModal';
+import { AnimatedPartyBus } from './components/AnimatedPartyBus';
 import { ScrollIndicatorContainer, getThemeScrollColors } from './src/components/ui/ScrollIndicatorContainer';
 const ADMOB_APP_ID = import.meta.env.VITE_ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713';
 const ADMOB_INTERSTITIAL_QUIT_UNIT_ID = import.meta.env.VITE_ADMOB_INTERSTITIAL_QUIT_UNIT_ID || 'ca-app-pub-3940256099942544/1033173712';
@@ -221,6 +222,7 @@ const GlobalAnimations = () => null;
 /** Unified Player Avatar component */
 const MetroBackground = MetroBackgroundAnimated;
 /** Dramatic transition overlay for when someone goes to the bus */
+/** Dramatic, cinematic transition overlay for when someone goes to the bus */
 const BusTransitionOverlay: React.FC<{
   loserReveal: { player: Player; title: string } | null;
   isBusEntrance: boolean;
@@ -228,69 +230,66 @@ const BusTransitionOverlay: React.FC<{
   t: (key: string) => string;
 }> = ({ loserReveal, isBusEntrance, busPassengers, t }) => {
   if (!loserReveal && !isBusEntrance) return null;
+
+  const passengers = loserReveal ? [loserReveal.player] : busPassengers;
+  const isDuo = !loserReveal && isBusEntrance && busPassengers.length >= 2;
+  const headline = loserReveal 
+    ? loserReveal.title 
+    : (isDuo ? t("Samen in de bus!") : t("Naar de Bus!"));
+
+  const destinationText = loserReveal
+    ? loserReveal.player.name
+    : (isDuo ? t("SAMEN") : t("DE BUS"));
+
   return (
     <div 
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 overflow-hidden" 
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden select-none" 
     >
-      {/* Dramatic Opaque Background — Different from normal persistent theme */}
-      <div className="absolute inset-0 bg-[#050505] animate-in fade-in duration-700">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/30 via-transparent to-transparent opacity-60 animate-pulse"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-red-950/40 via-black to-black"></div>
-        {/* Intense strobe for high stakes */}
-        <div className="absolute inset-0 bg-white/[0.03] animate-[pulse_0.1s_ease-in-out_infinite]"></div>
+      {/* Cinematic Dark Stage Background with Deep Warm Amber/Red Vignette */}
+      <div className="absolute inset-0 bg-black/95 animate-in fade-in duration-500">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(185,28,28,0.3)_0%,rgba(15,23,42,0.6)_60%,black_90%)] pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-slate-950/80 to-transparent pointer-events-none" />
       </div>
-      {loserReveal && (
-        <div className="relative z-10 flex flex-col items-center animate-in zoom-in duration-500">
-          <h2 className="text-3xl font-black uppercase mb-8 tracking-[0.5em] animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,1)] text-center text-white">
-            {loserReveal.title}
+
+      <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto">
+        {/* Top Eyebrow / Loser Title Phrase */}
+        <div className="text-center mb-2 sm:mb-4 animate-in fade-in zoom-in-95 duration-500">
+          <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-[0.15em] text-amber-300 drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
+            {headline}
           </h2>
-          <div className="relative w-48 h-48 mb-8">
-            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40 no-calm-override"></div>
-            <div className="absolute inset-0 bg-red-600 rounded-full animate-[ping_1s_infinite] opacity-20 delay-75 no-calm-override"></div>
-            <div className="relative w-48 h-48 rounded-full border-8 border-red-600 flex items-center justify-center shadow-[0_0_100px_rgba(220,38,38,0.8)] overflow-hidden">
-              <PlayerAvatar
-                player={loserReveal.player}
-                size="custom"
-                className="w-full h-full text-7xl"
-              />
-            </div>
-          </div>
-          <h1 className="text-5xl font-black text-white mb-4 text-center neon-text animate-[shake_0.5s_infinite]">
-            {loserReveal.player.name}
-          </h1>
-          <div className="bg-red-600 text-white font-black text-xl px-10 py-3 rounded-full uppercase tracking-widest shadow-[0_0_40px_rgba(220,38,38,0.8)] no-calm-override">
-            {t("Naar de Bus!")}
-          </div>
-        </div>
-      )}
-      {!loserReveal && isBusEntrance && (
-        <div className="relative z-10 flex flex-col items-center animate-in zoom-in duration-500">
-          <h1 className="text-5xl font-black text-white mb-4 text-center uppercase tracking-tighter drop-shadow-xl">
-            {t("Samen in de bus!")}
-          </h1>
-          
-          {busPassengers.length >= 2 && (
-            <p className="text-red-300 font-bold text-lg mb-12 text-center uppercase tracking-widest px-4">
-              <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[0].name}</span> & <span className="underline decoration-red-500 underline-offset-4 text-white">{busPassengers[1].name}</span> {t("gaan samen in de bus.")}
+          {isDuo && (
+            <p className="text-slate-300 text-xs sm:text-sm font-bold uppercase tracking-widest mt-1">
+              {busPassengers.map(p => p.name).join(' & ')} {t("gaan samen in de bus.")}
             </p>
           )}
-          <div className="flex flex-row gap-8 items-center justify-center flex-wrap">
-            {busPassengers.map((p, i) => (
-              <div key={p.id} className="flex flex-col items-center animate-in zoom-in duration-500">
-                <span className="text-amber-400 font-black text-sm uppercase tracking-widest mb-3 opacity-90">{t("Speler")} {i + 1}</span>
-                <div className="w-36 h-36 rounded-full border-[5px] border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.7)] overflow-hidden mb-5">
-                  <PlayerAvatar
-                    player={p}
-                    size="custom"
-                    className="w-full h-full text-5xl"
-                  />
-                </div>
-                <div className="text-3xl font-black text-white uppercase tracking-widest drop-shadow-md">{p.name}</div>
-              </div>
-            ))}
+        </div>
+
+        {/* Centerpiece: The Animated Party Bus with Real Moving Parts! */}
+        <div className="w-full flex justify-center my-1 sm:my-2">
+          <AnimatedPartyBus 
+            passengers={passengers} 
+            destinationText={destinationText} 
+          />
+        </div>
+
+        {/* Bottom Punchy Party Banner (Impacts on center brake) */}
+        <div className="animate-bus-stamp flex flex-col items-center mt-3 sm:mt-5">
+          <div className="p-1 rounded-2xl bg-gradient-to-r from-red-600 via-amber-400 to-red-600 shadow-[0_0_35px_rgba(239,68,68,0.5)]">
+            <div className="px-8 sm:px-12 py-3 sm:py-3.5 bg-black/90 rounded-[calc(1rem-4px)] flex items-center justify-center gap-3 border border-white/10">
+              <Bus size={22} className="text-amber-400 shrink-0" />
+              <span className="text-xl sm:text-3xl font-black text-white uppercase tracking-[0.2em] drop-shadow-md">
+                {isDuo ? t("Samen in de bus!") : t("Naar de Bus!")}
+              </span>
+              <Bus size={22} className="text-amber-400 shrink-0" />
+            </div>
+          </div>
+          
+          {/* Player Name Display below badge */}
+          <div className="text-2xl sm:text-3xl font-black text-white uppercase tracking-wider drop-shadow-lg mt-3 text-center">
+            {passengers.map(p => p.name).join(' & ')}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1113,6 +1112,16 @@ const App: React.FC = () => {
   const [revealedPyramidCards, setRevealedPyramidCards] = useState<Set<string>>(new Set());
   const [pendingMatches, setPendingMatches] = useState<{ card: Card, sips: number, matches: { player: Player, count: number, initialCount: number }[], bannerPosition?: 'top' | 'bottom' } | null>(null);
   const [loserReveal, setLoserReveal] = useState<{ player: Player, title: string } | null>(null);
+  const [isBusCrashing, setIsBusCrashing] = useState(false);
+  const [isBusBraking, setIsBusBraking] = useState(false);
+  const [isBusPassengerBoarded, setIsBusPassengerBoarded] = useState(false);
+  const [isBusChassisBouncing, setIsBusChassisBouncing] = useState(false);
+  const [isBusDeparting, setIsBusDeparting] = useState(false);
+  const [isBusTransitioning, setIsBusTransitioning] = useState(false);
+  const [jumpingBusPlayer, setJumpingBusPlayer] = useState<Player | null>(null);
+  const [pyramidScatterCards, setPyramidScatterCards] = useState(false);
+  const [busVerticalOffset, setBusVerticalOffset] = useState<number | null>(null);
+  const busCrashRef = useRef<HTMLDivElement>(null);
   const [playerHandToView, setPlayerHandToView] = useState<Player | null>(null);
   const [isHandTrayOpen, setIsHandTrayOpen] = useState(false);
   const [isMoreHandMode, setIsMoreHandMode] = useState(false);
@@ -1227,6 +1236,8 @@ const App: React.FC = () => {
     setCurrentPackCards([]);
     setIsCardOverviewOpen(false);
     setShowReshuffleBanner(false);
+    setBusVerticalOffset(null);
+    setIsBusDeparting(false);
   }, []);
     const dismissTransitions = useCallback(() => {
     setLoserReveal(null);
@@ -1654,6 +1665,15 @@ const initializeAdMob = useCallback(async () => {
       };
     });
   }, [busCards, currentBusIndex, busWrongCardIndex, isBusWon, busFocusIndex]);
+  const remainingBusCards = useMemo(() => {
+    if (isBusWon) return 0;
+    const currentReveal = busWrongCardIndex !== null ? currentBusIndex + 1 : currentBusIndex;
+    const revealedInLayout = Math.max(0, currentReveal - oldCardsInLayoutCount);
+    const usedCards = discardedCardsCount + revealedInLayout;
+    const remainingCurrentPack = Math.max(0, 52 - usedCards);
+    const remainingOldCards = Math.max(0, oldCardsInLayoutCount - currentReveal);
+    return remainingOldCards + remainingCurrentPack;
+  }, [isBusWon, busWrongCardIndex, currentBusIndex, oldCardsInLayoutCount, discardedCardsCount]);
   // --- SCROLL HELPERS ---
   useEffect(() => {
     // Keep refs array in sync with cards
@@ -2728,6 +2748,8 @@ const initializeAdMob = useCallback(async () => {
   };
   const goToBusSelection = () => {
     resetBusState();
+    triggerHaptic('majorLoss');
+    playSound('busEnter');
     const victim = findLoser();
     const driver = players.find(p => p.isDealer) || players[0];
     const title = getUniquePhrase('loser');
@@ -2736,26 +2758,213 @@ const initializeAdMob = useCallback(async () => {
     setLoserReveal({ player: victim, title: title });
     if (settings.sharedBus) {
       setPhase(GamePhase.BUS_TEAM_SELECTION);
-      scheduleGameEvent('loser-reveal', 2500, { type: 'LOSER_REVEAL_DONE' });
+      scheduleGameEvent('loser-reveal', 3200, { type: 'LOSER_REVEAL_DONE' });
     } else {
       dispatchGameEvent({ type: 'START_BUS', passengers: [victim] });
     }
   };
-  const determineLoserAndAnimate = () => {
+  const determineLoserAndAnimate = (forcedVictim?: Player) => {
+    if (isBusCrashing || jumpingBusPlayer) return;
     resetBusState();
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       goToBusSelection();
       return;
     }
-    triggerHaptic('majorLoss');
-    const victim = findLoser();
+    const victim = forcedVictim || findLoser();
     const driver = players.find(p => p.isDealer) || players[0];
-    const title = getUniquePhrase('loser');
     setBusDriver(driver);
     setBusPassengers([victim]);
-    setLoserReveal({ player: victim, title: title });
-    scheduleGameEvent('loser-reveal', 2500, { type: 'START_BUS', passengers: [victim] });
+
+    // Align bus directly into the second row of cards (2nd row from bottom, e.g. row index totalRows - 2)
+    const containerEl = pyramidContentRef.current;
+    const parentContainerEl = pyramidContainerRef.current;
+    if (containerEl && parentContainerEl) {
+      const targetRowIndex = Math.max(0, (pyramid.length || settings.pyramidRows || 5) - 2);
+      const targetRowCards = containerEl.querySelectorAll<HTMLElement>(`[data-row-index="${targetRowIndex}"]`);
+      if (targetRowCards.length > 0 && targetRowCards[0].parentElement) {
+        const rowRect = targetRowCards[0].parentElement.getBoundingClientRect();
+        const parentRect = parentContainerEl.getBoundingClientRect();
+        const offset = (rowRect.top + rowRect.height / 2) - (parentRect.top + parentRect.height / 2);
+        setBusVerticalOffset(offset);
+      }
+    }
+
+    // Phase 1: Launch bus immediately! Bus drives across cards to knock them away
+    setIsBusPassengerBoarded(false);
+    setIsBusBraking(false);
+    setIsBusChassisBouncing(false);
+    setJumpingBusPlayer(null);
+    setIsBusTransitioning(false);
+    setIsBusCrashing(true);
+    setPyramidScatterCards(false);
+
+    // Initial bus launch vibration
+    triggerHaptic('heavy');
+
+    const hitCards = new Set<string>();
+    let lastHapticTime = 0;
+    let animFrameId: number;
+    const startTime = performance.now();
+    const CRASH_FORWARD_WINDOW = 1200; // Time window during forward pass to hit cards
+
+    const checkCollisions = () => {
+      const elapsed = performance.now() - startTime;
+      const busEl = busCrashRef.current;
+      const containerEl = pyramidContentRef.current;
+
+      if (busEl && containerEl) {
+        const busRect = busEl.getBoundingClientRect();
+        // Leading front bumper is near right edge (95% across width)
+        const bumperX = busRect.left + (busRect.width * 0.95);
+
+        const cardEls = containerEl.querySelectorAll<HTMLElement>('[data-pyramid-card="true"]');
+        let hitAnyThisFrame = false;
+
+        cardEls.forEach((cardEl) => {
+          const id = cardEl.getAttribute('data-card-id');
+          if (!id || hitCards.has(id)) return;
+
+          const cardRect = cardEl.getBoundingClientRect();
+          // Check if bus bumper physically touches or has crossed card's left edge
+          if (bumperX >= cardRect.left) {
+            hitCards.add(id);
+            hitAnyThisFrame = true;
+
+            const rowIdx = parseInt(cardEl.getAttribute('data-row-index') || '0', 10);
+            const totalRows = settings.pyramidRows || 5;
+            const isTop = rowIdx < totalRows / 2;
+            const isCenter = Math.abs(rowIdx - (totalRows - 1) / 2) < 0.6;
+            const effectiveScale = pyramidScale || 1;
+
+            // Fling card violently to the RIGHT side (direction of bus motion)
+            const distToRightEdge = window.innerWidth - cardRect.left;
+            const xThrow = (distToRightEdge + 500 + Math.random() * 250) / effectiveScale;
+
+            // Vertical deflection based on row relative to centerline
+            const verticalDist = isCenter
+              ? (Math.random() - 0.5) * 120
+              : (isTop ? -1 : 1) * (180 + Math.random() * 160 + (totalRows - rowIdx) * 35);
+            const yThrow = verticalDist / effectiveScale;
+
+            // 3D aerodynamic tumble and spin
+            const rotZ = (isTop ? -1 : 1) * (360 + Math.random() * 450);
+            const rotY = 180 + Math.random() * 360;
+            const rotX = (Math.random() - 0.5) * 120;
+
+            cardEl.style.transform = `translate3d(${xThrow}px, ${yThrow}px, 0) rotateZ(${rotZ}deg) rotateY(${rotY}deg) rotateX(${rotX}deg) scale(0.35)`;
+            cardEl.style.opacity = '0';
+            cardEl.style.transition = 'transform 0.75s cubic-bezier(0.12, 0.95, 0.28, 1), opacity 0.55s ease-out 0.2s';
+            cardEl.style.pointerEvents = 'none';
+          }
+        });
+
+        // Haptic impact pulse on card collision
+        if (hitAnyThisFrame) {
+          const now = Date.now();
+          if (now - lastHapticTime > 65) {
+            lastHapticTime = now;
+            triggerHaptic('heavy');
+          }
+        }
+      }
+
+      if (elapsed < CRASH_FORWARD_WINDOW) {
+        animFrameId = requestAnimationFrame(checkCollisions);
+      }
+    };
+
+    animFrameId = requestAnimationFrame(checkCollisions);
+
+    // Fallback sweep at 950ms of crash to ensure all cards are swept away before braking
+    const sweepTimer = setTimeout(() => {
+      setPyramidScatterCards(true);
+      const containerEl = pyramidContentRef.current;
+      if (containerEl) {
+        const effectiveScale = pyramidScale || 1;
+        const cardEls = containerEl.querySelectorAll<HTMLElement>('[data-pyramid-card="true"]');
+        cardEls.forEach((cardEl) => {
+          const id = cardEl.getAttribute('data-card-id');
+          if (id && !hitCards.has(id)) {
+            hitCards.add(id);
+            const cardRect = cardEl.getBoundingClientRect();
+            const distToRightEdge = window.innerWidth - cardRect.left;
+            const xThrow = (distToRightEdge + 500 + Math.random() * 200) / effectiveScale;
+            cardEl.style.transform = `translate3d(${xThrow}px, 0, 0) rotateZ(360deg) scale(0.3)`;
+            cardEl.style.opacity = '0';
+            cardEl.style.transition = 'transform 0.6s ease-out, opacity 0.4s ease-out';
+            cardEl.style.pointerEvents = 'none';
+          }
+        });
+      }
+    }, 950);
+
+    // Phase 2: At 1050ms - Bus overshoots, brakes hard with heavy braking shudder vibration!
+    const brakeTimer = setTimeout(() => {
+      setIsBusBraking(true);
+      triggerHaptic('majorLoss');
+    }, 1050);
+
+    // Phase 3: At 1350ms - Release brakes as bus reverses back to center
+    const reverseTimer = setTimeout(() => {
+      setIsBusBraking(false);
+    }, 1350);
+
+    // Phase 4: At 1950ms - Bus parked in center! Now loser profile picture drops down from header into bus (3.2s extended showcase)
+    const playerDropTimer = setTimeout(() => {
+      setJumpingBusPlayer(victim);
+      triggerHaptic('medium');
+    }, 1950);
+
+    // Phase 5: At 5150ms - Profile picture lands directly inside the bus with solid impact vibration!
+    const passengerLandTimer = setTimeout(() => {
+      setIsBusPassengerBoarded(true);
+      setIsBusChassisBouncing(true);
+      triggerHaptic('heavy');
+      setTimeout(() => {
+        setJumpingBusPlayer(null);
+      }, 70);
+    }, 5150);
+
+    // Phase 6: At 5350ms - Bus revs and starts driving away! Early fade-in of the bus header begins
+    const departTimer = setTimeout(() => {
+      setIsBusDeparting(true);
+    }, 5350);
+
+    // Phase 7: At 5800ms - Subtle transition atmosphere as bus speeds offscreen
+    const transitionTimer = setTimeout(() => {
+      setIsBusTransitioning(true);
+    }, 5800);
+
+    // Phase 8: At 6400ms - Bus has driven completely offscreen right, cards appear naturally
+    const finishTimer = setTimeout(() => {
+      cancelAnimationFrame(animFrameId);
+      clearTimeout(sweepTimer);
+      clearTimeout(brakeTimer);
+      clearTimeout(reverseTimer);
+      clearTimeout(playerDropTimer);
+      clearTimeout(passengerLandTimer);
+      clearTimeout(departTimer);
+      clearTimeout(transitionTimer);
+      setIsBusCrashing(false);
+      setIsBusDeparting(false);
+      setIsBusTransitioning(false);
+      setIsBusBraking(false);
+      setIsBusPassengerBoarded(false);
+      setIsBusChassisBouncing(false);
+      setJumpingBusPlayer(null);
+      setPyramidScatterCards(false);
+      setBusVerticalOffset(null);
+      if (settings.sharedBus) {
+        setPhase(GamePhase.BUS_TEAM_SELECTION);
+      } else {
+        setPhase(GamePhase.THE_BUS);
+        dispatchGameEvent({ type: 'START_BUS', passengers: [victim] });
+      }
+    }, 6400);
   };
+  useEffect(() => {
+    (window as any).triggerBusAnimation = () => determineLoserAndAnimate();
+  }, [determineLoserAndAnimate]);
   const proceedToBus = () => {
     if (settings.mode === GameMode.PHYSICAL) {
       setIsSelectingBusPlayer(true);
@@ -2765,6 +2974,7 @@ const initializeAdMob = useCallback(async () => {
   };
   const handleManualBusPassengerSelect = (passenger: Player) => {
     triggerHaptic('medium');
+    playSound('busEnter');
     const driver = players.find(p => p.isDealer) || players[0];
     setBusDriver(driver);
     resetBusState();
@@ -2772,7 +2982,7 @@ const initializeAdMob = useCallback(async () => {
     setBusPassengers([passenger]);
     setBusMode('physical');
     setIsSelectingBusPlayer(false);
-    scheduleGameEvent('loser-reveal', 2500, { type: 'START_BUS', passengers: [passenger] });
+    scheduleGameEvent('loser-reveal', 3200, { type: 'START_BUS', passengers: [passenger] });
   };
   const handleSharedBusSelection = (partner: Player | null) => {
     triggerHaptic('medium');
@@ -3634,7 +3844,7 @@ const initializeAdMob = useCallback(async () => {
   // Global Dev Menu logic
   const isDevMenuVisible = (() => {
     if (!players.some(p => p.isDev) && !devModeArmed) return false;
-    if (phase === GamePhase.PYRAMID) return false;
+    if (phase === GamePhase.PYRAMID) return players.some(p => p.isDev) || devModeArmed;
     if (phase === GamePhase.ROUNDS_1_4) return !!activePlayer?.isDev || devModeArmed;
     if (phase === GamePhase.THE_BUS || phase === GamePhase.BUS_TEAM_SELECTION) return busPassengers.some(p => p.isDev) || players.some(p => p.isDev) || devModeArmed;
     return false;
@@ -3696,7 +3906,78 @@ const initializeAdMob = useCallback(async () => {
                   setDeck(currentDeck);
                   initializePyramid();
                 }
-                if (e.target.value === '3') determineLoserAndAnimate();
+                if (e.target.value === '3') {
+                  // Switch to the done pyramid screen with all cards face up, then trigger the bus crash animation
+                  let currentDeck = deck.length > 0 ? [...deck] : shuffleDeck(createDeck());
+                  const updatedPlayers = players.map(p => {
+                    const cardsNeeded = 4 - p.hand.length;
+                    if (cardsNeeded > 0 && currentDeck.length >= cardsNeeded) {
+                      const newCards = currentDeck.splice(0, cardsNeeded).map((c, idx) => ({
+                        ...c,
+                        roundIndex: p.hand.length + idx,
+                      }));
+                      return { ...p, hand: [...p.hand, ...newCards] };
+                    }
+                    return p;
+                  });
+
+                  let currentPyramid = pyramid;
+                  const required = (settings.pyramidRows * (settings.pyramidRows + 1)) / 2;
+                  if (!currentPyramid || currentPyramid.length !== settings.pyramidRows) {
+                    if (currentDeck.length < required) currentDeck = shuffleDeck(createDeck());
+                    const newPyramid: Card[][] = [];
+                    for (let i = 1; i <= settings.pyramidRows; i++) {
+                      const rowCards: Card[] = [];
+                      for (let j = 0; j < i; j++) {
+                        rowCards.push(currentDeck.pop()!);
+                      }
+                      newPyramid.push(rowCards);
+                    }
+                    currentPyramid = newPyramid;
+                  }
+
+                  const allPyramidCardIds = new Set<string>();
+                  currentPyramid.forEach(row => {
+                    row.forEach(card => {
+                      if (card?.id) allPyramidCardIds.add(card.id);
+                    });
+                  });
+
+                  setPlayers(updatedPlayers);
+                  setDeck(currentDeck);
+                  setPyramid(currentPyramid);
+                  setRevealedPyramidCards(allPyramidCardIds);
+                  setIsPyramidComplete(true);
+                  setIsPyramidDoubleSetup(false);
+                  setPendingMatches(null);
+                  setDistributeBanner(null);
+                  setFeedback(null);
+                  setLoserReveal(null);
+                  setIsSelectingBusPlayer(false);
+                  setIsBusCrashing(false);
+                  setIsBusDeparting(false);
+                  setJumpingBusPlayer(null);
+                  setPyramidScatterCards(false);
+                  setBusVerticalOffset(null);
+
+                  setPhase(GamePhase.PYRAMID);
+
+                  const forced = devSettings.forceBusPlayerId ? updatedPlayers.find(p => p.id === devSettings.forceBusPlayerId) : null;
+                  const victim = forced || (() => {
+                    const withCards = updatedPlayers.filter(p => p.hand.length > 0);
+                    if (withCards.length === 0) return updatedPlayers[0];
+                    return [...withCards].sort((a, b) => {
+                      if (b.hand.length !== a.hand.length) return b.hand.length - a.hand.length;
+                      const sumA = a.hand.reduce((acc, c) => acc + c.rank, 0);
+                      const sumB = b.hand.reduce((acc, c) => acc + c.rank, 0);
+                      return sumB - sumA;
+                    })[0];
+                  })();
+
+                  setTimeout(() => {
+                    determineLoserAndAnimate(victim);
+                  }, 250);
+                }
                 setIsDevMenuOpen(false);
               }}
               className="bg-slate-800 text-[10px] font-bold text-slate-200 rounded-md py-1 px-1 outline-none border border-slate-700 max-w-[55px] uppercase tracking-wider"
@@ -4799,6 +5080,31 @@ const initializeAdMob = useCallback(async () => {
       </>
       );
       }
+  const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
+  const physicalBusBgStyle = {
+    background: 'radial-gradient(circle at 22% 18%, rgba(226,232,240,0.08), transparent 40%), radial-gradient(circle at 78% 6%, rgba(59,130,246,0.12), transparent 36%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)',
+    backgroundSize: '240% 240%',
+    animation: 'gradient-xy 18s ease-in-out infinite',
+  };
+  const physicalBusBgStyleWon = {
+    background: 'radial-gradient(circle at 22% 20%, rgba(250,204,21,0.25), transparent 40%), radial-gradient(circle at 78% 16%, rgba(99,102,241,0.22), transparent 36%), radial-gradient(circle at 46% 74%, rgba(34,197,94,0.2), transparent 42%), linear-gradient(135deg, #0d2430 0%, #0e3d43 28%, #16304f 52%, #2b1b3f 76%, #0f2a45 100%)',
+    backgroundSize: '260% 260%',
+    animation: 'gradient-xy 22s ease-in-out infinite',
+  };
+  const physicalBusBackgroundStyle: React.CSSProperties = isBusWon ? physicalBusBgStyleWon : physicalBusBgStyle;
+  const digitalBusBackgroundStyle: React.CSSProperties | undefined = isBusWon
+    ? {
+      background: 'radial-gradient(circle at 16% 18%, rgba(251,191,36,0.22), transparent 40%), radial-gradient(circle at 84% 14%, rgba(168,85,247,0.24), transparent 36%), radial-gradient(circle at 48% 78%, rgba(34,211,238,0.2), transparent 42%), linear-gradient(135deg, #0b1f33 0%, #123a55 24%, #0c3b35 50%, #2d1f45 74%, #0b2c4c 100%)',
+      backgroundSize: '260% 260%',
+      animation: 'gradient-xy 20s ease-in-out infinite',
+      transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
+    }
+    : (settings.theme === UITheme.CLASSIC ? {
+      background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
+      backgroundSize: '240% 240%',
+      animation: 'gradient-xy 16s ease-in-out infinite',
+      transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
+    } : undefined);
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
     
@@ -4940,9 +5246,14 @@ const initializeAdMob = useCallback(async () => {
   }
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} style={pyramidBackgroundStyle} />
+        <PersistentBackground 
+          theme={settings.theme} 
+          calmAccentColor={settings.calmAccentColor} 
+          isDiscoActive={isDiscoActive} 
+          style={isBusDeparting ? digitalBusBackgroundStyle : pyramidBackgroundStyle} 
+        />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
-        <RootContainer className="p-2 pb-safe flex flex-col" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
+        <RootContainer key="pyramid-phase" className="p-2 pb-safe flex flex-col" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {manualBusSelectionOverlay}
         {renderSettingsModal()}
         {renderPyramidHandTray()}
@@ -4964,24 +5275,65 @@ const initializeAdMob = useCallback(async () => {
           t={t}
           getSipsText={getSipsText}
         />
-        <div className={`flex-none flex justify-between items-center px-2.5 sm:px-4 py-2 gap-3 sm:gap-4 h-[76px] min-h-[76px] max-h-[76px] box-border ${getHeaderClasses()} !z-35 relative`}>
-          <div className="flex items-center gap-3 sm:gap-5 min-w-0 h-full">
-            <div className="shrink-0 flex flex-col justify-center items-start text-left">
-              <div 
-                className="inline-block cursor-pointer"
-                onPointerDown={handleHeaderPointerDown}
-                onPointerUp={handleHeaderPointerUpOrLeave}
-                onPointerLeave={handleHeaderPointerUpOrLeave}
-                onContextMenu={(e) => e.preventDefault()}
-              >
-                <ThemeLabel text={t("Piramide")} theme={settings.theme} size="md" align="left" />
+        {/* Early Bus Header Fade-In as Bus Starts Driving Away */}
+        <div 
+          key="early-bus-header"
+          className={`flex-none px-2 sm:px-4 pt-2 absolute top-0 left-0 right-0 z-35 transition-opacity duration-1000 ease-out pointer-events-none ${
+            isBusDeparting ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className={`flex items-center justify-between p-3 sm:px-5 gap-3 ${getHeaderClasses()} !mb-0`}>
+            {/* Left: Title & Passenger */}
+            <div className={`flex flex-col justify-center min-w-0 gap-1 sm:gap-1.5 ${settings.theme === UITheme.CALM ? 'ml-3 sm:ml-4' : ''}`}>
+              <div className="shrink-0 flex items-center">
+                <ThemeLabel text={t("De Bus")} theme={settings.theme} size="lg" showCursor={false} />
               </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 leading-tight text-left">
-                {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
-              </p>
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium">
+                <span className="text-[10px] sm:text-[11px] text-slate-500 uppercase font-bold tracking-wider shrink-0">
+                  {busPassengers.length > 1 ? t('Passagiers') : t('Passagier')}:
+                </span>
+                <span className="text-white font-black break-words">
+                  {busPassengers.map(p => p.name).join(' & ')}
+                </span>
+              </div>
             </div>
-            {!isPyramidDoubleSetup && (
-              <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap shrink-0 h-full">
+
+            {/* Right: Counter */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end shrink-0 min-w-0">
+              {renderDevMenu()}
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest border-white/10 bg-white/5 text-slate-200 shrink-0">
+                <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
+                <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
+              </div>
+              {renderQuitButton()}
+            </div>
+          </div>
+        </div>
+        <div 
+          key="pyramid-header"
+          className={`flex-none flex justify-between items-center px-2.5 sm:px-4 py-2 gap-3 sm:gap-4 h-[76px] min-h-[76px] max-h-[76px] box-border ${getHeaderClasses()} !z-35 relative transition-opacity duration-500 ease-out ${
+            (jumpingBusPlayer || isBusPassengerBoarded)
+              ? 'opacity-0 pointer-events-none'
+              : 'opacity-100'
+          }`}
+        >
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0 h-full">
+                <div className="shrink-0 flex flex-col justify-center items-start text-left">
+                  <div 
+                    className="inline-block cursor-pointer"
+                    onPointerDown={handleHeaderPointerDown}
+                    onPointerUp={handleHeaderPointerUpOrLeave}
+                    onPointerLeave={handleHeaderPointerUpOrLeave}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    <ThemeLabel text={t("Piramide")} theme={settings.theme} size="md" align="left" />
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 leading-tight text-left">
+                    {isPyramidDoubleSetup ? t("Kies een kaart per niveau") : t("Draai kaarten om")}
+                  </p>
+                </div>
+                {!isPyramidDoubleSetup && (
+                  <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap shrink-0 h-full">
                 {(() => {
                   const victim = findLoser();
                   const sortedPlayers = [...players].sort((a, b) => {
@@ -5007,7 +5359,7 @@ const initializeAdMob = useCallback(async () => {
                             onClick={() => handleTogglePlayerHand(p)} 
                             className="flex flex-col items-center justify-center shrink-0 p-0.5 transition-transform active:scale-95 cursor-pointer"
                           >
-                            <div className="w-9 h-9 flex items-center justify-center relative shrink-0">
+                            <div className={`w-9 h-9 flex items-center justify-center relative shrink-0 transition-all duration-300 ${jumpingBusPlayer?.id === p.id ? 'opacity-0 scale-50 pointer-events-none' : ''}`}>
                               {/* Selected Outer Halo */}
                               {isSelected && (
                                 <div className="absolute -inset-[2px] rounded-full ring-2 ring-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-200" />
@@ -5311,7 +5663,7 @@ const initializeAdMob = useCallback(async () => {
             </p>
           </div>
         )}
-        {isPyramidDoubleSetup && pyramidDoubleSetupRow >= settings.pyramidRows - 2 && (
+        {isPyramidDoubleSetup && !isBusCrashing && pyramidDoubleSetupRow >= settings.pyramidRows - 2 && (
           <div className="absolute top-32 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
             <div className="bg-slate-900/90 backdrop-blur-xl border-2 border-red-500/50 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-w-sm w-full animate-in slide-in-from-top-10 duration-500 ring-1 ring-red-500/20">
               <div className="flex items-center gap-3 mb-2">
@@ -5332,7 +5684,7 @@ const initializeAdMob = useCallback(async () => {
           </div>
         )}
         {/* Manual Proceed Button */}
-        {isPyramidComplete && !pendingMatches && (
+        {isPyramidComplete && !pendingMatches && !isBusCrashing && (
           <div className="absolute bottom-10 left-0 right-0 z-[60] flex justify-center animate-in slide-in-from-bottom-10 fade-in duration-500 px-4">
             <div className="w-full max-w-xs sm:max-w-sm animate-bounce-subtle">
               {renderToTheBusButton(proceedToBus, 'shadow-2xl hover:scale-105')}
@@ -5349,6 +5701,56 @@ const initializeAdMob = useCallback(async () => {
           onPointerLeave={handlePyramidPointerEnd}
           className="flex-1 flex items-center justify-center overflow-hidden p-2 relative touch-none select-none"
         >
+          {/* Crashing Bus Animation Driving Across Cards, Braking Hard, Reversing & Waiting */}
+          {isBusCrashing ? (
+            <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center overflow-hidden">
+              <div 
+                className="w-full flex justify-center"
+                style={{
+                  transform: busVerticalOffset !== null ? `translate3d(0, ${busVerticalOffset}px, 0)` : 'translate3d(0, 7.5vh, 0)',
+                }}
+              >
+                <div ref={busCrashRef} className="animate-bus-crash w-full max-w-[500px] sm:max-w-[560px]">
+                  <AnimatedPartyBus
+                    passengers={busPassengers}
+                    destinationText={busPassengers[0]?.name || t("DE BUS")}
+                    isCrash={true}
+                    isBraking={isBusBraking}
+                    passengerBoarded={isBusPassengerBoarded}
+                    isChassisBouncing={isBusChassisBouncing}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {/* Loser Profile Picture Drops Down From Header Into Parked Bus */}
+          {jumpingBusPlayer && (
+            <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
+              <div 
+                className="w-full flex justify-center"
+                style={{
+                  transform: busVerticalOffset !== null ? `translate3d(0, ${busVerticalOffset}px, 0)` : 'translate3d(0, 7.5vh, 0)',
+                }}
+              >
+                <div className="animate-player-bus-jump relative z-10 flex items-center justify-center">
+                  <PlayerAvatar
+                    player={jumpingBusPlayer}
+                    size="custom"
+                    className="w-14 h-14 sm:w-16 sm:h-16 text-2xl sm:text-3xl border-2 border-slate-600/50 shadow-xl"
+                    theme={settings.theme}
+                  />
+                  <div className="animate-player-jump-badge absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex flex-col items-center text-center pointer-events-none whitespace-nowrap">
+                    <span className="text-base sm:text-lg font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                      {jumpingBusPlayer.name}
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] font-medium text-slate-300 tracking-wide bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-white/10 shadow-sm mt-0.5">
+                      {t("Gaat de bus in")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div
             ref={pyramidContentRef}
             className="flex flex-col items-center gap-2 md:gap-3 origin-center transition-transform duration-500"
@@ -5369,12 +5771,27 @@ const initializeAdMob = useCallback(async () => {
                     if (isRevealed && card && settings.mode === GameMode.DIGITAL) {
                       hasMatch = players.some(p => p.hand.some(h => h.rank === card.rank));
                     }
+                    const scatterStyle = (() => {
+                      if (!pyramidScatterCards) return undefined;
+                      const xDir = cardIndex >= rowIndex / 2 ? 1 : -1;
+                      const xDist = (280 + cardIndex * 150) * xDir;
+                      const yDist = (rowIndex - settings.pyramidRows / 2) * 190 + (rowIndex === 0 ? -280 : 120);
+                      const rot = xDir * (100 + cardIndex * 50) + (rowIndex % 2 === 0 ? 180 : -180);
+                      return {
+                        transform: `translate3d(${xDist}px, ${yDist}px, 0) rotate(${rot}deg) scale(0.25)`,
+                        opacity: 0,
+                        transition: `transform 0.75s cubic-bezier(0.16, 1, 0.3, 1) ${cardIndex * 0.03}s, opacity 0.55s ease-out ${cardIndex * 0.03}s`,
+                        pointerEvents: 'none' as const,
+                      };
+                    })();
                     return (
                       <div
                         key={card ? card.id : `${rowIndex}-${cardIndex}`}
                         data-pyramid-card="true"
+                        data-card-id={card ? card.id : `${rowIndex}-${cardIndex}`}
                         data-row-index={rowIndex}
                         data-card-index={cardIndex}
+                        style={scatterStyle}
                         onPointerDown={(e) => {
                           e.stopPropagation();
                           isPyramidSwipingRef.current = true;
@@ -5395,7 +5812,9 @@ const initializeAdMob = useCallback(async () => {
                   })}
                   {/* Row Indicator */}
                   {rowIndex !== settings.pyramidRows - 1 && (
-                    <div className={`absolute top-1/2 -translate-y-1/2 right-full text-[12px] sm:text-[14px] text-right whitespace-nowrap drop-shadow-lg opacity-80 transition-all ${
+                    <div className={`absolute top-1/2 -translate-y-1/2 right-full text-[12px] sm:text-[14px] text-right whitespace-nowrap drop-shadow-lg transition-opacity duration-500 ease-out ${
+                      isBusCrashing ? 'opacity-0 pointer-events-none' : 'opacity-80'
+                    } ${
                       row[0] && doubledPyramidCardIds.has(row[0].id) ? 'mr-12 sm:mr-16' : 'mr-4 sm:mr-6'
                     }`}>
                       {Array(settings.pyramidRows - rowIndex).fill('🍺').join('')}
@@ -5411,31 +5830,6 @@ const initializeAdMob = useCallback(async () => {
       );
       }
   // 5. BUS TEAM SELECT
-  const resolvedBusMode = busMode ?? (settings.mode === GameMode.PHYSICAL ? 'physical' : 'digital');
-  const physicalBusBgStyle = {
-    background: 'radial-gradient(circle at 22% 18%, rgba(226,232,240,0.08), transparent 40%), radial-gradient(circle at 78% 6%, rgba(59,130,246,0.12), transparent 36%), linear-gradient(135deg, #0b1224 0%, #0f172a 45%, #0b1220 100%)',
-    backgroundSize: '240% 240%',
-    animation: 'gradient-xy 18s ease-in-out infinite',
-  };
-  const physicalBusBgStyleWon = {
-    background: 'radial-gradient(circle at 22% 20%, rgba(250,204,21,0.25), transparent 40%), radial-gradient(circle at 78% 16%, rgba(99,102,241,0.22), transparent 36%), radial-gradient(circle at 46% 74%, rgba(34,197,94,0.2), transparent 42%), linear-gradient(135deg, #0d2430 0%, #0e3d43 28%, #16304f 52%, #2b1b3f 76%, #0f2a45 100%)',
-    backgroundSize: '260% 260%',
-    animation: 'gradient-xy 22s ease-in-out infinite',
-  };
-  const physicalBusBackgroundStyle: React.CSSProperties = isBusWon ? physicalBusBgStyleWon : physicalBusBgStyle;
-  const digitalBusBackgroundStyle: React.CSSProperties | undefined = isBusWon
-    ? {
-      background: 'radial-gradient(circle at 16% 18%, rgba(251,191,36,0.22), transparent 40%), radial-gradient(circle at 84% 14%, rgba(168,85,247,0.24), transparent 36%), radial-gradient(circle at 48% 78%, rgba(34,211,238,0.2), transparent 42%), linear-gradient(135deg, #0b1f33 0%, #123a55 24%, #0c3b35 50%, #2d1f45 74%, #0b2c4c 100%)',
-      backgroundSize: '260% 260%',
-      animation: 'gradient-xy 20s ease-in-out infinite',
-      transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
-    }
-    : (settings.theme === UITheme.CLASSIC ? {
-      background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
-      backgroundSize: '240% 240%',
-      animation: 'gradient-xy 16s ease-in-out infinite',
-      transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
-    } : undefined);
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0];
     const baseStyle = resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle;
@@ -5444,7 +5838,7 @@ const initializeAdMob = useCallback(async () => {
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={baseStyle as React.CSSProperties} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
-          className="items-center justify-center text-center border-0 outline-0" 
+          className="items-center justify-center text-center border-0 outline-0 animate-in fade-in duration-500" 
           disableSafeTop 
           theme={settings.theme}
         >
@@ -5543,7 +5937,7 @@ const initializeAdMob = useCallback(async () => {
         <>
           <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
-          <RootContainer theme={settings.theme}>
+          <RootContainer className="animate-in fade-in duration-500" theme={settings.theme}>
           {isBusWon && <Confetti />}
           {isBusWon && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
@@ -5750,19 +6144,12 @@ const initializeAdMob = useCallback(async () => {
     );
   }
     const passengerNames = busPassengers.map(p => p.name).join(' & ');
-    const remainingBusCards = isBusWon ? 0 : (() => {
-      const currentReveal = busWrongCardIndex !== null ? currentBusIndex + 1 : currentBusIndex;
-      const revealedInLayout = Math.max(0, currentReveal - oldCardsInLayoutCount);
-      const usedCards = discardedCardsCount + revealedInLayout;
-      const remainingCurrentPack = Math.max(0, 52 - usedCards);
-      const remainingOldCards = Math.max(0, oldCardsInLayoutCount - currentReveal);
-      return remainingOldCards + remainingCurrentPack;
-    })();
     return (
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={digitalBusBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
+          key="bus-phase"
           className="p-0 relative flex flex-col" 
           shake={screenShake} 
           isDiscoActive={isDiscoActive}
@@ -5824,7 +6211,7 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         )}
-        {/* Header - Responsive & Stable */}
+        {/* Header - Responsive & Stable with Smooth Entrance Animation */}
         <div className="flex-none px-2 sm:px-4 pt-2 relative z-30">
           <div 
             className={`flex items-center justify-between p-3 sm:px-5 gap-3 ${getHeaderClasses()} !mb-0`}
@@ -5890,7 +6277,7 @@ const initializeAdMob = useCallback(async () => {
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
         {/* Bus Cards */}
-        <div className="flex-1 relative flex items-center bg-transparent overflow-hidden w-full">
+        <div key="bus-cards-container" className="flex-1 relative flex items-center bg-transparent overflow-hidden w-full animate-in fade-in duration-700 ease-out">
           <div
             ref={busScrollRef}
             className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-6"
@@ -5902,50 +6289,56 @@ const initializeAdMob = useCallback(async () => {
             {busCardStates.map(({ card, index, isBase, isHistory, isReference, isFocused, isRevealed, containerClass, isWrong }) => (
               <div
                 key={`${card.id}-${index}`}
-                ref={el => busCardRefs.current[index] = el}
-                className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 snap-center ${containerClass} ${isBusWon ? 'animate-[fallDown_1.5s_cubic-bezier(0.55,0.085,0.68,0.53)_forwards]' : ''}`}
-                style={isBusWon ? { animationDelay: `${index * 0.15}s` } : undefined}
-                onPointerDown={() => devSettings.peekCards && (busPassengers.some(p => p.isDev) || players.some(p => p.isDev) || devModeArmed) && setPreviewCardId(card.id)}
-                onPointerUp={() => setPreviewCardId(null)}
-                onPointerLeave={() => setPreviewCardId(null)}
-                onPointerCancel={() => setPreviewCardId(null)}
+                className="animate-bus-card-deal flex-none flex flex-col items-center justify-center snap-center relative"
+                style={{ animationDelay: `${index * 0.08}s` }}
               >
-                {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
-                <PlayingCard
-                  card={card}
-                  isFaceDown={!isRevealed && previewCardId !== card.id}
-                  size="md"
-                  style={settings.cardStyle}
-                  highlight={!isBusWon && (isReference || isWrong || isFocused)}
-                  className={
-                    isBusWon
-                      ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
-                      : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`}
+                <div
+                  ref={el => busCardRefs.current[index] = el}
+                  className={`relative flex-none flex flex-col items-center justify-center transition-all duration-700 ${containerClass} ${isBusWon ? 'animate-[fallDown_1.5s_cubic-bezier(0.55,0.085,0.68,0.53)_forwards]' : ''}`}
+                  style={isBusWon ? { animationDelay: `${index * 0.15}s` } : undefined}
+                  onPointerDown={() => devSettings.peekCards && (busPassengers.some(p => p.isDev) || players.some(p => p.isDev) || devModeArmed) && setPreviewCardId(card.id)}
+                  onPointerUp={() => setPreviewCardId(null)}
+                  onPointerLeave={() => setPreviewCardId(null)}
+                  onPointerCancel={() => setPreviewCardId(null)}
+                >
+                  {isBase && !isBusWon && <span className="absolute -top-10 text-xs text-slate-500 uppercase font-black tracking-widest">{t("Start")}</span>}
+                  <PlayingCard
+                    card={card}
+                    isFaceDown={!isRevealed && previewCardId !== card.id}
+                    size="md"
+                    style={settings.cardStyle}
+                    highlight={!isBusWon && (isReference || isWrong || isFocused)}
+                    className={
+                      isBusWon
+                        ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
+                        : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`
+                    }
                   />
-                {/* Icons */}
-                {isHistory && index > 0 && !isReference && !isBusWon && (
-                  <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
-                    <Check size={16} className="text-white" strokeWidth={4} />
-                  </div>
-                )}
-                {isWrong && !isBusWon && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-                    <div className="bg-red-600 rounded-full p-2.5 shadow-2xl animate-stamp border-4 border-black no-calm-override">
-                      <X size={36} className="text-white" strokeWidth={5} />
+                  {/* Icons */}
+                  {isHistory && index > 0 && !isReference && !isBusWon && (
+                    <div className="absolute -bottom-4 bg-emerald-500 rounded-full p-1.5 shadow-lg z-20 border-2 border-black">
+                      <Check size={16} className="text-white" strokeWidth={4} />
                     </div>
-                  </div>
-                )}
-                {isBusWon && (
-                  <div className="absolute -top-16 z-50 animate-[bounce_0.5s_infinite]">
-                    <Sparkles className="text-yellow-400 w-12 h-12 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" fill="currentColor" />
-                  </div>
-                )}
+                  )}
+                  {isWrong && !isBusWon && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                      <div className="bg-red-600 rounded-full p-2.5 shadow-2xl animate-stamp border-4 border-black no-calm-override">
+                        <X size={36} className="text-white" strokeWidth={5} />
+                      </div>
+                    </div>
+                  )}
+                  {isBusWon && (
+                    <div className="absolute -top-16 z-50 animate-[bounce_0.5s_infinite]">
+                      <Sparkles className="text-yellow-400 w-12 h-12 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" fill="currentColor" />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </div>
         {/* Controls */}
-        <div className="flex-none w-full bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-4 pb-safe pb-6 px-4 z-20">
+        <div key="bus-controls-bar" className="flex-none w-full bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-4 pb-safe pb-6 px-4 z-20 animate-in fade-in duration-700 delay-200 fill-mode-both ease-out">
           <div className="max-w-md mx-auto w-full">
             {feedback ? (
               <div className="w-full">
