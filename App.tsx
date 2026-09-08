@@ -1114,10 +1114,20 @@ const App: React.FC = () => {
   const [loserReveal, setLoserReveal] = useState<{ player: Player, title: string } | null>(null);
   const [isBusCrashing, setIsBusCrashing] = useState(false);
   const [isBusBraking, setIsBusBraking] = useState(false);
+  const [isBusReversing, setIsBusReversing] = useState(false);
   const [isBusPassengerBoarded, setIsBusPassengerBoarded] = useState(false);
   const [isBusChassisBouncing, setIsBusChassisBouncing] = useState(false);
   const [isBusDeparting, setIsBusDeparting] = useState(false);
   const [isBusTransitioning, setIsBusTransitioning] = useState(false);
+  const [isBusPaused, setIsBusPaused] = useState(false);
+  const [isSharedBusSelecting, setIsSharedBusSelecting] = useState(false);
+  const [draggedSharedBusPartnerId, setDraggedSharedBusPartnerId] = useState<string | null>(null);
+  const [sharedBusDragPos, setSharedBusDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [sharedBusDragTilt, setSharedBusDragTilt] = useState<number>(0);
+  const [isHoveredOverBus, setIsHoveredOverBus] = useState<boolean>(false);
+  const isHoveredOverBusRef = useRef<boolean>(false);
+  const sharedBusDragStartRef = useRef<{ x: number; y: number; playerId: string; isDragging: boolean } | null>(null);
+  const sharedBusAnimFrameRef = useRef<number | null>(null);
   const [jumpingBusPlayer, setJumpingBusPlayer] = useState<Player | null>(null);
   const [pyramidScatterCards, setPyramidScatterCards] = useState(false);
   const [busVerticalOffset, setBusVerticalOffset] = useState<number | null>(null);
@@ -1197,6 +1207,7 @@ const App: React.FC = () => {
   const [isBusInstructionsCollapsed, setIsBusInstructionsCollapsed] = useState(false);
   const [busSelectionCandidateId, setBusSelectionCandidateId] = useState<string | null>(null);
   const busScrollRef = useRef<HTMLDivElement>(null);
+  const isInitialBusMountRef = useRef(true);
   const busCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const busProgressContainerRef = useRef<HTMLDivElement>(null);
   const busProgressContentRef = useRef<HTMLDivElement>(null);
@@ -1238,6 +1249,13 @@ const App: React.FC = () => {
     setShowReshuffleBanner(false);
     setBusVerticalOffset(null);
     setIsBusDeparting(false);
+    setIsBusPaused(false);
+    setIsSharedBusSelecting(false);
+    setDraggedSharedBusPartnerId(null);
+    setSharedBusDragPos(null);
+    setSharedBusDragTilt(0);
+    setIsHoveredOverBus(false);
+    isHoveredOverBusRef.current = false;
   }, []);
     const dismissTransitions = useCallback(() => {
     setLoserReveal(null);
@@ -1683,7 +1701,11 @@ const initializeAdMob = useCallback(async () => {
     busProgressItemRefs.current = busProgressItemRefs.current.slice(0, settings.busLength);
   }, [settings.busLength]);
   useEffect(() => {
-    if (phase !== GamePhase.THE_BUS || busCards.length === 0) return;
+    if (phase !== GamePhase.THE_BUS) {
+      isInitialBusMountRef.current = true;
+      return;
+    }
+    if (busCards.length === 0) return;
     const container = busScrollRef.current;
     if (!container) return;
     if (busWrongCardIndex !== null) {
@@ -1706,7 +1728,13 @@ const initializeAdMob = useCallback(async () => {
       const right = Math.max(previousRect.right, targetRect.right) - containerRect.left + container.scrollLeft;
       const desiredCenter = (left + right) / 2;
       const newScrollLeft = desiredCenter - containerRect.width / 2;
-      container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+      const isFirstMount = isInitialBusMountRef.current;
+      if (isFirstMount) {
+        isInitialBusMountRef.current = false;
+        container.scrollTo({ left: newScrollLeft, behavior: 'auto' });
+      } else {
+        container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+      }
     }
   }, [currentBusIndex, phase, busCards.length, busWrongCardIndex]);
   const shouldTrackBusProgressResize = phase === GamePhase.THE_BUS && settings.mode === GameMode.PHYSICAL && busMode === 'physical';
@@ -2775,12 +2803,21 @@ const initializeAdMob = useCallback(async () => {
     setBusDriver(driver);
     setBusPassengers([victim]);
 
-    // Align bus directly into the second row of cards (2nd row from bottom, e.g. row index totalRows - 2)
+    // Always align bus to row index 2 (matching 4-row pyramid's 2nd row from bottom)
+    // This keeps the bus at a consistent height regardless of pyramid row count
     const containerEl = pyramidContentRef.current;
     const parentContainerEl = pyramidContainerRef.current;
     if (containerEl && parentContainerEl) {
-      const targetRowIndex = Math.max(0, (pyramid.length || settings.pyramidRows || 5) - 2);
-      const targetRowCards = containerEl.querySelectorAll<HTMLElement>(`[data-row-index="${targetRowIndex}"]`);
+      const fixedTargetRowIndex = 2;
+      let targetRowCards = containerEl.querySelectorAll<HTMLElement>(`[data-row-index="${fixedTargetRowIndex}"]`);
+      // Fall back to highest available row if pyramid has fewer than 3 rows
+      if (targetRowCards.length === 0) {
+        const totalRows = pyramid.length || settings.pyramidRows || 5;
+        for (let i = Math.min(fixedTargetRowIndex, totalRows - 1); i >= 0; i--) {
+          targetRowCards = containerEl.querySelectorAll<HTMLElement>(`[data-row-index="${i}"]`);
+          if (targetRowCards.length > 0) break;
+        }
+      }
       if (targetRowCards.length > 0 && targetRowCards[0].parentElement) {
         const rowRect = targetRowCards[0].parentElement.getBoundingClientRect();
         const parentRect = parentContainerEl.getBoundingClientRect();
@@ -2898,22 +2935,41 @@ const initializeAdMob = useCallback(async () => {
       }
     }, 950);
 
-    // Phase 2: At 1050ms - Bus overshoots, brakes hard with heavy braking shudder vibration!
+    // Phase 2: At 716ms (11.2%) - Brakes engage! Bus begins controlled 18vw forward slide with tire screech and vibration
     const brakeTimer = setTimeout(() => {
       setIsBusBraking(true);
+      playSound('busBrake');
       triggerHaptic('majorLoss');
-    }, 1050);
+    }, 716);
 
-    // Phase 3: At 1350ms - Release brakes as bus reverses back to center
-    const reverseTimer = setTimeout(() => {
+    // Phase 2.5: At 1120ms (17.5%) - Forward slide reaches 18vw, front suspension rebounds & settles during pause
+    const skidStopTimer = setTimeout(() => {
       setIsBusBraking(false);
-    }, 1350);
+    }, 1120);
 
-    // Phase 4: At 1950ms - Bus parked in center! Now loser profile picture drops down from header into bus (3.2s extended showcase)
+    // Phase 3: At 1504ms (23.5%) - Reverse gear engages, reverse lamps on, bus accelerates backwards toward center at natural speed
+    const reverseTimer = setTimeout(() => {
+      setIsBusReversing(true);
+    }, 1504);
+
+    // Phase 3.5: At 1952ms (30.5%) - Reverse brake slams on! Weight tilts to opposite side, nose kicks up
+    const reverseBrakeTimer = setTimeout(() => {
+      setIsBusReversing(false);
+      setIsBusBraking(true);
+      playSound('busBrake');
+      triggerHaptic('medium');
+    }, 1952);
+
+    // Phase 3.8: At 2112ms (33%) - Reverse brake settles, bus parked rock-solid in exact center
+    const parkedTimer = setTimeout(() => {
+      setIsBusBraking(false);
+    }, 2112);
+
+    // Phase 4: At 2160ms - Bus parked in center! Loser profile picture drops down from header into bus (3.0s showcase)
     const playerDropTimer = setTimeout(() => {
       setJumpingBusPlayer(victim);
       triggerHaptic('medium');
-    }, 1950);
+    }, 2160);
 
     // Phase 5: At 5150ms - Profile picture lands directly inside the bus with solid impact vibration!
     const passengerLandTimer = setTimeout(() => {
@@ -2925,42 +2981,56 @@ const initializeAdMob = useCallback(async () => {
       }, 70);
     }, 5150);
 
-    // Phase 6: At 5350ms - Bus revs and starts driving away! Early fade-in of the bus header begins
-    const departTimer = setTimeout(() => {
-      setIsBusDeparting(true);
-    }, 5350);
+    let sharedBusTimer: NodeJS.Timeout | null = null;
+    let departTimer: NodeJS.Timeout | null = null;
+    let transitionTimer: NodeJS.Timeout | null = null;
+    let finishTimer: NodeJS.Timeout | null = null;
 
-    // Phase 7: At 5800ms - Subtle transition atmosphere as bus speeds offscreen
-    const transitionTimer = setTimeout(() => {
-      setIsBusTransitioning(true);
-    }, 5800);
+    if (settings.sharedBus) {
+      // While 1 player is in the bus, and the bus is ready to depart (just before the bus header fades in at 5350ms):
+      // Keep the bus on screen, pause animation, and show shared bus selection above the parked bus!
+      sharedBusTimer = setTimeout(() => {
+        setIsBusPaused(true);
+        setIsSharedBusSelecting(true);
+      }, 5200);
+    } else {
+      // Phase 6: At 5350ms - Bus revs and starts driving away! Early fade-in of the bus header begins
+      departTimer = setTimeout(() => {
+        setIsBusDeparting(true);
+      }, 5350);
 
-    // Phase 8: At 6400ms - Bus has driven completely offscreen right, cards appear naturally
-    const finishTimer = setTimeout(() => {
-      cancelAnimationFrame(animFrameId);
-      clearTimeout(sweepTimer);
-      clearTimeout(brakeTimer);
-      clearTimeout(reverseTimer);
-      clearTimeout(playerDropTimer);
-      clearTimeout(passengerLandTimer);
-      clearTimeout(departTimer);
-      clearTimeout(transitionTimer);
-      setIsBusCrashing(false);
-      setIsBusDeparting(false);
-      setIsBusTransitioning(false);
-      setIsBusBraking(false);
-      setIsBusPassengerBoarded(false);
-      setIsBusChassisBouncing(false);
-      setJumpingBusPlayer(null);
-      setPyramidScatterCards(false);
-      setBusVerticalOffset(null);
-      if (settings.sharedBus) {
-        setPhase(GamePhase.BUS_TEAM_SELECTION);
-      } else {
+      // Phase 7: At 5800ms - Subtle transition atmosphere as bus speeds offscreen
+      transitionTimer = setTimeout(() => {
+        setIsBusTransitioning(true);
+      }, 5800);
+
+      // Phase 8: At 6400ms - Bus has driven completely offscreen right, cards appear naturally
+      finishTimer = setTimeout(() => {
+        cancelAnimationFrame(animFrameId);
+        clearTimeout(sweepTimer);
+        clearTimeout(brakeTimer);
+        clearTimeout(skidStopTimer);
+        clearTimeout(reverseTimer);
+        clearTimeout(reverseBrakeTimer);
+        clearTimeout(parkedTimer);
+        clearTimeout(playerDropTimer);
+        clearTimeout(passengerLandTimer);
+        if (departTimer) clearTimeout(departTimer);
+        if (transitionTimer) clearTimeout(transitionTimer);
+        setIsBusCrashing(false);
+        setIsBusDeparting(false);
+        setIsBusTransitioning(false);
+        setIsBusBraking(false);
+        setIsBusReversing(false);
+        setIsBusPassengerBoarded(false);
+        setIsBusChassisBouncing(false);
+        setJumpingBusPlayer(null);
+        setPyramidScatterCards(false);
+        setBusVerticalOffset(null);
         setPhase(GamePhase.THE_BUS);
         dispatchGameEvent({ type: 'START_BUS', passengers: [victim] });
-      }
-    }, 6400);
+      }, 6400);
+    }
   };
   useEffect(() => {
     (window as any).triggerBusAnimation = () => determineLoserAndAnimate();
@@ -3038,6 +3108,188 @@ const initializeAdMob = useCallback(async () => {
     setBusWrongCardIndex(null);
     setPhase(GamePhase.THE_BUS);
     setFeedback(null);
+  };
+  const resumeBusDeparture = useCallback((passengers: Player[]) => {
+    setIsSharedBusSelecting(false);
+    setIsBusPaused(false);
+
+    // Early header fade-in after 150ms
+    setTimeout(() => {
+      setIsBusDeparting(true);
+    }, 150);
+
+    // Subtle transition atmosphere after 600ms
+    setTimeout(() => {
+      setIsBusTransitioning(true);
+    }, 600);
+
+    // Bus has driven completely offscreen right at 1200ms
+    setTimeout(() => {
+      setIsBusCrashing(false);
+      setIsBusDeparting(false);
+      setIsBusTransitioning(false);
+      setIsBusBraking(false);
+      setIsBusReversing(false);
+      setIsBusPassengerBoarded(false);
+      setIsBusChassisBouncing(false);
+      setJumpingBusPlayer(null);
+      setPyramidScatterCards(false);
+      setBusVerticalOffset(null);
+      startDigitalBus(passengers, { skipEntrance: true });
+    }, 1200);
+  }, [startDigitalBus]);
+
+  const handleInPlaceSharedBusSelection = useCallback((partner: Player | null) => {
+    if (!isSharedBusSelecting) return;
+    triggerHaptic(partner ? 'heavy' : 'medium');
+    if (partner) {
+      playSound('busEnter');
+      const currentPassengers = busPassengers.length ? busPassengers : [findLoser()];
+      const updatedPassengers = [...currentPassengers, partner];
+      setBusPassengers(updatedPassengers);
+      setIsBusChassisBouncing(true);
+      setTimeout(() => setIsBusChassisBouncing(false), 350);
+      resumeBusDeparture(updatedPassengers);
+    } else {
+      resumeBusDeparture(busPassengers);
+    }
+  }, [isSharedBusSelecting, busPassengers, findLoser, resumeBusDeparture]);
+
+  const getMatcherAvatarFrameClasses = useCallback(() => {
+    if (settings.theme === UITheme.METRO) return 'rounded-full border-2 border-zinc-700 group-hover:border-[var(--theme-accent,#fb7185)] group-hover:shadow-[3px_3px_0_rgba(0,0,0,0.9)]';
+    if (settings.theme === UITheme.CALM) return 'rounded-full border-2 border-white/15 group-hover:border-[var(--theme-accent,#fb7185)] group-hover:shadow-[0_0_20px_var(--theme-accent-glow,rgba(251,113,133,0.3))]';
+    if (settings.theme === UITheme.BEER) return 'rounded-full border-2 border-amber-500/30 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]';
+    if (settings.theme === UITheme.STARS) return 'rounded-full border-2 border-purple-400/25 group-hover:border-purple-300 group-hover:shadow-[0_0_25px_rgba(192,132,252,0.6)]';
+    return 'rounded-full border-2 border-white/20 group-hover:border-emerald-400/60 group-hover:shadow-[0_0_20px_rgba(52,211,153,0.3)]';
+  }, [settings.theme]);
+
+  const getDragPointerClasses = useCallback((isHovered: boolean) => {
+    const shape = 'rounded-full';
+    if (isHovered) {
+      if (settings.theme === UITheme.METRO) return `${shape} border-2 border-black bg-[var(--theme-accent,#fb7185)] shadow-[2px_2px_0_rgba(0,0,0,1)] scale-125`;
+      if (settings.theme === UITheme.CALM) return `${shape} border-2 border-white bg-[var(--theme-accent,#fb7185)] shadow-[0_0_12px_var(--theme-accent-glow,rgba(251,113,133,0.3))] scale-125`;
+      if (settings.theme === UITheme.BEER) return `${shape} border-2 border-amber-300 bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.9)] scale-125`;
+      if (settings.theme === UITheme.STARS) return `${shape} border-2 border-white bg-purple-400 shadow-[0_0_14px_rgba(192,132,252,0.9)] scale-125`;
+      return `${shape} border-2 border-emerald-400 bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.8)] scale-125`;
+    }
+    if (settings.theme === UITheme.METRO) return `${shape} border-2 border-zinc-600 bg-zinc-900 shadow-md`;
+    return `${shape} border-2 border-white bg-slate-800 shadow-md`;
+  }, [settings.theme]);
+
+  const getDragAvatarRingClasses = useCallback((isHovered: boolean) => {
+    const shape = 'rounded-full';
+    if (isHovered) {
+      if (settings.theme === UITheme.METRO) return `${shape} scale-110 border-4 border-[var(--theme-accent,#fb7185)] shadow-[4px_4px_0_rgba(0,0,0,1)]`;
+      if (settings.theme === UITheme.CALM) return `${shape} scale-110 border-4 border-[var(--theme-accent,#fb7185)] shadow-[0_0_25px_var(--theme-accent-glow,rgba(251,113,133,0.3))]`;
+      if (settings.theme === UITheme.BEER) return `${shape} scale-110 border-4 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.8)]`;
+      if (settings.theme === UITheme.STARS) return `${shape} scale-110 border-4 border-purple-300 shadow-[0_0_35px_rgba(192,132,252,0.85)]`;
+      return `${shape} scale-110 border-4 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)]`;
+    }
+    if (settings.theme === UITheme.METRO) return `${shape} border-2 border-zinc-400`;
+    if (settings.theme === UITheme.BEER) return `${shape} border-2 border-amber-500/40`;
+    if (settings.theme === UITheme.STARS) return `${shape} border-2 border-purple-400/40`;
+    return `${shape} border-2 border-white`;
+  }, [settings.theme]);
+
+  const handlePartnerPointerDown = (e: React.PointerEvent, playerId: string) => {
+    e.stopPropagation();
+    sharedBusDragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      playerId,
+      isDragging: false,
+    };
+
+    let lastX = e.clientX;
+
+    const handlePartnerPointerMove = (moveEvent: PointerEvent) => {
+      if (!sharedBusDragStartRef.current) return;
+
+      const dx = moveEvent.clientX - sharedBusDragStartRef.current.x;
+      const dy = moveEvent.clientY - sharedBusDragStartRef.current.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (!sharedBusDragStartRef.current.isDragging && dist > 8) {
+        sharedBusDragStartRef.current.isDragging = true;
+        setDraggedSharedBusPartnerId(playerId);
+        triggerHaptic('light');
+      }
+
+      if (sharedBusDragStartRef.current.isDragging) {
+        if (sharedBusAnimFrameRef.current) {
+          cancelAnimationFrame(sharedBusAnimFrameRef.current);
+        }
+
+        const currentX = moveEvent.clientX;
+        const tilt = (currentX - lastX) * 1.5;
+        lastX = currentX;
+
+        sharedBusAnimFrameRef.current = requestAnimationFrame(() => {
+          setSharedBusDragPos({ x: moveEvent.clientX, y: moveEvent.clientY });
+          setSharedBusDragTilt(Math.max(-15, Math.min(15, tilt)));
+
+          let nearBus = false;
+          const busEl = busCrashRef.current;
+          if (busEl) {
+            const rect = busEl.getBoundingClientRect();
+            nearBus = (
+              moveEvent.clientX >= rect.left - 40 &&
+              moveEvent.clientX <= rect.right + 40 &&
+              moveEvent.clientY >= rect.top - 50 &&
+              moveEvent.clientY <= rect.bottom + 50
+            );
+          }
+
+          if (nearBus !== isHoveredOverBusRef.current) {
+            isHoveredOverBusRef.current = nearBus;
+            setIsHoveredOverBus(nearBus);
+            if (nearBus) {
+              triggerHaptic('tick');
+            }
+          }
+        });
+      }
+    };
+
+    const handlePartnerPointerUp = (upEvent: PointerEvent) => {
+      if (sharedBusAnimFrameRef.current) {
+        cancelAnimationFrame(sharedBusAnimFrameRef.current);
+      }
+
+      const startInfo = sharedBusDragStartRef.current;
+      sharedBusDragStartRef.current = null;
+
+      window.removeEventListener('pointermove', handlePartnerPointerMove);
+      window.removeEventListener('pointerup', handlePartnerPointerUp);
+      window.removeEventListener('pointercancel', handlePartnerPointerUp);
+
+      const wasDragging = startInfo?.isDragging;
+      const nearBus = isHoveredOverBusRef.current;
+
+      setDraggedSharedBusPartnerId(null);
+      setSharedBusDragPos(null);
+      setSharedBusDragTilt(0);
+      setIsHoveredOverBus(false);
+      isHoveredOverBusRef.current = false;
+
+      // Drag-to-bus OR tap-to-board (matching PyramidMatchModal behavior)
+      if (wasDragging && nearBus) {
+        const partner = players.find((p) => p.id === playerId) || null;
+        if (partner) {
+          handleInPlaceSharedBusSelection(partner);
+        }
+      } else if (!wasDragging) {
+        // Simple tap — board directly like match modal
+        const partner = players.find((p) => p.id === playerId) || null;
+        if (partner) {
+          handleInPlaceSharedBusSelection(partner);
+        }
+      }
+    };
+
+    window.addEventListener('pointermove', handlePartnerPointerMove);
+    window.addEventListener('pointerup', handlePartnerPointerUp);
+    window.addEventListener('pointercancel', handlePartnerPointerUp);
   };
   const startPhysicalBus = (passengersOverride?: Player[], options?: { skipEntrance?: boolean; showEntrance?: boolean }) => {
     setImmunePlayerId(null);
@@ -5250,7 +5502,7 @@ const initializeAdMob = useCallback(async () => {
           theme={settings.theme} 
           calmAccentColor={settings.calmAccentColor} 
           isDiscoActive={isDiscoActive} 
-          style={isBusDeparting ? digitalBusBackgroundStyle : pyramidBackgroundStyle} 
+          style={isBusDeparting && !settings.sharedBus ? digitalBusBackgroundStyle : pyramidBackgroundStyle} 
         />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer key="pyramid-phase" className="p-2 pb-safe flex flex-col" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
@@ -5278,9 +5530,10 @@ const initializeAdMob = useCallback(async () => {
         {/* Early Bus Header Fade-In as Bus Starts Driving Away */}
         <div 
           key="early-bus-header"
-          className={`flex-none px-2 sm:px-4 pt-2 absolute top-0 left-0 right-0 z-35 transition-opacity duration-1000 ease-out pointer-events-none ${
+          className={`flex-none px-2 sm:px-4 pt-2 absolute left-0 right-0 z-35 transition-opacity duration-1000 ease-out pointer-events-none ${
             isBusDeparting ? 'opacity-100' : 'opacity-0'
           }`}
+          style={{ top: 'var(--safe-top, 0px)' }}
         >
           <div className={`flex items-center justify-between p-3 sm:px-5 gap-3 ${getHeaderClasses()} !mb-0`}>
             {/* Left: Title & Passenger */}
@@ -5305,6 +5558,12 @@ const initializeAdMob = useCallback(async () => {
                 <PlayingCardIcon size={14} className="text-red-500 shrink-0" />
                 <span className="whitespace-nowrap tabular-nums">{remainingBusCards} {t("kaarten")}</span>
               </div>
+              {settings.busDecks > 1 && (
+                <div className={`flex items-center gap-1 px-2 py-1.5 sm:py-2 rounded-full border text-[10px] uppercase font-black tracking-widest shrink-0 ${busDecksUsed >= settings.busDecks ? 'border-red-500/50 bg-red-900/20 text-red-200' : 'border-white/10 bg-white/5 text-slate-200'}`}>
+                  <span>{t("Pakje")}</span>
+                  <span className={`tabular-nums ${busDecksUsed >= settings.busDecks ? 'text-red-400' : 'text-slate-200'}`}>{busDecksUsed}/{settings.busDecks}</span>
+                </div>
+              )}
               {renderQuitButton()}
             </div>
           </div>
@@ -5699,33 +5958,44 @@ const initializeAdMob = useCallback(async () => {
           onPointerUp={handlePyramidPointerEnd}
           onPointerCancel={handlePyramidPointerEnd}
           onPointerLeave={handlePyramidPointerEnd}
-          className="flex-1 flex items-center justify-center overflow-hidden p-2 relative touch-none select-none"
+          className={`flex-1 flex items-center justify-center p-2 relative touch-none select-none ${
+            isBusCrashing || jumpingBusPlayer || isSharedBusSelecting ? 'overflow-visible' : 'overflow-hidden'
+          }`}
         >
           {/* Crashing Bus Animation Driving Across Cards, Braking Hard, Reversing & Waiting */}
           {isBusCrashing ? (
-            <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen z-40 pointer-events-none flex items-center justify-center overflow-hidden">
               <div 
                 className="w-full flex justify-center"
                 style={{
                   transform: busVerticalOffset !== null ? `translate3d(0, ${busVerticalOffset}px, 0)` : 'translate3d(0, 7.5vh, 0)',
                 }}
               >
-                <div ref={busCrashRef} className="animate-bus-crash w-full max-w-[500px] sm:max-w-[560px]">
-                  <AnimatedPartyBus
-                    passengers={busPassengers}
-                    destinationText={busPassengers[0]?.name || t("DE BUS")}
-                    isCrash={true}
-                    isBraking={isBusBraking}
-                    passengerBoarded={isBusPassengerBoarded}
-                    isChassisBouncing={isBusChassisBouncing}
-                  />
+                <div 
+                  ref={busCrashRef} 
+                  data-bus-drop-target="true"
+                  className={`animate-bus-crash w-full max-w-[500px] sm:max-w-[560px] transition-all duration-300 ${isBusPaused ? 'animate-bus-paused' : ''} ${
+                    isHoveredOverBus ? 'scale-[1.03] drop-shadow-[0_0_35px_rgba(52,211,153,0.65)]' : ''
+                  }`}
+                >
+                  <div className={`w-full ${isBusBraking ? 'animate-bus-skid-shake' : ''}`}>
+                    <AnimatedPartyBus
+                      passengers={busPassengers}
+                      destinationText={busPassengers[0]?.name || t("DE BUS")}
+                      isCrash={true}
+                      isBraking={isBusBraking}
+                      isReversing={isBusReversing}
+                      passengerBoarded={isBusPassengerBoarded}
+                      isChassisBouncing={isBusChassisBouncing}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           ) : null}
           {/* Loser Profile Picture Drops Down From Header Into Parked Bus */}
           {jumpingBusPlayer && (
-            <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen z-50 pointer-events-none flex items-center justify-center overflow-hidden">
               <div 
                 className="w-full flex justify-center"
                 style={{
@@ -5746,6 +6016,120 @@ const initializeAdMob = useCallback(async () => {
                     <span className="text-[10px] sm:text-[11px] font-medium text-slate-300 tracking-wide bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-white/10 shadow-sm mt-0.5">
                       {t("Gaat de bus in")}
                     </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Shared Bus In-Place Partner Selection at Spotlight Drop Position */}
+          {isSharedBusSelecting && (
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen z-50 pointer-events-auto flex items-center justify-center overflow-visible select-none">
+              <div 
+                className="w-full flex justify-center"
+                style={{
+                  transform: busVerticalOffset !== null ? `translate3d(0, ${busVerticalOffset}px, 0)` : 'translate3d(0, 7.5vh, 0)',
+                }}
+              >
+                <div 
+                  className="relative z-50 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300"
+                  style={{
+                    transform: 'translate3d(0, -32vh, 0)',
+                  }}
+                >
+                  {/* 'shared bus' is only the above subtext */}
+                  <div className="mb-1 opacity-80 pointer-events-none flex items-center justify-center">
+                    <ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" showCursor={false} />
+                  </div>
+
+                  {/* Main Question: {playername}, who will you bring with you into the bus? */}
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight text-center max-w-sm sm:max-w-md px-2 mb-4 drop-shadow-md leading-tight pointer-events-none">
+                    <span className="text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.35)]">
+                      {(busPassengers[0] || findLoser())?.name}
+                    </span>
+                    {t(", Wie neem je mee de bus in?")}
+                  </h2>
+
+                  {/* Candidate profile picture(s) - max 6 per row, 2 rows max, like match modal */}
+                  <div className="flex flex-wrap justify-center gap-3 sm:gap-4 py-1 max-w-[420px] sm:max-w-[500px]">
+                    {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && !p.isImmune).slice(0, 12).map(candidate => {
+                      const isThisDragged = draggedSharedBusPartnerId === candidate.id;
+
+                      return (
+                        <div
+                          key={candidate.id}
+                          onPointerDown={(e) => handlePartnerPointerDown(e, candidate.id)}
+                          className={`group relative flex flex-col items-center gap-1.5 p-1 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing shrink-0 transition-all ${
+                            isThisDragged ? 'opacity-20 scale-95' : ''
+                          }`}
+                          style={{ width: '64px' }}
+                        >
+                          <div className="relative">
+                            <div
+                              className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center overflow-hidden shadow-lg group-hover:scale-105 group-active:scale-95 transition-all pointer-events-none ${getMatcherAvatarFrameClasses()}`}
+                            >
+                              <PlayerAvatar
+                                player={candidate}
+                                size="custom"
+                                className="w-full h-full text-xl sm:text-2xl"
+                                theme={settings.theme}
+                              />
+                            </div>
+                          </div>
+
+                          <span className="text-xs sm:text-sm font-bold text-slate-300 group-hover:text-white drop-shadow pointer-events-none transition-colors truncate max-w-[60px]">
+                            {candidate.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Nobody option */}
+                  <button
+                    onClick={() => handleInPlaceSharedBusSelection(null)}
+                    className="mt-4 px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-slate-300 hover:text-white bg-slate-950/80 hover:bg-slate-900 border border-white/15 hover:border-white/35 backdrop-blur-md shadow-lg transition-all active:scale-95"
+                  >
+                    {t("NIEMAND")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Floating Drag Avatar Ghost (Exact MATCH modal UI/UX) */}
+          {isSharedBusSelecting && draggedSharedBusPartnerId && sharedBusDragPos && (
+            <div
+              className="fixed z-[999] pointer-events-none flex flex-col items-center"
+              style={{
+                left: sharedBusDragPos.x,
+                top: sharedBusDragPos.y,
+                transform: `translate(-50%, -6px) rotate(${sharedBusDragTilt}deg)`,
+              }}
+            >
+              <div className="flex flex-col items-center z-20 mb-4">
+                <div
+                  className={`w-3 h-3 transition-all ${getDragPointerClasses(isHoveredOverBus)}`}
+                />
+              </div>
+
+              <div className="flex flex-col items-center gap-2 -mt-1 relative">
+                <div className="relative">
+                  <div
+                    className={`w-16 h-16 flex items-center justify-center overflow-hidden transition-all shadow-[0_15px_30px_rgba(0,0,0,0.5)] ${getDragAvatarRingClasses(
+                      isHoveredOverBus
+                    )}`}
+                  >
+                    {(() => {
+                      const draggingPlayer = players.find(p => p.id === draggedSharedBusPartnerId);
+                      return draggingPlayer ? (
+                        <PlayerAvatar
+                          player={draggingPlayer}
+                          size="custom"
+                          theme={settings.theme}
+                          className="w-full h-full text-xl"
+                        />
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </div>
@@ -5827,96 +6211,125 @@ const initializeAdMob = useCallback(async () => {
         </div>
       </RootContainer>
       </>
-      );
-      }
-  // 5. BUS TEAM SELECT
+    );
+  }
+
+  // 5. BUS TEAM SELECT - Minimalist text-focused shared bus screen
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
-    const victim = busPassengers[0];
+    const victim = busPassengers[0] || players[0];
     const baseStyle = resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle;
     return (
       <>
         <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={baseStyle as React.CSSProperties} />
-        <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
-          className="items-center justify-center text-center border-0 outline-0 animate-in fade-in duration-500" 
+          className="items-center justify-center text-center border-0 outline-0 animate-in fade-in duration-700 select-none" 
           disableSafeTop 
           theme={settings.theme}
         >
-        <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-          <div className="flex items-center justify-end mb-8 w-full">
+          {/* Top Bar - Minimal controls */}
+          <div 
+            className="w-full flex items-center justify-between px-4 pt-3 absolute top-0 left-0 right-0 z-40"
+            style={{ paddingTop: 'calc(0.75rem + var(--safe-top, 0px))' }}
+          >
+            <div 
+              className="cursor-pointer select-none"
+              onPointerDown={handleHeaderPointerDown}
+              onPointerUp={handleHeaderPointerUpOrLeave}
+              onPointerLeave={handleHeaderPointerUpOrLeave}
+            >
+              {/* Invisible tap target for dev menu toggling */}
+              <div className="w-10 h-10 -m-2 opacity-0" aria-hidden="true" />
+            </div>
             <div className="flex items-center gap-2">
               {renderDevMenu()}
+              {renderQuitButton()}
             </div>
           </div>
+
           {renderSettingsModal()}
           {renderDevModeOrb()}
           {renderAdditionalModals()}
           {renderQuitModal()}
           {renderAdLoadingModal()}
           {renderColorPickerModal()}
-          <div 
-            className="w-24 h-24 rounded-full border-4 border-red-500 flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.6)] cursor-pointer"
-            onPointerDown={() => victim && handleAvatarPointerDown(victim)}
-            onPointerUp={handleAvatarPointerUpOrLeave}
-            onPointerLeave={handleAvatarPointerUpOrLeave}
-          >
-            <PlayerAvatar player={victim} size="custom" className="w-full h-full text-4xl" theme={settings.theme} />
-          </div>
-          <div 
-            className="mb-4 cursor-pointer"
-            onPointerDown={handleHeaderPointerDown}
-            onPointerUp={handleHeaderPointerUpOrLeave}
-            onPointerLeave={handleHeaderPointerUpOrLeave}
-          >
-            <ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" showCursor={false} />
-          </div>
-          <p className="text-red-200 font-bold text-sm mb-8 uppercase tracking-widest">
-            <span className="text-white border-b-2 border-red-500">{victim.name}</span>{t(", Wie neem je mee de bus in?")}
-          </p>
-          <ScrollIndicatorContainer
-            orientation="vertical"
-            theme={settings.theme}
-            className="w-full max-w-sm max-h-[50vh]"
-            scrollClassName="space-y-3 px-2"
-          >
-            <button
-              onClick={() => handleSharedBusSelection(null)}
-              className="w-full bg-black/40 backdrop-blur-md p-5 rounded-2xl text-white font-bold border-2 border-dashed border-slate-600 mb-2 text-sm hover:bg-slate-800 hover:border-white transition-all active:scale-95"
+
+          {/* Clean, spacious center content: Just text on the relatively empty screen */}
+          <div className="flex-1 w-full max-w-xl mx-auto flex flex-col items-center justify-center px-4 py-8 animate-in fade-in duration-700">
+            {/* Subtext 'shared bus' */}
+            <div 
+              className="cursor-pointer mb-3 select-none flex items-center justify-center opacity-85"
+              onPointerDown={handleHeaderPointerDown}
+              onPointerUp={handleHeaderPointerUpOrLeave}
+              onPointerLeave={handleHeaderPointerUpOrLeave}
             >
-              {t("NIEMAND")}
-            </button>
-            {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && !p.isImmune).map(p => (
+              <ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" showCursor={false} />
+            </div>
+
+            {/* Main Title: {playername}, who will you bring into the bus with you */}
+            <div 
+              className="cursor-pointer mb-8 sm:mb-12 max-w-lg mx-auto"
+              onPointerDown={handleHeaderPointerDown}
+              onPointerUp={handleHeaderPointerUpOrLeave}
+              onPointerLeave={handleHeaderPointerUpOrLeave}
+            >
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                <span className="text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.35)]">
+                  {victim?.name}
+                </span>
+                {t(", Wie neem je mee de bus in?")}
+              </h1>
+            </div>
+
+            {/* Clean player selection options */}
+            <ScrollIndicatorContainer
+              orientation="vertical"
+              theme={settings.theme}
+              className="w-full max-w-xs sm:max-w-sm max-h-[42vh]"
+              scrollClassName="space-y-2.5 px-2"
+            >
+              {/* Option: Nobody / Alone */}
               <button
-                key={p.id}
-                onClick={() => handleSharedBusSelection(p)}
-                className="w-full bg-slate-900/80 p-4 rounded-2xl flex items-center justify-between text-white font-bold text-sm hover:bg-red-900/50 border border-white/5 hover:border-red-500 transition-all shadow-lg active:scale-95"
+                onClick={() => handleSharedBusSelection(null)}
+                className="w-full py-3.5 px-4 rounded-2xl text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md transition-all active:scale-95 mb-1 shadow-sm"
               >
-                <div className="flex items-center gap-4">
-                  <PlayerAvatar player={p} size="custom" className="w-10 h-10 text-base" theme={settings.theme} />
-                  <span className="text-lg">{p.name}</span>
-                </div>
-                <HeartPulse size={20} className="text-red-500" />
+                {t("NIEMAND")}
               </button>
-            ))}
-            {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && p.isImmune).map(p => (
-              <button
-                key={p.id}
-                disabled
-                className="w-full bg-slate-900/40 p-4 rounded-2xl flex items-center justify-between text-white/50 font-bold text-sm border border-white/5 shadow-lg cursor-not-allowed opacity-60"
-              >
-                <div className="flex items-center gap-4">
-                  <PlayerAvatar player={p} size="custom" className="w-10 h-10 text-base grayscale opacity-60" theme={settings.theme} />
-                  <span className="text-lg line-through">{p.name}</span>
-                </div>
-                <Shield size={20} className="text-yellow-400" />
-              </button>
-            ))}
-          </ScrollIndicatorContainer>
-        </div>
-      </RootContainer>
+
+              {/* Eligible Players */}
+              {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && !p.isImmune).map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => handleSharedBusSelection(p)}
+                  className="w-full py-3 px-4 rounded-2xl flex items-center justify-between text-white font-semibold text-sm bg-white/5 hover:bg-white/15 border border-white/10 hover:border-amber-400/40 backdrop-blur-md transition-all shadow-md active:scale-95 group"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <PlayerAvatar player={p} size="custom" className="w-9 h-9 text-base shadow-sm" theme={settings.theme} />
+                    <span className="text-base font-bold truncate">{p.name}</span>
+                  </div>
+                  <HeartPulse size={20} className="text-red-400/70 group-hover:text-red-400 shrink-0 transition-colors" />
+                </button>
+              ))}
+
+              {/* Immune Players */}
+              {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && p.isImmune).map(p => (
+                <button
+                  key={p.id}
+                  disabled
+                  className="w-full py-3 px-4 rounded-2xl flex items-center justify-between text-white/40 font-semibold text-sm border border-white/5 bg-white/[0.02] cursor-not-allowed opacity-50 shadow-none"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <PlayerAvatar player={p} size="custom" className="w-9 h-9 text-base grayscale opacity-50" theme={settings.theme} />
+                    <span className="text-base font-bold truncate line-through">{p.name}</span>
+                  </div>
+                  <Shield size={20} className="text-amber-400/50 shrink-0" />
+                </button>
+              ))}
+            </ScrollIndicatorContainer>
+          </div>
+        </RootContainer>
       </>
-      );
-      }
+    );
+  }
   // 6. THE BUS
   if (phase === GamePhase.THE_BUS) {
     if (settings.mode === GameMode.PHYSICAL && busMode === 'physical') {
@@ -6146,7 +6559,7 @@ const initializeAdMob = useCallback(async () => {
     const passengerNames = busPassengers.map(p => p.name).join(' & ');
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={digitalBusBackgroundStyle} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} style={digitalBusBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} />
         <RootContainer 
           key="bus-phase"
@@ -6277,7 +6690,7 @@ const initializeAdMob = useCallback(async () => {
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
         {/* Bus Cards */}
-        <div key="bus-cards-container" className="flex-1 relative flex items-center bg-transparent overflow-hidden w-full animate-in fade-in duration-700 ease-out">
+        <div key="bus-cards-container" className="flex-1 relative flex items-center bg-transparent overflow-hidden w-full animate-in fade-in duration-500 ease-out">
           <div
             ref={busScrollRef}
             className="w-full overflow-x-auto flex items-center px-[40vw] gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar h-full py-6"
@@ -6338,7 +6751,7 @@ const initializeAdMob = useCallback(async () => {
           </div>
         </div>
         {/* Controls */}
-        <div key="bus-controls-bar" className="flex-none w-full bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-4 pb-safe pb-6 px-4 z-20 animate-in fade-in duration-700 delay-200 fill-mode-both ease-out">
+        <div key="bus-controls-bar" className="flex-none w-full bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-4 pb-safe pb-6 px-4 z-20 animate-in fade-in duration-500 ease-out">
           <div className="max-w-md mx-auto w-full">
             {feedback ? (
               <div className="w-full">

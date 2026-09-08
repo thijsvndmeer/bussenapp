@@ -482,6 +482,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         </span>
                       </>
                     )}
+                    {settings.doublePyramidCards && (
+                      <>
+                        <span className="mx-0.5">•</span>
+                        <span className="flex items-center gap-1">
+                          {t("Dubbel")}
+                        </span>
+                      </>
+                    )}
                   </div>
                 );
               })()}
@@ -789,6 +797,53 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   </div>
                 );
               })()}
+            </div>
+          </div>
+
+          {/* Dubbele Kaarten Toggle */}
+          <div className="flex items-center justify-between text-xs text-slate-300 font-bold mt-2">
+            <span className="text-xs sm:text-sm font-bold text-slate-300">
+              {t("Dubbele kaarten in de piramide")}
+            </span>
+
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              <div
+                role="switch"
+                aria-checked={settings.doublePyramidCards}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    if (disabled) return;
+                    const nextVal = !settings.doublePyramidCards;
+                    triggerHaptic('subtle');
+                    onSettingsChange('doublePyramidCards', nextVal);
+                  }
+                }}
+                onClick={() => {
+                  if (disabled) return;
+                  const nextVal = !settings.doublePyramidCards;
+                  triggerHaptic('subtle');
+                  onSettingsChange('doublePyramidCards', nextVal);
+                }}
+                className={`w-12 h-6.5 rounded-full relative cursor-pointer select-none touch-none transition-colors duration-300 ${
+                  settings.doublePyramidCards
+                    ? 'border border-white/20 shadow-md'
+                    : 'bg-slate-800 border border-slate-700'
+                }`}
+                style={{
+                  background: settings.doublePyramidCards 
+                    ? 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))'
+                    : undefined
+                }}
+              >
+                <div 
+                  className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white shadow-md pointer-events-none transition-all duration-300 ease-out`}
+                  style={{
+                    left: settings.doublePyramidCards ? 'calc(100% - 23px)' : '3px',
+                  }} 
+                />
+              </div>
             </div>
           </div>
 

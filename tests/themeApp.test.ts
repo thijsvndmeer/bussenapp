@@ -165,5 +165,27 @@ describe('App Theme Synchronization', () => {
     expect(appContent).toContain('animate-bus-card-deal');
     expect(appContent).toContain('animationDelay: `${index * 0.08}s`');
   });
+
+  it('implements in-place shared bus partner selection with paused bus animation and draggable profile pictures', () => {
+    const animPath = path.resolve(__dirname, '../styles/animations.css');
+    const animContent = fs.readFileSync(animPath, 'utf-8');
+
+    // Paused bus animation class
+    expect(animContent).toContain('.animate-bus-paused');
+    expect(animContent).toMatch(/animation-play-state:\s*paused\s*!important/);
+    expect(animContent).toContain('.animate-partner-bus-drop');
+
+    // App.tsx in-place shared bus selection state and drag interactions
+    const appPath = path.resolve(__dirname, '../App.tsx');
+    const appContent = fs.readFileSync(appPath, 'utf-8');
+    expect(appContent).toContain('isBusPaused');
+    expect(appContent).toContain('isSharedBusSelecting');
+    expect(appContent).toContain('animate-bus-paused');
+    expect(appContent).toContain('handlePartnerPointerDown');
+    expect(appContent).toContain('handlePartnerPointerMove');
+    expect(appContent).toContain('handlePartnerPointerUp');
+    expect(appContent).toContain('handleInPlaceSharedBusSelection');
+    expect(appContent).toContain('{t("NIEMAND")}');
+  });
 });
 

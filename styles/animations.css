@@ -883,36 +883,76 @@
 
 /* --- BUS CRASH THROUGH CARDS, HARD BRAKE, REVERSE TO CENTER, THEN DRIVE OUT --- */
 @keyframes busCrashAcross {
+  /* 1. Fast Entry: Full uninhibited speed with strictly ZERO pre-braking deceleration */
   0% {
-    transform: translate3d(-130vw, 0, 0);
+    transform: translate3d(-135vw, 0, 0) rotate(0.4deg);
+    animation-timing-function: linear;
   }
-  14% {
-    /* Fast drive across knocking cards away, stays on screen without driving outside */
-    transform: translate3d(2vw, 0, 0);
+  11.2% {
+    /* Reaches center at peak velocity! Driver stamps hard on brakes, progressive friction skid begins */
+    transform: translate3d(0vw, 0, 0) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.2, 0.85, 0.3, 1);
   }
-  16.5% {
-    /* Hard brake with nose dip, stays completely visible on screen */
-    transform: translate3d(3vw, 3px, 0) rotate(-2.8deg);
+  /* 2. Controlled Forward Skid: Slides to 18vw without protruding far outside the screen */
+  17.5% {
+    /* Peak forward slide at 18vw, nose heavily compressed into pavement */
+    transform: translate3d(18vw, 3px, 0) rotate(-4.6deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
-  21% {
-    /* Shift into reverse, chassis pitches slightly back */
-    transform: translate3d(1.5vw, -1px, 0) rotate(1.2deg);
+  /* 3. Suspension Rebound & Dramatic Pause at 18vw */
+  19.2% {
+    /* Front springs push back up with authentic vehicle bounce */
+    transform: translate3d(18vw, -2px, 0) rotate(1.4deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   }
-  28% {
-    /* Reverses back smoothly to dead center */
+  20.5% {
+    /* Secondary damped bounce */
+    transform: translate3d(18vw, 0.5px, 0) rotate(-0.3deg);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  21.5% {
+    /* Levels out while stopped at 18vw */
+    transform: translate3d(18vw, 0, 0) rotate(0deg);
+  }
+  23.5% {
+    /* Tense pause: reverse gear clicks in, steady power delivery */
+    transform: translate3d(18vw, 0, 0) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.38, 0.05, 0.25, 1);
+  }
+  /* 4. Natural Speed Reverse: Driving backwards towards center at realistic vehicle speed */
+  27.5% {
+    /* Sweeping backwards through 8vw at natural, measured reverse speed */
+    transform: translate3d(8vw, 0, 0) rotate(1.5deg);
+    animation-timing-function: cubic-bezier(0.25, 0.85, 0.35, 1);
+  }
+  /* 5. Reverse Brake & Opposite Tilt: Tail dips down into road, nose kicks UP */
+  30.5% {
+    /* Reverse brakes hit! Rear dips into pavement, nose pitches up (+3.0deg), slight overshoot to -1.0vw */
+    transform: translate3d(-1.0vw, 1.5px, 0) rotate(3.0deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  32% {
+    /* Rebound from reverse brake: nose dips slightly forward */
+    transform: translate3d(-0.2vw, -1px, 0) rotate(-0.5deg);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  33% {
+    /* Perfectly parked, rock-solid at dead center */
     transform: translate3d(0vw, 0, 0) rotate(0deg);
   }
-  28%, 80% {
+  33%, 80.5% {
     /* Parked rock-solid at center while player is showcased and boarded */
     transform: translate3d(0vw, 0, 0) rotate(0deg);
   }
   81% {
-    /* Passenger boarded, engine revs & slight squat */
-    transform: translate3d(0vw, 0, 0) rotate(-0.5deg);
+    /* Passenger boarded, engine revs & launch squat */
+    transform: translate3d(0vw, 0, 0) rotate(-0.6deg);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
   85% {
     /* Accelerating launch forward */
-    transform: translate3d(3vw, 0, 0) rotate(-0.8deg);
+    transform: translate3d(4vw, 0, 0) rotate(-1.0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.75, 0.25);
   }
   100% {
     /* Drives completely out of the screen to the right */
@@ -921,7 +961,8 @@
 }
 
 .animate-bus-crash {
-  animation: busCrashAcross 6.4s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  animation: busCrashAcross 6.4s linear forwards;
+  transform-origin: 50% 90%;
   will-change: transform;
 }
 
@@ -929,33 +970,49 @@
 @keyframes busCrashWheelRoll {
   0% {
     transform: rotate(0deg);
+    animation-timing-function: linear;
   }
-  14% {
-    transform: rotate(1500deg);
+  11.2% {
+    /* Rapid forward spin */
+    transform: rotate(1600deg);
+    animation-timing-function: cubic-bezier(0.2, 0.85, 0.3, 1);
   }
-  16.5% {
-    /* Locked skidding wheels during hard brake */
-    transform: rotate(1500deg);
+  17.5%, 23.5% {
+    /* Locked skidding wheels during 11.2%–17.5% slide, then stopped during pause at 18vw */
+    transform: rotate(1635deg);
+    animation-timing-function: cubic-bezier(0.38, 0.05, 0.25, 1);
   }
-  21% {
-    transform: rotate(1470deg);
+  27.5% {
+    /* Natural speed reverse rotation */
+    transform: rotate(1420deg);
+    animation-timing-function: cubic-bezier(0.25, 0.85, 0.35, 1);
   }
-  28% {
-    /* Reversing wheel rotation */
-    transform: rotate(1150deg);
+  30.5% {
+    /* Reverse brake skid lock */
+    transform: rotate(1250deg);
   }
-  28%, 80% {
-    /* Stopped while parked */
-    transform: rotate(1150deg);
+  32% {
+    transform: rotate(1255deg);
+  }
+  33%, 80.5% {
+    /* Parked rock-solid at center */
+    transform: rotate(1255deg);
+  }
+  81% {
+    transform: rotate(1265deg);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  85% {
+    transform: rotate(1350deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.75, 0.25);
   }
   100% {
-    /* Forward drive-out rotation */
     transform: rotate(2950deg);
   }
 }
 
 .animate-bus-crash-wheel {
-  animation: busCrashWheelRoll 6.4s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  animation: busCrashWheelRoll 6.4s linear forwards;
   transform-origin: center;
   will-change: transform;
 }
@@ -964,17 +1021,24 @@
 @keyframes busCrashRoadMove {
   0% {
     background-position: 0px 0px;
+    animation-timing-function: linear;
   }
-  14% {
-    background-position: -240px 0px;
+  11.2% {
+    background-position: -280px 0px;
+    animation-timing-function: cubic-bezier(0.2, 0.85, 0.3, 1);
   }
-  16.5% {
-    background-position: -240px 0px;
+  17.5%, 23.5% {
+    background-position: -440px 0px;
+    animation-timing-function: cubic-bezier(0.38, 0.05, 0.25, 1);
   }
-  28% {
-    background-position: -120px 0px;
+  27.5% {
+    background-position: -260px 0px;
+    animation-timing-function: cubic-bezier(0.25, 0.85, 0.35, 1);
   }
-  28%, 80% {
+  30.5% {
+    background-position: -110px 0px;
+  }
+  33%, 80.5% {
     background-position: -120px 0px;
   }
   100% {
@@ -983,16 +1047,42 @@
 }
 
 .animate-bus-crash-road {
-  animation: busCrashRoadMove 6.4s cubic-bezier(0.18, 0.9, 0.32, 1) forwards;
+  animation: busCrashRoadMove 6.4s linear forwards;
   will-change: background-position;
 }
 
 /* Crash mode chassis subtle suspension */
 @keyframes busCrashSuspension {
-  0% {
+  0%, 11.2% {
     transform: translateY(0);
   }
-  100% {
+  17.5% {
+    /* Chassis drops 5.5px into front springs during 18vw brake dive */
+    transform: translateY(5.5px);
+  }
+  19.2% {
+    /* Shocks rebound upward */
+    transform: translateY(-2.5px);
+  }
+  20.5% {
+    transform: translateY(0.5px);
+  }
+  21.5%, 23.5% {
+    transform: translateY(0);
+  }
+  27.5% {
+    /* Smooth rear squat during natural reverse acceleration */
+    transform: translateY(1.8px);
+  }
+  30.5% {
+    /* Reverse brake compression */
+    transform: translateY(3.5px);
+  }
+  32% {
+    /* Rebound upward */
+    transform: translateY(-1.2px);
+  }
+  33%, 100% {
     transform: translateY(0);
   }
 }
@@ -1000,6 +1090,41 @@
 .animate-bus-crash-suspension {
   animation: busCrashSuspension 6.4s linear forwards;
   will-change: transform;
+}
+
+/* Dramatic Tire Smoke Puff during Skid */
+@keyframes busTireSmokePuff {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.35);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(-16px, -10px, 0) scale(1.1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(-38px, -20px, 0) scale(1.9);
+    opacity: 0;
+  }
+}
+
+.animate-bus-tire-smoke {
+  animation: busTireSmokePuff 0.38s ease-out infinite;
+  transform-origin: center bottom;
+  pointer-events: none;
+}
+
+/* Subtle Screen/Chassis Skid Judder during heavy braking */
+@keyframes busSkidShake {
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-2px, 1.5px, 0); }
+  50% { transform: translate3d(2px, -1px, 0); }
+  75% { transform: translate3d(-1.5px, 0.5px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.animate-bus-skid-shake {
+  animation: busSkidShake 0.09s ease-in-out infinite;
 }
 
 /* Chassis impact reaction when player lands on the bus */
@@ -1037,7 +1162,7 @@
 }
 
 .animate-bus-card-deal {
-  animation: busCardDealIn 0.8s ease-out both;
+  animation: busCardDealIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: opacity;
 }
 
@@ -1116,4 +1241,28 @@
   will-change: opacity;
 }
 
+/* --- SHARED BUS IN-PLACE PAUSED & BOARDING ANIMATIONS --- */
+.animate-bus-paused,
+.animate-bus-paused * {
+  animation-play-state: paused !important;
+}
 
+@keyframes partnerDropIntoBus {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(0, 16vh, 0) scale(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 32vh, 0) scale(0.45);
+    opacity: 0;
+  }
+}
+
+.animate-partner-bus-drop {
+  animation: partnerDropIntoBus 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}

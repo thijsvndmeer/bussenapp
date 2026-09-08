@@ -7,6 +7,7 @@ interface AnimatedPartyBusProps {
   destinationText?: string;
   isCrash?: boolean;
   isBraking?: boolean;
+  isReversing?: boolean;
   passengerBoarded?: boolean;
   isChassisBouncing?: boolean;
 }
@@ -26,6 +27,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
   destinationText = 'DE BUS',
   isCrash = false,
   isBraking = false,
+  isReversing = false,
   passengerBoarded = true,
   isChassisBouncing = false,
 }) => {
@@ -86,6 +88,18 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
               <filter id="coachGroundBlur" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="5" />
               </filter>
+
+              {/* Intense Brake Glow Filter */}
+              <filter id="coachBrakeGlow" x="-60%" y="-60%" width="220%" height="220%">
+                <feDropShadow dx="-2" dy="0" stdDeviation="4" floodColor="#ff0000" floodOpacity="0.95" />
+                <feDropShadow dx="-5" dy="0" stdDeviation="8" floodColor="#ef4444" floodOpacity="0.85" />
+              </filter>
+
+              {/* Reverse Light White Flare Filter */}
+              <filter id="coachReverseGlow" x="-60%" y="-60%" width="220%" height="220%">
+                <feDropShadow dx="-2" dy="0" stdDeviation="3" floodColor="#ffffff" floodOpacity="0.95" />
+                <feDropShadow dx="-4" dy="0" stdDeviation="6" floodColor="#e2e8f0" floodOpacity="0.8" />
+              </filter>
             </defs>
 
             {/* Ground Contact Shadow */}
@@ -121,34 +135,28 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             <path d="M 95 24 L 440 24" stroke="rgba(255,255,255,0.35)" strokeWidth="3" strokeLinecap="round" />
 
             {/* --- WINDOW ROW & STRUCTURAL PILLARS --- */}
-            {/* Rear Window */}
-            <rect x="48" y="32" width="72" height="68" rx="8" fill="url(#coachWindowGrad)" stroke="#1e293b" strokeWidth="1.5" />
-            <line x1="54" y1="36" x2="114" y2="94" stroke="rgba(255,255,255,0.08)" strokeWidth="2" />
+            {/* Side Window 1 (Rear passenger) */}
+            <rect x="48" y="32" width="178" height="68" rx="8" fill="url(#coachWindowGrad)" stroke="#334155" strokeWidth="1.5" />
+            <line x1="54" y1="36" x2="220" y2="94" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
 
-            {/* VIP Lounge Panoramic Window (Seamless coach window framing) */}
-            <rect x="126" y="32" width="138" height="68" rx="8" fill="url(#coachWindowGrad)" stroke="#334155" strokeWidth="1.5" />
-            
-            {/* Forward Passenger Window */}
-            <rect x="270" y="32" width="114" height="68" rx="8" fill="url(#coachWindowGrad)" stroke="#334155" strokeWidth="1.5" />
+            {/* Side Window 2 (Front passenger) */}
+            <rect x="234" y="32" width="178" height="68" rx="8" fill="url(#coachWindowGrad)" stroke="#334155" strokeWidth="1.5" />
+            <line x1="240" y1="36" x2="406" y2="94" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
 
-            {/* Front Windshield (Driver Cockpit) */}
+            {/* Front Windshield (Driver Cockpit) - Smaller */}
             <path
-              d="M 390 32 L 474 32 C 490 32, 501 42, 505 62 L 510 100 L 390 100 Z"
+              d="M 420 32 L 474 32 C 490 32, 501 42, 505 62 L 510 100 L 420 100 Z"
               fill="url(#coachWindowGrad)"
               stroke="#1e293b"
               strokeWidth="1.5"
             />
             {/* Windshield Reflection Sheen */}
-            <polygon points="410,35 455,35 435,97 394,97" fill="rgba(255,255,255,0.14)" />
+            <polygon points="430,35 460,35 448,97 424,97" fill="rgba(255,255,255,0.14)" />
             {/* Steering Wheel & Wiper */}
             <circle cx="468" cy="80" r="9" stroke="#64748b" strokeWidth="2.5" fill="none" />
             <line x1="458" y1="95" x2="476" y2="65" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
 
-            {/* Flush Integrated LED Destination Display (Above Windshield) */}
-            <rect x="388" y="17" width="98" height="13" rx="3" fill="#000000" stroke="#f59e0b" strokeWidth="1.5" />
-            <text x="437" y="27" fill="#fbbf24" fontSize="8" fontWeight="900" fontFamily="monospace" textAnchor="middle" letterSpacing="1">
-              {destinationText.length > 12 ? destinationText.slice(0, 11) + '…' : destinationText}
-            </text>
+
 
             {/* --- LUXURY BELTLINE TRIM --- */}
             <path d="M 39 110 L 515 110" stroke="rgba(0,0,0,0.5)" strokeWidth="5" />
@@ -174,27 +182,48 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             <circle cx="502" cy="160" r="3" fill="#f59e0b" />
 
             {/* Rear Vertical LED Taillight Cluster */}
-            <rect x="37" y="118" width="6" height="30" rx="2" fill="#991b1b" stroke="#450a0a" strokeWidth="1" />
-            <rect x="38" y="120" width="4" height="7" rx="1" fill={isBraking ? '#ff2222' : '#ef4444'} />
-            <rect x="38" y="129" width="4" height="6" rx="1" fill="#fbbf24" />
-            <rect x="38" y="137" width="4" height="8" rx="1" fill={isBraking ? '#ff2222' : '#dc2626'} />
+            <rect
+              x="37"
+              y="118"
+              width="6"
+              height="30"
+              rx="2"
+              fill="#991b1b"
+              stroke="#450a0a"
+              strokeWidth="1"
+              filter={isBraking ? 'url(#coachBrakeGlow)' : undefined}
+            />
+            <rect x="38" y="120" width="4" height="7" rx="1" fill={isBraking ? '#ff1111' : '#ef4444'} />
+            <rect
+              x="38"
+              y="129"
+              width="4"
+              height="6"
+              rx="1"
+              fill={isReversing ? '#ffffff' : '#fbbf24'}
+              filter={isReversing ? 'url(#coachReverseGlow)' : undefined}
+            />
+            <rect x="38" y="137" width="4" height="8" rx="1" fill={isBraking ? '#ff1111' : '#dc2626'} />
 
             {/* Wheel Arch Moldings */}
             <path d="M 83 190 A 37 37 0 0 1 157 190" stroke="#3b0707" strokeWidth="4" fill="none" />
             <path d="M 378 190 A 37 37 0 0 1 452 190" stroke="#3b0707" strokeWidth="4" fill="none" />
           </svg>
 
-          {/* --- INTEGRATED VIP PASSENGER INSIDE PANORAMIC WINDOW --- */}
+          {/* --- INTEGRATED VIP PASSENGER INSIDE WINDOW --- */}
+          {/* First passenger sits in the front window (closest to windshield) */}
           {!isDuo ? (
-            /* Single Passenger VIP Lounge Window (Cleanly fitted inside Window 2) */
-            <div className="absolute top-[14.8%] left-[23.6%] w-[25.5%] h-[31%] rounded-lg overflow-hidden flex flex-col items-center justify-center z-30 pointer-events-none">
-              {/* VIP Lounge Interior Ambient Party Lighting */}
-              <div 
-                className="absolute inset-0 z-10 opacity-70"
-                style={{
-                  background: 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.5) 0%, rgba(236,72,153,0.3) 50%, rgba(2,6,23,0.85) 100%)',
-                }}
-              />
+            /* Single Passenger - centered in front Window (Window 2) */
+            <div className="absolute top-[14.8%] left-[43.5%] w-[33%] h-[31%] rounded-lg overflow-hidden flex items-center justify-center z-30 pointer-events-none">
+              {/* VIP Lounge Interior Ambient Party Lighting - only when passenger is aboard */}
+              {showPassenger && passengers[0] && (
+                <div 
+                  className="absolute inset-0 z-10 opacity-70 transition-opacity duration-300"
+                  style={{
+                    background: 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.5) 0%, rgba(236,72,153,0.3) 50%, rgba(2,6,23,0.85) 100%)',
+                  }}
+                />
+              )}
               {/* Window Glass Diagonal Reflection Streak */}
               <div 
                 className="absolute inset-0 z-30"
@@ -204,47 +233,44 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
               />
 
               {showPassenger && passengers[0] && (
-                <div className="relative z-20 flex flex-col items-center justify-center scale-90 sm:scale-100 -mt-0.5">
+                <div className="relative z-20 flex items-center justify-center">
                   <PlayerAvatar
                     player={passengers[0]}
                     size="custom"
-                    className="w-9 h-9 sm:w-11 sm:h-11 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
+                    className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
                   />
-                  <span className="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-wider truncate max-w-[85px] drop-shadow-[0_2px_4px_rgba(0,0,0,1)] mt-0.5">
-                    {passengers[0].name}
-                  </span>
                 </div>
               )}
             </div>
           ) : (
-            /* Dual Windows for Shared Bus Passengers */
-            <div className="absolute top-[14.8%] left-[23.6%] w-[46%] h-[31%] flex items-center gap-3 z-30 pointer-events-none">
-              {showPassenger && passengers.slice(0, 2).map((p, idx) => (
+            /* Dual Windows for Shared Bus Passengers - first passenger in front (right), second in rear (left) */
+            <div className="absolute top-[14.8%] left-[9%] w-[57.5%] h-[31%] flex items-center gap-[1.5%] z-30 pointer-events-none">
+              {showPassenger && [...passengers.slice(0, 2)].reverse().map((p, idx) => (
                 <div
                   key={p.id || idx}
-                  className="flex-1 h-full rounded-lg overflow-hidden flex flex-col items-center justify-center relative"
+                  className="flex-1 h-full rounded-lg overflow-hidden flex items-center justify-center relative"
                 >
-                  <div 
-                    className="absolute inset-0 z-10 opacity-70"
-                    style={{
-                      background: 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.45) 0%, rgba(236,72,153,0.25) 50%, rgba(2,6,23,0.85) 100%)',
-                    }}
-                  />
+                  {/* Party lighting only when boarded */}
+                  {showPassenger && (
+                    <div 
+                      className="absolute inset-0 z-10 opacity-70 transition-opacity duration-300"
+                      style={{
+                        background: 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.45) 0%, rgba(236,72,153,0.25) 50%, rgba(2,6,23,0.85) 100%)',
+                      }}
+                    />
+                  )}
                   <div 
                     className="absolute inset-0 z-30"
                     style={{
                       background: 'linear-gradient(125deg, transparent 30%, rgba(255,255,255,0.15) 45%, transparent 60%)',
                     }}
                   />
-                  <div className="relative z-20 flex flex-col items-center scale-85 sm:scale-95">
+                  <div className="relative z-20 flex items-center justify-center">
                     <PlayerAvatar
                       player={p}
                       size="custom"
-                      className="w-8 h-8 sm:w-10 sm:h-10 text-lg sm:text-xl border-2 border-slate-600/50 shadow-md"
+                      className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
                     />
-                    <span className="text-[8px] sm:text-[9px] font-black text-white uppercase tracking-tight truncate max-w-[70px] drop-shadow-md mt-0.5">
-                      {p.name}
-                    </span>
                   </div>
                 </div>
               ))}
@@ -272,7 +298,11 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
               ))}
 
               {/* Red Performance Caliper */}
-              <path d="M 28 40 A 24 24 0 0 1 40 28 L 44 32 A 19 19 0 0 0 32 44 Z" fill="#ef4444" />
+              <path
+                d="M 28 40 A 24 24 0 0 1 40 28 L 44 32 A 19 19 0 0 0 32 44 Z"
+                fill={isBraking ? '#ff1111' : '#ef4444'}
+                filter={isBraking ? 'drop-shadow(0 0 4px #ff0000)' : undefined}
+              />
 
               {/* Polished Alloy Rim Barrel */}
               <circle cx="50" cy="50" r="32" fill="#1e293b" stroke="#cbd5e1" strokeWidth="3" />
@@ -308,7 +338,11 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                 />
               ))}
 
-              <path d="M 28 40 A 24 24 0 0 1 40 28 L 44 32 A 19 19 0 0 0 32 44 Z" fill="#ef4444" />
+              <path
+                d="M 28 40 A 24 24 0 0 1 40 28 L 44 32 A 19 19 0 0 0 32 44 Z"
+                fill={isBraking ? '#ff1111' : '#ef4444'}
+                filter={isBraking ? 'drop-shadow(0 0 4px #ff0000)' : undefined}
+              />
               <circle cx="50" cy="50" r="32" fill="#1e293b" stroke="#cbd5e1" strokeWidth="3" />
 
               {[0, 72, 144, 216, 288].map(deg => (
@@ -322,6 +356,24 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
               <circle cx="50" cy="50" r="4" fill="#ffffff" />
             </svg>
           </div>
+
+          {/* Dynamic Tire Skid Smoke Clouds */}
+          {isBraking && (
+            <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
+              {/* Rear Wheel Tire Smoke */}
+              <div className="absolute -bottom-1 left-[12%] w-16 h-10 flex items-end">
+                <div className="animate-bus-tire-smoke absolute bottom-0 left-0 w-7 h-7 rounded-full bg-slate-200/70 blur-[3px]" />
+                <div className="animate-bus-tire-smoke absolute bottom-1 left-2 w-8 h-8 rounded-full bg-slate-300/55 blur-[4px]" style={{ animationDelay: '0.12s' }} />
+                <div className="animate-bus-tire-smoke absolute bottom-2 left-5 w-6 h-6 rounded-full bg-slate-400/40 blur-[2px]" style={{ animationDelay: '0.2s' }} />
+              </div>
+              {/* Front Wheel Tire Smoke */}
+              <div className="absolute -bottom-1 right-[17%] w-16 h-10 flex items-end">
+                <div className="animate-bus-tire-smoke absolute bottom-0 left-0 w-7 h-7 rounded-full bg-slate-200/70 blur-[3px]" />
+                <div className="animate-bus-tire-smoke absolute bottom-1 left-2 w-8 h-8 rounded-full bg-slate-300/55 blur-[4px]" style={{ animationDelay: '0.14s' }} />
+                <div className="animate-bus-tire-smoke absolute bottom-2 left-5 w-6 h-6 rounded-full bg-slate-400/40 blur-[2px]" style={{ animationDelay: '0.22s' }} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
