@@ -100,40 +100,66 @@ export const getBusFinishChance = (busLength: number): string => {
   return `<0.1%`;
 };
 
-export const isColorBlueish = (hexOrRgb?: string): boolean => {
-  if (!hexOrRgb) return false;
+export const getRecommendedHighlightColor = (hexOrRgb?: string): 'blue' | 'mint' => {
+  if (!hexOrRgb) return 'blue';
+  let r = 0, g = 0, b = 0;
   let c = hexOrRgb.trim();
+  
   if (c.startsWith('#')) {
     c = c.substring(1);
     if (c.length === 3) {
       c = c.split('').map(x => x + x).join('');
     }
     const num = parseInt(c, 16);
-    if (isNaN(num)) return false;
-    const r = (num >> 16) & 255;
-    const g = (num >> 8) & 255;
-    const b = num & 255;
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-    if (delta === 0) return false;
-    
-    let hue = 0;
-    if (max === r) {
-      hue = ((g - b) / delta) % 6;
-    } else if (max === g) {
-      hue = (b - r) / delta + 2;
+    if (isNaN(num)) return 'blue';
+    r = (num >> 16) & 255;
+    g = (num >> 8) & 255;
+    b = num & 255;
+  } else if (c.startsWith('rgb')) {
+    const match = c.match(/\d+/g);
+    if (match && match.length >= 3) {
+      r = parseInt(match[0], 10);
+      g = parseInt(match[1], 10);
+      b = parseInt(match[2], 10);
     } else {
-      hue = (r - g) / delta + 4;
+      return 'blue';
     }
-    hue = Math.round(hue * 60);
-    if (hue < 0) hue += 360;
-    
-    const sat = delta / max;
-    return sat > 0.15 && hue >= 170 && hue <= 290;
+  } else {
+    return 'blue';
   }
-  return false;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  if (delta === 0) return 'blue';
+  
+  let hue = 0;
+  if (max === r) {
+    hue = ((g - b) / delta) % 6;
+  } else if (max === g) {
+    hue = (b - r) / delta + 2;
+  } else {
+    hue = (r - g) / delta + 4;
+  }
+  hue = Math.round(hue * 60);
+  if (hue < 0) hue += 360;
+  
+  const sat = delta / max;
+  if (sat < 0.15) return 'blue';
+
+  // Distinct Blue tones (sky blue, royal blue, indigo, periwinkle: 215° - 265°):
+  // When line is blue, highlighted area must be mint green to remain visible.
+  if (hue >= 215 && hue <= 265) {
+    return 'mint';
+  }
+
+  // Mint, Cyan, Aqua, Teal, Green tones (130° - 214°) or any warm/neutral colors:
+  // When line is mint/cyan or warm, highlighted area must be blue (never mint).
+  return 'blue';
+};
+
+export const isColorBlueish = (hexOrRgb?: string): boolean => {
+  return getRecommendedHighlightColor(hexOrRgb) === 'mint';
 };
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -150,12 +176,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => {
   const [isBusExpanded, setIsBusExpanded] = useState<boolean>(() => settings.busLength > 12);
 
-  const activeAccentColor = 
+  // Dynamic recommended color: default blue (#3b82f6), alternative mint green (#2dd4bf).
+  // When line is blueish -> highlight is mint green. When line is mint/greenish or other -> highlight is blue (never mint).
+  const currentLineColor = 
     settings?.theme === 'calm' ? (settings.calmAccentColor || '#fb7185') :
     settings?.theme === 'stars' ? '#f1f5f9' :
     settings?.theme === 'metro' ? '#fb7185' :
-    settings?.theme === 'beer' ? '#f59e0b' : '#ef4444';
-  const isAccentBlueish = isColorBlueish(activeAccentColor);
+    settings?.theme === 'beer' ? '#ff3333' : '#ef4444';
+  const isLineBlueish = getRecommendedHighlightColor(currentLineColor) === 'mint';
 
   const sliders: SliderConfig[] = [
     { key: 'pyramidRows', label: 'Piramide Hoogte', min: 3, max: 7 },
@@ -334,14 +362,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
   };
 
-  const [switchDrag, setSwitchDrag] = useState<{ active: boolean; fraction: number; startX: number; rect: DOMRect | null } | null>(null);
+  type SwitchKey = 'sharedBus' | 'doublePyramidCards';
+  const [switchDrag, setSwitchDrag] = useState<{ key: SwitchKey; active: boolean; fraction: number; startX: number; rect: DOMRect | null } | null>(null);
 
-  const handleSwitchPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleSwitchPointerDown = (key: SwitchKey, e: React.PointerEvent<HTMLDivElement>) => {
     if (disabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const currentFraction = settings.sharedBus ? 1 : 0;
+    const currentFraction = settings[key] ? 1 : 0;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setSwitchDrag({
+      key,
       active: true,
       fraction: currentFraction,
       startX: e.clientX,
@@ -359,19 +389,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const handleSwitchPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!switchDrag || !switchDrag.active) return;
-    const isDragMove = Math.abs(e.clientX - switchDrag.startX) > 4;
+    const { key, startX, fraction } = switchDrag;
+    const isDragMove = Math.abs(e.clientX - startX) > 4;
     let nextVal: boolean;
     if (isDragMove) {
-      nextVal = switchDrag.fraction >= 0.5;
+      nextVal = fraction >= 0.5;
     } else {
-      nextVal = !settings.sharedBus;
+      nextVal = !settings[key];
     }
     setSwitchDrag(null);
-    if (nextVal !== settings.sharedBus) {
+    if (nextVal !== settings[key]) {
       triggerHaptic('subtle');
-      const newCommitted = { ...committedValuesRef.current, sharedBus: nextVal };
+      const newCommitted = { ...committedValuesRef.current, [key]: nextVal };
       if (onCommitSettings) onCommitSettings(newCommitted);
-      onSettingsChange('sharedBus', nextVal);
+      onSettingsChange(key, nextVal);
     }
   };
 
@@ -482,14 +513,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         </span>
                       </>
                     )}
-                    {settings.doublePyramidCards && (
-                      <>
-                        <span className="mx-0.5">•</span>
-                        <span className="flex items-center gap-1">
-                          {t("Dubbel")}
-                        </span>
-                      </>
-                    )}
+
+
                   </div>
                 );
               })()}
@@ -603,10 +628,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <button 
                     type="button"
                     onClick={() => handleRecommendationClick(s.key)}
-                    className={`text-xs sm:text-sm font-black text-white px-2 py-0.5 rounded-lg border transition-all duration-300 active:scale-95 cursor-pointer ${
+                    className={`text-xs sm:text-sm font-black text-white px-2 py-0.5 rounded-lg border transition-all duration-300 active:scale-95 cursor-pointer no-calm-override ${
                       isRecommendedSelected
-                        ? (isAccentBlueish 
-                            ? 'bg-red-950/70 border-red-400/60 shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                        ? (isLineBlueish 
+                            ? 'bg-teal-950/70 border-teal-400/60 shadow-[0_0_10px_rgba(45,212,191,0.4)]'
                             : 'bg-blue-950/70 border-blue-400/60 shadow-[0_0_10px_rgba(59,130,246,0.4)]')
                         : 'bg-slate-800 border-slate-700'
                     }`}
@@ -643,11 +668,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         }}
                       >
                         <div 
-                          className={`w-full h-full rounded-sm opacity-60 ${
-                            isAccentBlueish
-                              ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
+                          className={`w-full h-full rounded-sm opacity-60 no-calm-override ${
+                            isLineBlueish
+                              ? 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.7)]'
                               : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.7)]'
                           }`} 
+                          style={{
+                            backgroundColor: isLineBlueish ? '#2dd4bf' : '#3b82f6',
+                            boxShadow: isLineBlueish ? '0 0 8px rgba(45,212,191,0.7)' : '0 0 8px rgba(59,130,246,0.7)',
+                          }}
                         />
                       </div>
                     );
@@ -676,19 +705,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
                 {/* Custom Animated Thumb Knob linked with fill */}
                 <div 
-                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white pointer-events-none z-30 shadow-[0_0_10px_rgba(0,0,0,0.5),0_0_4px_var(--theme-accent)] ${
+                  className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white pointer-events-none z-30 shadow-[0_0_10px_rgba(0,0,0,0.5),0_0_4px_var(--theme-accent)] no-calm-override ${
                     isSliderDragging ? 'scale-115' : 'transition-all duration-300 ease-out'
                   } ${
                     isRecommendedSelected 
-                      ? (isAccentBlueish
-                          ? '!border-red-200 !shadow-[0_0_14px_rgba(239,68,68,0.9),0_0_4px_#ef4444]'
+                      ? (isLineBlueish
+                          ? '!border-teal-200 !shadow-[0_0_14px_rgba(45,212,191,0.9),0_0_4px_#2dd4bf]'
                           : '!border-blue-200 !shadow-[0_0_14px_rgba(59,130,246,0.9),0_0_4px_#3b82f6]')
                       : ''
                   }`}
                   style={{
                     left: posPct,
                     background: isRecommendedSelected 
-                      ? (isAccentBlueish ? '#ef4444' : '#3b82f6') 
+                      ? (isLineBlueish ? '#2dd4bf' : '#3b82f6') 
                       : 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))'
                   }}
                 />
@@ -744,8 +773,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               )}
               {/* Slideable & Centered Switch */}
               {(() => {
-                const isDraggingSwitch = Boolean(switchDrag?.active);
-                const activeFraction = switchDrag ? switchDrag.fraction : (settings.sharedBus ? 1 : 0);
+                const isDraggingSwitch = Boolean(switchDrag?.active && switchDrag.key === 'sharedBus');
+                const activeFraction = (switchDrag && switchDrag.key === 'sharedBus') 
+                  ? switchDrag.fraction 
+                  : (settings.sharedBus ? 1 : 0);
                 const isVisualActive = activeFraction >= 0.5;
                 const knobLeft = `calc(3px + (100% - 26px) * ${activeFraction})`;
 
@@ -765,24 +796,24 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                         onSettingsChange('sharedBus', nextVal);
                       }
                     }}
-                    onPointerDown={handleSwitchPointerDown}
+                    onPointerDown={(e) => handleSwitchPointerDown('sharedBus', e)}
                     onPointerMove={handleSwitchPointerMove}
                     onPointerUp={handleSwitchPointerUp}
                     onPointerCancel={handleSwitchPointerUp}
-                    className={`w-12 h-6.5 rounded-full relative cursor-pointer select-none touch-none ${
+                    className={`w-12 h-6.5 rounded-full relative cursor-pointer select-none touch-none no-calm-override ${
                       isDraggingSwitch ? '' : 'transition-colors duration-300'
                     } ${
                       isVisualActive
                         ? (playerCount > 3
-                            ? (isAccentBlueish 
-                                ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)] border border-red-400/50' 
+                            ? (isLineBlueish 
+                                ? 'bg-teal-500 shadow-[0_0_12px_rgba(45,212,191,0.5)] border border-teal-400/50' 
                                 : 'bg-blue-600 shadow-[0_0_12px_rgba(59,130,246,0.5)] border border-blue-400/50')
                             : 'border border-white/20 shadow-md')
                         : 'bg-slate-800 border border-slate-700'
                     }`}
                     style={{
                       background: isVisualActive 
-                        ? (playerCount > 3 ? undefined : 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))')
+                        ? (playerCount > 3 ? (isLineBlueish ? '#14b8a6' : '#2563eb') : 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))')
                         : undefined
                     }}
                   >
@@ -807,43 +838,59 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </span>
 
             <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-              <div
-                role="switch"
-                aria-checked={settings.doublePyramidCards}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    if (disabled) return;
-                    const nextVal = !settings.doublePyramidCards;
-                    triggerHaptic('subtle');
-                    onSettingsChange('doublePyramidCards', nextVal);
-                  }
-                }}
-                onClick={() => {
-                  if (disabled) return;
-                  const nextVal = !settings.doublePyramidCards;
-                  triggerHaptic('subtle');
-                  onSettingsChange('doublePyramidCards', nextVal);
-                }}
-                className={`w-12 h-6.5 rounded-full relative cursor-pointer select-none touch-none transition-colors duration-300 ${
-                  settings.doublePyramidCards
-                    ? 'border border-white/20 shadow-md'
-                    : 'bg-slate-800 border border-slate-700'
-                }`}
-                style={{
-                  background: settings.doublePyramidCards 
-                    ? 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))'
-                    : undefined
-                }}
-              >
-                <div 
-                  className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white shadow-md pointer-events-none transition-all duration-300 ease-out`}
-                  style={{
-                    left: settings.doublePyramidCards ? 'calc(100% - 23px)' : '3px',
-                  }} 
-                />
-              </div>
+              {/* Slideable & Centered Switch */}
+              {(() => {
+                const isDraggingSwitch = Boolean(switchDrag?.active && switchDrag.key === 'doublePyramidCards');
+                const activeFraction = (switchDrag && switchDrag.key === 'doublePyramidCards') 
+                  ? switchDrag.fraction 
+                  : (settings.doublePyramidCards ? 1 : 0);
+                const isVisualActive = activeFraction >= 0.5;
+                const knobLeft = `calc(3px + (100% - 26px) * ${activeFraction})`;
+
+                return (
+                  <div
+                    role="switch"
+                    aria-checked={settings.doublePyramidCards}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        if (disabled) return;
+                        const nextVal = !settings.doublePyramidCards;
+                        triggerHaptic('subtle');
+                        const newCommitted = { ...committedValuesRef.current, doublePyramidCards: nextVal };
+                        if (onCommitSettings) onCommitSettings(newCommitted);
+                        onSettingsChange('doublePyramidCards', nextVal);
+                      }
+                    }}
+                    onPointerDown={(e) => handleSwitchPointerDown('doublePyramidCards', e)}
+                    onPointerMove={handleSwitchPointerMove}
+                    onPointerUp={handleSwitchPointerUp}
+                    onPointerCancel={handleSwitchPointerUp}
+                    className={`w-12 h-6.5 rounded-full relative cursor-pointer select-none touch-none no-calm-override ${
+                      isDraggingSwitch ? '' : 'transition-colors duration-300'
+                    } ${
+                      isVisualActive
+                        ? 'border border-white/20 shadow-md'
+                        : 'bg-slate-800 border border-slate-700'
+                    }`}
+                    style={{
+                      background: isVisualActive 
+                        ? 'var(--theme-accent-gradient, var(--theme-accent, #ef4444))'
+                        : undefined
+                    }}
+                  >
+                    <div 
+                      className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white shadow-md pointer-events-none ${
+                        isDraggingSwitch ? 'scale-105' : 'transition-all duration-300 ease-out'
+                      }`}
+                      style={{
+                        left: knobLeft,
+                      }} 
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

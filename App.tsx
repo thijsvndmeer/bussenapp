@@ -508,6 +508,7 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
   const lastCommittedColor = useRef<string>(accentColor || '#fb7185');
   const lastHapticHue = useRef<number>(hue);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [shouldAnimateEntry, setShouldAnimateEntry] = useState(false);
 
   useEffect(() => {
     const col = accentColor || '#fb7185';
@@ -586,6 +587,7 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
   }, []);
 
   const handlePresetSelect = (presetHex: string) => {
+    setShouldAnimateEntry(false);
     onClose(); // Hide bar when preset is selected!
     lastCommittedColor.current = presetHex;
     setCommittedColor(presetHex);
@@ -596,8 +598,10 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
 
   const handlePickerButtonClick = () => {
     if (isPickerSelected && isOpen) {
+      setShouldAnimateEntry(false);
       onToggleOpen();
     } else {
+      setShouldAnimateEntry(true);
       onToggleOpen();
       if (!isCustomActive) {
         const customHex = hslToHex(lastCustomHue.current, 80, 75);
@@ -651,7 +655,7 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
 
       {/* Expandable Thin Horizontal Bar Slider - ONLY shown when picker color is selected */}
       {isBarVisible && (
-        <div className="pt-2 pb-1 px-1 border-t border-slate-700/40 animate-hand-tray-enter">
+        <div className={`pt-2 pb-1 px-1 border-t border-slate-700/40 ${shouldAnimateEntry ? 'animate-hand-tray-enter' : ''}`}>
           <div className="relative w-full flex items-center h-6">
             <div 
               className="w-full h-2.5 rounded-full border border-white/20 shadow-inner pointer-events-none"
@@ -2094,6 +2098,14 @@ const initializeAdMob = useCallback(async () => {
     playSound('stopDisco');
     setIsDiscoActive(false);
     setImmunePlayerId(null);
+    resetBusState();
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      hand: [],
+      drinksTaken: 0,
+      drinksDistributed: 0,
+      adtjes: 0,
+    })));
   };
   const confirmStart = (mode: GameMode) => {
     triggerHaptic('heavy');
@@ -3465,18 +3477,12 @@ const initializeAdMob = useCallback(async () => {
       const phrase = getUniquePhrase('failure');
       setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("Opnieuw!")}`, type: 'error' });
       setBusWrongCardIndex(currentBusIndex);
-      setBusSipsTaken(prev => prev + (sips * (busPassengers.length || 1)));
+      setBusSipsTaken(prev => prev + sips);
       setBusAttempts(prev => prev + 1);
       updatePlayers(Object.fromEntries(
         busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
       ));
       setTimeout(restartBus, 2500);
-      const newPlayers = [...players];
-      busPassengers.forEach(bp => {
-        const p = newPlayers.find(p => p.id === bp.id);
-        if (p) p.drinksTaken += sips;
-      });
-      setPlayers(newPlayers);
       scheduleGameEvent('bus-fail-restart', 2500, { type: 'BUS_FAIL' });
     }
   };
@@ -3511,7 +3517,7 @@ const initializeAdMob = useCallback(async () => {
     const sips = physicalBusPosition;
     const phrase = getUniquePhrase('failure');
     setFeedback({ text: `${t(phrase)} ${getSipsText(sips)} & ${t("opnieuw!")}`, type: 'error' });
-    setBusSipsTaken(prev => prev + (sips * (busPassengers.length || 1)));
+    setBusSipsTaken(prev => prev + sips);
     setBusAttempts(prev => prev + 1);
     updatePlayers(Object.fromEntries(
       busPassengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sips })])
@@ -4424,7 +4430,7 @@ const initializeAdMob = useCallback(async () => {
                   })()}
                 </div>
                 {settings.theme === UITheme.CALM && (
-                  <div className="flex flex-col gap-3 w-full pt-2 animate-in slide-in-from-top-2 duration-300">
+                  <div className="flex flex-col gap-3 w-full pt-2">
                     <h4 className="text-white font-medium">{t("Calm Accent Kleur")}</h4>
                     <CalmAccentColorPicker
                       accentColor={settings.calmAccentColor || '#fb7185'}

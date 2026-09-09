@@ -112,7 +112,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             {/* --- FULL COACH BODY PROFILE --- */}
             {/* Aerodynamic Luxury Coach Silhouette */}
             <path
-              d="M 40 58 C 40 34, 62 20, 95 20 L 435 20 C 470 20, 498 34, 508 64 L 516 118 L 522 165 C 524 178, 514 190, 498 190 L 458 190 C 452 164, 418 164, 412 190 L 166 190 C 160 164, 126 164, 120 190 L 52 190 C 44 190, 38 182, 38 172 Z"
+              d="M 40 58 C 40 34, 62 20, 95 20 L 435 20 C 470 20, 498 34, 508 64 L 516 118 L 522 165 C 524 178, 514 190, 498 190 L 452 190 A 37 37 0 0 0 378 190 L 157 190 A 37 37 0 0 0 83 190 L 52 190 C 44 190, 38 182, 38 172 Z"
               fill="url(#partyRedGrad)"
               stroke="#3b0707"
               strokeWidth="2"
@@ -152,9 +152,6 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             />
             {/* Windshield Reflection Sheen */}
             <polygon points="430,35 460,35 448,97 424,97" fill="rgba(255,255,255,0.14)" />
-            {/* Steering Wheel & Wiper */}
-            <circle cx="468" cy="80" r="9" stroke="#64748b" strokeWidth="2.5" fill="none" />
-            <line x1="458" y1="95" x2="476" y2="65" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
 
 
 
@@ -279,7 +276,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
 
           {/* --- MOVING WHEELS: FIRMLY MOUNTED ON GROUND & ARCHES --- */}
           {/* Rear Wheel (Left) */}
-          <div className="absolute -bottom-[2%] left-[15.8%] w-14 h-14 sm:w-16 sm:h-16 z-40">
+          <div className="absolute -bottom-[2%] left-[22.22%] -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 z-40">
             <svg viewBox="0 0 100 100" className={`w-full h-full ${isCrash ? 'animate-bus-crash-wheel' : 'animate-bus-wheel'} drop-shadow-[0_8px_10px_rgba(0,0,0,0.95)]`}>
               {/* Outer Rubber Tire */}
               <circle cx="50" cy="50" r="46" fill="#090d16" stroke="#1e293b" strokeWidth="5" />
@@ -322,7 +319,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
           </div>
 
           {/* Front Wheel (Right) */}
-          <div className="absolute -bottom-[2%] right-[20.2%] w-14 h-14 sm:w-16 sm:h-16 z-40">
+          <div className="absolute -bottom-[2%] left-[76.85%] -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 z-40">
             <svg viewBox="0 0 100 100" className={`w-full h-full ${isCrash ? 'animate-bus-crash-wheel' : 'animate-bus-wheel'} drop-shadow-[0_8px_10px_rgba(0,0,0,0.95)]`}>
               <circle cx="50" cy="50" r="46" fill="#090d16" stroke="#1e293b" strokeWidth="5" />
               {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => (
@@ -367,7 +364,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                 <div className="animate-bus-tire-smoke absolute bottom-2 left-5 w-6 h-6 rounded-full bg-slate-400/40 blur-[2px]" style={{ animationDelay: '0.2s' }} />
               </div>
               {/* Front Wheel Tire Smoke */}
-              <div className="absolute -bottom-1 right-[17%] w-16 h-10 flex items-end">
+              <div className="absolute -bottom-1 left-[67%] w-16 h-10 flex items-end">
                 <div className="animate-bus-tire-smoke absolute bottom-0 left-0 w-7 h-7 rounded-full bg-slate-200/70 blur-[3px]" />
                 <div className="animate-bus-tire-smoke absolute bottom-1 left-2 w-8 h-8 rounded-full bg-slate-300/55 blur-[4px]" style={{ animationDelay: '0.14s' }} />
                 <div className="animate-bus-tire-smoke absolute bottom-2 left-5 w-6 h-6 rounded-full bg-slate-400/40 blur-[2px]" style={{ animationDelay: '0.22s' }} />

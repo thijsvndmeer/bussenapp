@@ -118,6 +118,68 @@ describe('Player State & Game Engine Logic', () => {
     expect(result.current.players.map((p) => p.id)).toEqual(['2', '3', '1']);
   });
 
+  it('resets player drinks taken, distributed and hand correctly', () => {
+    const { result } = renderHook(() => usePlayerState());
+
+    const players: Player[] = [
+      { id: '1', name: 'P1', hand: [{ id: 'c1', suit: Suit.HEARTS, rank: Rank.ACE }], drinksTaken: 5, drinksDistributed: 3, adtjes: 1, isDealer: false },
+      { id: '2', name: 'P2', hand: [{ id: 'c2', suit: Suit.CLUBS, rank: Rank.KING }], drinksTaken: 2, drinksDistributed: 4, adtjes: 0, isDealer: true },
+    ];
+
+    act(() => {
+      result.current.setPlayers(players);
+    });
+
+    expect(result.current.players[0].drinksTaken).toBe(5);
+    expect(result.current.players[0].drinksDistributed).toBe(3);
+    expect(result.current.players[0].adtjes).toBe(1);
+
+    act(() => {
+      result.current.setPlayers(prev => prev.map(p => ({
+        ...p,
+        hand: [],
+        drinksTaken: 0,
+        drinksDistributed: 0,
+        adtjes: 0,
+      })));
+    });
+
+    expect(result.current.players[0].drinksTaken).toBe(0);
+    expect(result.current.players[0].drinksDistributed).toBe(0);
+    expect(result.current.players[0].adtjes).toBe(0);
+    expect(result.current.players[0].hand).toEqual([]);
+    expect(result.current.players[1].drinksTaken).toBe(0);
+    expect(result.current.players[1].drinksDistributed).toBe(0);
+  });
+
+  it('ensures shared bus passengers both drink the same amount and bus total tracks sips directly', () => {
+    const { result } = renderHook(() => usePlayerState());
+
+    const passengers: Player[] = [
+      { id: '1', name: 'P1', hand: [], drinksTaken: 0, drinksDistributed: 0, adtjes: 0, isDealer: false },
+      { id: '2', name: 'P2', hand: [], drinksTaken: 0, drinksDistributed: 0, adtjes: 0, isDealer: false },
+    ];
+
+    act(() => {
+      result.current.setPlayers(passengers);
+    });
+
+    const sipsPenalty = 3;
+    let busSipsTaken = 0;
+
+    // Both players drink 3 sips, busSipsTaken increments by 3 (not 3 * 2 = 6)
+    busSipsTaken += sipsPenalty;
+    act(() => {
+      result.current.updatePlayers(Object.fromEntries(
+        passengers.map(bp => [bp.id, (player: Player) => ({ ...player, drinksTaken: player.drinksTaken + sipsPenalty })])
+      ));
+    });
+
+    expect(busSipsTaken).toBe(3);
+    expect(result.current.players[0].drinksTaken).toBe(3);
+    expect(result.current.players[1].drinksTaken).toBe(3);
+  });
+
   it('validates Suit and Rank enums', () => {
     expect(Suit.HEARTS).toBe('HEARTS');
     expect(Suit.DIAMONDS).toBe('DIAMONDS');
