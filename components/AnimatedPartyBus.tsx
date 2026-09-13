@@ -1,5 +1,5 @@
 import React from 'react';
-import { Player } from '../types';
+import { Player, UITheme } from '../types';
 import { PlayerAvatar } from '../src/components/ui/PlayerAvatar';
 
 interface AnimatedPartyBusProps {
@@ -10,6 +10,7 @@ interface AnimatedPartyBusProps {
   isReversing?: boolean;
   passengerBoarded?: boolean;
   isChassisBouncing?: boolean;
+  theme?: UITheme;
 }
 
 /**
@@ -30,6 +31,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
   isReversing = false,
   passengerBoarded = true,
   isChassisBouncing = false,
+  theme,
 }) => {
   const isDuo = passengers.length >= 2;
   const showPassenger = !isCrash || passengerBoarded;
@@ -52,13 +54,25 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              {/* Metallic Candy Red Lower Body */}
+              {/* Metallic Candy Red / Stars Interstellar Nebula Lower Body */}
               <linearGradient id="partyRedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#f87171" />
-                <stop offset="18%" stopColor="#ef4444" />
-                <stop offset="50%" stopColor="#dc2626" />
-                <stop offset="85%" stopColor="#991b1b" />
-                <stop offset="100%" stopColor="#450a0a" />
+                {theme === UITheme.STARS ? (
+                  <>
+                    <stop offset="0%" stopColor="#cbd5e1" />
+                    <stop offset="18%" stopColor="#94a3b8" />
+                    <stop offset="50%" stopColor="#334155" />
+                    <stop offset="85%" stopColor="#0f172a" />
+                    <stop offset="100%" stopColor="#020617" />
+                  </>
+                ) : (
+                  <>
+                    <stop offset="0%" stopColor="#f87171" />
+                    <stop offset="18%" stopColor="#ef4444" />
+                    <stop offset="50%" stopColor="#dc2626" />
+                    <stop offset="85%" stopColor="#991b1b" />
+                    <stop offset="100%" stopColor="#450a0a" />
+                  </>
+                )}
               </linearGradient>
 
               {/* Obsidian Roof & Pillars */}
@@ -114,7 +128,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             <path
               d="M 40 58 C 40 34, 62 20, 95 20 L 435 20 C 470 20, 498 34, 508 64 L 516 118 L 522 165 C 524 178, 514 190, 498 190 L 452 190 A 37 37 0 0 0 378 190 L 157 190 A 37 37 0 0 0 83 190 L 52 190 C 44 190, 38 182, 38 172 Z"
               fill="url(#partyRedGrad)"
-              stroke="#3b0707"
+              stroke={theme === UITheme.STARS ? '#1e293b' : '#3b0707'}
               strokeWidth="2"
             />
 
@@ -161,9 +175,9 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             <path d="M 39 107.5 L 515 107.5" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2" />
 
             {/* Lower Coach Side Aerodynamic Accent Swooshes */}
-            <path d="M 40 120 L 517 120" stroke="#fbbf24" strokeWidth="2" opacity="0.75" />
-            <path d="M 40 125 L 518 125" stroke="#f59e0b" strokeWidth="1.2" opacity="0.5" />
-            <path d="M 120 148 Q 280 152 480 142" stroke="rgba(255,255,255,0.2)" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <path d="M 40 120 L 517 120" stroke={theme === UITheme.STARS ? '#e2e8f0' : '#fbbf24'} strokeWidth="2" opacity="0.75" />
+            <path d="M 40 125 L 518 125" stroke={theme === UITheme.STARS ? '#fef08a' : '#f59e0b'} strokeWidth="1.2" opacity="0.5" />
+            <path d="M 120 148 Q 280 152 480 142" stroke={theme === UITheme.STARS ? 'rgba(254,240,138,0.45)' : 'rgba(255,255,255,0.2)'} strokeWidth="2" fill="none" strokeLinecap="round" />
 
             {/* Front Chrome Bumper & Projector Headlights */}
             <path
@@ -203,8 +217,8 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             <rect x="38" y="137" width="4" height="8" rx="1" fill={isBraking ? '#ff1111' : '#dc2626'} />
 
             {/* Wheel Arch Moldings */}
-            <path d="M 83 190 A 37 37 0 0 1 157 190" stroke="#3b0707" strokeWidth="4" fill="none" />
-            <path d="M 378 190 A 37 37 0 0 1 452 190" stroke="#3b0707" strokeWidth="4" fill="none" />
+            <path d="M 83 190 A 37 37 0 0 1 157 190" stroke={theme === UITheme.STARS ? '#151926' : '#3b0707'} strokeWidth="4" fill="none" />
+            <path d="M 378 190 A 37 37 0 0 1 452 190" stroke={theme === UITheme.STARS ? '#151926' : '#3b0707'} strokeWidth="4" fill="none" />
           </svg>
 
           {/* --- INTEGRATED VIP PASSENGER INSIDE WINDOW --- */}
@@ -217,7 +231,9 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                 <div 
                   className="absolute inset-0 z-10 opacity-70 transition-opacity duration-300"
                   style={{
-                    background: 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.5) 0%, rgba(236,72,153,0.3) 50%, rgba(2,6,23,0.85) 100%)',
+                    background: theme === UITheme.STARS 
+                      ? 'radial-gradient(circle at 50% 40%, rgba(226,232,240,0.5) 0%, rgba(254,240,138,0.25) 50%, rgba(4,6,12,0.95) 100%)' 
+                      : 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.5) 0%, rgba(236,72,153,0.3) 50%, rgba(2,6,23,0.85) 100%)',
                   }}
                 />
               )}
@@ -234,6 +250,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                   <PlayerAvatar
                     player={passengers[0]}
                     size="custom"
+                    theme={theme}
                     className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
                   />
                 </div>
@@ -252,7 +269,9 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                     <div 
                       className="absolute inset-0 z-10 opacity-70 transition-opacity duration-300"
                       style={{
-                        background: 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.45) 0%, rgba(236,72,153,0.25) 50%, rgba(2,6,23,0.85) 100%)',
+                        background: theme === UITheme.STARS 
+                          ? 'radial-gradient(circle at 50% 40%, rgba(226,232,240,0.5) 0%, rgba(254,240,138,0.25) 50%, rgba(4,6,12,0.95) 100%)' 
+                          : 'radial-gradient(circle at 50% 40%, rgba(168,85,247,0.45) 0%, rgba(236,72,153,0.25) 50%, rgba(2,6,23,0.85) 100%)',
                       }}
                     />
                   )}
@@ -266,6 +285,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                     <PlayerAvatar
                       player={p}
                       size="custom"
+                      theme={theme}
                       className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
                     />
                   </div>

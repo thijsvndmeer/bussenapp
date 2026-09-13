@@ -513,8 +513,60 @@
 }
 
 .animate-galaxy-spin {
-  animation: galaxy-spin 25s linear infinite;
+  animation: galaxy-spin 220s linear infinite;
   will-change: transform;
+}
+
+@keyframes astrolabe-drift-cw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes astrolabe-drift-ccw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+.animate-astrolabe-cw {
+  animation: astrolabe-drift-cw 280s linear infinite;
+  transform-origin: 250px 250px;
+  will-change: transform;
+}
+
+.animate-astrolabe-ccw {
+  animation: astrolabe-drift-ccw 240s linear infinite;
+  transform-origin: 250px 250px;
+  will-change: transform;
+}
+
+@keyframes armillary-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-armillary-spin {
+  animation: armillary-spin 40s linear infinite;
+  will-change: transform;
+}
+
+@keyframes starlight-refraction {
+  0% { background-position: 0% 50%; opacity: 0.4; }
+  50% { background-position: 100% 50%; opacity: 0.85; }
+  100% { background-position: 0% 50%; opacity: 0.4; }
+}
+
+.animate-starlight-refraction {
+  background-size: 200% 200%;
+  animation: starlight-refraction 8s ease infinite;
+}
+
+@keyframes astrolabe-verniers {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.75; }
+}
+
+.animate-astrolabe-verniers {
+  animation: astrolabe-verniers 4s ease-in-out infinite;
 }
 
 .animate-cosmic-pulse {
@@ -526,6 +578,76 @@
   background-size: 200% 100%;
   animation: cosmic-shimmer 2.5s infinite;
   will-change: background-position;
+}
+
+/* --- REFINED KINETIC CARD ANIMATIONS --- */
+@keyframes card-spin-cw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes card-spin-ccw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+.animate-card-celestial-cw {
+  animation: card-spin-cw 20s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-card-celestial-ccw {
+  animation: card-spin-ccw 16s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-card-vortex {
+  animation: card-spin-cw 24s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@keyframes card-starlight-sweep {
+  0% {
+    transform: translate3d(-150%, -150%, 0) rotate(35deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(150%, 150%, 0) rotate(35deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(150%, 150%, 0) rotate(35deg);
+    opacity: 0;
+  }
+}
+
+.animate-card-starlight-sweep {
+  animation: card-starlight-sweep 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+@keyframes card-breathe-glow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.05);
+  }
+}
+
+.animate-card-breathe {
+  animation: card-breathe-glow 3.5s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
 
 @keyframes cosmic-nebula-1 {

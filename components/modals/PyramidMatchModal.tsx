@@ -329,7 +329,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'bg-black/85 backdrop-blur-none';
     if (isCalm) return 'bg-[#05070e]/75 backdrop-blur-md';
     if (isBeer) return 'bg-[#02180c]/80 backdrop-blur-md';
-    if (isStars) return 'bg-[#020008]/85 backdrop-blur-md';
+    if (isStars) return 'bg-[#010005]/90 backdrop-blur-md';
     return 'bg-black/60 backdrop-blur-sm';
   };
 
@@ -337,7 +337,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'bg-[#0d0d0d] px-6 py-2 rounded-none border-2 border-[var(--theme-accent,#fb7185)] shadow-[4px_4px_0_rgba(0,0,0,0.9)]';
     if (isCalm) return 'bg-white/[0.06] backdrop-blur-xl px-6 py-2 rounded-full border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5)]';
     if (isBeer) return 'bg-gradient-to-r from-amber-950/80 via-yellow-950/70 to-amber-950/80 backdrop-blur-md px-6 py-2 rounded-xl border-2 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.35)]';
-    if (isStars) return 'bg-purple-950/40 backdrop-blur-xl px-6 py-2 rounded-full border border-purple-400/30 border-t-white/30 shadow-[0_0_25px_rgba(192,132,252,0.35)]';
+    if (isStars) return 'bg-[#080b15]/90 backdrop-blur-xl px-6 py-2 rounded-full border border-white/18 border-t-white/40 shadow-[0_0_25px_rgba(226,232,240,0.15)]';
     return 'bg-black/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 shadow-2xl';
   };
 
@@ -345,7 +345,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'font-mono font-black text-lg tracking-wider uppercase text-[var(--theme-accent,#fb7185)]';
     if (isCalm) return 'font-black text-lg tracking-wider uppercase';
     if (isBeer) return 'font-black text-lg tracking-widest uppercase text-amber-400 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]';
-    if (isStars) return 'font-black text-lg tracking-wider uppercase text-slate-100 drop-shadow-[0_0_10px_rgba(192,132,252,0.6)]';
+    if (isStars) return 'font-black text-lg tracking-wider uppercase text-slate-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]';
     return 'font-black text-lg tracking-widest uppercase text-emerald-400';
   };
 
@@ -356,7 +356,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'font-mono font-black text-sm scale-110 drop-shadow-[2px_2px_0_rgba(0,0,0,1)] uppercase text-[var(--theme-accent,#fb7185)] opacity-100';
     if (isCalm) return 'font-black text-sm scale-110 uppercase drop-shadow-[0_0_10px_var(--theme-accent-glow)] tracking-wider opacity-100';
     if (isBeer) return 'font-black text-sm scale-110 uppercase text-amber-300 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)] tracking-wider opacity-100';
-    if (isStars) return 'font-black text-sm scale-110 uppercase text-purple-200 drop-shadow-[0_0_12px_rgba(192,132,252,0.8)] tracking-wider opacity-100';
+    if (isStars) return 'font-black text-sm scale-110 uppercase text-slate-200 drop-shadow-[0_0_12px_rgba(226,232,240,0.8)] tracking-wider opacity-100';
     return 'font-black text-sm scale-110 uppercase text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] tracking-wider opacity-100';
   };
 
@@ -364,7 +364,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'drop-shadow-[4px_4px_0_rgba(0,0,0,0.9)] drop-shadow-[0_0_20px_rgba(251,113,133,0.25)]';
     if (isCalm) return 'drop-shadow-[0_0_35px_var(--theme-accent-glow,rgba(251,113,133,0.3))]';
     if (isBeer) return 'drop-shadow-[0_0_35px_rgba(245,158,11,0.45)]';
-    if (isStars) return 'drop-shadow-[0_0_40px_rgba(192,132,252,0.45)]';
+    if (isStars) return 'drop-shadow-[0_0_35px_rgba(226,232,240,0.25)]';
     return 'drop-shadow-[0_0_30px_rgba(52,211,153,0.3)]';
   };
 
@@ -379,7 +379,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       return 'bg-gradient-to-b from-[#032b12] to-[#011709] w-full rounded-2xl border-2 border-amber-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(245,158,11,0.2)] relative overflow-hidden';
     }
     if (isStars) {
-      return 'bg-[rgba(7,3,18,0.88)] backdrop-blur-2xl w-full rounded-3xl border border-purple-400/20 border-t-[rgba(255,255,255,0.25)] shadow-[0_20px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.15),0_0_35px_rgba(192,132,252,0.18)] relative overflow-hidden';
+      return 'bg-[rgba(8,11,20,0.92)] backdrop-blur-2xl w-full rounded-3xl border border-white/18 border-t-[rgba(255,255,255,0.35)] shadow-[0_20px_50px_rgba(0,0,0,0.95),inset_0_1px_0_0_rgba(255,255,255,0.18),0_0_35px_rgba(226,232,240,0.12)] relative overflow-hidden';
     }
     return 'bg-gradient-to-b from-slate-800 to-slate-900 w-full rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden';
   };
@@ -388,7 +388,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'rounded-none border-2 border-zinc-700 bg-[#18181b] hover:border-[var(--theme-accent,#fb7185)] text-zinc-300 hover:text-white transition-all';
     if (isCalm) return 'rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors';
     if (isBeer) return 'rounded-xl border border-amber-500/30 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-100 transition-colors';
-    if (isStars) return 'rounded-full border border-purple-300/25 bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 hover:text-white shadow-[0_0_12px_rgba(192,132,252,0.2)] transition-colors';
+    if (isStars) return 'rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white shadow-[0_0_12px_rgba(255,255,255,0.1)] transition-colors';
     return 'rounded-full bg-black/30 hover:bg-black/50 text-slate-400 hover:text-white transition-colors';
   };
 
@@ -396,7 +396,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'border-b-2 border-zinc-800';
     if (isCalm) return 'border-b border-white/[0.07]';
     if (isBeer) return 'border-b border-amber-500/20';
-    if (isStars) return 'border-b border-purple-400/15';
+    if (isStars) return 'border-b border-white/10';
     return 'border-b border-white/5';
   };
 
@@ -432,9 +432,9 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isStars) {
       return (
         <h2
-          className="text-3xl sm:text-4xl font-black tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-purple-100 to-purple-300 drop-shadow-[0_0_20px_rgba(192,132,252,0.6)]"
+          className="text-3xl sm:text-4xl font-black tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-[0_0_18px_rgba(255,255,255,0.4)]"
         >
-          ✨ {t("MATCH!")}
+          ✦ {t("MATCH!")} ✦
         </h2>
       );
     }
@@ -449,7 +449,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider mt-1 px-4 leading-relaxed';
     if (isCalm) return 'text-[11px] font-bold text-slate-300/80 uppercase tracking-wider mt-1 px-4 leading-relaxed';
     if (isBeer) return 'text-[11px] font-bold text-amber-200/80 uppercase tracking-wider mt-1 px-4 leading-relaxed';
-    if (isStars) return 'text-[11px] font-bold text-purple-200/70 tracking-wider uppercase mt-1 px-4 leading-relaxed';
+    if (isStars) return 'text-[11px] font-bold text-slate-300/80 tracking-wider uppercase mt-1 px-4 leading-relaxed';
     return 'text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1 px-4 leading-relaxed';
   };
 
@@ -457,7 +457,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500';
     if (isCalm) return 'text-[10px] font-bold uppercase tracking-wider text-slate-400';
     if (isBeer) return 'text-[10px] font-bold uppercase tracking-wider text-amber-300/60';
-    if (isStars) return 'text-[10px] font-bold uppercase tracking-wider text-purple-300/60';
+    if (isStars) return 'text-[10px] font-bold uppercase tracking-wider text-slate-400';
     return 'text-[10px] font-bold uppercase tracking-wider text-slate-500';
   };
 
@@ -465,7 +465,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'rounded-full border-2 border-zinc-700 group-hover:border-[var(--theme-accent,#fb7185)] group-hover:shadow-[3px_3px_0_rgba(0,0,0,0.9)]';
     if (isCalm) return 'rounded-full border-2 border-white/15 group-hover:border-[var(--theme-accent,#fb7185)] group-hover:shadow-[0_0_20px_var(--theme-accent-glow,rgba(251,113,133,0.3))]';
     if (isBeer) return 'rounded-full border-2 border-amber-500/30 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]';
-    if (isStars) return 'rounded-full border-2 border-purple-400/25 group-hover:border-purple-300 group-hover:shadow-[0_0_25px_rgba(192,132,252,0.6)]';
+    if (isStars) return 'rounded-full border-2 border-white/20 group-hover:border-slate-200 group-hover:shadow-[0_0_25px_rgba(226,232,240,0.6)]';
     return 'rounded-full border-2 border-white/20 group-hover:border-emerald-400/60 group-hover:shadow-[0_0_20px_rgba(52,211,153,0.3)]';
   };
 
@@ -473,7 +473,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'rounded-none border border-black bg-[var(--theme-accent,#fb7185)] text-slate-950 font-mono font-black text-[10px] px-1.5 py-0.5 shadow-[2px_2px_0_rgba(0,0,0,0.9)]';
     if (isCalm) return 'rounded-full border border-white/20 bg-[var(--theme-accent,#fb7185)] text-[var(--theme-btn-text,#ffffff)] font-black text-[10px] px-1.5 py-0.5 shadow-md';
     if (isBeer) return 'rounded-lg border border-amber-300/50 bg-gradient-to-br from-amber-400 to-yellow-500 text-stone-950 font-black text-[10px] px-1.5 py-0.5 shadow-md';
-    if (isStars) return 'rounded-full border border-purple-300/40 bg-gradient-to-r from-purple-200 to-slate-100 text-slate-950 font-black text-[10px] px-1.5 py-0.5 shadow-[0_0_10px_rgba(192,132,252,0.4)]';
+    if (isStars) return 'rounded-full border border-amber-300/40 bg-gradient-to-r from-amber-200 to-slate-100 text-slate-950 font-black text-[10px] px-1.5 py-0.5 shadow-[0_0_10px_rgba(254,240,138,0.4)]';
     return 'bg-gradient-to-br from-amber-400 to-orange-500 text-black font-black text-[10px] px-1.5 py-0.5 rounded-full shadow-lg';
   };
 
@@ -481,7 +481,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'font-mono font-bold text-xs sm:text-sm text-zinc-100 truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none';
     if (isCalm) return 'font-bold text-xs sm:text-sm text-slate-200 truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none';
     if (isBeer) return 'font-black text-xs sm:text-sm text-amber-100 tracking-tight truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none';
-    if (isStars) return 'font-bold text-xs sm:text-sm text-purple-100 truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none';
+    if (isStars) return 'font-bold text-xs sm:text-sm text-slate-200 truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none';
     return 'font-bold text-xs sm:text-sm text-white truncate max-w-[76px] sm:max-w-[90px] text-center leading-tight pointer-events-none';
   };
 
@@ -489,7 +489,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'text-center font-mono font-black uppercase tracking-widest mb-3 text-[var(--theme-accent,#fb7185)] text-xs transition-colors';
     if (isCalm) return 'text-center font-black uppercase tracking-widest mb-3 text-xs transition-colors';
     if (isBeer) return 'text-center font-black uppercase tracking-widest mb-3 text-amber-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-xs transition-colors';
-    if (isStars) return 'text-center font-black uppercase tracking-widest mb-3 text-purple-200 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)] text-xs transition-colors';
+    if (isStars) return 'text-center font-black uppercase tracking-widest mb-3 text-slate-200 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] text-xs transition-colors';
     return 'text-center font-bold uppercase tracking-widest mb-3 text-emerald-400 text-xs transition-colors';
   };
 
@@ -500,20 +500,20 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       if (isMetro) return `${shape} ring-4 ring-[var(--theme-accent,#fb7185)] shadow-[4px_4px_0_rgba(0,0,0,1)] grayscale-0 opacity-100`;
       if (isCalm) return `${shape} ring-4 ring-[var(--theme-accent,#fb7185)]/60 shadow-[0_10px_25px_var(--theme-accent-glow,rgba(251,113,133,0.3))] grayscale-0 opacity-100`;
       if (isBeer) return `${shape} ring-4 ring-amber-400/80 shadow-[0_10px_25px_rgba(245,158,11,0.7)] grayscale-0 opacity-100`;
-      if (isStars) return `${shape} ring-4 ring-purple-400/70 shadow-[0_10px_25px_rgba(192,132,252,0.8)] grayscale-0 opacity-100`;
+      if (isStars) return `${shape} ring-4 ring-slate-200 shadow-[0_10px_25px_rgba(226,232,240,0.8)] grayscale-0 opacity-100`;
       return `${shape} ring-4 ring-emerald-400/50 shadow-[0_10px_25px_rgba(52,211,153,0.6)] grayscale-0 opacity-100`;
     }
 
     if (isSource) {
       if (isMetro) return `${shape} border-2 border-zinc-800`;
       if (isBeer) return `${shape} border-2 border-amber-950/60`;
-      if (isStars) return `${shape} border-2 border-purple-950/40`;
+      if (isStars) return `${shape} border-2 border-white/10`;
       return `${shape} border-2 border-white/10`;
     }
 
     if (isMetro) return `${shape} border-2 border-zinc-700`;
     if (isBeer) return `${shape} border-2 border-amber-900/50`;
-    if (isStars) return `${shape} border-2 border-purple-900/40`;
+    if (isStars) return `${shape} border-2 border-white/20`;
     return `${shape} border-2 border-white/20`;
   };
 
@@ -522,13 +522,13 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       if (isMetro) return 'text-[var(--theme-accent,#fb7185)] font-mono font-bold drop-shadow-[1px_1px_0_rgba(0,0,0,1)]';
       if (isCalm) return 'font-bold drop-shadow';
       if (isBeer) return 'text-amber-300 font-bold drop-shadow';
-      if (isStars) return 'text-purple-200 font-bold drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]';
+      if (isStars) return 'text-slate-100 font-bold drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]';
       return 'text-emerald-300 font-bold drop-shadow';
     }
     if (isMetro) return 'text-zinc-400 font-mono font-semibold';
     if (isCalm) return 'text-slate-300 font-semibold';
     if (isBeer) return 'text-amber-200/70 font-semibold';
-    if (isStars) return 'text-purple-300/70 font-semibold';
+    if (isStars) return 'text-slate-400 font-semibold';
     return 'text-slate-300 font-semibold';
   };
 
@@ -538,7 +538,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       if (isMetro) return `${shape} border-2 border-black bg-[var(--theme-accent,#fb7185)] shadow-[2px_2px_0_rgba(0,0,0,1)] scale-125`;
       if (isCalm) return `${shape} border-2 border-white bg-[var(--theme-accent,#fb7185)] shadow-[0_0_12px_var(--theme-accent-glow,rgba(251,113,133,0.3))] scale-125`;
       if (isBeer) return `${shape} border-2 border-amber-300 bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.9)] scale-125`;
-      if (isStars) return `${shape} border-2 border-white bg-purple-400 shadow-[0_0_14px_rgba(192,132,252,0.9)] scale-125`;
+      if (isStars) return `${shape} border-2 border-white bg-slate-200 shadow-[0_0_16px_rgba(255,255,255,0.9)] scale-125`;
       return `${shape} border-2 border-emerald-400 bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.8)] scale-125`;
     }
     if (isMetro) return `${shape} border-2 border-zinc-600 bg-zinc-900 shadow-md`;
@@ -551,12 +551,12 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
       if (isMetro) return `${shape} scale-110 border-4 border-[var(--theme-accent,#fb7185)] shadow-[4px_4px_0_rgba(0,0,0,1)]`;
       if (isCalm) return `${shape} scale-110 border-4 border-[var(--theme-accent,#fb7185)] shadow-[0_0_25px_var(--theme-accent-glow,rgba(251,113,133,0.3))]`;
       if (isBeer) return `${shape} scale-110 border-4 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.8)]`;
-      if (isStars) return `${shape} scale-110 border-4 border-purple-300 shadow-[0_0_35px_rgba(192,132,252,0.85)]`;
+      if (isStars) return `${shape} scale-110 border-4 border-slate-200 shadow-[0_0_35px_rgba(226,232,240,0.85)]`;
       return `${shape} scale-110 border-4 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)]`;
     }
     if (isMetro) return `${shape} border-2 border-zinc-400`;
     if (isBeer) return `${shape} border-2 border-amber-500/40`;
-    if (isStars) return `${shape} border-2 border-purple-400/40`;
+    if (isStars) return `${shape} border-2 border-white/30`;
     return `${shape} border-2 border-white`;
   };
 
@@ -564,7 +564,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isMetro) return 'bg-[#0d0d0d] border-2 border-[var(--theme-accent,#fb7185)] rounded-none px-3 py-0.5 text-[10px] font-mono font-black text-[var(--theme-accent,#fb7185)] shadow-[3px_3px_0_rgba(0,0,0,0.9)] whitespace-nowrap';
     if (isCalm) return 'bg-[#0b0d19]/95 border border-[var(--theme-accent,#fb7185)]/50 rounded-full px-3 py-0.5 text-[10px] font-black tracking-wide shadow-xl whitespace-nowrap';
     if (isBeer) return 'bg-stone-950/95 border border-amber-500/60 rounded-xl px-3 py-0.5 text-[10px] font-black text-amber-300 shadow-xl whitespace-nowrap';
-    if (isStars) return 'bg-purple-950/90 border border-purple-400/40 rounded-full px-3 py-0.5 text-[10px] font-black tracking-wide text-purple-200 shadow-[0_0_15px_rgba(192,132,252,0.3)] whitespace-nowrap';
+    if (isStars) return 'bg-[#0c101c]/95 border border-white/20 rounded-full px-3 py-0.5 text-[10px] font-black tracking-wide text-slate-100 shadow-[0_0_15px_rgba(226,232,240,0.25)] whitespace-nowrap';
     return 'bg-slate-900/90 border border-emerald-400/50 rounded-full px-3 py-0.5 text-[10px] font-black text-emerald-300 shadow-xl whitespace-nowrap';
   };
 
@@ -657,7 +657,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
                       : isBeer
                       ? '#f59e0b'
                       : isStars
-                      ? '#c084fc'
+                      ? '#e2e8f0'
                       : '#34d399',
                   }}
                 />

@@ -51,9 +51,9 @@ describe('PyramidMatchModal Deep Theme Customization', () => {
 
   it('implements deep theme styling for UITheme.STARS', () => {
     expect(modalContent).toContain('isStars');
-    expect(modalContent).toContain('border-purple-400');
-    expect(modalContent).toContain('text-purple-200');
-    expect(modalContent).toContain('✨');
+    expect(modalContent).toContain('border-white/18');
+    expect(modalContent).toContain('text-slate-100');
+    expect(modalContent).toContain('✦');
   });
 
   it('customizes victims dock and floating drag ghost according to theme', () => {

@@ -44,12 +44,19 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
       {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
         <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
       )}
-      <div className={`flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg ${animClass}`}>
-      <div className="flex items-center gap-3 min-w-0">
-        {renderAvatar(player)}
-        <span className="font-bold text-white text-sm tracking-tight truncate flex-1 min-w-0">{player.name}</span>
-        {isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
-      </div>
+      <div className={`flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg ${animClass} relative overflow-hidden`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative flex-none">
+            {renderAvatar(player)}
+            <div className="theme-stars-only absolute -inset-1 rounded-full border border-white/20 border-dashed animate-armillary-spin pointer-events-none" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-sm tracking-tight truncate">{player.name}</span>
+              {isImmune && <Shield size={14} className="text-yellow-400 drop-shadow-md shrink-0" />}
+            </div>
+          </div>
+        </div>
       <div className="flex items-center gap-0.5">
         <div
           onTouchStart={(event) => onDragStart(event, index)}

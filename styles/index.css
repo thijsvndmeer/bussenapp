@@ -292,22 +292,29 @@ input:disabled,
   --theme-border-radius: 12px;
 }
 
-.theme-stars {
-  --theme-bg: #020008;
-  --theme-card-bg: rgba(6, 4, 18, 0.85);
-  --theme-card-border: 1px solid rgba(192, 132, 252, 0.18);
+:root[data-theme='stars'], .theme-stars {
+  --theme-bg-base: #010005;
+  --theme-bg-void: radial-gradient(circle at 50% 0%, #0c101c 0%, #04060c 45%, #010005 100%);
+  --theme-bg: #010005;
+  --theme-card-bg: rgba(8, 11, 20, 0.82);
+  --theme-card-border: 1px solid rgba(226, 232, 240, 0.16);
+  --theme-card-border-glow: 0 0 20px rgba(226, 232, 240, 0.08), inset 0 0 12px rgba(255, 255, 255, 0.04);
   --theme-font: 'Outfit', sans-serif;
   --theme-text: #f1f5f9;
-  --theme-text-secondary: #c084fc;
-  --theme-accent: #f1f5f9;
-  --theme-accent-secondary: #c084fc;
-  --theme-accent-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 40%, #e9d5ff 70%, #c084fc 100%);
-  --theme-accent-glow: rgba(192, 132, 252, 0.3);
-  --theme-btn-bg: #f1f5f9;
-  --theme-btn-text: #090514;
-  --theme-btn-sec-bg: rgba(192, 132, 252, 0.08);
-  --theme-btn-sec-text: #c084fc;
+  --theme-text-secondary: #cbd5e1;
+  --theme-accent: #e2e8f0;
+  --theme-accent-secondary: #f8fafc;
+  --theme-accent-gradient: linear-gradient(135deg, #ffffff 0%, #e2e8f0 45%, #cbd5e1 100%);
+  --theme-accent-glow: rgba(226, 232, 240, 0.28);
+  --theme-starlight-gold: #fef08a;
+  --theme-cosmic-cyan: #38bdf8;
+  --theme-btn-bg: linear-gradient(180deg, #181d2c 0%, #070911 100%);
+  --theme-btn-text: #ffffff;
+  --theme-btn-sec-bg: rgba(226, 232, 240, 0.07);
+  --theme-btn-sec-text: #e2e8f0;
   --theme-border-radius: 20px;
+  --theme-surface-glass: rgba(8, 11, 20, 0.85);
+  --theme-surface-border: 1px solid rgba(226, 232, 240, 0.14);
 }
 
 
@@ -340,7 +347,7 @@ input:disabled,
 }
 .theme-stars .bg-animated-gradient,
 .theme-stars .from-slate-800 {
-  background: #020008 !important;
+  background: #010005 !important;
   background-image: none !important;
   animation: none !important;
 }
@@ -437,29 +444,109 @@ input:disabled,
 .theme-stars .bg-slate-800\/50,
 .theme-stars .bg-slate-900\/30,
 .theme-stars [data-player-item] > div {
-  background: rgba(7, 3, 18, 0.78) !important;
-  border: 1px solid rgba(192, 132, 252, 0.16) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
-  border-radius: var(--theme-border-radius) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.85),
-              inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
-              inset 0 0 24px 0 rgba(147, 51, 234, 0.04) !important;
+  background: var(--theme-surface-glass, rgba(8, 11, 20, 0.85)) !important;
+  border: var(--theme-surface-border, 1px solid rgba(226, 232, 240, 0.14)) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+  border-radius: var(--theme-border-radius, 20px) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.9),
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
+              inset 0 0 24px 0 rgba(226, 232, 240, 0.03),
+              var(--theme-card-border-glow) !important;
 }
 
 .theme-stars [data-player-item] > div:hover {
-  border-color: rgba(192, 132, 252, 0.3) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.35) !important;
-  box-shadow: 0 20px 45px -8px rgba(0, 0, 0, 0.9),
-              inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-              0 0 20px rgba(192, 132, 252, 0.12) !important;
+  border-color: rgba(226, 232, 240, 0.3) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 20px 45px -8px rgba(0, 0, 0, 0.95),
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+              0 0 25px rgba(226, 232, 240, 0.15) !important;
 }
 
 .theme-stars .border-slate-700,
 .theme-stars .border-slate-700\/50,
 .theme-stars .border-slate-800 {
-  border-color: rgba(192, 132, 252, 0.18) !important;
+  border-color: rgba(226, 232, 240, 0.15) !important;
+}
+
+/* =========================================================================
+   ASTRONOMICAL HOROLOGY INSTRUMENTATION (STARS THEME BESPOKE ARCHITECTURE)
+   ========================================================================= */
+
+/* Chamfered Celestial Portals (Octagonal card aperture with corner ticks) */
+.stars-aperture {
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, rgba(18, 24, 38, 0.5) 0%, rgba(6, 8, 15, 0.92) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.18);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.8), inset 0 0 16px rgba(226, 232, 240, 0.06);
+  clip-path: polygon(
+    8px 0%, calc(100% - 8px) 0%, 
+    100% 8px, 100% calc(100% - 8px), 
+    calc(100% - 8px) 100%, 8px 100%, 
+    0% calc(100% - 8px), 0% 8px
+  );
+}
+
+/* Precision Astrolabe Quadrant Corner Brackets */
+.stars-corner-bracket {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: rgba(254, 240, 138, 0.65);
+  pointer-events: none;
+}
+.stars-corner-tl { top: 2px; left: 2px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.stars-corner-tr { top: 2px; right: 2px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.stars-corner-bl { bottom: 2px; left: 2px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.stars-corner-br { bottom: 2px; right: 2px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+/* Horizon Chronometer HUD Header */
+.stars-chronometer-bar {
+  background: linear-gradient(180deg, rgba(16, 20, 32, 0.9) 0%, rgba(8, 10, 18, 0.95) 100%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.95), 0 0 24px rgba(226, 232, 240, 0.08) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+}
+
+/* Astronomical Polarity Buttons (High precision sector controls) */
+.stars-polarity-btn {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.32);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stars-polarity-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+}
+
+.stars-polarity-btn:active {
+  transform: scale(0.97);
+}
+
+/* Visibility toggles for Stars Theme bespoke elements */
+.theme-stars-only {
+  display: none !important;
+}
+.theme-stars .theme-stars-only {
+  display: block !important;
+}
+.theme-stars div.theme-stars-only {
+  display: flex !important;
+}
+.theme-stars span.theme-stars-only {
+  display: inline-block !important;
 }
 
 /* Input elements (exclude range inputs so slider tracks stay visible) */
@@ -474,18 +561,18 @@ input:disabled,
 
 /* Stars Input Elements */
 .theme-stars input:not([type="range"]) {
-  background-color: rgba(8, 4, 20, 0.75) !important;
-  border: 1px solid rgba(192, 132, 252, 0.18) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background-color: rgba(8, 11, 20, 0.85) !important;
+  border: 1px solid rgba(226, 232, 240, 0.18) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
   color: var(--theme-text) !important;
   border-radius: var(--theme-border-radius) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 .theme-stars input:not([type="range"]):focus {
-  border-color: rgba(192, 132, 252, 0.5) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(226, 232, 240, 0.5) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(226, 232, 240, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15), var(--theme-card-border-glow) !important;
   outline: none !important;
 }
 
@@ -561,12 +648,12 @@ input[type="range"].custom-slider-invisible {
 .theme-stars button.bg-gradient-to-b.from-red-600:not(.no-calm-override),
 .theme-stars button.bg-gradient-to-r.from-emerald-500:not(.no-calm-override),
 .theme-stars button.bg-gradient-to-r.from-amber-500:not(.no-calm-override) {
-  background: var(--theme-btn-bg, #f1f5f9) !important;
-  background-image: none !important;
-  color: var(--theme-btn-text, #090514) !important;
-  border: 1px solid rgba(241, 245, 249, 0.4) !important;
+  background: var(--theme-btn-bg, linear-gradient(180deg, #181d2c 0%, #070911 100%)) !important;
+  color: var(--theme-btn-text, #ffffff) !important;
+  border: var(--theme-card-border, 1px solid rgba(226, 232, 240, 0.18)) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
   border-radius: var(--theme-border-radius);
-  box-shadow: 0 0 20px var(--theme-accent-glow) !important;
+  box-shadow: var(--theme-card-border-glow, 0 0 20px rgba(226, 232, 240, 0.12), inset 0 0 12px rgba(255, 255, 255, 0.05)) !important;
 }
 
 .theme-stars button.rounded-full,
@@ -602,16 +689,16 @@ input[type="range"].custom-slider-invisible {
 
 .theme-stars button.bg-slate-800,
 .theme-stars button.bg-slate-800\/80 {
-  background: var(--theme-btn-sec-bg) !important;
-  color: var(--theme-btn-sec-text) !important;
-  border: 1px solid rgba(192, 132, 252, 0.25) !important;
+  background: var(--theme-btn-sec-bg, rgba(226, 232, 240, 0.07)) !important;
+  color: var(--theme-btn-sec-text, #e2e8f0) !important;
+  border: 1px solid rgba(226, 232, 240, 0.16) !important;
   border-radius: var(--theme-border-radius);
 }
 .theme-stars button.bg-slate-800:hover,
 .theme-stars button.bg-slate-800\/80:hover {
-  background: rgba(192, 132, 252, 0.18) !important;
-  color: #f1f5f9 !important;
-  border-color: rgba(192, 132, 252, 0.45) !important;
+  background: rgba(226, 232, 240, 0.14) !important;
+  color: #ffffff !important;
+  border-color: rgba(226, 232, 240, 0.35) !important;
 }
 
 .theme-classic .always-white,
@@ -646,7 +733,7 @@ input[type="range"].custom-slider-invisible {
   opacity: 0.85 !important;
 }
 .theme-stars .slider-active-fill {
-  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 40%, #e9d5ff 70%, #c084fc 100%) !important;
+  background: var(--theme-accent-gradient, linear-gradient(135deg, #ffffff 0%, #e2e8f0 45%, #cbd5e1 100%)) !important;
   opacity: 0.9 !important;
 }
 

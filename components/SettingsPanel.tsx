@@ -180,7 +180,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   // When line is blueish -> highlight is mint green. When line is mint/greenish or other -> highlight is blue (never mint).
   const currentLineColor = 
     settings?.theme === 'calm' ? (settings.calmAccentColor || '#fb7185') :
-    settings?.theme === 'stars' ? '#f1f5f9' :
+    settings?.theme === 'stars' ? '#e2e8f0' :
     settings?.theme === 'metro' ? '#fb7185' :
     settings?.theme === 'beer' ? '#ff3333' : '#ef4444';
   const isLineBlueish = getRecommendedHighlightColor(currentLineColor) === 'mint';

@@ -78,15 +78,22 @@ export const ThemeLabel: React.FC<{
 
   if (theme === UITheme.STARS) {
     return (
-      <div className={`flex flex-col ${align === 'center' ? 'items-center text-center' : 'items-start text-left'}`}>
+      <div className={`relative flex flex-col ${align === 'center' ? 'items-center text-center' : 'items-start text-left'} ${isLg ? 'gap-2.5' : 'gap-1'}`}>
         <div 
-          className={`${textSizeClass} font-semibold italic uppercase tracking-[0.2em] text-slate-100 drop-shadow-[0_0_12px_rgba(192,132,252,0.4)]`}
+          className={`${textSizeClass} font-semibold uppercase tracking-[0.28em] text-slate-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]`}
           style={{ 
             fontFamily: "'Outfit', sans-serif"
           }}
         >
           {text}
         </div>
+        {!isSimple && (
+          <div className="flex w-full items-center gap-1.5 opacity-60">
+            <div className={`h-px bg-gradient-to-r from-transparent to-white/40 ${isLg ? 'w-20' : 'w-6'}`} />
+            <div className="w-1 h-1 bg-[#fef08a] rounded-full shadow-[0_0_6px_#fef08a]" />
+            <div className="flex-1 h-px bg-gradient-to-r from-white/30 to-transparent" />
+          </div>
+        )}
       </div>
     );
   }
@@ -115,7 +122,7 @@ export const ThemeHeader: React.FC<{
   if (theme === UITheme.STARS) {
     return (
       <Component 
-        className={`font-medium italic tracking-[0.15em] uppercase text-slate-100 drop-shadow-[0_0_10px_rgba(192,132,252,0.35)] ${className}`}
+        className={`font-semibold tracking-[0.24em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-[0_0_14px_rgba(255,255,255,0.35)] ${className}`}
         style={{ fontFamily: "'Outfit', sans-serif" }}
       >
         {text}

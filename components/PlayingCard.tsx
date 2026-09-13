@@ -149,7 +149,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
-          ${isGalaxy ? 'bg-[#010005] border-purple-500/25 shadow-[0_12px_36px_rgba(0,0,0,0.95)] ring-1 ring-white/5' : isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-br from-white to-slate-100 border-white/80'}
+          ${isGalaxy ? 'bg-[#010005] border-white/18 border-t-[rgba(255,255,255,0.4)] shadow-[0_12px_36px_rgba(0,0,0,0.95)] ring-1 ring-white/5' : isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-br from-white to-slate-100 border-white/80'}
           ${sizeConfig.radius}
           border
           ${!isNeon && !isGalaxy ? 'ring-1 ring-black/5 shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]' : isNeon ? 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]' : ''}
@@ -161,10 +161,10 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
               <div 
                 className="absolute inset-0 pointer-events-none opacity-40" 
                 style={{ 
-                  background: 'radial-gradient(ellipse at 50% 15%, rgba(88, 28, 135, 0.25) 0%, transparent 65%), radial-gradient(ellipse at 50% 85%, rgba(24, 18, 55, 0.3) 0%, transparent 65%)' 
+                  background: 'radial-gradient(ellipse at 50% 15%, rgba(226, 232, 240, 0.08) 0%, transparent 65%), radial-gradient(ellipse at 50% 85%, rgba(14, 18, 30, 0.4) 0%, transparent 65%)' 
                 }} 
               />
-              <div className="absolute inset-0 pointer-events-none animate-cosmic-shimmer opacity-10" style={{ willChange: 'background-position', transform: 'translateZ(0)' }} />
+              <div className="absolute inset-[-60%] w-[220%] h-[220%] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent animate-card-starlight-sweep pointer-events-none" />
             </>
           )}
 
@@ -182,23 +182,26 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
               {/* Corner Indices */}
               <div className={`absolute top-1 left-1 flex flex-col items-center leading-none ${textColor} ${glowClass}`}>
-                <span className={`${sizeConfig.text} ${isClassic ? 'font-serif' : 'font-black'} tracking-tighter leading-none`}>{rankLabel}</span>
+                <span className={`${sizeConfig.text} ${isClassic ? 'font-serif' : isGalaxy ? 'font-sans font-bold' : 'font-black'} tracking-tighter leading-none`}>{rankLabel}</span>
                 <div className="mt-0.5">{getSuitIcon(card.suit, sizeConfig.cornerIcon, true, textColor)}</div>
               </div>
 
               <div className={`absolute bottom-1 right-1 flex flex-col items-center leading-none transform rotate-180 ${textColor} ${glowClass}`}>
-                <span className={`${sizeConfig.text} ${isClassic ? 'font-serif' : 'font-black'} tracking-tighter leading-none`}>{rankLabel}</span>
+                <span className={`${sizeConfig.text} ${isClassic ? 'font-serif' : isGalaxy ? 'font-sans font-bold' : 'font-black'} tracking-tighter leading-none`}>{rankLabel}</span>
                 <div className="mt-0.5">{getSuitIcon(card.suit, sizeConfig.cornerIcon, true, textColor)}</div>
               </div>
 
               {/* --- Central Face Content --- */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-visible">
 
-                {/* ACE - Targeted centering with strict aspect-square */}
+                {/* ACE - Refined minimal celestial orbit */}
                 {isAce && (
                   <div className={`w-[45%] aspect-square flex items-center justify-center relative ${!isClassic ? 'drop-shadow-md' : ''} ${glowClass} transition-transform`}>
                     {isGalaxy && (
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-transparent to-amber-500/15 blur-md pointer-events-none" />
+                      <>
+                        <div className="absolute inset-0 rounded-full bg-white/[0.08] blur-md animate-card-breathe pointer-events-none" />
+                        <div className="absolute -inset-2 rounded-full border border-white/15 animate-card-celestial-cw pointer-events-none" />
+                      </>
                     )}
                     <div className="w-full h-full flex items-center justify-center relative z-10">
                       {getSuitIcon(card.suit, size === 'sm' ? 24 : size === 'base' ? 36 : size === 'md' ? 60 : 88, true, textColor)}
@@ -206,74 +209,90 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                   </div>
                 )}
 
-                {/* FACE CARDS */}
+                {/* FACE CARDS - Pure royal insignia without extra text or busy rings */}
                 {isFaceCard && (
-                  <div className="w-[65%] h-[75%] relative flex items-center justify-center overflow-visible">
-                    <div className={`w-full h-full rounded-lg flex flex-col justify-between relative overflow-hidden shadow-inner ${
-                      isGalaxy 
-                        ? 'border border-purple-400/25 bg-gradient-to-b from-[#0a0319]/95 via-[#020008]/98 to-[#070114]/95 shadow-[inset_0_0_20px_rgba(0,0,0,0.9),0_0_15px_rgba(168,85,247,0.1)]' 
-                        : isDark 
-                        ? 'border-2 border-slate-500/30 bg-[#1e293b]/40' 
-                        : isClassic 
-                        ? `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-slate-50/50` 
-                        : isNeon 
-                        ? `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-white/5` 
-                        : `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-gradient-to-br from-white via-white/80 to-slate-50`
-                    }`}>
-                      {/* Damask Royal Pattern */}
-                      {!isClassic && !isNeon && !isGalaxy && (
-                        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40l20-20 20 20H0z' fill='%23000' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
-                      )}
-
-                      {/* Galaxy delicate celestial inner hairline */}
-                      {isGalaxy && (
-                        <div className="absolute inset-1 rounded border border-white/5 pointer-events-none" />
-                      )}
-
-                      {isClassic ? (
-                        /* AUTHENTIC CLASSIC ILLUSTRATION */
-                        <div className="absolute inset-0 flex items-center justify-center -z-0">
-                          <ClassicFaceCard 
-                            suit={card.suit} 
-                            rank={card.rank} 
-                            size={size === 'sm' ? 40 : size === 'base' ? 60 : size === 'md' ? 80 : 120} 
-                          />
+                  <div className="w-[70%] h-[78%] relative flex items-center justify-center overflow-visible">
+                    {isGalaxy ? (
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <div className="absolute inset-4 rounded-full bg-white/[0.06] blur-md animate-card-breathe pointer-events-none" />
+                        <div className="absolute w-[68%] aspect-square rounded-full border border-white/15 animate-card-celestial-cw pointer-events-none" />
+                        <div className="relative z-10 flex items-center justify-center">
+                          {card.rank === Rank.KING && (
+                            <Crown 
+                              size={size === 'sm' ? 20 : size === 'base' ? 28 : size === 'md' ? 40 : 56} 
+                              fill="currentColor" 
+                              className="text-amber-200/95 drop-shadow-[0_0_12px_rgba(254,240,138,0.6)]" 
+                            />
+                          )}
+                          {card.rank === Rank.QUEEN && (
+                            <Crown 
+                              size={size === 'sm' ? 20 : size === 'base' ? 28 : size === 'md' ? 40 : 56} 
+                              fill="currentColor" 
+                              className="text-slate-100 drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]" 
+                            />
+                          )}
+                          {card.rank === Rank.JACK && (
+                            <FarmerIcon 
+                              size={size === 'sm' ? 20 : size === 'base' ? 28 : size === 'md' ? 40 : 56} 
+                              fill="currentColor" 
+                              className="text-slate-200 drop-shadow-[0_0_10px_rgba(226,232,240,0.5)]" 
+                            />
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          {/* Top Elite Icon */}
-                          <div className="flex justify-start relative z-10 transition-transform p-1">
-                            <div>
-                              {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className={isGalaxy ? "text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" : "text-amber-500"} />}
-                              {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className={isGalaxy ? "text-pink-300 drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]" : "text-pink-500"} />}
-                              {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className={isGalaxy ? "text-purple-200 drop-shadow-[0_0_8px_rgba(216,180,254,0.6)]" : "text-emerald-600"} />}
-                            </div>
+                      </div>
+                    ) : isClassic ? (
+                      /* AUTHENTIC CLASSIC ILLUSTRATION */
+                      <div className="absolute inset-0 flex items-center justify-center -z-0">
+                        <ClassicFaceCard 
+                          suit={card.suit} 
+                          rank={card.rank} 
+                          size={size === 'sm' ? 40 : size === 'base' ? 60 : size === 'md' ? 80 : 120} 
+                        />
+                      </div>
+                    ) : (
+                      <div className={`w-full h-full rounded-lg flex flex-col justify-between relative overflow-hidden shadow-inner ${
+                        isDark 
+                          ? 'border-2 border-slate-500/30 bg-[#1e293b]/40' 
+                          : isNeon 
+                          ? `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-white/5` 
+                          : `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-gradient-to-br from-white via-white/80 to-slate-50`
+                      }`}>
+                        {/* Damask Royal Pattern */}
+                        {!isClassic && !isNeon && (
+                          <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40l20-20 20 20H0z' fill='%23000' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
+                        )}
+                        {/* Top Elite Icon */}
+                        <div className="flex justify-start relative z-10 transition-transform p-1">
+                          <div>
+                            {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
+                            {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
+                            {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
                           </div>
+                        </div>
 
-                          {/* Background Letter */}
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-transform">
-                            <span className={`font-serif font-black ${size === 'sm' ? 'text-4xl' : size === 'base' ? 'text-5xl' : 'text-8xl'} ${isGalaxy ? 'opacity-20 text-transparent bg-clip-text bg-gradient-to-b from-purple-100 via-white to-purple-400 drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]' : isDark || isNeon ? 'opacity-20' : 'opacity-10'} ${isGalaxy ? '' : isRed ? 'text-red-900' : 'text-slate-900'} leading-none`}>
-                              {rankLabel}
-                            </span>
-                          </div>
+                        {/* Background Letter */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-transform">
+                          <span className={`font-serif font-black ${size === 'sm' ? 'text-4xl' : size === 'base' ? 'text-5xl' : 'text-8xl'} ${isDark || isNeon ? 'opacity-20' : 'opacity-10'} ${isRed ? 'text-red-900' : 'text-slate-900'} leading-none`}>
+                            {rankLabel}
+                          </span>
+                        </div>
 
-                          {/* Bottom Elite Icon */}
-                          <div className="flex justify-end rotate-180 relative z-10 transition-transform p-1">
-                            <div>
-                              {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className={isGalaxy ? "text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" : "text-amber-500"} />}
-                              {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className={isGalaxy ? "text-pink-300 drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]" : "text-pink-500"} />}
-                              {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className={isGalaxy ? "text-purple-200 drop-shadow-[0_0_8px_rgba(216,180,254,0.6)]" : "text-emerald-600"} />}
-                            </div>
+                        {/* Bottom Elite Icon */}
+                        <div className="flex justify-end rotate-180 relative z-10 transition-transform p-1">
+                          <div>
+                            {card.rank === Rank.KING && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-amber-500" />}
+                            {card.rank === Rank.QUEEN && <Crown size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-pink-500" />}
+                            {card.rank === Rank.JACK && <FarmerIcon size={size === 'sm' ? 14 : size === 'base' ? 20 : 32} fill="currentColor" className="text-emerald-600" />}
                           </div>
-                        </>
-                      )}
-                    </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* NUMBER CARDS */}
+                {/* NUMBER CARDS - Clean pips without background clutter */}
                 {!isAce && !isFaceCard && (
-                  <div className="w-[65%] h-[75%] relative pointer-events-none">
+                  <div className="w-[65%] h-[75%] relative pointer-events-none flex items-center justify-center">
                     {size === 'sm' ? (
                       <div className={`w-full h-full flex items-center justify-center ${glowClass}`}>
                         {getSuitIcon(card.suit, 20, true, textColor)}
@@ -294,7 +313,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- BACK --- */}
         <div className={`
           absolute inset-0 backface-hidden rotate-y-180
-          ${isGalaxy ? 'bg-[#000000] border-purple-500/25 shadow-[0_12px_40px_rgba(0,0,0,0.95)] ring-1 ring-white/5' : isDark ? 'bg-slate-900 border-slate-700' : isClassic ? 'bg-red-900 border-[#dcd0b9]' : isNeon ? 'bg-[#050508] border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.25)]' : 'bg-red-700 border-white'}
+          ${isGalaxy ? 'bg-[#000000] border-white/18 border-t-[rgba(254,240,138,0.45)] shadow-[0_12px_40px_rgba(0,0,0,0.95)] ring-1 ring-white/5' : isDark ? 'bg-slate-900 border-slate-700' : isClassic ? 'bg-red-900 border-[#dcd0b9]' : isNeon ? 'bg-[#050508] border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.25)]' : 'bg-red-700 border-white'}
           ${sizeConfig.radius}
           border-2
           overflow-hidden
@@ -306,25 +325,25 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
               <div 
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  background: 'radial-gradient(ellipse at 50% 50%, #090317 0%, #020008 65%, #000000 100%)'
+                  background: 'radial-gradient(ellipse at 50% 50%, #0a0d18 0%, #03050a 65%, #000000 100%)'
                 }}
               />
-              {/* Ultra-subtle deep violet cosmic vortex */}
+
+              {/* Starlight cosmic vortex */}
               <div 
-                className="absolute inset-[-20%] rounded-full opacity-20 animate-galaxy-spin pointer-events-none"
+                className="absolute inset-[-25%] rounded-full opacity-20 animate-card-vortex pointer-events-none"
                 style={{
-                  background: 'conic-gradient(from 0deg, transparent 0deg, rgba(168,85,247,0.3) 90deg, transparent 180deg, rgba(216,180,254,0.2) 270deg, transparent 360deg)',
+                  background: 'conic-gradient(from 0deg, transparent 0deg, rgba(226,232,240,0.18) 90deg, transparent 180deg, rgba(254,240,138,0.12) 270deg, transparent 360deg)',
                   filter: 'blur(12px)',
                   willChange: 'transform',
                 }}
               />
-              {/* Concentric astronomical orbit rings (Luxury watch astrolabe aesthetic) */}
-              <div className="absolute inset-2 rounded-[inherit] border border-purple-400/15 pointer-events-none" />
-              <div className="absolute inset-4 rounded-[inherit] border border-white/5 pointer-events-none" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border border-purple-400/10 pointer-events-none" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border border-amber-300/15 pointer-events-none" />
-              {/* Subtle starlight shimmer */}
-              <div className="absolute inset-0 animate-cosmic-shimmer opacity-10 pointer-events-none" style={{ willChange: 'background-position', transform: 'translateZ(0)' }} />
+
+              {/* Single refined hairline border */}
+              <div className="absolute inset-2 rounded-[inherit] border border-white/12 border-t-white/30 pointer-events-none" />
+
+              {/* Diagonal starlight sheen sweep */}
+              <div className="absolute inset-[-60%] w-[220%] h-[220%] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent animate-card-starlight-sweep pointer-events-none" />
             </>
           )}
 
@@ -348,23 +367,45 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           )}
 
           {/* Center Logo/Graphic */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className={`w-1/2 h-1/3 border ${
-              isGalaxy ? 'border-amber-300/30 bg-black/85 shadow-[0_0_25px_rgba(0,0,0,0.9),inset_0_0_12px_rgba(168,85,247,0.25)] backdrop-blur-md' :
-              isNeon ? 'border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.2)] bg-white/5 backdrop-blur-md border-2' : 
-              'border-white/30 backdrop-blur-[1px] border-2'
-            } rounded-full flex items-center justify-center relative`}>
-              {isGalaxy && (
-                <div className="absolute -inset-1 rounded-full border border-purple-400/20 opacity-50 pointer-events-none" />
-              )}
-              <div className={`font-sans font-black tracking-[0.25em] text-xs ${
-                isGalaxy ? 'bg-gradient-to-r from-amber-200 via-purple-100 to-slate-200 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]' :
-                isNeon ? 'text-white italic -rotate-12 drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]' : 
-                'text-white italic -rotate-12 drop-shadow-md'
-              }`}>
-                BUSSEN
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {isGalaxy ? (
+              <div className="relative flex flex-col items-center justify-center">
+                {/* Soft breathing celestial aura */}
+                <div className="absolute -inset-3 rounded-full bg-white/[0.08] blur-md animate-card-breathe pointer-events-none" />
+                {/* Delicate kinetic celestial ring */}
+                <div className="absolute -inset-2 rounded-full border border-white/20 animate-card-celestial-cw pointer-events-none" />
+                
+                {/* Center Medallion with pure star glyph */}
+                <div className={`${
+                  size === 'sm' ? 'w-7 h-7' : size === 'base' ? 'w-9 h-9' : 'w-11 h-11'
+                } rounded-full border border-white/20 bg-[#060810]/95 shadow-[0_0_24px_rgba(0,0,0,0.8),inset_0_0_8px_rgba(255,255,255,0.06)] backdrop-blur-md flex items-center justify-center relative`}>
+                  <span className={`text-amber-200 ${
+                    size === 'sm' ? 'text-[9px]' : size === 'base' ? 'text-[11px]' : 'text-sm'
+                  } leading-none drop-shadow-[0_0_8px_rgba(254,240,138,0.8)] select-none`}>
+                    ✦
+                  </span>
+                </div>
+                
+                {/* Clean brand text - ONLY 'bussen' */}
+                <span className={`${
+                  size === 'sm' ? 'text-[5.5px] mt-1' : size === 'base' ? 'text-[6.5px] mt-1.5' : 'text-[7.5px] mt-2'
+                } font-sans font-semibold tracking-[0.35em] text-slate-200/90 uppercase select-none drop-shadow`}>
+                  bussen
+                </span>
               </div>
-            </div>
+            ) : (
+              <div className={`w-1/2 h-1/3 border ${
+                isNeon ? 'border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.2)] bg-white/5 backdrop-blur-md border-2' : 
+                'border-white/30 backdrop-blur-[1px] border-2'
+              } rounded-full flex items-center justify-center relative`}>
+                <div className={`font-sans font-black tracking-[0.25em] text-xs ${
+                  isNeon ? 'text-white italic -rotate-12 drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]' : 
+                  'text-white italic -rotate-12 drop-shadow-md'
+                }`}>
+                  BUSSEN
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Corner Decals for Neon */}

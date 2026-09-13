@@ -75,7 +75,7 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
       opacity: (i % 3 === 0) ? 0.85 : 0.45,
       delay: (i % 6) * 0.5,
       duration: (i % 4) + 2.5,
-      color: i % 4 === 0 ? '#fef08a' : i % 2 === 0 ? '#c084fc' : '#f8fafc',
+      color: i % 4 === 0 ? '#fef08a' : i % 2 === 0 ? '#e2e8f0' : '#f8fafc',
     }));
   }, []);
 
@@ -95,7 +95,7 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
             return (
               <div
                 key={i}
-                className="absolute top-1/2 left-1/2 h-[1px] bg-gradient-to-r from-transparent via-purple-300/40 to-white/90 origin-left animate-singularity-collapse"
+                className="absolute top-1/2 left-1/2 h-[1px] bg-gradient-to-r from-transparent via-slate-300/40 to-white/90 origin-left animate-singularity-collapse"
                 style={{
                   width: `${(i % 3) * 60 + 140}px`,
                   transform: `rotate(${rot}deg) translate3d(20px, 0, 0)`,
@@ -107,7 +107,7 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
 
           {/* Rotating Astrolabe Ring Gathering Inward */}
           <div 
-            className="absolute w-44 h-44 rounded-full border border-purple-400/20 animate-galaxy-spin opacity-40"
+            className="absolute w-44 h-44 rounded-full border border-white/20 animate-galaxy-spin opacity-40"
             style={{ animationDuration: '40s' }}
           />
           <div 
@@ -117,18 +117,18 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
 
           {/* Pure Optical Diamond Singularity */}
           <div className="relative flex items-center justify-center animate-singularity-gather">
-            <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_#ffffff,0_0_60px_#c084fc,0_0_120px_#a855f7]" />
+            <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_25px_#ffffff,0_0_60px_#e2e8f0,0_0_120px_rgba(255,255,255,0.4)]" />
             <div className="absolute w-20 h-[1.5px] bg-white/80 blur-[0.5px]" />
             <div className="absolute h-20 w-[1.5px] bg-white/80 blur-[0.5px]" />
           </div>
         </div>
       )}
 
-      {/* 3. Supernova Phase: Sovereign Shockwaves & Ethereal Violet Bloom */}
+      {/* 3. Supernova Phase: Sovereign Shockwaves & Ethereal Starlight Bloom */}
       {(phase === 'supernova' || phase === 'reveal') && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden isolate">
           {/* Supernova Shockwave Rings */}
-          <div className="absolute w-[380px] h-[380px] rounded-full border border-purple-200/90 shadow-[0_0_40px_rgba(192,132,252,0.8)] animate-supernova-shockwave" />
+          <div className="absolute w-[380px] h-[380px] rounded-full border border-white/80 shadow-[0_0_40px_rgba(255,255,255,0.6)] animate-supernova-shockwave" />
           <div 
             className="absolute w-[320px] h-[320px] rounded-full border border-dashed border-amber-200/50 animate-supernova-shockwave"
             style={{ animationDelay: '0.12s' }}
@@ -138,12 +138,12 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
             style={{ animationDelay: '0.22s' }}
           />
 
-          {/* Deep Violet / Amethyst Core Bloom */}
-          <div className="absolute w-[600px] h-[600px] rounded-full bg-radial from-purple-600/45 via-purple-950/20 to-transparent blur-3xl animate-supernova-bloom" />
+          {/* Deep Starlight Core Bloom */}
+          <div className="absolute w-[600px] h-[600px] rounded-full bg-radial from-slate-400/20 via-slate-900/20 to-transparent blur-3xl animate-supernova-bloom" />
 
           {/* Starlight Compass Beams */}
           <div className="absolute w-screen h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent animate-celestial-beam" />
-          <div className="absolute h-screen w-[1.5px] bg-gradient-to-b from-transparent via-purple-300/60 to-transparent animate-celestial-beam" />
+          <div className="absolute h-screen w-[1.5px] bg-gradient-to-b from-transparent via-slate-300/60 to-transparent animate-celestial-beam" />
         </div>
       )}
 
@@ -172,28 +172,28 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
 
       {/* 5. Epic Dark Stars Dialogue (Awwwards-Tier Double-Bezel Architecture) */}
       {phase === 'reveal' && (
-        <div className="relative z-10 w-full max-w-sm sm:max-w-md mx-4 p-1.5 rounded-[2.5rem] bg-gradient-to-b from-purple-400/25 via-white/5 to-purple-950/30 border border-purple-300/20 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in-95 duration-700 ease-out max-h-[92vh] flex flex-col">
-          <div className="w-full h-full rounded-[calc(2.5rem-0.375rem)] bg-[#04010a]/95 p-6 sm:p-7 flex flex-col items-center text-center overflow-y-auto border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]">
+        <div className="relative z-10 w-full max-w-sm sm:max-w-md mx-4 p-1.5 rounded-[2.5rem] bg-gradient-to-b from-white/20 via-white/5 to-slate-900/40 border border-white/15 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(255,255,255,0.08)] animate-in fade-in zoom-in-95 duration-700 ease-out max-h-[92vh] flex flex-col">
+          <div className="w-full h-full rounded-[calc(2.5rem-0.375rem)] bg-[#05070e]/95 p-6 sm:p-7 flex flex-col items-center text-center overflow-y-auto border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]">
             
             {/* Main Editorial Title */}
-            <h2 className="text-2xl sm:text-3xl font-light italic tracking-[0.12em] uppercase text-white mt-1 mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <h2 className="text-2xl sm:text-3xl font-medium tracking-[0.18em] uppercase text-white mt-1 mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {lang === 'en' ? 'Cosmic Mastery' : 'Kosmische Meester'}
             </h2>
 
             {/* Subtitle description */}
             <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed mb-6 max-w-xs font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {lang === 'en' ? (
-                <>You overcame impossible odds. Unlocked the secret <strong className="font-medium text-purple-200">Stars Theme</strong> and animated <strong className="font-medium text-purple-200">Galaxy Cards</strong>.</>
+                <>You overcame impossible odds. Unlocked the secret <strong className="font-medium text-slate-100">Stars Theme</strong> and animated <strong className="font-medium text-slate-100">Galaxy Cards</strong>.</>
               ) : (
-                <>Je hebt het onmogelijke overleefd. Ontgrendeld: <strong className="font-medium text-purple-200">Stars Thema</strong> en geanimeerde <strong className="font-medium text-purple-200">Galaxy Kaarten</strong>.</>
+                <>Je hebt het onmogelijke overleefd. Ontgrendeld: <strong className="font-medium text-slate-100">Stars Thema</strong> en geanimeerde <strong className="font-medium text-slate-100">Galaxy Kaarten</strong>.</>
               )}
             </p>
 
             {/* Exhibition Floating Pedestal */}
             <div className="relative mb-7 flex items-center justify-center gap-4 sm:gap-6 py-4 w-full">
               {/* Plinth Ambient Light & Shadow */}
-              <div className="absolute bottom-1 w-52 h-6 bg-purple-500/25 blur-xl rounded-full pointer-events-none" />
-              <div className="absolute inset-0 bg-radial from-purple-600/15 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-1 w-52 h-6 bg-slate-300/15 blur-xl rounded-full pointer-events-none" />
+              <div className="absolute inset-0 bg-radial from-slate-400/10 via-transparent to-transparent pointer-events-none" />
 
               {/* Floating Ace */}
               <div className="animate-card-pedestal-1 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
@@ -214,12 +214,12 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
                   triggerHaptic('heavy');
                   onEquipBoth();
                 }}
-                className="w-full py-2.5 pl-6 pr-2 rounded-full bg-[#f1f5f9] text-[#090514] font-medium text-xs tracking-[0.15em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(192,132,252,0.3)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-purple-300/30 no-calm-override"
+                className="w-full py-2.5 pl-6 pr-2 rounded-full bg-[#f1f5f9] text-[#070911] font-medium text-xs tracking-[0.15em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-white/40 no-calm-override"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
                 <span>{lang === 'en' ? 'Equip Stars & Galaxy' : 'Activeer Stars & Galaxy'}</span>
-                <div className="w-8 h-8 rounded-full bg-[#090514]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#090514]/15 transition-all">
-                  <Check size={16} className="text-[#090514]" />
+                <div className="w-8 h-8 rounded-full bg-[#070911]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#070911]/15 transition-all">
+                  <Check size={16} className="text-[#070911]" />
                 </div>
               </button>
 
