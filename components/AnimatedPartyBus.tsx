@@ -251,7 +251,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                     player={passengers[0]}
                     size="custom"
                     theme={theme}
-                    className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
+                    className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl shadow-md"
                   />
                 </div>
               )}
@@ -286,7 +286,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                       player={p}
                       size="custom"
                       theme={theme}
-                      className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl border-2 border-slate-600/50 shadow-md"
+                      className="w-10 h-10 sm:w-12 sm:h-12 text-xl sm:text-2xl shadow-md"
                     />
                   </div>
                 </div>

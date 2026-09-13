@@ -641,19 +641,41 @@ input[type="range"].custom-slider-invisible {
   box-shadow: 0 4px 15px var(--theme-accent-glow) !important;
 }
 
-/* Stars Primary Action Buttons */
-.theme-stars button.bg-gradient-to-r.from-red-600:not(.no-calm-override),
+/* Stars Action Buttons (Obsidian and Starlight Bezel) */
 .theme-stars button.bg-white:not(.bg-white\/10):not(.no-calm-override),
-.theme-stars button.bg-gradient-to-b.from-emerald-500:not(.no-calm-override),
-.theme-stars button.bg-gradient-to-b.from-red-600:not(.no-calm-override),
-.theme-stars button.bg-gradient-to-r.from-emerald-500:not(.no-calm-override),
-.theme-stars button.bg-gradient-to-r.from-amber-500:not(.no-calm-override) {
+.theme-stars button[class*="from-red"]:not(.no-calm-override),
+.theme-stars button[class*="from-emerald"]:not(.no-calm-override),
+.theme-stars button[class*="from-amber"]:not(.no-calm-override),
+.theme-stars button[class*="from-blue"]:not(.no-calm-override),
+.theme-stars button[class*="from-purple"]:not(.no-calm-override),
+.theme-stars button[class*="from-indigo"]:not(.no-calm-override),
+.theme-stars button[class*="from-pink"]:not(.no-calm-override),
+.theme-stars button[class*="from-violet"]:not(.no-calm-override),
+.theme-stars button[class*="bg-purple"]:not(.no-calm-override),
+.theme-stars button[class*="bg-indigo"]:not(.no-calm-override) {
   background: var(--theme-btn-bg, linear-gradient(180deg, #181d2c 0%, #070911 100%)) !important;
+  background-image: var(--theme-btn-bg, linear-gradient(180deg, #181d2c 0%, #070911 100%)) !important;
   color: var(--theme-btn-text, #ffffff) !important;
-  border: var(--theme-card-border, 1px solid rgba(226, 232, 240, 0.18)) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
+  border: var(--theme-card-border, 1px solid rgba(226, 232, 240, 0.2)) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.45) !important;
   border-radius: var(--theme-border-radius);
-  box-shadow: var(--theme-card-border-glow, 0 0 20px rgba(226, 232, 240, 0.12), inset 0 0 12px rgba(255, 255, 255, 0.05)) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75), 0 0 20px rgba(226, 232, 240, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+.theme-stars button[class*="from-red"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-emerald"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-amber"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-blue"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-purple"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-indigo"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-pink"]:not(.no-calm-override):hover,
+.theme-stars button[class*="from-violet"]:not(.no-calm-override):hover,
+.theme-stars button[class*="bg-purple"]:not(.no-calm-override):hover,
+.theme-stars button[class*="bg-indigo"]:not(.no-calm-override):hover {
+  background: linear-gradient(180deg, #222a3e 0%, #0c0f18 100%) !important;
+  border-color: rgba(226, 232, 240, 0.38) !important;
+  border-top-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.85), 0 0 25px rgba(226, 232, 240, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
 .theme-stars button.rounded-full,

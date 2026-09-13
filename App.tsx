@@ -771,6 +771,7 @@ const App: React.FC = () => {
       <SlideMenuModal
         isOpen={isOpen}
         onClose={onClose}
+        zIndex="z-[200]"
         className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center text-center relative"
         backdropClassName="p-4 bg-black/70 backdrop-blur-md"
       >
@@ -839,6 +840,7 @@ const App: React.FC = () => {
           setSettings(n);
           queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
           triggerHaptic('heavy');
+          handleDeckPreviewBack();
         }
       },
     });
@@ -874,62 +876,15 @@ const App: React.FC = () => {
       },
     });
   };
-  const renderDeckPreview = () => {
-    if (!previewDeckStyle) return null;
-    const sampleCards: Card[] = [
-      { suit: Suit.HEARTS, rank: Rank.ACE, id: 'p1' },
-      { suit: Suit.HEARTS, rank: Rank.KING, id: 'p2' },
-      { suit: Suit.DIAMONDS, rank: Rank.QUEEN, id: 'p3' },
-      { suit: Suit.CLUBS, rank: Rank.JACK, id: 'p4' },
-      { suit: Suit.SPADES, rank: Rank.TEN, id: 'p5' },
-    ];
-    return (
-      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in" onClick={() => setPreviewDeckStyle(null)}>
-        <div className="w-full max-w-lg p-6 flex flex-col h-[80vh]" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between items-center mb-8 shrink-0">
-            <div>
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter">
-                {t(previewDeckStyle === CardStyle.MODERN ? "Modern" : 
-                   previewDeckStyle === CardStyle.DARK ? "Donker" : 
-                   previewDeckStyle === CardStyle.CLASSIC ? "Klassiek" :
-                   previewDeckStyle === CardStyle.GALAXY ? "Galaxy" : "Neon")} {t("Stijl")}
-              </h3>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{t("Volledig Deck Voorbeeld")}</p>
-            </div>
-            <button onClick={() => setPreviewDeckStyle(null)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-              <X size={20} />
-            </button>
-          </div>
-          <ScrollIndicatorContainer
-            orientation="vertical"
-            theme={settings.theme}
-            className="flex-1 min-h-0"
-            scrollClassName="pr-2 custom-scrollbar"
-          >
-            <div className="grid grid-cols-2 gap-6 pb-10">
-              {/* Back Preview (Achterkant) First */}
-              <div className="flex flex-col items-center gap-3">
-                <PlayingCard card={sampleCards[0]} isFaceDown size="md" style={previewDeckStyle} />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Achterkant")}</span>
-              </div>
-              {sampleCards.map(card => (
-                <div key={card.id} className="flex flex-col items-center gap-3">
-                  <PlayingCard card={card} size="md" style={previewDeckStyle} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t(card.suit)} {getRankString(card.rank)}</span>
-                </div>
-              ))}
-            </div>
-          </ScrollIndicatorContainer>
-          <button
-            onClick={() => setPreviewDeckStyle(null)}
-            className="mt-6 w-full py-4 bg-white text-black font-black rounded-2xl uppercase tracking-widest active:scale-95 transition-transform shrink-0"
-          >
-            {t("Sluiten")}
-          </button>
-        </div>
-      </div>
-    );
-  };
+  // Sample cards for Deck Style Preview (uses same UI as Berichten)
+  const PREVIEW_SAMPLE_CARDS: Card[] = useMemo(() => [
+    { suit: Suit.HEARTS, rank: Rank.ACE, id: 'p1' },
+    { suit: Suit.HEARTS, rank: Rank.KING, id: 'p2' },
+    { suit: Suit.DIAMONDS, rank: Rank.QUEEN, id: 'p3' },
+    { suit: Suit.CLUBS, rank: Rank.JACK, id: 'p4' },
+    { suit: Suit.SPADES, rank: Rank.TEN, id: 'p5' },
+  ], []);
+
   // Quit confirmation state
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
@@ -941,6 +896,18 @@ const App: React.FC = () => {
   // Physical mode info popup state
   const [showPhysicalModeInfo, setShowPhysicalModeInfo] = useState(false);
   const [previewDeckStyle, setPreviewDeckStyle] = useState<CardStyle | null>(null);
+  const [isDeckPreviewClosing, setIsDeckPreviewClosing] = useState(false);
+
+  const handleDeckPreviewBack = useCallback(() => {
+    if (!previewDeckStyle || isDeckPreviewClosing) return;
+    setIsDeckPreviewClosing(true);
+    triggerHaptic('tick');
+    setTimeout(() => {
+      setPreviewDeckStyle(null);
+      setIsDeckPreviewClosing(false);
+    }, 140);
+  }, [previewDeckStyle, isDeckPreviewClosing]);
+
   const [styleToUnlock, setStyleToUnlock] = useState<CardStyle | null>(null);
   const [themeToUnlock, setThemeToUnlock] = useState<UITheme | null>(null);
   const { players, setPlayers, addPlayer: addPlayerToEngine, removePlayer: removePlayerFromEngine, updatePlayer, updatePlayers, reorderPlayers } = usePlayerState();
@@ -1041,6 +1008,15 @@ const App: React.FC = () => {
     }
   });
   const [isGalaxyCelebrationOpen, setIsGalaxyCelebrationOpen] = useState(false);
+  const [hasStarsLegacyTheme] = useState<boolean>(() => {
+    if (settings.theme === UITheme.STARS) return true;
+    if (!storageAvailable) return false;
+    try {
+      const stored = localStorage.getItem(GAME_SETTINGS_KEY);
+      if (stored && stored.includes('"theme":"stars"')) return true;
+    } catch {}
+    return false;
+  });
   const [isMatchModalClosing, setIsMatchModalClosing] = useState(false);
   const [lastAddedPlayerId, setLastAddedPlayerId] = useState<string | null>(null);
   // Bus Decks Slider State (More Settings)
@@ -4291,8 +4267,10 @@ const initializeAdMob = useCallback(async () => {
             setIsMoreSettingsOpen(false);
             setIsPhraseEditorOpen(false);
             setIsPhraseEditorClosing(false);
+            setPreviewDeckStyle(null);
+            setIsDeckPreviewClosing(false);
           }}
-          onBackdropClick={isPhraseEditorOpen ? handlePhraseEditorBack : undefined}
+          onBackdropClick={isPhraseEditorOpen ? handlePhraseEditorBack : previewDeckStyle ? handleDeckPreviewBack : undefined}
           className="relative w-full max-w-sm m-4 flex flex-col max-h-[85vh]"
         >
           {({ close }) => (
@@ -4401,8 +4379,8 @@ const initializeAdMob = useCallback(async () => {
                       );
                     })}
                   </div>
-                  {/* Full-width Stars Theme Button (only if unlocked) */}
-                  {isGalaxyUnlocked && (() => {
+                  {/* Full-width Stars Theme Button (only visible if player already had it active) */}
+                  {hasStarsLegacyTheme && (() => {
                     const isStarsActive = settings.theme === UITheme.STARS;
                     return (
                       <div className="bg-slate-800/70 p-1 rounded-2xl border border-slate-700/50 mt-1">
@@ -4414,7 +4392,7 @@ const initializeAdMob = useCallback(async () => {
                             queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
                             triggerHaptic('subtle');
                           }}
-                          className={`w-full py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1 relative overflow-hidden ${
+                          className={`w-full py-1.5 text-xs capitalize transition-all flex items-center justify-center gap-1.5 relative overflow-hidden ${
                             isStarsActive
                               ? 'font-bold rounded-xl shadow-md border border-white/50 text-white'
                               : 'text-slate-300 hover:text-white rounded-xl active:scale-[0.98]'
@@ -4426,7 +4404,6 @@ const initializeAdMob = useCallback(async () => {
                           }}
                         >
                           <span className="relative z-10">{t("Stars")}</span>
-                          {!isStarsActive && <Video size={10} className="text-amber-400 shrink-0 relative z-10" />}
                         </button>
                       </div>
                     );
@@ -4519,8 +4496,8 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                       ))}
                   </div>
-                  {/* Full-width Galaxy Card Style Button (only if unlocked) */}
-                  {isGalaxyUnlocked && (() => {
+                  {/* Full-width Galaxy Card Style Button (only visible if unlocked) */}
+                  {(isGalaxyUnlocked || settings.cardStyle === CardStyle.GALAXY) && (() => {
                     const isGalaxyStyleActive = settings.cardStyle === CardStyle.GALAXY;
                     return (
                       <div
@@ -4532,10 +4509,11 @@ const initializeAdMob = useCallback(async () => {
                           setSettings(n);
                           queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
                           triggerHaptic('subtle');
+                          handleDeckPreviewBack();
                         }}
                         className={`w-full py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all cursor-pointer overflow-hidden select-none mt-3 ${
                           isGalaxyStyleActive
-                            ? 'border-white/30 border-t-white/50 shadow-[0_0_20px_rgba(226,232,240,0.15)]'
+                            ? 'border-white/30 border-t-white/50 shadow-[0_0_20px_rgba(226,232,240,0.15)] ring-1 ring-white/20'
                             : 'border-white/10 hover:border-white/25 active:scale-[0.99]'
                         }`}
                         style={{
@@ -4544,6 +4522,17 @@ const initializeAdMob = useCallback(async () => {
                             : 'linear-gradient(135deg, #0f1320 0%, #080b14 100%)',
                         }}
                       >
+                        {/* Preview eye button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewDeckStyle(CardStyle.GALAXY);
+                            triggerHaptic('subtle');
+                          }}
+                          className="absolute top-2 left-2 bg-slate-800/80 rounded-full p-1 border border-slate-600 shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
+                        >
+                          <Eye size={12} className="text-white" />
+                        </button>
                         <div className="scale-[0.55] h-16 flex items-center justify-center">
                           <PlayingCard card={PREVIEW_CARD} size="base" style={CardStyle.GALAXY} className="shadow-2xl" />
                         </div>
@@ -4759,6 +4748,117 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 </div>
               )}
+              {/* Card Style Preview Overlay (uses identical UI architecture to Berichten overlay) */}
+              {previewDeckStyle && (
+                <div className={`absolute inset-0 z-20 bg-slate-900 flex flex-col rounded-3xl overflow-hidden ${isDeckPreviewClosing ? 'animate-slide-right-exit pointer-events-none' : 'animate-slide-left-enter'}`}>
+                  {/* Header */}
+                  <div className="flex justify-between items-center border-b border-slate-800 p-6 shrink-0 bg-slate-900">
+                    <h3 className="text-xl font-black text-white uppercase tracking-wider">
+                      {t("Card Style Preview")}
+                    </h3>
+                    <button
+                      onClick={handleDeckPreviewBack}
+                      className="text-slate-500 hover:text-white transition-colors cursor-pointer"
+                      title={t("Terug")}
+                      aria-label={t("Terug")}
+                    >
+                      <ArrowLeft size={24} />
+                    </button>
+                  </div>
+
+                  {/* Style Switcher Bar (identical to Berichten category tabs) */}
+                  <div className="px-6 py-3 bg-slate-900 border-b border-slate-800 shrink-0">
+                    <div className="flex bg-slate-800 p-1 rounded-2xl gap-1 border border-slate-700 overflow-x-auto no-scrollbar">
+                      {[
+                        CardStyle.MODERN,
+                        CardStyle.DARK,
+                        CardStyle.CLASSIC,
+                        CardStyle.NEON,
+                        ...(isGalaxyUnlocked || settings.cardStyle === CardStyle.GALAXY ? [CardStyle.GALAXY] : [])
+                      ].map(st => (
+                        <button
+                          key={st}
+                          onClick={() => {
+                            setPreviewDeckStyle(st);
+                            triggerHaptic('subtle');
+                          }}
+                          className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all cursor-pointer text-center whitespace-nowrap ${
+                            previewDeckStyle === st
+                              ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-md border border-red-500/40'
+                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-transparent'
+                          }`}
+                        >
+                          {t(st === CardStyle.MODERN ? "Modern" :
+                             st === CardStyle.DARK ? "Donker" :
+                             st === CardStyle.CLASSIC ? "Klassiek" :
+                             st === CardStyle.GALAXY ? "Galaxy" : "Neon")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cards List with Theme-Dependent Scroll Indicators */}
+                  <ScrollIndicatorContainer
+                    orientation="vertical"
+                    theme={settings.theme}
+                    className="flex-1 min-h-0 bg-slate-900"
+                    scrollClassName="px-6 py-4"
+                  >
+                    <div className="grid grid-cols-2 gap-3.5 pb-2">
+                      {/* Back Preview (Achterkant) */}
+                      <div className="flex flex-col items-center gap-2 bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+                        <PlayingCard card={PREVIEW_SAMPLE_CARDS[0]} isFaceDown size="base" style={previewDeckStyle} />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("Achterkant")}</span>
+                      </div>
+                      {/* Sample Front Cards */}
+                      {PREVIEW_SAMPLE_CARDS.map(card => (
+                        <div key={card.id} className="flex flex-col items-center gap-2 bg-slate-800 p-3.5 rounded-xl border border-slate-700">
+                          <PlayingCard card={card} size="base" style={previewDeckStyle} />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t(card.suit)} {getRankString(card.rank)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollIndicatorContainer>
+
+                  {/* Action Footer */}
+                  <div className="p-6 border-t border-slate-800 bg-slate-900 shrink-0">
+                    <button
+                      onClick={() => {
+                        if (settings.cardStyle === previewDeckStyle) {
+                          handleDeckPreviewBack();
+                          return;
+                        }
+                        if (previewDeckStyle === CardStyle.GALAXY) {
+                          const n = { ...settings, cardStyle: CardStyle.GALAXY };
+                          setSettings(n);
+                          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                          triggerHaptic('subtle');
+                          handleDeckPreviewBack();
+                          return;
+                        }
+                        setStyleToUnlock(previewDeckStyle);
+                        triggerHaptic('subtle');
+                      }}
+                      className={`w-full py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all active:scale-95 flex items-center justify-center gap-2 shadow-md ${
+                        settings.cardStyle === previewDeckStyle
+                          ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-pointer hover:bg-slate-700'
+                          : 'bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white border border-red-500/30 cursor-pointer'
+                      }`}
+                    >
+                      {settings.cardStyle === previewDeckStyle ? (
+                        t("Huidige stijl")
+                      ) : previewDeckStyle === CardStyle.GALAXY ? (
+                        t("Selecteer stijl")
+                      ) : (
+                        <>
+                          <Video size={16} className="text-amber-400" />
+                          {t("Stijl Wisselen")}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </SlideMenuModal>
@@ -4787,7 +4887,6 @@ const initializeAdMob = useCallback(async () => {
             </>
           )}
         </SlideMenuModal>
-        {renderDeckPreview()}
         {renderStyleUnlockModal()}
         {renderThemeUnlockModal()}
         {renderColorPickerModal()}
@@ -4811,7 +4910,7 @@ const initializeAdMob = useCallback(async () => {
           isOpen={isGalaxyCelebrationOpen}
           onClose={() => setIsGalaxyCelebrationOpen(false)}
           onEquipBoth={() => {
-            const n = { ...settings, theme: UITheme.STARS, cardStyle: CardStyle.GALAXY };
+            const n = { ...settings, cardStyle: CardStyle.GALAXY };
             setSettings(n);
             queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
             setIsGalaxyCelebrationOpen(false);
@@ -5071,7 +5170,6 @@ const initializeAdMob = useCallback(async () => {
             <PlayerAvatar 
               player={activePlayer} 
               size="xl" 
-              glow 
               className="mb-6" 
               theme={settings.theme} 
               onPointerDown={() => activePlayer && handleAvatarPointerDown(activePlayer)}
@@ -6068,7 +6166,7 @@ const initializeAdMob = useCallback(async () => {
                   <PlayerAvatar
                     player={jumpingBusPlayer}
                     size="custom"
-                    className="w-14 h-14 sm:w-16 sm:h-16 text-2xl sm:text-3xl border-2 border-slate-600/50 shadow-xl"
+                    className="w-14 h-14 sm:w-16 sm:h-16 text-2xl sm:text-3xl shadow-xl"
                     theme={settings.theme}
                   />
                   <div className="animate-player-jump-badge absolute top-full mt-1.5 left-1/2 -translate-x-1/2 flex flex-col items-center text-center pointer-events-none whitespace-nowrap">
@@ -7127,7 +7225,6 @@ const initializeAdMob = useCallback(async () => {
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
-      {renderDeckPreview()}
     </>
   );
 };

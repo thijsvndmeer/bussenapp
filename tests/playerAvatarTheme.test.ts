@@ -19,4 +19,20 @@ describe('PlayerAvatar Theme Support', () => {
     expect(content).toContain('border-slate-600/50');
     expect(content).toContain('#000000');
   });
+
+  it('owns the standard avatar border in PlayerAvatar rather than at call sites', () => {
+    expect(content).toContain("const PLAYER_AVATAR_BORDER_CLASS = 'border-2 border-slate-600/50'");
+
+    const appContent = fs.readFileSync(path.resolve(__dirname, '../App.tsx'), 'utf-8');
+    const busContent = fs.readFileSync(path.resolve(__dirname, '../components/AnimatedPartyBus.tsx'), 'utf-8');
+    const avatarUsages = `${appContent}\n${busContent}`.match(/<PlayerAvatar[\s\S]*?\/>/g) || [];
+
+    avatarUsages.forEach((usage) => {
+      expect(usage).not.toMatch(/className=["{`][^>]*\bborder-/);
+    });
+  });
+
+  it('keeps the dev-mode border as a centralized avatar state', () => {
+    expect(content).toContain("const borderClass = isDev ? 'border-2 border-green-400/70' : PLAYER_AVATAR_BORDER_CLASS");
+  });
 });

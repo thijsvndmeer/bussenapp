@@ -1,6 +1,8 @@
 import React from 'react';
 import { Player, UITheme } from '../../../types';
 
+const PLAYER_AVATAR_BORDER_CLASS = 'border-2 border-slate-600/50';
+
 export const PlayerAvatar: React.FC<{ 
   player?: Player | any; 
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'custom';
@@ -21,14 +23,13 @@ export const PlayerAvatar: React.FC<{
     custom: '',
   };
 
-  const borderClasses = size === 'custom' ? '' : (size === 'xl' ? 'border-4' : (size === 'xs' ? 'border' : 'border-2'));
   const ringClasses = size === 'xl' ? 'ring-4' : 'ring-2';
   
   const isThemeGlow = glow && !player?.isDev;
   const isDev = !!player?.isDev;
 
-  const borderColor = size === 'custom' ? '' : (isDev ? 'border-green-400/30' : (isThemeGlow ? '' : 'border-slate-600/50'));
-  const shadowEffect = size === 'custom' ? '' : (isDev ? '' : (isThemeGlow ? '' : 'shadow-md'));
+  const borderClass = isDev ? 'border-2 border-green-400/70' : PLAYER_AVATAR_BORDER_CLASS;
+  const shadowEffect = isDev || isThemeGlow ? '' : 'shadow-md';
   const animationEffect = isDev ? '' : '';
   const accentColor = player?.avatarColor;
   const bgGradient = player?.image ? 'from-slate-700 to-slate-900' : 'from-black to-slate-900';
@@ -47,7 +48,7 @@ export const PlayerAvatar: React.FC<{
 
   return (
     <div 
-      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center relative shrink-0 ${sizeClasses[size]} ${borderClasses} ${borderColor} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
+      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center relative shrink-0 ${sizeClasses[size]} ${borderClass} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
       style={glowStyle}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}

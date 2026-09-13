@@ -183,9 +183,9 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
             {/* Subtitle description */}
             <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed mb-6 max-w-xs font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {lang === 'en' ? (
-                <>You overcame impossible odds. Unlocked the secret <strong className="font-medium text-slate-100">Stars Theme</strong> and animated <strong className="font-medium text-slate-100">Galaxy Cards</strong>.</>
+                <>You overcame impossible odds. Unlocked the animated <strong className="font-medium text-slate-100">Galaxy Cards</strong>.</>
               ) : (
-                <>Je hebt het onmogelijke overleefd. Ontgrendeld: <strong className="font-medium text-slate-100">Stars Thema</strong> en geanimeerde <strong className="font-medium text-slate-100">Galaxy Kaarten</strong>.</>
+                <>Je hebt het onmogelijke overleefd. Ontgrendeld: geanimeerde <strong className="font-medium text-slate-100">Galaxy Kaarten</strong>.</>
               )}
             </p>
 
@@ -217,7 +217,7 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
                 className="w-full py-2.5 pl-6 pr-2 rounded-full bg-[#f1f5f9] text-[#070911] font-medium text-xs tracking-[0.15em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-white/40 no-calm-override"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
-                <span>{lang === 'en' ? 'Equip Stars & Galaxy' : 'Activeer Stars & Galaxy'}</span>
+                <span>{lang === 'en' ? 'Equip Galaxy Cards' : 'Activeer Galaxy Kaarten'}</span>
                 <div className="w-8 h-8 rounded-full bg-[#070911]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#070911]/15 transition-all">
                   <Check size={16} className="text-[#070911]" />
                 </div>

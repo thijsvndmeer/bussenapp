@@ -475,12 +475,12 @@
 
 @keyframes cosmic-pulse {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(192, 132, 252, 0.2);
-    border-color: rgba(192, 132, 252, 0.5);
+    box-shadow: 0 0 15px rgba(226, 232, 240, 0.25), inset 0 0 15px rgba(255, 255, 255, 0.1);
+    border-color: rgba(226, 232, 240, 0.35);
   }
   50% {
-    box-shadow: 0 0 35px rgba(192, 132, 252, 0.8), 0 0 50px rgba(168, 85, 247, 0.4), inset 0 0 25px rgba(168, 85, 247, 0.4);
-    border-color: rgba(232, 121, 249, 0.9);
+    box-shadow: 0 0 30px rgba(226, 232, 240, 0.5), 0 0 45px rgba(254, 240, 138, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.8);
   }
 }
 
@@ -592,19 +592,19 @@
 }
 
 .animate-card-celestial-cw {
-  animation: card-spin-cw 20s linear infinite;
+  animation: card-spin-cw 22s linear infinite;
   transform-origin: center center;
   will-change: transform;
 }
 
 .animate-card-celestial-ccw {
-  animation: card-spin-ccw 16s linear infinite;
+  animation: card-spin-ccw 26s linear infinite;
   transform-origin: center center;
   will-change: transform;
 }
 
-.animate-card-vortex {
-  animation: card-spin-cw 24s linear infinite;
+.animate-card-core-spin {
+  animation: card-spin-cw 14s linear infinite;
   transform-origin: center center;
   will-change: transform;
 }
@@ -614,10 +614,10 @@
     transform: translate3d(-150%, -150%, 0) rotate(35deg);
     opacity: 0;
   }
-  25% {
-    opacity: 0.35;
+  20% {
+    opacity: 0.25;
   }
-  50% {
+  45% {
     transform: translate3d(150%, 150%, 0) rotate(35deg);
     opacity: 0;
   }
@@ -628,26 +628,36 @@
 }
 
 .animate-card-starlight-sweep {
-  animation: card-starlight-sweep 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: card-starlight-sweep 5.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: transform, opacity;
   pointer-events: none;
 }
 
-@keyframes card-breathe-glow {
-  0%, 100% {
-    opacity: 0.35;
-    transform: scale(0.95);
+@keyframes galaxy-nebula-drift {
+  from {
+    transform: translate3d(var(--nebula-x-start), var(--nebula-y-start), 0) rotate(var(--nebula-rotate-start)) scale(var(--nebula-scale-start));
   }
-  50% {
-    opacity: 0.75;
-    transform: scale(1.05);
+  to {
+    transform: translate3d(var(--nebula-x-end), var(--nebula-y-end), 0) rotate(var(--nebula-rotate-end)) scale(var(--nebula-scale-end));
   }
 }
 
-.animate-card-breathe {
-  animation: card-breathe-glow 3.5s ease-in-out infinite;
-  transform-origin: center center;
-  will-change: transform, opacity;
+.galaxy-nebula-gas {
+  position: absolute;
+  border-radius: 48%;
+  filter: blur(22px);
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.animate-galaxy-nebula-drift {
+  animation: galaxy-nebula-drift var(--nebula-duration) cubic-bezier(0.5, 0.05, 0.5, 0.95) infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-galaxy-nebula-drift {
+    animation: none;
+  }
 }
 
 @keyframes cosmic-nebula-1 {

@@ -143,4 +143,27 @@ describe('Settings & Modals Theme Harmony', () => {
     expect(currentSettingsContent).toContain('bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.7)]');
     expect(currentSettingsContent).toContain('bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.7)]');
   });
+
+  it('renders card style preview using the same in-modal overlay UI as berichten', () => {
+    const appFile = path.resolve(__dirname, '../App.tsx');
+    const appContent = fs.readFileSync(appFile, 'utf-8');
+
+    // Uses in-modal overlay with slide enter/exit animations identical to phrase editor
+    expect(appContent).toContain('previewDeckStyle && (');
+    expect(appContent).toContain("isDeckPreviewClosing ? 'animate-slide-right-exit pointer-events-none' : 'animate-slide-left-enter'");
+    expect(appContent).toContain('handleDeckPreviewBack');
+    expect(appContent).toContain('PREVIEW_SAMPLE_CARDS');
+
+    // No standalone fixed-modal renderDeckPreview
+    expect(appContent).not.toContain('const renderDeckPreview = () => {');
+    // Switching styles through preview overlay uses the exact same setStyleToUnlock code and popup
+    expect(appContent).toContain('setStyleToUnlock(previewDeckStyle);');
+
+    // Unlock modal stacks on top with zIndex z-[200], preserving preview UI underneath
+    expect(appContent).toContain('zIndex="z-[200]"');
+
+    // Switching styles also closes the card style preview menu
+    expect(appContent).toMatch(/onUnlock:\s*async\s*\(\)\s*=>[\s\S]*?handleDeckPreviewBack\(\);/);
+  });
 });
+

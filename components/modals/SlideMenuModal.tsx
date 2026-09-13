@@ -9,6 +9,7 @@ export interface SlideMenuModalProps {
   className?: string;
   backdropClassName?: string;
   closeOnBackdropClick?: boolean;
+  zIndex?: string;
 }
 
 export const SlideMenuModal: React.FC<SlideMenuModalProps> = ({
@@ -19,6 +20,7 @@ export const SlideMenuModal: React.FC<SlideMenuModalProps> = ({
   className = 'w-full max-w-sm m-4 flex flex-col max-h-[85vh]',
   backdropClassName = 'bg-black/80 backdrop-blur-md',
   closeOnBackdropClick = true,
+  zIndex = 'z-[100]',
 }) => {
   const [isClosing, setIsClosing] = useState(false);
 
@@ -48,7 +50,7 @@ export const SlideMenuModal: React.FC<SlideMenuModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center ${backdropClassName} ${
+      className={`fixed inset-0 ${zIndex} flex items-center justify-center ${backdropClassName} ${
         isClosing ? 'animate-backdrop-fade-out pointer-events-none' : 'animate-backdrop-fade-in'
       }`}
       onClick={(e) => {

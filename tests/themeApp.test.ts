@@ -95,6 +95,11 @@ describe('App Theme Synchronization', () => {
     expect(appContent).toContain('<ThemeLabel text={t("Gedeelde Bus")} theme={settings.theme} size="lg" showCursor={false} />');
   });
 
+  it('does not pulse the avatar on the Aan de beurt screen', () => {
+    expect(appContent).toContain('text={t("Aan de beurt")}');
+    expect(appContent).not.toMatch(/<PlayerAvatar\s+player=\{activePlayer\}\s+size="xl"\s+glow/);
+  });
+
   it('implements epic cinematic To the Bus transition animations and overlay UI with moving parts', () => {
     const animPath = path.resolve(__dirname, '../styles/animations.css');
     const animContent = fs.readFileSync(animPath, 'utf-8');
@@ -188,4 +193,3 @@ describe('App Theme Synchronization', () => {
     expect(appContent).toContain('{t("NIEMAND")}');
   });
 });
-
