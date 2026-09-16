@@ -2785,28 +2785,8 @@ const initializeAdMob = useCallback(async () => {
     setBusDriver(driver);
     setBusPassengers([victim]);
 
-    // Always align bus to row index 2 (matching 4-row pyramid's 2nd row from bottom)
-    // This keeps the bus at a consistent height regardless of pyramid row count
-    const containerEl = pyramidContentRef.current;
-    const parentContainerEl = pyramidContainerRef.current;
-    if (containerEl && parentContainerEl) {
-      const fixedTargetRowIndex = 2;
-      let targetRowCards = containerEl.querySelectorAll<HTMLElement>(`[data-row-index="${fixedTargetRowIndex}"]`);
-      // Fall back to highest available row if pyramid has fewer than 3 rows
-      if (targetRowCards.length === 0) {
-        const totalRows = pyramid.length || settings.pyramidRows || 5;
-        for (let i = Math.min(fixedTargetRowIndex, totalRows - 1); i >= 0; i--) {
-          targetRowCards = containerEl.querySelectorAll<HTMLElement>(`[data-row-index="${i}"]`);
-          if (targetRowCards.length > 0) break;
-        }
-      }
-      if (targetRowCards.length > 0 && targetRowCards[0].parentElement) {
-        const rowRect = targetRowCards[0].parentElement.getBoundingClientRect();
-        const parentRect = parentContainerEl.getBoundingClientRect();
-        const offset = (rowRect.top + rowRect.height / 2) - (parentRect.top + parentRect.height / 2);
-        setBusVerticalOffset(offset);
-      }
-    }
+    // Always use fixed vertical position — never shift bus based on pyramid row layout
+    setBusVerticalOffset(null);
 
     // Phase 1: Launch bus immediately! Bus drives across cards to knock them away
     setIsBusPassengerBoarded(false);
@@ -2920,7 +2900,6 @@ const initializeAdMob = useCallback(async () => {
     // Phase 2: At 716ms (11.2%) - Brakes engage! Bus begins controlled 18vw forward slide with tire screech and vibration
     const brakeTimer = setTimeout(() => {
       setIsBusBraking(true);
-      playSound('busBrake');
       triggerHaptic('majorLoss');
     }, 716);
 
@@ -2938,7 +2917,6 @@ const initializeAdMob = useCallback(async () => {
     const reverseBrakeTimer = setTimeout(() => {
       setIsBusReversing(false);
       setIsBusBraking(true);
-      playSound('busBrake');
       triggerHaptic('medium');
     }, 1952);
 
@@ -3068,7 +3046,6 @@ const initializeAdMob = useCallback(async () => {
     setIsBusDeckExhausted(false);
     setBusFocusIndex(null);
     setIsBusWon(false);
-    playSound('busEnter');
     const needed = settings.busLength;
     
     // Create decks
@@ -6109,21 +6086,9 @@ const initializeAdMob = useCallback(async () => {
             </div>
           </div>
         )}
-        {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
-        <div
-          ref={pyramidContainerRef}
-          onPointerDown={handlePyramidPointerDown}
-          onPointerMove={handlePyramidPointerMove}
-          onPointerUp={handlePyramidPointerEnd}
-          onPointerCancel={handlePyramidPointerEnd}
-          onPointerLeave={handlePyramidPointerEnd}
-          className={`flex-1 flex items-center justify-center p-2 relative touch-none select-none ${
-            isBusCrashing || jumpingBusPlayer || isSharedBusSelecting ? 'overflow-visible' : 'overflow-hidden'
-          }`}
-        >
           {/* Crashing Bus Animation Driving Across Cards, Braking Hard, Reversing & Waiting */}
           {isBusCrashing ? (
-            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen z-40 pointer-events-none flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center overflow-hidden">
               <div 
                 className="w-full flex justify-center"
                 style={{
@@ -6155,7 +6120,7 @@ const initializeAdMob = useCallback(async () => {
           ) : null}
           {/* Loser Profile Picture Drops Down From Header Into Parked Bus */}
           {jumpingBusPlayer && (
-            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen z-50 pointer-events-none flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
               <div 
                 className="w-full flex justify-center"
                 style={{
@@ -6183,7 +6148,7 @@ const initializeAdMob = useCallback(async () => {
           )}
           {/* Shared Bus In-Place Partner Selection at Spotlight Drop Position */}
           {isSharedBusSelecting && (
-            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen z-50 pointer-events-auto flex items-center justify-center overflow-visible select-none">
+            <div className="absolute inset-0 z-50 pointer-events-auto flex items-center justify-center overflow-visible select-none">
               <div 
                 className="w-full flex justify-center"
                 style={{
@@ -6295,6 +6260,16 @@ const initializeAdMob = useCallback(async () => {
               </div>
             </div>
           )}
+        {/* Pyramid Grid - Reduced Scale - No Entry Animation */}
+        <div
+          ref={pyramidContainerRef}
+          onPointerDown={handlePyramidPointerDown}
+          onPointerMove={handlePyramidPointerMove}
+          onPointerUp={handlePyramidPointerEnd}
+          onPointerCancel={handlePyramidPointerEnd}
+          onPointerLeave={handlePyramidPointerEnd}
+          className="flex-1 flex items-center justify-center p-2 relative touch-none select-none overflow-hidden"
+        >
           <div
             ref={pyramidContentRef}
             className="flex flex-col items-center gap-2 md:gap-3 origin-center transition-transform duration-500"
