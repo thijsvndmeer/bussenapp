@@ -317,6 +317,62 @@ input:disabled,
   --theme-surface-border: 1px solid rgba(226, 232, 240, 0.14);
 }
 
+:root[data-theme='neomorphism'], .theme-neomorphism {
+  --theme-bg-base: #171a23;
+  --theme-bg: #171a23;
+  --theme-surface: #1e222e;
+  --theme-surface-sunken: #14161e;
+  --theme-card-bg: #1e222e;
+  --theme-card-border: 1px solid rgba(255, 255, 255, 0.05);
+  --theme-card-border-glow: none;
+  --theme-font: 'Outfit', sans-serif;
+  --theme-text: #f1f5f9;
+  --theme-text-secondary: #94a3b8;
+  --theme-accent: #38bdf8;
+  --theme-accent-secondary: #818cf8;
+  --theme-accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  --theme-accent-glow: transparent;
+  --theme-btn-bg: linear-gradient(145deg, #222736, #1a1e28);
+  --theme-btn-text: #f8fafc;
+  --theme-btn-sec-bg: #14161e;
+  --theme-btn-sec-text: #38bdf8;
+  --theme-border-radius: 20px;
+  
+  /* Neumorphic Dual Shadows - Crisp, zero diffuse blur */
+  --neo-shadow-raised: 3px 3px 6px #101219, -3px -3px 6px #262c3b;
+  --neo-shadow-raised-sm: 2px 2px 4px #101219, -2px -2px 4px #262c3b;
+  --neo-shadow-inset: inset 2px 2px 4px #0f1118, inset -2px -2px 4px #252b39;
+  --neo-shadow-inset-sm: inset 1px 1px 3px #0f1118, inset -1px -1px 3px #252b39;
+}
+
+:root[data-theme='neomorphism-light'], .theme-neomorphism-light {
+  --theme-bg-base: #edf1f7;
+  --theme-bg: #edf1f7;
+  --theme-surface: #edf1f7;
+  --theme-surface-sunken: #e2e8f0;
+  --theme-card-bg: #edf1f7;
+  --theme-card-border: 1px solid rgba(255, 255, 255, 0.85);
+  --theme-card-border-glow: none;
+  --theme-font: 'Outfit', sans-serif;
+  --theme-text: #1e293b;
+  --theme-text-secondary: #64748b;
+  --theme-accent: #0284c7;
+  --theme-accent-secondary: #6366f1;
+  --theme-accent-gradient: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+  --theme-accent-glow: rgba(2, 132, 199, 0.25);
+  --theme-btn-bg: linear-gradient(145deg, #f5f8fc, #e2e8f2);
+  --theme-btn-text: #0f172a;
+  --theme-btn-sec-bg: #e2e8f0;
+  --theme-btn-sec-text: #0284c7;
+  --theme-border-radius: 20px;
+
+  /* Neumorphic Light Dual Shadows - Soft grey depression & crisp white specular */
+  --neo-shadow-raised: 4px 4px 8px #caced6, -4px -4px 8px #ffffff;
+  --neo-shadow-raised-sm: 2px 2px 5px #caced6, -2px -2px 5px #ffffff;
+  --neo-shadow-inset: inset 2px 2px 5px #caced6, inset -2px -2px 5px #ffffff;
+  --neo-shadow-inset-sm: inset 1px 1px 3px #caced6, inset -1px -1px 3px #ffffff;
+}
+
 
 /* Ambient and transition styles */
 .theme-transition {
@@ -348,6 +404,12 @@ input:disabled,
 .theme-stars .bg-animated-gradient,
 .theme-stars .from-slate-800 {
   background: #010005 !important;
+  background-image: none !important;
+  animation: none !important;
+}
+.theme-neomorphism .bg-animated-gradient,
+.theme-neomorphism .from-slate-800 {
+  background: #171a23 !important;
   background-image: none !important;
   animation: none !important;
 }
@@ -415,6 +477,7 @@ input:disabled,
 .theme-calm * { font-family: 'Outfit', sans-serif !important; }
 .theme-beer * { font-family: 'Inter', sans-serif !important; }
 .theme-stars * { font-family: 'Outfit', sans-serif !important; }
+.theme-neomorphism * { font-family: 'Outfit', sans-serif !important; }
 
 /* Card & Panel Overrides */
 .theme-metro .glass-panel, .theme-calm .glass-panel, .theme-beer .glass-panel, .theme-stars .glass-panel,
@@ -468,6 +531,18 @@ input:disabled,
 .theme-stars .border-slate-700\/50,
 .theme-stars .border-slate-800 {
   border-color: rgba(226, 232, 240, 0.15) !important;
+}
+
+/* =========================================================================
+   CLASSIC THEME GLASS PANEL SPECULAR REFINEMENT
+   ========================================================================= */
+.theme-classic .glass-panel {
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
 /* =========================================================================
@@ -549,10 +624,242 @@ input:disabled,
   display: inline-block !important;
 }
 
+/* =========================================================================
+/* =========================================================================
+   NEOMORPHISM TACTILE SOFT UI ARCHITECTURE (STRICT ZERO-BLUR SYSTEM)
+   ========================================================================= */
+
+/* Strictly disable all backdrop-blur, frosted glass, and blur filters across Neomorphism */
+:root[data-theme='neomorphism'],
+:root[data-theme='neomorphism'] *,
+:root[data-theme='neomorphism'] *::before,
+:root[data-theme='neomorphism'] *::after,
+:root[data-theme='neomorphism-light'],
+:root[data-theme='neomorphism-light'] *,
+:root[data-theme='neomorphism-light'] *::before,
+:root[data-theme='neomorphism-light'] *::after,
+.theme-neomorphism,
+.theme-neomorphism *,
+.theme-neomorphism *::before,
+.theme-neomorphism *::after,
+.theme-neomorphism-light,
+.theme-neomorphism-light *,
+.theme-neomorphism-light *::before,
+.theme-neomorphism-light *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  --tw-backdrop-blur: none !important;
+  --tw-backdrop-filter: none !important;
+}
+
+/* Force-neutralize any Tailwind blur, glow, and drop-shadow classes */
+:root[data-theme='neomorphism'] [class*="backdrop-blur"],
+:root[data-theme='neomorphism'] [class*="blur-"],
+:root[data-theme='neomorphism'] [class*="blur["],
+:root[data-theme='neomorphism'] [class*="drop-shadow"],
+:root[data-theme='neomorphism'] .glass-panel,
+:root[data-theme='neomorphism-light'] [class*="backdrop-blur"],
+:root[data-theme='neomorphism-light'] [class*="blur-"],
+:root[data-theme='neomorphism-light'] [class*="blur["],
+:root[data-theme='neomorphism-light'] [class*="drop-shadow"],
+:root[data-theme='neomorphism-light'] .glass-panel,
+.theme-neomorphism [class*="backdrop-blur"],
+.theme-neomorphism [class*="blur-"],
+.theme-neomorphism [class*="blur["],
+.theme-neomorphism [class*="drop-shadow"],
+.theme-neomorphism .glass-panel,
+.theme-neomorphism-light [class*="backdrop-blur"],
+.theme-neomorphism-light [class*="blur-"],
+.theme-neomorphism-light [class*="blur["],
+.theme-neomorphism-light [class*="drop-shadow"],
+.theme-neomorphism-light .glass-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  --tw-blur: none !important;
+  --tw-backdrop-blur: none !important;
+  --tw-drop-shadow: none !important;
+}
+
+:root[data-theme='neomorphism'] .shadow-2xl,
+:root[data-theme='neomorphism'] .shadow-xl,
+:root[data-theme='neomorphism'] .shadow-lg,
+.theme-neomorphism .shadow-2xl,
+.theme-neomorphism .shadow-xl,
+.theme-neomorphism .shadow-lg {
+  box-shadow: 3px 3px 6px #101219, -3px -3px 6px #262c3b !important;
+}
+
+:root[data-theme='neomorphism-light'] .shadow-2xl,
+:root[data-theme='neomorphism-light'] .shadow-xl,
+:root[data-theme='neomorphism-light'] .shadow-lg,
+.theme-neomorphism-light .shadow-2xl,
+.theme-neomorphism-light .shadow-xl,
+.theme-neomorphism-light .shadow-lg {
+  box-shadow: 3px 3px 6px #caced6, -3px -3px 6px #ffffff !important;
+}
+
+/* Neomorphic Raised Surfaces & Clay Panels - Solid Opaque, Zero Blur */
+.theme-neomorphism .glass-panel,
+.theme-neomorphism .bg-slate-900,
+.theme-neomorphism .bg-slate-950,
+.theme-neomorphism .bg-slate-900\/60,
+.theme-neomorphism .bg-slate-800\/40,
+.theme-neomorphism .bg-slate-800\/70,
+.theme-neomorphism .bg-slate-900\/50,
+.theme-neomorphism .bg-slate-800\/50,
+.theme-neomorphism .bg-slate-900\/30,
+/* Neomorphic Raised Surfaces & Clay Panels - Solid Opaque, Zero Blur */
+.theme-neomorphism .glass-panel,
+.theme-neomorphism .bg-slate-900,
+.theme-neomorphism .bg-slate-950,
+.theme-neomorphism .bg-slate-900\/60,
+.theme-neomorphism .bg-slate-800\/40,
+.theme-neomorphism .bg-slate-800\/70,
+.theme-neomorphism .bg-slate-900\/50,
+.theme-neomorphism .bg-slate-800\/50,
+.theme-neomorphism .bg-slate-900\/30,
+.theme-neomorphism [data-player-item] > div {
+  background: var(--theme-card-bg, #1e222e) !important;
+  border: var(--theme-card-border, 1px solid rgba(255, 255, 255, 0.05)) !important;
+  border-radius: var(--theme-border-radius, 20px) !important;
+  box-shadow: var(--neo-shadow-raised, 3px 3px 6px #101219, -3px -3px 6px #262c3b) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.theme-neomorphism [data-player-item] > div:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: var(--neo-shadow-raised, 4px 4px 8px #0e1016, -4px -4px 8px #2b3243) !important;
+}
+
+.theme-neomorphism-light .glass-panel,
+.theme-neomorphism-light .bg-slate-900,
+.theme-neomorphism-light .bg-slate-950,
+.theme-neomorphism-light .bg-slate-900\/60,
+.theme-neomorphism-light .bg-slate-800\/40,
+.theme-neomorphism-light .bg-slate-800\/70,
+.theme-neomorphism-light .bg-slate-900\/50,
+.theme-neomorphism-light .bg-slate-800\/50,
+.theme-neomorphism-light .bg-slate-900\/30,
+.theme-neomorphism-light [data-player-item] > div {
+  background: #edf1f7 !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 3px 3px 6px #caced6, -3px -3px 6px #ffffff !important;
+}
+
+.theme-neomorphism-light [data-player-item] > div:hover {
+  border-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 4px 4px 8px #c2c6d0, -4px -4px 8px #ffffff !important;
+}
+
+.theme-neomorphism .animate-feedback-success {
+  background: var(--theme-surface-sunken, #171a23) !important;
+  border-color: rgba(52, 211, 153, 0.5) !important;
+  color: #a7f3d0 !important;
+  box-shadow: var(--neo-shadow-raised, 6px 6px 14px #101219, -6px -6px 14px #262c3b) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.theme-neomorphism .animate-feedback-error {
+  background: var(--theme-surface-sunken, #171a23) !important;
+  border-color: rgba(251, 113, 133, 0.5) !important;
+  color: #fecdd3 !important;
+  box-shadow: var(--neo-shadow-raised, 6px 6px 14px #101219, -6px -6px 14px #262c3b) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.theme-neomorphism .border-slate-700,
+.theme-neomorphism .border-slate-700\/50,
+.theme-neomorphism .border-slate-800 {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Neomorphic Inset Wells & Debossed Sockets */
+.theme-neomorphism input:not([type="range"]),
+.theme-neomorphism textarea {
+  background-color: var(--theme-surface-sunken, #14161e) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: var(--theme-text) !important;
+  border-radius: var(--theme-border-radius) !important;
+  box-shadow: var(--neo-shadow-inset, inset 3px 3px 6px #0f1118, inset -3px -3px 6px #222634) !important;
+  transition: all 0.2s ease !important;
+}
+
+.theme-neomorphism input:not([type="range"]):focus,
+.theme-neomorphism textarea:focus {
+  border-color: var(--theme-accent, #38bdf8) !important;
+  box-shadow: var(--neo-shadow-inset, inset 3px 3px 6px #0f1118, inset -3px -3px 6px #222634), 0 0 0 1px var(--theme-accent, #38bdf8) !important;
+  outline: none !important;
+}
+
+.theme-neomorphism-light input:not([type="range"]),
+.theme-neomorphism-light textarea {
+  background-color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  color: #0f172a !important;
+  box-shadow: inset 2px 2px 5px #caced6, inset -2px -2px 5px #ffffff !important;
+}
+
+.theme-neomorphism-light input:not([type="range"]):focus,
+.theme-neomorphism-light textarea:focus {
+  border-color: var(--theme-accent, #0284c7) !important;
+  box-shadow: inset 2px 2px 5px #caced6, inset -2px -2px 5px #ffffff, 0 0 0 1px var(--theme-accent, #0284c7) !important;
+}
+
+/* Neomorphism Reusable Micro-Components */
+.neo-raised {
+  background: var(--theme-card-bg, #1e222e);
+  box-shadow: var(--neo-shadow-raised, 6px 6px 14px #101219, -6px -6px 14px #262c3b);
+  border: var(--theme-card-border, 1px solid rgba(255, 255, 255, 0.05));
+}
+
+.neo-raised-sm {
+  background: var(--theme-card-bg, #1e222e);
+  box-shadow: var(--neo-shadow-raised-sm, 3px 3px 8px #101219, -3px -3px 8px #262c3b);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.neo-inset {
+  background: var(--theme-surface-sunken, #14161e);
+  box-shadow: var(--neo-shadow-inset, inset 3px 3px 6px #0f1118, inset -3px -3px 6px #222634);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.neo-inset-sm {
+  background: var(--theme-surface-sunken, #14161e);
+  box-shadow: var(--neo-shadow-inset-sm, inset 2px 2px 4px #0f1118, inset -2px -2px 4px #222634);
+}
+
+.neo-btn-convex {
+  background: var(--theme-btn-bg, linear-gradient(145deg, #222736, #1a1e28));
+  color: var(--theme-btn-text, #f8fafc);
+  box-shadow: var(--neo-shadow-raised, 3px 3px 6px #101219, -3px -3px 6px #262c3b), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.neo-btn-convex:active {
+  transform: scale(0.975);
+  box-shadow: var(--neo-shadow-inset, inset 2px 2px 4px #0f1118, inset -2px -2px 4px #252b39);
+}
+
+.neo-led-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: var(--theme-accent, #38bdf8);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 6px var(--theme-accent, #38bdf8);
+}
+
 /* Input elements (exclude range inputs so slider tracks stay visible) */
 .theme-metro input:not([type="range"]), 
 .theme-calm input:not([type="range"]), 
-.theme-beer input:not([type="range"]) {
+.theme-beer input:not([type="range"]),
+.theme-neomorphism input:not([type="range"]),
+.theme-neomorphism-light input:not([type="range"]) {
   background-color: var(--theme-card-bg) !important;
   border: var(--theme-card-border) !important;
   color: var(--theme-text) !important;
@@ -580,6 +887,8 @@ input:disabled,
 .theme-calm input[type="range"],
 .theme-beer input[type="range"],
 .theme-stars input[type="range"],
+.theme-neomorphism input[type="range"],
+.theme-neomorphism-light input[type="range"],
 input[type="range"].custom-slider-invisible {
   background: transparent !important;
   background-color: transparent !important;
@@ -589,19 +898,23 @@ input[type="range"].custom-slider-invisible {
 }
 
 /* Text colors */
-.theme-metro .text-white, .theme-calm .text-white, .theme-beer .text-white, .theme-stars .text-white,
-.theme-metro .text-slate-100, .theme-calm .text-slate-100, .theme-beer .text-slate-100, .theme-stars .text-slate-100 {
+.theme-metro .text-white, .theme-calm .text-white, .theme-beer .text-white, .theme-stars .text-white, .theme-neomorphism .text-white, .theme-neomorphism-light .text-white,
+.theme-metro .text-slate-100, .theme-calm .text-slate-100, .theme-beer .text-slate-100, .theme-stars .text-slate-100, .theme-neomorphism .text-slate-100, .theme-neomorphism-light .text-slate-100 {
   color: var(--theme-text) !important;
 }
-.theme-metro .text-slate-400, .theme-calm .text-slate-400, .theme-beer .text-slate-400, .theme-stars .text-slate-400,
-.theme-metro .text-slate-500, .theme-calm .text-slate-500, .theme-beer .text-slate-500, .theme-stars .text-slate-500 {
+.theme-metro .text-slate-400, .theme-calm .text-slate-400, .theme-beer .text-slate-400, .theme-stars .text-slate-400, .theme-neomorphism .text-slate-400, .theme-neomorphism-light .text-slate-400,
+.theme-metro .text-slate-500, .theme-calm .text-slate-500, .theme-beer .text-slate-500, .theme-stars .text-slate-500, .theme-neomorphism .text-slate-500, .theme-neomorphism-light .text-slate-500 {
   color: var(--theme-text-secondary) !important;
 }
 
-.theme-calm .text-red-500:not(.no-calm-override), .theme-calm .text-red-400:not(.no-calm-override) {
+.theme-calm .text-red-500:not(.no-calm-override), .theme-calm .text-red-400:not(.no-calm-override),
+.theme-neomorphism .text-red-500:not(.no-calm-override), .theme-neomorphism .text-red-400:not(.no-calm-override),
+.theme-neomorphism-light .text-red-500:not(.no-calm-override), .theme-neomorphism-light .text-red-400:not(.no-calm-override) {
   color: var(--theme-accent) !important;
 }
-.theme-calm .bg-red-500:not(.no-calm-override), .theme-calm .bg-red-600:not(.no-calm-override) {
+.theme-calm .bg-red-500:not(.no-calm-override), .theme-calm .bg-red-600:not(.no-calm-override),
+.theme-neomorphism .bg-red-500:not(.no-calm-override), .theme-neomorphism .bg-red-600:not(.no-calm-override),
+.theme-neomorphism-light .bg-red-500:not(.no-calm-override), .theme-neomorphism-light .bg-red-600:not(.no-calm-override) {
   background-color: var(--theme-accent) !important;
   border-color: var(--theme-accent) !important;
 }
@@ -683,6 +996,81 @@ input[type="range"].custom-slider-invisible {
   border-radius: 9999px !important;
 }
 
+/* Neomorphism Action Buttons (Tactile convex clay with physical sink) */
+.theme-neomorphism button.bg-white:not(.bg-white\/10):not(.no-calm-override),
+.theme-neomorphism-light button.bg-white:not(.bg-white\/10):not(.no-calm-override),
+.theme-neomorphism button[class*="from-red"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-red"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-emerald"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-emerald"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-amber"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-amber"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-blue"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-blue"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-purple"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-purple"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-indigo"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-indigo"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-pink"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-pink"]:not(.no-calm-override),
+.theme-neomorphism button[class*="from-violet"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="from-violet"]:not(.no-calm-override),
+.theme-neomorphism button[class*="bg-purple"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="bg-purple"]:not(.no-calm-override),
+.theme-neomorphism button[class*="bg-indigo"]:not(.no-calm-override),
+.theme-neomorphism-light button[class*="bg-indigo"]:not(.no-calm-override) {
+  background: var(--theme-btn-bg, linear-gradient(145deg, #222736, #1a1e28)) !important;
+  background-image: var(--theme-btn-bg, linear-gradient(145deg, #222736, #1a1e28)) !important;
+  color: var(--theme-btn-text, #f8fafc) !important;
+  border: var(--theme-card-border, 1px solid rgba(255, 255, 255, 0.08)) !important;
+  border-radius: var(--theme-border-radius);
+  box-shadow: var(--neo-shadow-raised, 3px 3px 6px #101219, -3px -3px 6px #262c3b), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.theme-neomorphism button[class*="from-red"]:not(.no-calm-override):hover,
+.theme-neomorphism button[class*="from-emerald"]:not(.no-calm-override):hover,
+.theme-neomorphism button[class*="from-amber"]:not(.no-calm-override):hover,
+.theme-neomorphism button[class*="from-blue"]:not(.no-calm-override):hover,
+.theme-neomorphism button[class*="from-purple"]:not(.no-calm-override):hover,
+.theme-neomorphism button[class*="from-indigo"]:not(.no-calm-override):hover,
+.theme-neomorphism button.bg-white:not(.bg-white\/10):not(.no-calm-override):hover {
+  box-shadow: var(--neo-shadow-raised, 4px 4px 8px #0e1016, -4px -4px 8px #2b3243) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.theme-neomorphism-light button[class*="from-red"]:not(.no-calm-override):hover,
+.theme-neomorphism-light button[class*="from-emerald"]:not(.no-calm-override):hover,
+.theme-neomorphism-light button[class*="from-amber"]:not(.no-calm-override):hover,
+.theme-neomorphism-light button[class*="from-blue"]:not(.no-calm-override):hover,
+.theme-neomorphism-light button[class*="from-purple"]:not(.no-calm-override):hover,
+.theme-neomorphism-light button[class*="from-indigo"]:not(.no-calm-override):hover,
+.theme-neomorphism-light button.bg-white:not(.bg-white\/10):not(.no-calm-override):hover {
+  box-shadow: var(--neo-shadow-raised, 4px 4px 8px #caced6, -4px -4px 8px #ffffff) !important;
+  border-color: rgba(255, 255, 255, 1) !important;
+}
+
+.theme-neomorphism button[class*="from-red"]:not(.no-calm-override):active,
+.theme-neomorphism button[class*="from-emerald"]:not(.no-calm-override):active,
+.theme-neomorphism button[class*="from-amber"]:not(.no-calm-override):active,
+.theme-neomorphism button[class*="from-blue"]:not(.no-calm-override):active,
+.theme-neomorphism button.bg-white:not(.bg-white\/10):not(.no-calm-override):active,
+.theme-neomorphism-light button[class*="from-red"]:not(.no-calm-override):active,
+.theme-neomorphism-light button[class*="from-emerald"]:not(.no-calm-override):active,
+.theme-neomorphism-light button[class*="from-amber"]:not(.no-calm-override):active,
+.theme-neomorphism-light button[class*="from-blue"]:not(.no-calm-override):active,
+.theme-neomorphism-light button.bg-white:not(.bg-white\/10):not(.no-calm-override):active {
+  transform: scale(0.975) !important;
+  box-shadow: var(--neo-shadow-inset) !important;
+}
+
+.theme-neomorphism button.rounded-full,
+.theme-neomorphism .rounded-full,
+.theme-neomorphism-light button.rounded-full,
+.theme-neomorphism-light .rounded-full {
+  border-radius: 9999px !important;
+}
+
 /* Secondary Action Buttons */
 .theme-metro button.bg-slate-800,
 .theme-metro button.bg-slate-800\/80 {
@@ -723,11 +1111,57 @@ input[type="range"].custom-slider-invisible {
   border-color: rgba(226, 232, 240, 0.35) !important;
 }
 
+.theme-neomorphism button.bg-slate-800,
+.theme-neomorphism button.bg-slate-800\/80 {
+  background: var(--theme-btn-sec-bg, #14161e) !important;
+  color: var(--theme-text-secondary, #94a3b8) !important;
+  border: var(--theme-card-border, 1px solid rgba(255, 255, 255, 0.05)) !important;
+  border-radius: var(--theme-border-radius);
+  box-shadow: var(--neo-shadow-inset, inset 2px 2px 5px #0f1118, inset -2px -2px 5px #242937) !important;
+  transition: all 0.2s ease !important;
+}
+.theme-neomorphism button.bg-slate-800:hover,
+.theme-neomorphism button.bg-slate-800\/80:hover {
+  background: var(--theme-btn-sec-bg, #181c26) !important;
+  color: var(--theme-accent, #38bdf8) !important;
+  border-color: var(--theme-accent, rgba(56, 189, 248, 0.3)) !important;
+}
+
+.theme-neomorphism-light button.bg-slate-800,
+.theme-neomorphism-light button.bg-slate-800\/80 {
+  background: var(--theme-btn-sec-bg, #e2e8f0) !important;
+  color: var(--theme-text-secondary, #64748b) !important;
+  border: var(--theme-card-border, 1px solid rgba(255, 255, 255, 0.85)) !important;
+  border-radius: var(--theme-border-radius);
+  box-shadow: var(--neo-shadow-inset, inset 2px 2px 5px #caced6, inset -2px -2px 5px #ffffff) !important;
+  transition: all 0.2s ease !important;
+}
+.theme-neomorphism-light button.bg-slate-800:hover,
+.theme-neomorphism-light button.bg-slate-800\/80:hover {
+  background: #dbe2ed !important;
+  color: var(--theme-accent, #0284c7) !important;
+  border-color: var(--theme-accent, rgba(2, 132, 199, 0.4)) !important;
+}
+
+.theme-neomorphism [data-player-item] > div {
+  background: var(--theme-surface, #1e222e) !important;
+  box-shadow: var(--neo-shadow-raised-sm) !important;
+  border: var(--theme-card-border) !important;
+}
+.theme-neomorphism-light [data-player-item] > div {
+  background: var(--theme-surface, #edf1f7) !important;
+  box-shadow: var(--neo-shadow-raised-sm) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  color: var(--theme-text, #1e293b) !important;
+}
+
 .theme-classic .always-white,
 .theme-metro .always-white,
 .theme-calm .always-white,
 .theme-beer .always-white,
 .theme-stars .always-white,
+.theme-neomorphism .always-white,
+.theme-neomorphism-light .always-white,
 .always-white {
   color: #ffffff !important;
 }
@@ -736,6 +1170,8 @@ input[type="range"].custom-slider-invisible {
 .theme-calm .always-bg-red,
 .theme-beer .always-bg-red,
 .theme-stars .always-bg-red,
+.theme-neomorphism .always-bg-red,
+.theme-neomorphism-light .always-bg-red,
 .always-bg-red {
   background-color: #dc2626 !important;
   background-image: none !important;
@@ -757,6 +1193,12 @@ input[type="range"].custom-slider-invisible {
 .theme-stars .slider-active-fill {
   background: var(--theme-accent-gradient, linear-gradient(135deg, #ffffff 0%, #e2e8f0 45%, #cbd5e1 100%)) !important;
   opacity: 0.9 !important;
+}
+.theme-neomorphism .slider-active-fill,
+.theme-neomorphism-light .slider-active-fill {
+  background: var(--theme-accent-gradient, var(--theme-accent, #38bdf8)) !important;
+  opacity: 0.95 !important;
+  box-shadow: 0 0 10px var(--theme-accent-glow, rgba(56, 189, 248, 0.4)) !important;
 }
 
 .theme-calm .slider-recommended-segment-blue,

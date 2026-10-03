@@ -51,6 +51,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
         renderAvatar={renderAvatar}
         isImmune={player.isImmune || player.id === immunePlayerId}
         isNewlyAdded={!!lastAddedPlayerId && player.id === lastAddedPlayerId}
+        theme={theme}
       />
     ))}
     {players.length === 0 && (

@@ -183,9 +183,9 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
             {/* Subtitle description */}
             <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed mb-6 max-w-xs font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {lang === 'en' ? (
-                <>You overcame impossible odds. Unlocked the animated <strong className="font-medium text-slate-100">Galaxy Cards</strong>.</>
+                <>You overcame impossible odds. Unlocked the animated <strong className="font-medium text-slate-100">Galaxy Cards</strong> and tactile <strong className="font-medium text-[#38bdf8]">Neumorphism Theme</strong>.</>
               ) : (
-                <>Je hebt het onmogelijke overleefd. Ontgrendeld: geanimeerde <strong className="font-medium text-slate-100">Galaxy Kaarten</strong>.</>
+                <>Je hebt het onmogelijke overleefd. Ontgrendeld: geanimeerde <strong className="font-medium text-slate-100">Galaxy Kaarten</strong> én het tastbare <strong className="font-medium text-[#38bdf8]">Neumorfisme Thema</strong>.</>
               )}
             </p>
 

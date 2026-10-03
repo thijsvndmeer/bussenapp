@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GripVertical, Shield, X } from 'lucide-react';
-import { Player } from '../types';
+import { Player, UITheme } from '../types';
 
 type PlayerCardProps = {
   player: Player;
@@ -13,6 +13,7 @@ type PlayerCardProps = {
   renderAvatar: (player: Player) => React.ReactNode;
   isImmune?: boolean;
   isNewlyAdded?: boolean;
+  theme?: UITheme;
 };
 
 const PlayerCardComponent: React.FC<PlayerCardProps> = ({
@@ -26,6 +27,7 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
   renderAvatar,
   isImmune,
   isNewlyAdded = false,
+  theme = UITheme.CLASSIC,
 }) => {
   const [isExiting, setIsExiting] = useState(false);
   const animClass = isNewlyAdded ? 'animate-card-hand-enter' : 'animate-card-hand-subtle';
@@ -44,7 +46,7 @@ const PlayerCardComponent: React.FC<PlayerCardProps> = ({
       {isOver && dragPlayerIndex !== null && dragPlayerIndex > index && (
         <div className="absolute -top-1.5 left-2 right-2 h-[3px] bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10" />
       )}
-      <div className={`flex justify-between items-center bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-lg ${animClass} relative overflow-hidden`}>
+      <div className={`flex justify-between items-center p-3 rounded-2xl border border-slate-700/50 bg-slate-800/40 backdrop-blur-md shadow-lg ${animClass} relative overflow-hidden`}>
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-none">
             {renderAvatar(player)}

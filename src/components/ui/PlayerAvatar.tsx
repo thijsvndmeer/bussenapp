@@ -57,7 +57,7 @@ export const PlayerAvatar: React.FC<{
     >
       <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center pointer-events-none">
         {player?.image ? (
-          <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
+          <img src={player.image} className="w-full h-full object-cover rounded-full" alt={player?.name || 'player'} />
         ) : (
           <span className="font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
         )}

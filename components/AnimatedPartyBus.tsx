@@ -56,7 +56,15 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
             <defs>
               {/* Metallic Candy Red / Stars Interstellar Nebula Lower Body */}
               <linearGradient id="partyRedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                {theme === UITheme.STARS ? (
+                {theme === UITheme.NEOMORPHISM ? (
+                  <>
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="15%" stopColor="#262d3d" />
+                    <stop offset="50%" stopColor="#1e222d" />
+                    <stop offset="85%" stopColor="#151720" />
+                    <stop offset="100%" stopColor="#0f1118" />
+                  </>
+                ) : theme === UITheme.STARS ? (
                   <>
                     <stop offset="0%" stopColor="#cbd5e1" />
                     <stop offset="18%" stopColor="#94a3b8" />

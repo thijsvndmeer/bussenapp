@@ -208,12 +208,15 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   const isClassic = style === CardStyle.CLASSIC;
   const isNeon = style === CardStyle.NEON;
   const isGalaxy = style === CardStyle.GALAXY;
+  const isNeomorphism = style === CardStyle.NEOMORPHISM;
 
-  const redColor = isGalaxy ? 'text-[#f43f5e]' : isNeon ? 'text-rose-400' : isDark ? 'text-red-500' : isClassic ? 'text-[#c21807]' : 'text-[#e11d48]';
-  const blackColor = isGalaxy ? 'text-[#f1f5f9]' : isNeon ? 'text-cyan-400' : isDark ? 'text-slate-200' : isClassic ? 'text-[#000000]' : 'text-[#1e293b]';
+  const redColor = isNeomorphism ? 'text-[#f43f5e]' : isGalaxy ? 'text-[#f43f5e]' : isNeon ? 'text-rose-400' : isDark ? 'text-red-500' : isClassic ? 'text-[#c21807]' : 'text-[#e11d48]';
+  const blackColor = isNeomorphism ? 'text-[#38bdf8]' : isGalaxy ? 'text-[#f1f5f9]' : isNeon ? 'text-cyan-400' : isDark ? 'text-slate-200' : isClassic ? 'text-[#000000]' : 'text-[#1e293b]';
   const textColor = isRed ? redColor : blackColor;
 
-  const glowClass = isGalaxy
+  const glowClass = isNeomorphism
+    ? ''
+    : isGalaxy
     ? (isRed ? 'drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'drop-shadow-[0_0_8px_rgba(255,255,255,0.45)]')
     : isNeon ? (isRed ? 'drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]' : 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]') : isDark ? (isRed ? 'drop-shadow-[0_0_4px_rgba(239,68,68,0.4)]' : 'drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]') : '';
 
@@ -237,12 +240,21 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- FRONT --- */}
         <div className={`
           absolute inset-0 backface-hidden
-          ${isGalaxy ? 'bg-[#010005] border-white/20 border-t-[rgba(255,255,255,0.4)] ring-1 ring-white/10' : isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-br from-white to-slate-100 border-white/80'}
+          ${isGalaxy ? 'bg-[#010005] border-white/20 border-t-[rgba(255,255,255,0.4)] ring-1 ring-white/10' : isNeomorphism ? 'bg-[#1a1d27] border-white/[0.06] shadow-[8px_8px_16px_#101219,-8px_-8px_16px_#262c3b]' : isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-[#fffdf5] border-[#dcd0b9]' : isNeon ? 'bg-gradient-to-br from-[#0f172a]/40 to-[#1e293b]/40 backdrop-blur-xl border-white/20' : 'bg-gradient-to-br from-white to-slate-100 border-white/80'}
           ${sizeConfig.radius}
           border
-          ${!isNeon && !isGalaxy ? 'ring-1 ring-black/5 shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]' : isNeon ? 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]' : ''}
+          ${!isNeon && !isGalaxy && !isNeomorphism ? 'ring-1 ring-black/5 shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]' : isNeon ? 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]' : ''}
           overflow-hidden
         `}>
+          {isNeomorphism && (
+            <div 
+              className="absolute inset-1.5 rounded-[calc(var(--border-radius,16px)-6px)] pointer-events-none"
+              style={{
+                boxShadow: 'inset 3px 3px 6px #0f1118, inset -3px -3px 6px #222634',
+                border: '1px solid rgba(255, 255, 255, 0.03)'
+              }}
+            />
+          )}
           {/* Galaxy Nebula + Stardust Overlay */}
           {isGalaxy && (
             <>
@@ -391,7 +403,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* --- BACK --- */}
         <div className={`
           absolute inset-0 backface-hidden rotate-y-180
-          ${isGalaxy || isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-gradient-to-br from-[#7a0c16] via-[#5c0810] to-[#360206] border-[#dcd0b9] shadow-[inset_0_0_24px_rgba(0,0,0,0.6)]' : isNeon ? 'bg-[#050508] border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.25)]' : 'bg-gradient-to-br from-[#b91c1c] via-[#991b1b] to-[#450a0a] border-white/95 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]'}
+          ${isNeomorphism ? 'bg-[#171a23] border-white/[0.06] shadow-[8px_8px_16px_#101219,-8px_-8px_16px_#262c3b]' : isGalaxy || isDark ? 'bg-[#020617] border-slate-800' : isClassic ? 'bg-gradient-to-br from-[#7a0c16] via-[#5c0810] to-[#360206] border-[#dcd0b9] shadow-[inset_0_0_24px_rgba(0,0,0,0.6)]' : isNeon ? 'bg-[#050508] border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.25)]' : 'bg-gradient-to-br from-[#b91c1c] via-[#991b1b] to-[#450a0a] border-white/95 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]'}
           ${sizeConfig.radius}
           border-2
           overflow-hidden
@@ -415,7 +427,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           )}
 
           {/* Radial Lighting Accent for Modern & Dark */}
-          {(isDark || (!isNeon && !isGalaxy && !isClassic)) && (
+          {(isDark || (!isNeon && !isGalaxy && !isClassic && !isNeomorphism)) && (
             <div 
               className="absolute inset-0 pointer-events-none"
               style={{
@@ -427,7 +439,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           )}
 
           {/* Inset Border Frame (Double-Bezel) for Modern, Dark, and Classic */}
-          {!isNeon && !isGalaxy && (
+          {!isNeon && !isGalaxy && !isNeomorphism && (
             <div className={`absolute inset-[5%] rounded-[inherit] border ${
               isDark ? 'border-slate-700/50' : isClassic ? 'border-[#dcd0b9]/60 shadow-[inset_0_0_10px_rgba(0,0,0,0.4)]' : 'border-white/35 shadow-inner'
             } pointer-events-none z-0`}>
@@ -461,7 +473,9 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           {/* Center Logo/Graphic */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div className={`w-1/2 h-1/3 rounded-full flex items-center justify-center relative p-0.5 ${
-              isGalaxy
+              isNeomorphism
+                ? 'border-2 border-white/10 bg-[#14161e] shadow-[inset_2px_2px_4px_#0f1118,inset_-2px_-2px_4px_#222634]'
+                : isGalaxy
                 ? 'border-2 border-white/30 backdrop-blur-[1px]'
                 : isNeon
                 ? 'border-2 border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.25)] bg-white/5 backdrop-blur-md'
@@ -472,9 +486,10 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                 : 'border-2 border-white/70 bg-gradient-to-b from-red-600/35 to-red-950/65 backdrop-blur-sm shadow-lg ring-1 ring-white/20'
             }`}>
               <div className={`w-full h-full rounded-full flex items-center justify-center border ${
-                isGalaxy ? 'border-white/20' : isNeon ? 'border-cyan-400/30' : isDark ? 'border-slate-800' : isClassic ? 'border-[#dcd0b9]/40' : 'border-white/25'
+                isNeomorphism ? 'border-white/10' : isGalaxy ? 'border-white/20' : isNeon ? 'border-cyan-400/30' : isDark ? 'border-slate-800' : isClassic ? 'border-[#dcd0b9]/40' : 'border-white/25'
               }`}>
                 <div className={`${isClassic ? 'font-serif font-black tracking-[0.2em] text-[#fffdf5]' : 'font-sans font-black tracking-[0.25em] text-white'} ${sizeConfig.bussenText} ${
+                  isNeomorphism ? 'italic -rotate-12 text-slate-300' :
                   isNeon ? 'italic -rotate-12 drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]' :
                   isClassic ? 'italic -rotate-12 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' :
                   'italic -rotate-12 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'

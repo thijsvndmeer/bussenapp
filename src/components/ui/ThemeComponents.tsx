@@ -98,6 +98,19 @@ export const ThemeLabel: React.FC<{
     );
   }
 
+  if (theme === UITheme.NEOMORPHISM) {
+    return (
+      <div className={`relative z-[60] ${isLg ? 'py-3' : 'py-1.5'} ${align === 'center' ? 'text-center' : 'text-left'}`}>
+        <div 
+          className={`${textSizeClass} font-semibold uppercase tracking-[0.2em]`}
+          style={{ fontFamily: "'Outfit', sans-serif", color: 'var(--theme-accent, #38bdf8)' }}
+        >
+          {text}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`relative z-[60] ${isLg ? 'py-4' : 'py-2'} ${align === 'center' ? 'text-center' : 'text-left'}`}>
       <div 
@@ -119,6 +132,19 @@ export const ThemeHeader: React.FC<{
   className?: string; 
   as?: 'h1' | 'h2' | 'p' 
 }> = React.memo(({ text, theme, className = "", as: Component = 'h2' }) => {
+  if (theme === UITheme.NEOMORPHISM) {
+    return (
+      <Component 
+        className={`font-black tracking-wide uppercase ${className}`}
+        style={{ 
+          fontFamily: "'Outfit', sans-serif",
+          color: 'var(--theme-text, #f1f5f9)'
+        }}
+      >
+        {text}
+      </Component>
+    );
+  }
   if (theme === UITheme.STARS) {
     return (
       <Component 

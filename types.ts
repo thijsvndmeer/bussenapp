@@ -72,6 +72,7 @@ export enum UITheme {
   CALM = 'calm',
   BEER = 'beer',
   STARS = 'stars',
+  NEOMORPHISM = 'neomorphism',
 }
 
 export enum CardStyle {
@@ -80,6 +81,7 @@ export enum CardStyle {
   CLASSIC = 'CLASSIC',
   NEON = 'NEON',
   GALAXY = 'GALAXY',
+  NEOMORPHISM = 'NEOMORPHISM',
 }
 
 export interface GameSettings {
@@ -93,5 +95,6 @@ export interface GameSettings {
   doublePyramidCards: boolean; // Enable double sip cards in pyramid phase
   theme: UITheme;
   calmAccentColor?: string;
+  neoVariant?: 'dark' | 'light';
 }
 

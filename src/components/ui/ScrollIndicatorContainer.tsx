@@ -40,6 +40,12 @@ export const getThemeScrollColors = (theme: UITheme = UITheme.CLASSIC) => {
         gradientFrom: 'rgba(1, 0, 5, 0.95)',
         glow: 'rgba(226, 232, 240, 0.25)',
       };
+    case UITheme.NEOMORPHISM:
+      return {
+        accent: '#38bdf8',
+        gradientFrom: 'rgba(23, 26, 35, 0.95)',
+        glow: 'transparent',
+      };
     case UITheme.CLASSIC:
     default:
       return {

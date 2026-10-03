@@ -306,6 +306,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   const isCalm = theme === UITheme.CALM;
   const isBeer = theme === UITheme.BEER;
   const isStars = theme === UITheme.STARS;
+  const isNeomorphism = theme === UITheme.NEOMORPHISM;
   const calmAccent = calmAccentColor || 'var(--theme-accent, #fb7185)';
 
   const getMatchersText = () => {
@@ -326,6 +327,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   const draggingPlayer = draggedPlayerId ? players.find((p) => p.id === draggedPlayerId) : null;
 
   const getBackdropClasses = () => {
+    if (isNeomorphism) return 'bg-black/85 backdrop-blur-none';
     if (isMetro) return 'bg-black/85 backdrop-blur-none';
     if (isCalm) return 'bg-[#05070e]/75 backdrop-blur-md';
     if (isBeer) return 'bg-[#02180c]/80 backdrop-blur-md';
@@ -334,6 +336,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   };
 
   const getTopPillClasses = () => {
+    if (isNeomorphism) return 'bg-[#1e222e] px-6 py-2 rounded-2xl border border-white/[0.06] shadow-[5px_5px_12px_#101219,-5px_-5px_12px_#262c3b]';
     if (isMetro) return 'bg-[#0d0d0d] px-6 py-2 rounded-none border-2 border-[var(--theme-accent,#fb7185)] shadow-[4px_4px_0_rgba(0,0,0,0.9)]';
     if (isCalm) return 'bg-white/[0.06] backdrop-blur-xl px-6 py-2 rounded-full border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5)]';
     if (isBeer) return 'bg-gradient-to-r from-amber-950/80 via-yellow-950/70 to-amber-950/80 backdrop-blur-md px-6 py-2 rounded-xl border-2 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.35)]';
@@ -342,6 +345,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   };
 
   const getTopPillTextClasses = () => {
+    if (isNeomorphism) return 'font-black text-lg tracking-wider uppercase text-[#38bdf8]';
     if (isMetro) return 'font-mono font-black text-lg tracking-wider uppercase text-[var(--theme-accent,#fb7185)]';
     if (isCalm) return 'font-black text-lg tracking-wider uppercase';
     if (isBeer) return 'font-black text-lg tracking-widest uppercase text-amber-400 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]';
@@ -353,6 +357,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (!isDraggingActive) return 'opacity-0 scale-90 pointer-events-none';
     if (!isHovered) return 'text-slate-400 opacity-70 scale-95';
 
+    if (isNeomorphism) return 'font-black text-sm scale-110 uppercase text-[#38bdf8] tracking-wider opacity-100';
     if (isMetro) return 'font-mono font-black text-sm scale-110 drop-shadow-[2px_2px_0_rgba(0,0,0,1)] uppercase text-[var(--theme-accent,#fb7185)] opacity-100';
     if (isCalm) return 'font-black text-sm scale-110 uppercase drop-shadow-[0_0_10px_var(--theme-accent-glow)] tracking-wider opacity-100';
     if (isBeer) return 'font-black text-sm scale-110 uppercase text-amber-300 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)] tracking-wider opacity-100';
@@ -361,6 +366,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   };
 
   const getCardPreviewShadow = () => {
+    if (isNeomorphism) return 'drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]';
     if (isMetro) return 'drop-shadow-[4px_4px_0_rgba(0,0,0,0.9)] drop-shadow-[0_0_20px_rgba(251,113,133,0.25)]';
     if (isCalm) return 'drop-shadow-[0_0_35px_var(--theme-accent-glow,rgba(251,113,133,0.3))]';
     if (isBeer) return 'drop-shadow-[0_0_35px_rgba(245,158,11,0.45)]';
@@ -369,6 +375,9 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
   };
 
   const getModalContainerClasses = () => {
+    if (isNeomorphism) {
+      return 'bg-[#1e222e] w-full rounded-3xl border border-white/[0.06] shadow-[8px_8px_20px_#101219,-8px_-8px_20px_#262c3b] relative overflow-hidden backdrop-blur-none';
+    }
     if (isMetro) {
       return 'bg-[#0d0d0d] w-full rounded-none border-2 border-[var(--theme-accent,#fb7185)] shadow-[6px_6px_0_rgba(0,0,0,1)] relative overflow-hidden font-mono';
     }
@@ -381,15 +390,16 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isStars) {
       return 'bg-[rgba(8,11,20,0.92)] backdrop-blur-2xl w-full rounded-3xl border border-white/18 border-t-[rgba(255,255,255,0.35)] shadow-[0_20px_50px_rgba(0,0,0,0.95),inset_0_1px_0_0_rgba(255,255,255,0.18),0_0_35px_rgba(226,232,240,0.12)] relative overflow-hidden';
     }
-    return 'bg-gradient-to-b from-slate-800 to-slate-900 w-full rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden';
+    return 'glass-panel w-full rounded-3xl border border-slate-700/60 shadow-2xl shadow-red-950/20 relative overflow-hidden backdrop-blur-xl';
   };
 
   const getCloseButtonClasses = () => {
+    if (isNeomorphism) return 'rounded-xl border border-white/[0.06] bg-[#14161e] text-slate-300 hover:text-[#38bdf8] shadow-[inset_2px_2px_4px_#0f1118,inset_-2px_-2px_4px_#222634] transition-all';
     if (isMetro) return 'rounded-none border-2 border-zinc-700 bg-[#18181b] hover:border-[var(--theme-accent,#fb7185)] text-zinc-300 hover:text-white transition-all';
     if (isCalm) return 'rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors';
     if (isBeer) return 'rounded-xl border border-amber-500/30 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-100 transition-colors';
     if (isStars) return 'rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white shadow-[0_0_12px_rgba(255,255,255,0.1)] transition-colors';
-    return 'rounded-full bg-black/30 hover:bg-black/50 text-slate-400 hover:text-white transition-colors';
+    return 'rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/50 transition-colors';
   };
 
   const getHeaderDividerClasses = () => {
@@ -397,7 +407,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isCalm) return 'border-b border-white/[0.07]';
     if (isBeer) return 'border-b border-amber-500/20';
     if (isStars) return 'border-b border-white/10';
-    return 'border-b border-white/5';
+    return 'border-b border-slate-700/50';
   };
 
   const renderTitle = () => {

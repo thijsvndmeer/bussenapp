@@ -22,6 +22,7 @@ import { Confetti } from './src/components/backgrounds/Confetti';
 import { CalmBackground } from './src/components/backgrounds/CalmBackground';
 import { BeerBackground } from './src/components/backgrounds/BeerBackground';
 import { GalaxyBackground } from './src/components/backgrounds/GalaxyBackground';
+import { NeomorphicBackground } from './src/components/backgrounds/NeomorphicBackground';
 import { PlayerAvatar } from './src/components/ui/PlayerAvatar';
 import { ThemeLabel, ThemeHeader } from './src/components/ui/ThemeComponents';
 
@@ -308,7 +309,8 @@ const PersistentBackground: React.FC<{
   isDiscoActive?: boolean;
   showTexture?: boolean;
   calmAccentColor?: string;
-}> = ({ theme, style, isDiscoActive, showTexture = true, calmAccentColor }) => {
+  neoVariant?: 'dark' | 'light';
+}> = ({ theme, style, isDiscoActive, showTexture = true, calmAccentColor, neoVariant = 'light' }) => {
   let bgClass = 'bg-animated-gradient';
   let additionalStyles: React.CSSProperties = {};
   if (isDiscoActive) {
@@ -331,9 +333,19 @@ const PersistentBackground: React.FC<{
         {theme === UITheme.BEER && <BeerBackground />}
         {theme === UITheme.METRO && <MetroBackground />}
         {theme === UITheme.STARS && <GalaxyBackground />}
+        {theme === UITheme.NEOMORPHISM && (
+          neoVariant === 'light' || calmAccentColor ? (
+            <NeomorphicBackground 
+              isLight={neoVariant === 'light'} 
+              accentColor={calmAccentColor || (neoVariant === 'light' ? '#0284c7' : '#38bdf8')} 
+            />
+          ) : (
+            <NeomorphicBackground />
+          )
+        )}
       </div>
       {/* 3. Global Texture Overlay */}
-      {showTexture && (
+      {showTexture && theme !== UITheme.NEOMORPHISM && (
         <div 
           className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay"
           style={{ pointerEvents: 'none' }}
@@ -546,12 +558,18 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
     const btnTextColor = yiq >= 165 ? '#090514' : '#ffffff';
     const root = document.documentElement;
     root.classList.remove('theme-transition');
+    const isNeo = root.classList.contains('theme-neomorphism') || root.classList.contains('theme-neomorphism-light');
     root.style.setProperty('--theme-accent', hex);
-    root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`);
-    root.style.setProperty('--theme-btn-bg', hex);
-    root.style.setProperty('--theme-btn-text', btnTextColor);
+    root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${isNeo ? 0.35 : 0.25})`);
     root.style.setProperty('--theme-btn-sec-text', hex);
-    root.style.setProperty('--theme-card-border', `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+    if (!isNeo) {
+      root.style.setProperty('--theme-btn-bg', hex);
+      root.style.setProperty('--theme-btn-text', btnTextColor);
+      root.style.setProperty('--theme-card-border', `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`);
+    } else {
+      root.style.setProperty('--theme-accent-secondary', hex);
+      root.style.setProperty('--theme-accent-gradient', `linear-gradient(135deg, ${hex} 0%, ${hex}dd 100%)`);
+    }
   };
 
   // While sliding: update ONLY the local slider thumb hue.
@@ -723,10 +741,11 @@ const App: React.FC = () => {
       sharedBus: false,
       busLength: 6,
       busDecks: 1,
-      cardStyle: CardStyle.DARK,
+      cardStyle: CardStyle.MODERN,
       doublePyramidCards: true,
       theme: UITheme.CALM,
       calmAccentColor: '#fb7185',
+      neoVariant: 'light',
     };
     if (!storageAvailable) return defaultSettings;
     try {
@@ -1358,8 +1377,15 @@ const initializeAdMob = useCallback(async () => {
   }, [storageAvailable, setPlayers, setNewPlayerName, setNewPlayerImage]);
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer', 'theme-stars');
-    root.classList.add(`theme-${settings.theme}`, 'theme-transition');
+    root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer', 'theme-stars', 'theme-neomorphism', 'theme-neomorphism-light');
+    if (settings.theme === UITheme.NEOMORPHISM) {
+      const isLight = (settings.neoVariant || 'light') === 'light';
+      root.classList.add(isLight ? 'theme-neomorphism-light' : 'theme-neomorphism', 'theme-transition');
+      root.setAttribute('data-theme', isLight ? 'neomorphism-light' : 'neomorphism');
+    } else {
+      root.classList.add(`theme-${settings.theme}`, 'theme-transition');
+      root.setAttribute('data-theme', settings.theme);
+    }
     if (settings.theme === UITheme.CALM) {
       const accentHex = settings.calmAccentColor || '#fb7185'; // Default light red
       
@@ -1385,6 +1411,56 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-border-radius', '20px');
       root.style.removeProperty('--theme-accent-gradient');
       root.style.removeProperty('--theme-accent-secondary');
+      root.style.removeProperty('--theme-tertiary');
+      root.style.removeProperty('--theme-accent-tertiary');
+    } else if (settings.theme === UITheme.NEOMORPHISM) {
+      const isLight = (settings.neoVariant || 'light') === 'light';
+      const defaultAccent = isLight ? '#0284c7' : '#38bdf8';
+      const accentHex = settings.calmAccentColor || defaultAccent;
+
+      // Parse Hex to RGB
+      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      const fullHex = accentHex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+      const rgb = result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : (isLight ? { r: 2, g: 132, b: 199 } : { r: 56, g: 189, b: 248 });
+
+      if (isLight) {
+        root.style.setProperty('--theme-bg-base', '#edf1f7');
+        root.style.setProperty('--theme-bg', '#edf1f7');
+        root.style.setProperty('--theme-card-bg', '#edf1f7');
+        root.style.setProperty('--theme-card-border', '1px solid rgba(255, 255, 255, 0.85)');
+        root.style.setProperty('--theme-text', '#1e293b');
+        root.style.setProperty('--theme-text-secondary', '#64748b');
+        root.style.setProperty('--theme-accent', accentHex);
+        root.style.setProperty('--theme-accent-secondary', accentHex);
+        root.style.setProperty('--theme-accent-gradient', `linear-gradient(135deg, ${accentHex} 0%, ${accentHex}dd 100%)`);
+        root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`);
+        root.style.setProperty('--theme-btn-bg', 'linear-gradient(145deg, #f5f8fc, #e2e8f2)');
+        root.style.setProperty('--theme-btn-text', '#0f172a');
+        root.style.setProperty('--theme-btn-sec-bg', '#e2e8f0');
+        root.style.setProperty('--theme-btn-sec-text', accentHex);
+        root.style.setProperty('--theme-border-radius', '20px');
+      } else {
+        root.style.setProperty('--theme-bg-base', '#171a23');
+        root.style.setProperty('--theme-bg', '#171a23');
+        root.style.setProperty('--theme-card-bg', '#1e222e');
+        root.style.setProperty('--theme-card-border', '1px solid rgba(255, 255, 255, 0.05)');
+        root.style.setProperty('--theme-text', '#f1f5f9');
+        root.style.setProperty('--theme-text-secondary', '#94a3b8');
+        root.style.setProperty('--theme-accent', accentHex);
+        root.style.setProperty('--theme-accent-secondary', accentHex);
+        root.style.setProperty('--theme-accent-gradient', `linear-gradient(135deg, ${accentHex} 0%, ${accentHex}dd 100%)`);
+        root.style.setProperty('--theme-accent-glow', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
+        root.style.setProperty('--theme-btn-bg', 'linear-gradient(145deg, #222736, #1a1e28)');
+        root.style.setProperty('--theme-btn-text', '#f8fafc');
+        root.style.setProperty('--theme-btn-sec-bg', '#14161e');
+        root.style.setProperty('--theme-btn-sec-text', accentHex);
+        root.style.setProperty('--theme-border-radius', '20px');
+      }
       root.style.removeProperty('--theme-tertiary');
       root.style.removeProperty('--theme-accent-tertiary');
     } else if (settings.theme === UITheme.STARS) {
@@ -1445,7 +1521,7 @@ const initializeAdMob = useCallback(async () => {
       root.style.removeProperty('--theme-card-border');
       root.style.removeProperty('--theme-border-radius');
     }
-  }, [settings.theme, settings.calmAccentColor]);
+  }, [settings.theme, settings.calmAccentColor, settings.neoVariant]);
   // Main hydration effect on component mount
   useEffect(() => {
     hydratePlayers(); // Always hydrate players
@@ -1968,16 +2044,16 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-medium text-xs uppercase tracking-wider backdrop-blur-md active:scale-95 transition-all flex items-center justify-center gap-2 border bg-white/5 border-white/10 text-slate-300 hover:text-white";
     }
     // Default (Classic)
-    const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border-t";
-    if (type === 'RED') return `${base} bg-gradient-to-br from-red-500 to-red-700 border-red-400 text-white`;
-    if (type === 'BLACK') return `${base} bg-gradient-to-br from-slate-700 to-slate-900 border-slate-600 text-white`;
-    if (type === 'HIGHER') return `${base} bg-gradient-to-br from-emerald-500 to-emerald-700 border-emerald-400 text-white`;
-    if (type === 'LOWER') return `${base} bg-gradient-to-br from-red-600 to-red-800 border-red-500 text-white`;
-    if (type === 'BETWEEN') return `${base} bg-gradient-to-br from-blue-500 to-blue-700 border-blue-400 text-white`;
-    if (type === 'OUTSIDE') return `${base} bg-gradient-to-br from-indigo-600 to-indigo-800 border-indigo-500 text-white`;
-    if (type === 'MATCH') return `${base} bg-gradient-to-br from-purple-600 to-purple-800 border-purple-400 text-white`;
-    if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-pink-600 to-pink-800 border-pink-400 text-white`;
-    if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wider shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2 border-t bg-gradient-to-br from-slate-700 to-slate-800 border-slate-500 text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)]";
+    const base = "py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 border border-white/10 border-t-white/30 backdrop-blur-md";
+    if (type === 'RED') return `${base} bg-gradient-to-br from-red-500 via-rose-600 to-red-700 text-white shadow-[0_6px_20px_rgba(220,38,38,0.35)]`;
+    if (type === 'BLACK') return `${base} bg-gradient-to-br from-slate-800 via-slate-900 to-black text-white shadow-[0_6px_20px_rgba(0,0,0,0.6)]`;
+    if (type === 'HIGHER') return `${base} bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 text-white shadow-[0_6px_20px_rgba(16,185,129,0.3)]`;
+    if (type === 'LOWER') return `${base} bg-gradient-to-br from-red-500 via-rose-600 to-red-700 text-white shadow-[0_6px_20px_rgba(220,38,38,0.35)]`;
+    if (type === 'BETWEEN') return `${base} bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white shadow-[0_6px_20px_rgba(59,130,246,0.3)]`;
+    if (type === 'OUTSIDE') return `${base} bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 text-white shadow-[0_6px_20px_rgba(99,102,241,0.3)]`;
+    if (type === 'MATCH') return `${base} bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-[0_6px_20px_rgba(168,85,247,0.3)]`;
+    if (type === 'NO_MATCH') return `${base} bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 text-white shadow-[0_6px_20px_rgba(236,72,153,0.3)]`;
+    if (type === 'EQUAL' || type === 'ON_IT') return "px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2 border border-slate-600/70 border-t-white/30 bg-gradient-to-b from-slate-700 to-slate-800 text-white shadow-[0_4px_16px_rgba(0,0,0,0.4)]";
     return base;
   };
   const getBusGuessBtnClasses = (type: 'HIGHER' | 'LOWER' | 'EQUAL') => {
@@ -1985,6 +2061,12 @@ const initializeAdMob = useCallback(async () => {
     const isBeer = settings.theme === UITheme.BEER;
     const isCalm = settings.theme === UITheme.CALM;
     const isStars = settings.theme === UITheme.STARS;
+    const isNeomorphism = settings.theme === UITheme.NEOMORPHISM;
+    if (isNeomorphism) {
+      if (type === 'HIGHER') return "group flex-1 bg-gradient-to-br from-[#1e2738] to-[#161c28] text-[#38bdf8] py-6 rounded-2xl font-black border border-[#38bdf8]/30 shadow-[6px_6px_14px_#101219,-6px_-6px_14px_#262c3b] flex flex-col items-center active:scale-95 active:shadow-[inset_3px_3px_7px_#0f1118,inset_-3px_-3px_7px_#222634] transition-all";
+      if (type === 'LOWER') return "group flex-1 bg-gradient-to-br from-[#2a1a1f] to-[#1c1417] text-[#fb7185] py-6 rounded-2xl font-black border border-[#fb7185]/30 shadow-[6px_6px_14px_#101219,-6px_-6px_14px_#262c3b] flex flex-col items-center active:scale-95 active:shadow-[inset_3px_3px_7px_#0f1118,inset_-3px_-3px_7px_#222634] transition-all";
+      if (type === 'EQUAL') return "w-full bg-[#14161e] border border-white/[0.04] text-slate-300 hover:text-white py-3 text-xs font-bold tracking-widest uppercase rounded-xl transition-all active:scale-95 shadow-[inset_2px_2px_5px_#0f1118,inset_-2px_-2px_5px_#222634]";
+    }
     if (isStars) {
       if (type === 'HIGHER') return "stars-polarity-btn group flex-1 bg-gradient-to-b from-slate-900/80 to-[#070912]/95 hover:from-slate-800/80 hover:to-[#0e1220]/95 text-white py-6 rounded-2xl font-black border border-white/15 border-t-white/35 shadow-[0_6px_25px_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all relative overflow-hidden";
       if (type === 'LOWER') return "stars-polarity-btn group flex-1 bg-gradient-to-b from-slate-900/80 to-[#070912]/95 hover:from-slate-800/80 hover:to-[#0e1220]/95 text-white py-6 rounded-2xl font-black border border-white/15 border-t-white/35 shadow-[0_6px_25px_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all relative overflow-hidden";
@@ -2005,14 +2087,17 @@ const initializeAdMob = useCallback(async () => {
       if (type === 'LOWER') return "group flex-1 bg-blue-950/50 hover:bg-blue-950/70 text-blue-200 py-6 rounded-2xl font-black border border-blue-500/30 shadow-[0_4px_20px_rgba(59,130,246,0.2)] backdrop-blur-xl flex flex-col items-center active:scale-95 transition-all";
       if (type === 'EQUAL') return "w-full bg-white/5 border border-white/10 text-slate-300 py-3 text-xs font-medium rounded-xl hover:bg-white/10 transition-colors active:scale-95";
     }
-    if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-700 active:to-emerald-800 text-white py-6 rounded-2xl font-black border border-emerald-400 flex flex-col items-center shadow-lg active:scale-95 transition-all";
-    if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-slate-800 to-slate-900 active:from-slate-900 active:to-black text-white py-6 rounded-2xl font-black border border-slate-700 flex flex-col items-center shadow-lg active:scale-95 transition-all hover:border-red-500";
-    if (type === 'EQUAL') return "w-full bg-slate-800/50 py-3 text-xs font-bold rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors active:scale-95";
+    if (type === 'HIGHER') return "group flex-1 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-700 active:to-emerald-800 text-white py-6 rounded-3xl font-black border-t border-emerald-400/60 flex flex-col items-center shadow-[0_8px_25px_rgba(16,185,129,0.35)] active:scale-95 transition-all";
+    if (type === 'LOWER') return "group flex-1 bg-gradient-to-b from-red-600 via-rose-600 to-red-700 active:from-red-700 active:to-red-800 text-white py-6 rounded-3xl font-black border-t border-red-400/60 flex flex-col items-center shadow-[0_8px_25px_rgba(220,38,38,0.4)] active:scale-95 transition-all";
+    if (type === 'EQUAL') return "w-full glass-panel py-3 text-xs font-bold uppercase tracking-widest rounded-2xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-700/60 shadow-md transition-all active:scale-95";
     return "";
   };
 
   const getHeaderClasses = () => {
     const transitionClass = "transition-[border-radius,background-color,border-color,margin] duration-100";
+    if (settings.theme === UITheme.NEOMORPHISM) {
+      return `${transitionClass} bg-[#1e222e] rounded-3xl border border-white/[0.05] shadow-[6px_6px_16px_#101219,-6px_-6px_16px_#262c3b] mb-4 z-20 mx-2`;
+    }
     if (settings.theme === UITheme.STARS) {
       return `${transitionClass} stars-chronometer-bar rounded-[2rem] border border-white/15 border-t-white/35 mb-4 z-20 mx-2 relative overflow-hidden`;
     }
@@ -2026,11 +2111,14 @@ const initializeAdMob = useCallback(async () => {
       return `${transitionClass} bg-amber-950/40 backdrop-blur-sm rounded-xl border-2 border-amber-900/50 mb-3 z-20 shadow-md mx-1`;
     }
     // Classic
-    return `${transitionClass} bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-white/10 mb-3 z-20 shadow-2xl mx-1`;
+    return `${transitionClass} glass-panel rounded-3xl border border-slate-700/60 shadow-[0_12px_32px_rgba(0,0,0,0.45)] mb-3 z-20 mx-2`;
   };
 
   const getHandContainerClasses = () => {
     const transitionClass = "transition-[border-radius,background-color,border-color] duration-100";
+    if (settings.theme === UITheme.NEOMORPHISM) {
+      return `${transitionClass} bg-[#14161e] rounded-3xl p-3 mb-6 mx-2 border border-white/[0.04] shadow-[inset_4px_4px_10px_#0f1118,inset_-4px_-4px_10px_#222634] relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
+    }
     if (settings.theme === UITheme.STARS) {
       return `${transitionClass} bg-gradient-to-b from-slate-900/40 to-[#070912]/85 rounded-[2rem] p-3 mb-6 mx-2 border border-white/12 border-t-white/30 backdrop-blur-2xl relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-[0_8px_32px_rgba(0,0,0,0.85),0_0_24px_rgba(255,255,255,0.04)]`;
     }
@@ -2044,7 +2132,7 @@ const initializeAdMob = useCallback(async () => {
       return `${transitionClass} bg-amber-950/30 rounded-2xl p-3 mb-6 border border-amber-900/40 backdrop-blur-sm relative overflow-hidden min-h-[160px] flex flex-col justify-center shadow-inner`;
     }
     // Classic
-    return `${transitionClass} bg-black/10 rounded-3xl p-3 mb-4 border border-white/5 backdrop-blur-sm shadow-inner relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
+    return `${transitionClass} glass-panel rounded-3xl p-3.5 mb-4 mx-2 border border-slate-700/50 shadow-[0_12px_32px_rgba(0,0,0,0.4)] relative overflow-hidden min-h-[160px] flex flex-col justify-center`;
   };
 
   const handleStartPress = () => {
@@ -3115,6 +3203,7 @@ const initializeAdMob = useCallback(async () => {
   }, [isSharedBusSelecting, busPassengers, findLoser, resumeBusDeparture]);
 
   const getMatcherAvatarFrameClasses = useCallback(() => {
+    if (settings.theme === UITheme.NEOMORPHISM) return 'rounded-full border-2 border-cyan-400/40 group-hover:border-cyan-400 neo-raised-sm';
     if (settings.theme === UITheme.METRO) return 'rounded-full border-2 border-zinc-700 group-hover:border-[var(--theme-accent,#fb7185)] group-hover:shadow-[3px_3px_0_rgba(0,0,0,0.9)]';
     if (settings.theme === UITheme.CALM) return 'rounded-full border-2 border-white/15 group-hover:border-[var(--theme-accent,#fb7185)] group-hover:shadow-[0_0_20px_var(--theme-accent-glow,rgba(251,113,133,0.3))]';
     if (settings.theme === UITheme.BEER) return 'rounded-full border-2 border-amber-500/30 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]';
@@ -3125,12 +3214,14 @@ const initializeAdMob = useCallback(async () => {
   const getDragPointerClasses = useCallback((isHovered: boolean) => {
     const shape = 'rounded-full';
     if (isHovered) {
+      if (settings.theme === UITheme.NEOMORPHISM) return `${shape} border-2 border-cyan-300 bg-cyan-500 scale-125`;
       if (settings.theme === UITheme.METRO) return `${shape} border-2 border-black bg-[var(--theme-accent,#fb7185)] shadow-[2px_2px_0_rgba(0,0,0,1)] scale-125`;
       if (settings.theme === UITheme.CALM) return `${shape} border-2 border-white bg-[var(--theme-accent,#fb7185)] shadow-[0_0_12px_var(--theme-accent-glow,rgba(251,113,133,0.3))] scale-125`;
       if (settings.theme === UITheme.BEER) return `${shape} border-2 border-amber-300 bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.9)] scale-125`;
       if (settings.theme === UITheme.STARS) return `${shape} border-2 border-white bg-slate-200 shadow-[0_0_16px_rgba(255,255,255,0.9)] scale-125`;
       return `${shape} border-2 border-emerald-400 bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.8)] scale-125`;
     }
+    if (settings.theme === UITheme.NEOMORPHISM) return `${shape} border-2 border-cyan-400/40 bg-[#1e222e] shadow-md`;
     if (settings.theme === UITheme.METRO) return `${shape} border-2 border-zinc-600 bg-zinc-900 shadow-md`;
     return `${shape} border-2 border-white bg-slate-800 shadow-md`;
   }, [settings.theme]);
@@ -3138,12 +3229,14 @@ const initializeAdMob = useCallback(async () => {
   const getDragAvatarRingClasses = useCallback((isHovered: boolean) => {
     const shape = 'rounded-full';
     if (isHovered) {
+      if (settings.theme === UITheme.NEOMORPHISM) return `${shape} scale-110 border-4 border-cyan-400`;
       if (settings.theme === UITheme.METRO) return `${shape} scale-110 border-4 border-[var(--theme-accent,#fb7185)] shadow-[4px_4px_0_rgba(0,0,0,1)]`;
       if (settings.theme === UITheme.CALM) return `${shape} scale-110 border-4 border-[var(--theme-accent,#fb7185)] shadow-[0_0_25px_var(--theme-accent-glow,rgba(251,113,133,0.3))]`;
       if (settings.theme === UITheme.BEER) return `${shape} scale-110 border-4 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.8)]`;
       if (settings.theme === UITheme.STARS) return `${shape} scale-110 border-4 border-slate-200 shadow-[0_0_35px_rgba(226,232,240,0.85)]`;
       return `${shape} scale-110 border-4 border-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.8)]`;
     }
+    if (settings.theme === UITheme.NEOMORPHISM) return `${shape} border-2 border-cyan-400/40`;
     if (settings.theme === UITheme.METRO) return `${shape} border-2 border-zinc-400`;
     if (settings.theme === UITheme.BEER) return `${shape} border-2 border-amber-500/40`;
     if (settings.theme === UITheme.STARS) return `${shape} border-2 border-white/30`;
@@ -3622,14 +3715,18 @@ const initializeAdMob = useCallback(async () => {
     }
     // Classic
     return (
-      <div key={`current-${idx}`} className={`${commonClasses} rounded-xl bg-green-500/20 border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]`} style={{ zIndex: idx }}>
-        <div className="text-green-500 opacity-60 mb-1">
+      <div 
+        key={`current-${idx}`} 
+        className={`${commonClasses} rounded-2xl bg-rose-500/10 border-2 border-rose-500/60 shadow-[0_0_20px_rgba(244,63,94,0.25)] animate-pulse`} 
+        style={{ zIndex: idx }}
+      >
+        <div className="text-rose-400 opacity-75 mb-1">
           {slotStep === 1 && <Sparkles size={20} />}
           {slotStep === 2 && <ArrowUpDown size={20} />}
           {slotStep === 3 && <div className="flex gap-0.5 items-center justify-center"><ArrowRight size={12} className="rotate-180" /><ArrowRight size={12} /></div>}
           {slotStep === 4 && <Zap size={20} />}
         </div>
-        <span className="text-green-500 font-black text-xl drop-shadow-md">?</span>
+        <span className="text-rose-400 font-black text-xl drop-shadow-[0_2px_8px_rgba(244,63,94,0.5)]">?</span>
       </div>
     );
   };
@@ -4385,7 +4482,97 @@ const initializeAdMob = useCallback(async () => {
                       </div>
                     );
                   })()}
+                  {/* Neomorphism Theme Button (Unlocked with Galaxy) */}
+                  {(isGalaxyUnlocked || settings.theme === UITheme.NEOMORPHISM) ? (() => {
+                    const isNeoActive = settings.theme === UITheme.NEOMORPHISM;
+                    return (
+                      <div className="bg-[#14161e] p-1 rounded-2xl border border-white/[0.05] mt-1.5 shadow-[inset_2px_2px_5px_#0f1118,inset_-2px_-2px_5px_#222634]">
+                        <button
+                          onClick={() => {
+                            if (isNeoActive) return;
+                            const n = { ...settings, theme: UITheme.NEOMORPHISM };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            triggerHaptic('heavy');
+                          }}
+                          className={`w-full py-2 text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 relative rounded-xl select-none ${
+                            isNeoActive
+                              ? 'bg-gradient-to-br from-[#222736] to-[#1a1e28] font-bold shadow-[4px_4px_10px_#101219,-4px_-4px_10px_#262c3b] border border-white/[0.08] text-white'
+                              : 'text-slate-400 hover:text-white active:scale-[0.98]'
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--theme-accent, #38bdf8)', boxShadow: '0 0 8px var(--theme-accent, #38bdf8)' }} />
+                          <span className="relative z-10 font-bold">{t("Neumorfisme")}</span>
+                          {isNeoActive && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: 'var(--theme-accent, #38bdf8)' }}>{t("Actief")}</span>}
+                        </button>
+                      </div>
+                    );
+                  })() : (
+                    <div className="bg-[#14161e]/50 p-2.5 rounded-2xl border border-white/[0.03] mt-1.5 flex items-center justify-between text-xs text-slate-500 select-none">
+                      <div className="flex items-center gap-2">
+                        <Lock size={12} className="text-slate-500 shrink-0" />
+                        <span className="font-medium text-slate-400">{t("Neomorfisme Thema")}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500">{t("Ontgrendel met Galaxy")}</span>
+                    </div>
+                  )}
                 </div>
+                {settings.theme === UITheme.NEOMORPHISM && (
+                  <div className="flex flex-col gap-3 w-full pt-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-white font-medium">{t("Variant")}</h4>
+                      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/60 border border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const n = { ...settings, neoVariant: 'light' as const };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            triggerHaptic('selection');
+                          }}
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                            (settings.neoVariant || 'light') === 'light'
+                              ? 'bg-slate-200 text-slate-900 shadow-sm'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {t("Licht")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const n = { ...settings, neoVariant: 'dark' as const };
+                            setSettings(n);
+                            queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                            triggerHaptic('selection');
+                          }}
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                            settings.neoVariant === 'dark'
+                              ? 'bg-slate-700 text-white shadow-sm'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {t("Donker")}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 w-full">
+                      <h4 className="text-white font-medium">{t("Accent Kleur")}</h4>
+                      <CalmAccentColorPicker
+                        accentColor={settings.calmAccentColor || (settings.neoVariant === 'dark' ? '#38bdf8' : '#0284c7')}
+                        onColorChange={(newColor) => {
+                          const n = { ...settings, calmAccentColor: newColor };
+                          setSettings(n);
+                          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                        }}
+                        isOpen={isColorPickerOpen}
+                        onToggleOpen={() => setIsColorPickerOpen(prev => !prev)}
+                        onClose={() => setIsColorPickerOpen(false)}
+                        t={t}
+                      />
+                    </div>
+                  </div>
+                )}
                 {settings.theme === UITheme.CALM && (
                   <div className="flex flex-col gap-3 w-full pt-2">
                     <h4 className="text-white font-medium">{t("Calm Accent Kleur")}</h4>
@@ -4515,6 +4702,50 @@ const initializeAdMob = useCallback(async () => {
                         </div>
                         <span className={`text-xs font-black uppercase tracking-widest ${isGalaxyStyleActive ? 'text-slate-100' : 'text-slate-400'}`}>
                           {t("Galaxy")}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                  {/* Full-width Neomorphism Card Style Button (only visible if unlocked) */}
+                  {(isGalaxyUnlocked || settings.cardStyle === CardStyle.NEOMORPHISM) && (() => {
+                    const isNeoStyleActive = settings.cardStyle === CardStyle.NEOMORPHISM;
+                    return (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (isNeoStyleActive) return;
+                          const n = { ...settings, cardStyle: CardStyle.NEOMORPHISM };
+                          setSettings(n);
+                          queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
+                          triggerHaptic('subtle');
+                          handleDeckPreviewBack();
+                        }}
+                        className={`w-full py-4 rounded-2xl border relative flex flex-col items-center justify-center gap-3 transition-all cursor-pointer overflow-hidden select-none mt-3 ${
+                          isNeoStyleActive
+                            ? 'border-[#38bdf8]/40 shadow-[6px_6px_16px_#101219,-6px_-6px_16px_#262c3b,0_0_15px_rgba(56,189,248,0.2)] ring-1 ring-[#38bdf8]/30'
+                            : 'border-white/5 hover:border-white/20 active:scale-[0.99]'
+                        }`}
+                        style={{
+                          background: 'linear-gradient(145deg, #202534 0%, #161924 100%)',
+                        }}
+                      >
+                        {/* Preview eye button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewDeckStyle(CardStyle.NEOMORPHISM);
+                            triggerHaptic('subtle');
+                          }}
+                          className="absolute top-2 left-2 bg-[#14161e] rounded-full p-1 border border-white/10 shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
+                        >
+                          <Eye size={12} className="text-[#38bdf8]" />
+                        </button>
+                        <div className="scale-[0.55] h-16 flex items-center justify-center">
+                          <PlayingCard card={PREVIEW_CARD} size="base" style={CardStyle.NEOMORPHISM} className="shadow-2xl" />
+                        </div>
+                        <span className={`text-xs font-black uppercase tracking-widest ${isNeoStyleActive ? 'text-[#38bdf8]' : 'text-slate-400'}`}>
+                          {t("Neumorfisme")}
                         </span>
                       </div>
                     );
@@ -4751,7 +4982,8 @@ const initializeAdMob = useCallback(async () => {
                         CardStyle.DARK,
                         CardStyle.CLASSIC,
                         CardStyle.NEON,
-                        ...(isGalaxyUnlocked || settings.cardStyle === CardStyle.GALAXY ? [CardStyle.GALAXY] : [])
+                        ...(isGalaxyUnlocked || settings.cardStyle === CardStyle.GALAXY ? [CardStyle.GALAXY] : []),
+                        ...(isGalaxyUnlocked || settings.cardStyle === CardStyle.NEOMORPHISM ? [CardStyle.NEOMORPHISM] : [])
                       ].map(st => (
                         <button
                           key={st}
@@ -4768,7 +5000,8 @@ const initializeAdMob = useCallback(async () => {
                           {t(st === CardStyle.MODERN ? "Modern" :
                              st === CardStyle.DARK ? "Donker" :
                              st === CardStyle.CLASSIC ? "Klassiek" :
-                             st === CardStyle.GALAXY ? "Galaxy" : "Neon")}
+                             st === CardStyle.GALAXY ? "Galaxy" :
+                             st === CardStyle.NEOMORPHISM ? "Neumorfisme" : "Neon")}
                         </button>
                       ))}
                     </div>
@@ -4901,11 +5134,24 @@ const initializeAdMob = useCallback(async () => {
   if (phase === GamePhase.SETUP) {
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
         <RootContainer className="p-4" showChest={true} theme={settings.theme}>
         <div className="flex-none mb-6 mt-2 animate-in slide-in-from-top-4 duration-700">
-          {settings.theme === UITheme.STARS ? (
+          {settings.theme === UITheme.NEOMORPHISM ? (
+            <div className="flex flex-col items-start">
+              <h1 
+                className="text-4xl sm:text-5xl font-black uppercase tracking-[0.16em] text-slate-100 cursor-pointer select-none"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+                onPointerDown={handleHeaderPointerDown}
+                onPointerUp={handleHeaderPointerUpOrLeave}
+                onPointerLeave={handleHeaderPointerUpOrLeave}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                {t("Bussen")}
+              </h1>
+            </div>
+          ) : settings.theme === UITheme.STARS ? (
             <div className="flex flex-col items-start">
               <div className="flex items-center gap-2 mb-1.5 opacity-60">
                 <div className="h-px w-8 bg-gradient-to-r from-transparent to-white/40" />
@@ -4948,8 +5194,16 @@ const initializeAdMob = useCallback(async () => {
           )}
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em] ml-1 neon-text"></p>
         </div>
-        <div className="flex-1 flex flex-col min-h-0 mb-4 glass-panel rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-red-900/20">
-          <div className="flex justify-between items-center p-4 border-b border-slate-700/50 bg-slate-900/60 sticky top-0 z-10">
+        <div className={`flex-1 flex flex-col min-h-0 mb-4 rounded-3xl overflow-hidden transition-all duration-300 ${
+          settings.theme === UITheme.NEOMORPHISM
+            ? 'neo-raised'
+            : 'glass-panel rounded-3xl shadow-2xl hover:shadow-red-900/20'
+        }`}>
+          <div className={`flex justify-between items-center p-4 border-b ${
+            settings.theme === UITheme.NEOMORPHISM
+              ? 'border-black/5 dark:border-white/[0.04] bg-[var(--theme-surface-sunken)]'
+              : 'border-slate-700/50 bg-slate-900/60'
+          } sticky top-0 z-10`}>
             <h2 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wide">
               <span
                 className="cursor-pointer select-none p-1 -m-1 rounded-lg inline-flex items-center justify-center transition-all duration-300 active:scale-95"
@@ -4963,6 +5217,8 @@ const initializeAdMob = useCallback(async () => {
                   className={`transition-all duration-300 ${
                     iconArmed || devModeArmed 
                       ? 'text-blue-400 drop-shadow-[0_0_10px_rgba(59,130,246,0.9)] scale-110' 
+                      : settings.theme === UITheme.NEOMORPHISM
+                      ? 'text-[var(--theme-accent,#38bdf8)]'
                       : settings.theme === UITheme.STARS
                       ? 'text-slate-200 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
                       : 'text-red-500'
@@ -4973,7 +5229,11 @@ const initializeAdMob = useCallback(async () => {
             </h2>
             {players.length >= 10 && (
               <span 
-                className="inline-block text-[10px] font-bold px-2 py-1 rounded-lg border select-none transition-all duration-300 animate-pop text-slate-300 bg-slate-800 border-slate-700"
+                className={`inline-block text-[10px] font-bold px-2 py-1 rounded-lg border select-none transition-all duration-300 animate-pop ${
+                  settings.theme === UITheme.NEOMORPHISM
+                    ? 'text-[var(--theme-text-secondary)] bg-[var(--theme-surface-sunken)] border-black/5 dark:border-white/[0.05]'
+                    : 'text-slate-300 bg-slate-800 border-slate-700'
+                }`}
               >
                 {players.length}/12
               </span>
@@ -5007,15 +5267,23 @@ const initializeAdMob = useCallback(async () => {
             <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
             <button
               onClick={() => setIsPhotoOptionsModalOpen(true)}
-              className={`flex-none w-14 h-14 rounded-2xl border border-slate-700 transition-all shadow-lg flex items-center justify-center overflow-hidden active:scale-95 ${newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500' : 'glass-panel hover:bg-slate-800'}`}
+              className={`flex-none w-14 h-14 rounded-2xl border transition-all flex items-center justify-center overflow-hidden active:scale-95 ${
+                settings.theme === UITheme.NEOMORPHISM
+                  ? 'neo-raised text-[var(--theme-text-secondary)]'
+                  : newPlayerImage ? 'bg-slate-800 ring-2 ring-green-500 shadow-lg border-slate-700' : 'glass-panel hover:bg-slate-800 shadow-lg border-slate-700'
+              }`}
             >
-              {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className="text-slate-300" />}
+              {newPlayerImage ? <img src={newPlayerImage} className="w-full h-full object-cover opacity-80" /> : <CameraIcon size={22} className={settings.theme === UITheme.NEOMORPHISM ? "text-[var(--theme-text-secondary)]" : "text-slate-300"} />}
             </button>
             <input
               ref={inputRef}
               type="text"
               placeholder={t("Naam...")}
-              className="flex-1 min-w-0 h-full bg-slate-900/80 border border-slate-700 rounded-2xl px-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/50 transition-all text-lg font-bold shadow-inner"
+              className={`flex-1 min-w-0 h-full rounded-2xl px-4 text-white placeholder:text-slate-500 focus:outline-none transition-all text-lg font-bold ${
+                settings.theme === UITheme.NEOMORPHISM
+                  ? 'neo-inset text-[var(--theme-text)] placeholder:text-[var(--theme-text-secondary)] focus:border-[var(--theme-accent)]'
+                  : 'bg-slate-900/80 border border-slate-700 focus:border-red-500 focus:ring-2 focus:ring-red-500/50 shadow-inner'
+              }`}
               value={newPlayerName}
               onChange={e => setNewPlayerName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addPlayer()}
@@ -5026,16 +5294,35 @@ const initializeAdMob = useCallback(async () => {
               disabled={!canAddPlayer}
               className={`flex-none w-14 h-full rounded-2xl transition-all flex items-center justify-center ${
                 canAddPlayer
-                  ? settings.theme === UITheme.STARS
+                  ? settings.theme === UITheme.NEOMORPHISM
+                    ? 'neo-btn-convex active:scale-95 text-[var(--theme-accent)]'
+                    : settings.theme === UITheme.STARS
                     ? 'bg-gradient-to-b from-slate-700 to-slate-900 border border-white/20 border-t-white/40 text-slate-100 shadow-[0_0_15px_rgba(255,255,255,0.1)] active:scale-90'
                     : 'bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-400 hover:to-emerald-600 border-t border-emerald-400 text-white shadow-lg active:scale-90 glass-panel'
+                  : settings.theme === UITheme.NEOMORPHISM
+                  ? 'neo-inset text-[var(--theme-text-secondary)] opacity-40 cursor-not-allowed'
                   : 'bg-slate-800/40 border border-slate-700/50 text-slate-500 opacity-40 cursor-not-allowed'
               }`}
             >
-              <Check size={24} strokeWidth={4} className={canAddPlayer ? (settings.theme === UITheme.STARS ? 'text-slate-100' : 'text-green-100') : 'text-slate-500'} />
+              <Check size={24} strokeWidth={3} className={canAddPlayer ? (settings.theme === UITheme.NEOMORPHISM ? 'text-[var(--theme-accent)]' : settings.theme === UITheme.STARS ? 'text-slate-100' : 'text-green-100') : 'text-slate-500'} />
             </button>
           </div>
-          {settings.theme === UITheme.STARS ? (
+          {settings.theme === UITheme.NEOMORPHISM ? (
+            <button
+              onClick={handleStartPress}
+              disabled={players.length < 2}
+              className="w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base tracking-[0.2em] uppercase neo-btn-convex transition-all flex items-center justify-between group cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              <span>{t("START SPEL")}</span>
+              <div 
+                className="w-10 h-10 rounded-xl neo-inset flex items-center justify-center group-hover:scale-105 transition-all"
+                style={{ color: 'var(--theme-accent, #38bdf8)' }}
+              >
+                <Play size={18} fill="currentColor" className="ml-0.5" />
+              </div>
+            </button>
+          ) : settings.theme === UITheme.STARS ? (
             <button
               onClick={handleStartPress}
               disabled={players.length < 2}
@@ -5139,10 +5426,14 @@ const initializeAdMob = useCallback(async () => {
     if (isWaitingForNextPlayer) {
       return (
         <>
-          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
+          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
           <RootContainer className="items-center justify-center p-6" theme={settings.theme}>
-          <div className="text-center animate-in zoom-in duration-300 flex flex-col items-center">
+          <div className={`text-center animate-in zoom-in duration-300 flex flex-col items-center ${
+            settings.theme === UITheme.CLASSIC 
+              ? 'glass-panel rounded-3xl p-6 sm:p-8 border border-slate-700/60 shadow-2xl shadow-red-950/20 max-w-xs sm:max-w-sm w-full mx-auto' 
+              : ''
+          }`}>
             <div className="mb-4"><ThemeLabel text={t("Aan de beurt")} theme={settings.theme} size="sm" variant="simple" /></div>
             <PlayerAvatar 
               player={activePlayer} 
@@ -5153,7 +5444,14 @@ const initializeAdMob = useCallback(async () => {
               onPointerUp={handleAvatarPointerUpOrLeave}
               onPointerLeave={handleAvatarPointerUpOrLeave}
             />
-            {settings.theme === UITheme.STARS ? (
+            {settings.theme === UITheme.NEOMORPHISM ? (
+              <h1 
+                className="text-4xl sm:text-5xl font-black uppercase tracking-[0.18em] text-slate-100 mb-8"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                {activePlayer.name}
+              </h1>
+            ) : settings.theme === UITheme.STARS ? (
               <h1 
                 className="text-4xl sm:text-5xl font-semibold uppercase tracking-[0.22em] text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 drop-shadow-[0_0_20px_rgba(255,255,255,0.35)] mb-8"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
@@ -5161,9 +5459,20 @@ const initializeAdMob = useCallback(async () => {
                 {activePlayer.name}
               </h1>
             ) : (
-              <h1 className="text-5xl font-black text-white mb-8 tracking-tight drop-shadow-lg">{activePlayer.name}</h1>
+              <h1 className="text-4xl sm:text-5xl font-black text-white mb-8 tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] uppercase">{activePlayer.name}</h1>
             )}
-            {settings.theme === UITheme.STARS ? (
+            {settings.theme === UITheme.NEOMORPHISM ? (
+              <button
+                onClick={() => setIsWaitingForNextPlayer(false)}
+                className="w-full max-w-xs py-3.5 px-6 rounded-2xl text-slate-100 font-bold text-base tracking-[0.2em] uppercase bg-[#1e222e] border border-white/[0.08] shadow-[3px_3px_6px_#101219,-3px_-3px_6px_#262c3b] hover:border-white/[0.15] active:scale-[0.98] active:shadow-[inset_2px_2px_4px_#0f1118,inset_-2px_-2px_4px_#222634] transition-all flex items-center justify-between group cursor-pointer mx-auto"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                <span>{t("Start")}</span>
+                <div className="w-10 h-10 rounded-xl bg-[#14161e] shadow-[inset_2px_2px_4px_#0f1118,inset_-2px_-2px_4px_#222634] flex items-center justify-center group-hover:scale-105 transition-all border border-white/[0.04]">
+                  <ArrowRight size={20} strokeWidth={2.5} className="text-slate-200" />
+                </div>
+              </button>
+            ) : settings.theme === UITheme.STARS ? (
               <button
                 onClick={() => setIsWaitingForNextPlayer(false)}
                 className="w-full max-w-xs py-3.5 pl-8 pr-2.5 rounded-full text-white font-medium text-base tracking-[0.2em] uppercase shadow-[0_0_25px_rgba(255,255,255,0.08),inset_0_0_12px_rgba(226,232,240,0.06)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-white/20 border-t-white/40 mx-auto"
@@ -5175,6 +5484,16 @@ const initializeAdMob = useCallback(async () => {
                 <span>{t("Start")}</span>
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/15 transition-all border border-white/10">
                   <ArrowRight size={20} strokeWidth={2.5} className="text-white" />
+                </div>
+              </button>
+            ) : settings.theme === UITheme.CLASSIC ? (
+              <button
+                onClick={() => setIsWaitingForNextPlayer(false)}
+                className="w-full max-w-xs py-3.5 pl-8 pr-2.5 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black text-base tracking-[0.18em] uppercase shadow-[0_8px_25px_rgba(220,38,38,0.4)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border-t border-red-400 mx-auto"
+              >
+                <span>{t("Start")}</span>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/30 transition-all">
+                  <ArrowRight size={20} strokeWidth={3} className="text-white" />
                 </div>
               </button>
             ) : (
@@ -5192,7 +5511,7 @@ const initializeAdMob = useCallback(async () => {
   }
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} isDiscoActive={isDiscoActive} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
         <RootContainer className="p-2 pb-safe" shake={screenShake} isDiscoActive={isDiscoActive} theme={settings.theme}>
         {showConfetti && <Confetti />}
@@ -5355,12 +5674,24 @@ const initializeAdMob = useCallback(async () => {
               >
                 {feedback.text}
               </div>
-              <button 
-                onClick={() => dispatchGameEvent({ type: 'NEXT_PLAYER' })} 
-                className="w-full bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100 fill-mode-both"
-              >
-                {t("Volgende")} <ArrowRight size={20} strokeWidth={3} />
-              </button>
+              {settings.theme === UITheme.CLASSIC ? (
+                <button 
+                  onClick={() => dispatchGameEvent({ type: 'NEXT_PLAYER' })} 
+                  className="w-full py-4 pl-8 pr-2.5 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black text-base sm:text-lg tracking-[0.18em] uppercase shadow-[0_8px_25px_rgba(220,38,38,0.4)] border-t border-red-400 active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100 fill-mode-both"
+                >
+                  <span>{t("Volgende")}</span>
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/30 transition-all">
+                    <ArrowRight size={20} strokeWidth={3} className="text-white" />
+                  </div>
+                </button>
+              ) : (
+                <button 
+                  onClick={() => dispatchGameEvent({ type: 'NEXT_PLAYER' })} 
+                  className="w-full bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100 fill-mode-both"
+                >
+                  {t("Volgende")} <ArrowRight size={20} strokeWidth={3} />
+                </button>
+              )}
             </div>
           ) : (
             settings.mode === GameMode.PHYSICAL ? (
@@ -5487,27 +5818,19 @@ const initializeAdMob = useCallback(async () => {
       animation: 'gradient-xy 20s ease-in-out infinite',
       transition: 'background 2000ms ease-in-out, filter 2000ms ease-in-out'
     }
-    : (settings.theme === UITheme.CLASSIC ? {
-      background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
-      backgroundSize: '240% 240%',
-      animation: 'gradient-xy 16s ease-in-out infinite',
-      transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
-    } : undefined);
+    : undefined;
   // 4. PYRAMID
   if (phase === GamePhase.PYRAMID) {
-    
-    // Custom dark background for Classic theme during the pyramid phase
-    const pyramidBackgroundStyle = settings.theme === UITheme.CLASSIC ? {
-      background: 'radial-gradient(circle at 12% 14%, rgba(255,255,255,0.06), transparent 40%), radial-gradient(circle at 84% 10%, rgba(59,130,246,0.08), transparent 36%), linear-gradient(135deg, #0b1224 0%, #111827 40%, #0b1320 100%)',
-      backgroundSize: '240% 240%',
-      animation: 'gradient-xy 16s ease-in-out infinite',
-      transition: 'background 1800ms ease-in-out, filter 1800ms ease-in-out'
-    } : undefined;
+    const pyramidBackgroundStyle = undefined;
     const manualBusSelectionOverlay = isSelectingBusPlayer ? (
       <div className="absolute inset-0 z-[95] bg-black/40 backdrop-blur-xl flex flex-col items-center justify-center p-6" onClick={(e) => { if (e.target === e.currentTarget) setIsSelectingBusPlayer(false); }}>
-        <div className="w-full max-w-lg bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
+        <div className={`w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-4 ${
+          settings.theme === UITheme.CLASSIC
+            ? 'glass-panel border border-slate-700/60 shadow-red-950/20'
+            : 'bg-slate-900/80 border border-white/10'
+        }`}>
           <div className="text-center space-y-2">
-            <p className="text-xs uppercase font-black tracking-[0.25em] text-amber-300">{t("de bus in jij")}</p>
+            <p className={`text-xs uppercase font-black tracking-[0.25em] ${settings.theme === UITheme.CLASSIC ? 'text-rose-400' : 'text-amber-300'}`}>{t("de bus in jij")}</p>
             <h3 className="text-3xl font-black text-white leading-tight">{t("Wie heeft nu de meeste kaarten?")}</h3>
             <p className="text-slate-300 text-sm"></p>
           </div>
@@ -5521,7 +5844,11 @@ const initializeAdMob = useCallback(async () => {
               <button
                 key={p.id}
                 onClick={() => handleManualBusPassengerSelect(p)}
-                className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-2xl p-3 text-left hover:border-amber-400 hover:bg-amber-500/10 transition-all active:scale-95"
+                className={`flex items-center gap-3 rounded-2xl p-3 text-left transition-all active:scale-95 border ${
+                  settings.theme === UITheme.CLASSIC
+                    ? 'bg-slate-800/60 border-slate-700/60 hover:border-rose-500 hover:bg-rose-500/10'
+                    : 'bg-black/40 border border-white/10 hover:border-amber-400 hover:bg-amber-500/10'
+                }`}
               >
                 <PlayerAvatar
                   player={p}
@@ -5551,7 +5878,11 @@ const initializeAdMob = useCallback(async () => {
           </ScrollIndicatorContainer>
           <button
             onClick={() => setIsSelectingBusPlayer(false)}
-            className="w-full bg-slate-800 text-slate-200 font-bold py-3 rounded-2xl border border-white/10 hover:border-slate-500 active:scale-95 transition-all"
+            className={`w-full font-bold py-3 rounded-2xl border active:scale-95 transition-all ${
+              settings.theme === UITheme.CLASSIC
+                ? 'bg-slate-800/80 text-slate-200 border-slate-700 hover:border-slate-500 hover:bg-slate-700/80'
+                : 'bg-slate-800 text-slate-200 border-white/10 hover:border-slate-500'
+            }`}
           >
             {t("Annuleren")}
           </button>
@@ -5561,7 +5892,7 @@ const initializeAdMob = useCallback(async () => {
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       return (
         <>
-          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={pyramidBackgroundStyle} />
+          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} style={pyramidBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
           <RootContainer className="p-4 sm:p-6 items-center justify-center overflow-y-auto" theme={settings.theme}>
           {manualBusSelectionOverlay}
@@ -5571,7 +5902,11 @@ const initializeAdMob = useCallback(async () => {
 {renderQuitModal()}
 {renderAdLoadingModal()}
 {renderColorPickerModal()}
-          <div className="w-full max-w-2xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center">
+          <div className={`w-full max-w-2xl backdrop-blur-xl rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 text-center ${
+            settings.theme === UITheme.CLASSIC
+              ? 'glass-panel border border-slate-700/60 shadow-red-950/20'
+              : 'bg-black/70 border border-white/10'
+          }`}>
             <div className="space-y-4 text-left">
               <div className="flex justify-center"><ThemeLabel text={t("een echte piramide")} theme={settings.theme} size="sm" /></div>
               <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight text-center">{t("Bouw deze piramide op tafel")}</h2>
@@ -5587,12 +5922,20 @@ const initializeAdMob = useCallback(async () => {
                   </div>
                 ))}
               </div>
-              <div className="space-y-2 text-slate-200 text-base bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className={`space-y-2 text-slate-200 text-base rounded-2xl p-4 border ${
+                settings.theme === UITheme.CLASSIC
+                  ? 'bg-slate-900/60 border-slate-700/50'
+                  : 'bg-white/5 border border-white/10'
+              }`}>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-lg font-black text-white">{t("Bouw een Piramide starter guide")}</p>
                   <button
                     onClick={() => setIsPyramidInstructionsCollapsed(prev => !prev)}
-                    className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200 hover:text-amber-100 transition-colors"
+                    className={`flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] transition-colors ${
+                      settings.theme === UITheme.CLASSIC
+                        ? 'text-rose-300 hover:text-rose-200'
+                        : 'text-amber-200 hover:text-amber-100'
+                    }`}
                   >
                     {isPyramidInstructionsCollapsed ? t('Toon') : t('Verberg')}
                     <ChevronDown
@@ -5637,6 +5980,7 @@ const initializeAdMob = useCallback(async () => {
         <PersistentBackground 
           theme={settings.theme} 
           calmAccentColor={settings.calmAccentColor} 
+          neoVariant={settings.neoVariant}
           isDiscoActive={isDiscoActive} 
           style={isBusDeparting && !settings.sharedBus ? digitalBusBackgroundStyle : pyramidBackgroundStyle} 
         />
@@ -6324,7 +6668,7 @@ const initializeAdMob = useCallback(async () => {
                           isFaceDown={!isRevealed}
                           size="md"
                           style={settings.cardStyle}
-                          className={`${doubledPyramidCardIds.has(card?.id || '') ? 'rotate-90' : ''} ${isPyramidDoubleSetup && rowIndex === pyramidDoubleSetupRow ? 'ring-4 ring-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : ''} ${pulseValidCards && rowIndex === activeRowIndex && !isRevealed ? (settings.theme === UITheme.STARS ? 'ring-2 ring-slate-200 shadow-[0_0_25px_rgba(226,232,240,0.8),0_0_10px_rgba(255,255,255,0.5)] z-20 animate-pulse' : 'animate-pyramid-ring-pulse z-20') : ''} transition-all duration-300 ${!isRevealed ? 'z-10' : 'z-0'} ${hasMatch ? (settings.theme === UITheme.STARS ? 'ring-2 ring-[#fef08a] shadow-[0_0_35px_rgba(254,240,138,0.85),0_0_15px_rgba(226,232,240,0.6)] scale-[1.04]' : 'ring-[3px] ring-green-500 shadow-[0_0_25px_rgba(34,197,94,0.7)] scale-[1.02]') : ''}`}
+                          className={`${doubledPyramidCardIds.has(card?.id || '') ? 'rotate-90' : ''} ${isPyramidDoubleSetup && rowIndex === pyramidDoubleSetupRow ? 'ring-4 ring-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : ''} ${pulseValidCards && rowIndex === activeRowIndex && !isRevealed ? (settings.theme === UITheme.NEOMORPHISM ? 'ring-2 ring-cyan-400 z-20 animate-pulse' : settings.theme === UITheme.STARS ? 'ring-2 ring-slate-200 shadow-[0_0_25px_rgba(226,232,240,0.8),0_0_10px_rgba(255,255,255,0.5)] z-20 animate-pulse' : 'animate-pyramid-ring-pulse z-20') : ''} transition-all duration-300 ${!isRevealed ? 'z-10' : 'z-0'} ${hasMatch ? (settings.theme === UITheme.NEOMORPHISM ? 'ring-2 ring-cyan-400 scale-[1.04]' : settings.theme === UITheme.STARS ? 'ring-2 ring-[#fef08a] shadow-[0_0_35px_rgba(254,240,138,0.85),0_0_15px_rgba(226,232,240,0.6)] scale-[1.04]' : 'ring-[3px] ring-green-500 shadow-[0_0_25px_rgba(34,197,94,0.7)] scale-[1.02]') : ''}`}
                         />
                       </div>
                     );
@@ -6336,7 +6680,11 @@ const initializeAdMob = useCallback(async () => {
                     } ${
                       row[0] && doubledPyramidCardIds.has(row[0].id) ? 'mr-12 sm:mr-16' : 'mr-4 sm:mr-6'
                     }`}>
-                      {settings.theme === UITheme.STARS ? (
+                      {settings.theme === UITheme.NEOMORPHISM ? (
+                        <span className="text-slate-400 font-mono tracking-wider text-[11px] sm:text-xs flex items-center justify-end font-bold">
+                          {settings.pyramidRows - rowIndex}x
+                        </span>
+                      ) : settings.theme === UITheme.STARS ? (
                         <span className="text-amber-200 font-mono tracking-widest text-[11px] sm:text-xs drop-shadow-[0_0_8px_rgba(254,240,138,0.7)] flex items-center gap-1 justify-end">
                           {Array(settings.pyramidRows - rowIndex).fill('✦').join(' ')}
                         </span>
@@ -6358,10 +6706,12 @@ const initializeAdMob = useCallback(async () => {
   // 5. BUS TEAM SELECT - Minimalist text-focused shared bus screen
   if (phase === GamePhase.BUS_TEAM_SELECTION) {
     const victim = busPassengers[0] || players[0];
-    const baseStyle = resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle;
+    const baseStyle = settings.theme === UITheme.CLASSIC 
+      ? undefined 
+      : (resolvedBusMode === 'digital' ? digitalBusBackgroundStyle : physicalBusBackgroundStyle);
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} style={baseStyle as React.CSSProperties} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} style={baseStyle as React.CSSProperties} />
         <RootContainer 
           className="items-center justify-center text-center border-0 outline-0 animate-in fade-in duration-700 select-none" 
           disableSafeTop 
@@ -6414,7 +6764,7 @@ const initializeAdMob = useCallback(async () => {
               onPointerLeave={handleHeaderPointerUpOrLeave}
             >
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-                <span className="text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.35)]">
+                <span className={settings.theme === UITheme.CLASSIC ? "text-rose-500 drop-shadow-[0_0_20px_rgba(244,63,94,0.4)]" : "text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.35)]"}>
                   {victim?.name}
                 </span>
                 {t(", Wie neem je mee de bus in?")}
@@ -6425,13 +6775,17 @@ const initializeAdMob = useCallback(async () => {
             <ScrollIndicatorContainer
               orientation="vertical"
               theme={settings.theme}
-              className="w-full max-w-xs sm:max-w-sm max-h-[42vh]"
+              className={`w-full max-w-xs sm:max-w-sm max-h-[42vh] ${settings.theme === UITheme.CLASSIC ? 'glass-panel rounded-3xl p-3 border border-slate-700/60 shadow-2xl shadow-red-950/20' : ''}`}
               scrollClassName="space-y-2.5 px-2"
             >
               {/* Option: Nobody / Alone */}
               <button
                 onClick={() => handleSharedBusSelection(null)}
-                className="w-full py-3.5 px-4 rounded-2xl text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md transition-all active:scale-95 mb-1 shadow-sm"
+                className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs uppercase tracking-widest border transition-all active:scale-95 mb-1 shadow-sm ${
+                  settings.theme === UITheme.CLASSIC
+                    ? 'text-slate-300 hover:text-white border-slate-700/60 hover:border-slate-500 bg-slate-800/60 hover:bg-slate-700/60'
+                    : 'text-slate-300 hover:text-white border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md'
+                }`}
               >
                 {t("NIEMAND")}
               </button>
@@ -6441,7 +6795,11 @@ const initializeAdMob = useCallback(async () => {
                 <button
                   key={p.id}
                   onClick={() => handleSharedBusSelection(p)}
-                  className="w-full py-3 px-4 rounded-2xl flex items-center justify-between text-white font-semibold text-sm bg-white/5 hover:bg-white/15 border border-white/10 hover:border-amber-400/40 backdrop-blur-md transition-all shadow-md active:scale-95 group"
+                  className={`w-full py-3 px-4 rounded-2xl flex items-center justify-between text-white font-semibold text-sm transition-all shadow-md active:scale-95 group ${
+                    settings.theme === UITheme.CLASSIC
+                      ? 'bg-slate-800/60 hover:bg-slate-700/70 border border-slate-700/60 hover:border-rose-500/60'
+                      : 'bg-white/5 hover:bg-white/15 border border-white/10 hover:border-amber-400/40 backdrop-blur-md'
+                  }`}
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
                     <PlayerAvatar player={p} size="custom" className="w-9 h-9 text-base shadow-sm" theme={settings.theme} />
@@ -6485,11 +6843,13 @@ const initializeAdMob = useCallback(async () => {
       const randomPlayerForInstructions = playerPool.length > 0 ? playerPool[Math.floor(Math.random() * playerPool.length)] : null;
       const busPanelClasses = `${isBusWon
         ? 'bg-gradient-to-b from-black/80 via-emerald-950/75 to-black/75 border border-emerald-700/40 shadow-[0_20px_60px_rgba(16,185,129,0.28)]'
+        : settings.theme === UITheme.CLASSIC
+        ? 'glass-panel border border-slate-700/60 shadow-2xl shadow-red-950/20'
         : 'bg-gradient-to-b from-black/85 via-slate-950/85 to-black/80 border border-red-800/40 shadow-[0_20px_60px_rgba(220,38,38,0.35)]'
         } backdrop-blur-xl rounded-3xl p-4 sm:p-6 space-y-6 transition-[background,box-shadow,border-color] duration-700 ease-out`;
       return (
         <>
-          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
+          <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
           <RootContainer className="animate-in fade-in duration-500" theme={settings.theme}>
           {isBusWon && <Confetti />}
@@ -6536,14 +6896,18 @@ const initializeAdMob = useCallback(async () => {
             </div>
           )}
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
-            <div
-              className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
-              style={{ ...physicalBusBgStyle, opacity: isBusWon ? 0 : 1 }}
-            />
-            <div
-              className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
-              style={{ ...physicalBusBgStyleWon, opacity: isBusWon ? 1 : 0 }}
-            />
+            {settings.theme !== UITheme.CLASSIC && (
+              <>
+                <div
+                  className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
+                  style={{ ...physicalBusBgStyle, opacity: isBusWon ? 0 : 1 }}
+                />
+                <div
+                  className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
+                  style={{ ...physicalBusBgStyleWon, opacity: isBusWon ? 1 : 0 }}
+                />
+              </>
+            )}
             <div className="w-full max-w-4xl mx-auto space-y-6 relative z-10">
               <div className={busPanelClasses}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
@@ -6676,12 +7040,22 @@ const initializeAdMob = useCallback(async () => {
             <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center z-30 animate-in slide-in-from-bottom-4 duration-500 delay-[4000ms] fill-mode-both px-4">
               <button
                 onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
-                className="pointer-events-auto w-full sm:w-auto text-amber-950 text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)] flex items-center justify-center gap-4 transition-all active:scale-95"
-                style={{
-                  background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
-                  backgroundSize: '200% 200%',
-                  animation: 'end-gradient 3s linear infinite',
-                }}
+                className={`pointer-events-auto w-full sm:w-auto text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] flex items-center justify-center gap-4 transition-all active:scale-95 ${
+                  settings.theme === UITheme.CLASSIC
+                    ? 'text-white border-t border-red-400 shadow-[0_8px_30px_rgba(220,38,38,0.5)]'
+                    : 'text-amber-950 border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)]'
+                }`}
+                style={
+                  settings.theme === UITheme.CLASSIC
+                    ? {
+                        background: 'linear-gradient(135deg, #dc2626 0%, #e11d48 50%, #b91c1c 100%)',
+                      }
+                    : {
+                        background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
+                        backgroundSize: '200% 200%',
+                        animation: 'end-gradient 3s linear infinite',
+                      }
+                }
               >
                 {t("Naar het Einde")} <ArrowRight size={28} strokeWidth={3} />
               </button>
@@ -6700,7 +7074,7 @@ const initializeAdMob = useCallback(async () => {
     const passengerNames = busPassengers.map(p => p.name).join(' & ');
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} isDiscoActive={isDiscoActive} style={digitalBusBackgroundStyle} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} isDiscoActive={isDiscoActive} style={digitalBusBackgroundStyle} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
         <RootContainer 
           key="bus-phase"
@@ -6857,7 +7231,9 @@ const initializeAdMob = useCallback(async () => {
                 >
                   {isBase && !isBusWon && (
                     <span className={`absolute -top-10 text-xs uppercase font-black tracking-widest ${
-                      settings.theme === UITheme.STARS 
+                      settings.theme === UITheme.NEOMORPHISM
+                        ? 'text-cyan-400 font-mono tracking-[0.25em]'
+                        : settings.theme === UITheme.STARS 
                         ? 'text-[#fef08a] font-mono tracking-[0.25em] drop-shadow-[0_0_10px_rgba(254,240,138,0.75)]' 
                         : 'text-slate-500'
                     }`}>
@@ -6872,18 +7248,24 @@ const initializeAdMob = useCallback(async () => {
                     highlight={!isBusWon && (isReference || isWrong || isFocused)}
                     className={
                       isBusWon
-                        ? 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
-                        : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]`
+                        ? (settings.theme === UITheme.NEOMORPHISM ? 'border border-cyan-400/40 shadow-[6px_6px_14px_#101219,-6px_-6px_14px_#262c3b]' : 'ring-2 ring-amber-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]')
+                        : `${isHistory && !isReference && !isBusWon ? 'grayscale' : ''} ${isWrong ? 'ring-4 ring-red-600 shadow-[0_0_60px_rgba(220,38,38,0.7)]' : ''} ${isFocused ? 'scale-[1.03] ring-2 ring-red-300/70' : ''} ${
+                            settings.theme === UITheme.NEOMORPHISM
+                              ? 'border border-white/[0.06] shadow-[6px_6px_14px_#101219,-6px_-6px_14px_#262c3b]'
+                              : 'border border-white/40 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-[1px]'
+                          }`
                     }
                   />
                   {/* Icons */}
                   {isHistory && index > 0 && !isReference && !isBusWon && (
                     <div className={`absolute -bottom-4 rounded-full p-1.5 shadow-lg z-20 ${
-                      settings.theme === UITheme.STARS 
+                      settings.theme === UITheme.NEOMORPHISM
+                        ? 'bg-[#171a23] border border-cyan-400/40 text-cyan-400 neo-inset-sm'
+                        : settings.theme === UITheme.STARS 
                         ? 'bg-[#0a0d18]/90 border border-white/25 text-slate-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]' 
                         : 'bg-emerald-500 border-2 border-black'
                     }`}>
-                      <Check size={16} className={settings.theme === UITheme.STARS ? "text-slate-100" : "text-white"} strokeWidth={4} />
+                      <Check size={16} className={settings.theme === UITheme.NEOMORPHISM ? "text-cyan-400" : settings.theme === UITheme.STARS ? "text-slate-100" : "text-white"} strokeWidth={4} />
                     </div>
                   )}
                   {isWrong && !isBusWon && (
@@ -6929,11 +7311,11 @@ const initializeAdMob = useCallback(async () => {
                   <div className="flex flex-col gap-3 w-full">
                     <div className="flex items-center justify-center gap-4">
                       <button onClick={() => handleBusGuess('HIGHER')} className={getBusGuessBtnClasses('HIGHER')}>
-                        <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.STARS ? 'text-slate-200 mb-1 group-hover:scale-125 transition-transform drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
+                        <ChevronUp size={32} className={`${settings.theme === UITheme.METRO ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-slate-950 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.STARS ? 'text-slate-200 mb-1 group-hover:scale-125 transition-transform drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]' : settings.theme === UITheme.NEOMORPHISM ? 'text-cyan-400 mb-1 group-hover:scale-125 transition-transform' : 'text-green-400 mb-1 group-hover:scale-125 transition-transform'}`} />
                         <span className="text-sm uppercase tracking-[0.2em]">{t("Hoger")}</span>
                       </button>
                       <button onClick={() => handleBusGuess('LOWER')} className={getBusGuessBtnClasses('LOWER')}>
-                        <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.STARS ? 'text-slate-200 mb-1 group-hover:scale-125 transition-transform drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
+                        <ChevronDown size={32} className={`${settings.theme === UITheme.METRO ? 'text-[var(--theme-accent)] mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.BEER ? 'text-amber-100 mb-1 group-hover:scale-125 transition-transform' : settings.theme === UITheme.STARS ? 'text-slate-200 mb-1 group-hover:scale-125 transition-transform drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]' : settings.theme === UITheme.NEOMORPHISM ? 'text-rose-400 mb-1 group-hover:scale-125 transition-transform' : 'text-red-400 mb-1 group-hover:scale-125 transition-transform'}`} />
                         <span className="text-sm uppercase tracking-[0.2em]">{t("Lager")}</span>
                       </button>
                     </div>
@@ -6951,14 +7333,27 @@ const initializeAdMob = useCallback(async () => {
                   <button
                     onClick={() => { prepareAdInterstitial(ADMOB_INTERSTITIAL_LEADERBOARD_UNIT_ID); setPhase(GamePhase.GAME_OVER); }}
                     className={`w-full text-xl sm:text-2xl font-black px-8 sm:px-14 py-5 rounded-[2rem] flex items-center justify-center gap-4 transition-all active:scale-95 animate-bounce-subtle ${
-                      settings.theme === UITheme.STARS
+                      settings.theme === UITheme.NEOMORPHISM
+                        ? 'text-cyan-300 border border-cyan-400/30 shadow-none'
+                        : settings.theme === UITheme.STARS
                         ? 'text-slate-100 border-2 border-white/25 border-t-white/50 shadow-[0_0_40px_rgba(226,232,240,0.3)]'
+                        : settings.theme === UITheme.CLASSIC
+                        ? 'text-white border-t border-red-400 shadow-[0_8px_30px_rgba(220,38,38,0.5)]'
                         : 'text-amber-950 border-4 border-amber-300/50 shadow-[0_0_60px_rgba(251,191,36,0.6)]'
                     }`}
                     style={
-                      settings.theme === UITheme.STARS
+                      settings.theme === UITheme.NEOMORPHISM
+                        ? {
+                            background: 'linear-gradient(135deg, #1e222e 0%, #151821 100%)',
+                            boxShadow: '6px 6px 14px #101219, -6px -6px 14px #262c3b',
+                          }
+                        : settings.theme === UITheme.STARS
                         ? {
                             background: 'linear-gradient(135deg, #1c2236 0%, #0d101d 50%, #060810 100%)',
+                          }
+                        : settings.theme === UITheme.CLASSIC
+                        ? {
+                            background: 'linear-gradient(135deg, #dc2626 0%, #e11d48 50%, #b91c1c 100%)',
                           }
                         : {
                             background: 'linear-gradient(90deg, #fcd34d, #f59e0b, #fbbf24, #fcd34d)',
@@ -6967,7 +7362,7 @@ const initializeAdMob = useCallback(async () => {
                           }
                     }
                   >
-                    <span className="tracking-[0.18em] uppercase">{t("Naar het Einde")}</span> <ArrowRight size={28} strokeWidth={3} className={settings.theme === UITheme.STARS ? "text-amber-200" : ""} />
+                    <span className="tracking-[0.18em] uppercase">{t("Naar het Einde")}</span> <ArrowRight size={28} strokeWidth={3} className={settings.theme === UITheme.NEOMORPHISM ? "text-cyan-400" : settings.theme === UITheme.STARS ? "text-amber-200" : "text-white"} />
                   </button>
                 ) : null}
               </div>
@@ -7095,7 +7490,7 @@ const initializeAdMob = useCallback(async () => {
   if (phase === GamePhase.GAME_OVER) {
     return (
       <>
-        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
+        <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} />
         <BusTransitionOverlay loserReveal={loserReveal} isBusEntrance={isBusEntrance} busPassengers={busPassengers} t={t} theme={settings.theme} />
         <RootContainer className="p-0" theme={settings.theme}>
         <Confetti />
@@ -7113,13 +7508,13 @@ const initializeAdMob = useCallback(async () => {
                 </h1>
               </div>
             ) : (
-              <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl">{t("Uitslag")}</h1>
+              <h1 className="text-5xl font-black text-white uppercase tracking-tighter drop-shadow-xl" style={{ textShadow: '0 2px 12px var(--theme-accent-glow, rgba(220,38,38,0.5))' }}>{t("Uitslag")}</h1>
             )}
             {immunePlayerId && (
               <div className={`p-3 inline-flex items-center gap-3 mt-4 ${
                 settings.theme === UITheme.STARS 
                   ? 'bg-[#0a0d18]/90 border border-amber-300/40 rounded-2xl shadow-[0_0_20px_rgba(254,240,138,0.2)]'
-                  : 'bg-yellow-500/20 border border-yellow-500/50 rounded-xl'
+                  : 'bg-yellow-500/10 border border-yellow-500/30 rounded-2xl shadow-lg'
               }`}>
                 <Shield size={20} className={settings.theme === UITheme.STARS ? "text-amber-200" : "text-yellow-400"} />
                 <div>
@@ -7132,10 +7527,10 @@ const initializeAdMob = useCallback(async () => {
           <div className={`${
             settings.theme === UITheme.STARS
               ? 'stars-chronometer-bar bg-[#060810]/95 backdrop-blur-2xl rounded-3xl border border-white/15 border-t-white/35 overflow-hidden mb-8 shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_25px_rgba(255,255,255,0.06)] relative'
-              : 'bg-slate-900/80 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden mb-8 shadow-2xl'
+              : 'glass-panel rounded-3xl border border-slate-700/60 overflow-hidden mb-8 shadow-2xl shadow-red-950/20'
           }`}>
             <div className={`grid grid-cols-12 p-4 text-[10px] font-bold uppercase tracking-[0.2em] ${
-              settings.theme === UITheme.STARS ? 'bg-white/[0.03] text-slate-300 border-b border-white/10 font-sans' : 'bg-black/40 text-slate-400 font-black'
+              settings.theme === UITheme.STARS ? 'bg-white/[0.03] text-slate-300 border-b border-white/10 font-sans' : 'bg-slate-900/80 border-b border-slate-700/50 text-slate-400 font-black'
             }`}>
               <div className="col-span-1 text-center">#</div>
               <div className="col-span-7">{t("Speler")}</div>
@@ -7179,6 +7574,16 @@ const initializeAdMob = useCallback(async () => {
                 <ArrowRight size={18} className="text-white" />
               </div>
             </button>
+          ) : settings.theme === UITheme.CLASSIC ? (
+            <button 
+              onClick={handleGameOverContinue} 
+              className="w-full py-4 pl-8 pr-2.5 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black text-base sm:text-lg tracking-[0.18em] uppercase shadow-[0_8px_25px_rgba(220,38,38,0.4)] border-t border-red-400 active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer"
+            >
+              <span>{t("Terug naar Menu")}</span>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/30 transition-all">
+                <ArrowRight size={20} strokeWidth={3} className="text-white" />
+              </div>
+            </button>
           ) : (
             <button onClick={handleGameOverContinue} className="w-full bg-white text-black py-5 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.3)] text-lg uppercase tracking-widest hover:scale-105 transition-transform active:scale-95">
               {t("Terug naar Menu")}
@@ -7193,7 +7598,7 @@ const initializeAdMob = useCallback(async () => {
   // This fallthrough renders when in results or other unhandled states
   return (
     <>
-      <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} />
+      <PersistentBackground theme={settings.theme} calmAccentColor={settings.calmAccentColor} neoVariant={settings.neoVariant} />
       {renderSettingsModal()}
       {renderDevModeOrb()}
         {renderAdditionalModals()}
