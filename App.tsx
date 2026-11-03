@@ -7,7 +7,7 @@ import PlayingCard from './components/PlayingCard';
 import SettingsPanel from './components/SettingsPanel';
 import { PlayerList } from './components/PlayerList';
 import MetroBackgroundAnimated from './components/MetroBackground';
-import { Users, Beer, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target, Lock, Star, Gift } from 'lucide-react';
+import { Users, CupSoda, Play, Settings, Check, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trophy, ArrowLeft, ArrowRight, Shield, ThumbsUp, ThumbsDown, Sparkles, Camera as CameraIcon, Zap, Skull, HeartPulse, BusFront, Bus, Image as ImageIcon, ArrowUpDown, GripVertical, Pencil, Plus, Trash2, RotateCcw, Video, Eye, Clapperboard, RefreshCw, Pipette, Minimize2, Maximize2, Equal, Shuffle, Target, Lock, Star, Gift } from 'lucide-react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AdMob, RewardAdOptions, AdMobRewardItem, AdOptions, AdLoadInfo } from '@capacitor-community/admob';
 import { StatusBar } from '@capacitor/status-bar';
@@ -75,14 +75,14 @@ const DEFAULT_FAILURE_PHRASES_NL = [
   "Helaas pindakaas!", "Zuur!", "Aii,",
   "jezus alweer??", "waarom ben je zo slecht,", "skill issue,",
   "Dom dom dom!", "Pech gehad!", "Oef...", "Foutje,",
-  "lol,", "ha bier,", "maat..",
+  "lol,", "ha mis,", "maat..",
   "Huilie huilie!", "zo slecht!", "Niet te geloven!", "Incapabele ziel.."
 ];
 const DEFAULT_LOSER_TITLES_NL = [
-  "🍺🍺🍺", "De Lul", "L gepakt", "hahaha",
+  "🥤🥤🥤", "De Lul", "L gepakt", "hahaha",
   "🧌🧌", "Succes Vriend", "ai ai ai", "daar ga je",
   "💀💀", "🤡🤡", "zo slecht", "Kansloos",
-  "Proost!"
+  "Slokken maar!"
 ];
 const DEFAULT_SUCCESS_PHRASES_EN = [
   "Nice!", "Boom!", "👨‍🍳👨‍🍳", "Warrior!",
@@ -95,14 +95,14 @@ const DEFAULT_FAILURE_PHRASES_EN = [
   "Bad luck!", "Ouch!", "Aii,",
   "lord, again??", "why are you so bad,", "skill issue,",
   "Stupid!", "Out of luck!", "Oof...", "My bad,",
-  "lol,", "ha beer,", "mate..",
+  "lol,", "ha miss,", "mate..",
   "Crybaby!", "so bad!", "Unbelievable!", "Incapable soul.."
 ];
 const DEFAULT_LOSER_TITLES_EN = [
-  "🍺🍺🍺", "The Loser", "Caught the L", "hahaha",
+  "🥤🥤🥤", "The Loser", "Caught the L", "hahaha",
   "🧌🧌", "Good luck friend", "ai ai ai", "there you go",
   "💀💀", "🤡🤡", "so bad", "Hopeless",
-  "Cheers!"
+  "Drink up!"
 ];
 type PhraseCategory = 'success' | 'failure' | 'loser';
 const DEFAULT_PHRASES: Record<string, Record<PhraseCategory, string[]>> = {
@@ -852,7 +852,7 @@ const App: React.FC = () => {
     const themeName = themeToUnlock === UITheme.CLASSIC ? "Klassiek" :
                       themeToUnlock === UITheme.METRO ? "Bus" :
                       themeToUnlock === UITheme.CALM ? "Rustig" :
-                      themeToUnlock === UITheme.STARS ? "Sterren" : "Bier";
+                      themeToUnlock === UITheme.STARS ? "Sterren" : "Fris";
     return renderUnlockModal({
       isOpen: !!themeToUnlock,
       onClose: () => setThemeToUnlock(null),
@@ -2524,7 +2524,7 @@ const initializeAdMob = useCallback(async () => {
     if (settings.mode === GameMode.PHYSICAL && pyramidMode === 'physical') {
       triggerHaptic('medium');
       setFeedback({
-        text: isTop ? t("ADTJE VOOR DE ZAAL!") : `${t("Wie heeft deze kaart?")} ${getSipsText(sips)}!`,
+        text: isTop ? t("GLAS LEEG!") : `${t("Wie heeft deze kaart?")} ${getSipsText(sips)}!`,
         type: 'info'
       });
       if (isFinished) setIsPyramidComplete(true);
@@ -3860,7 +3860,7 @@ const initializeAdMob = useCallback(async () => {
                           <span className="sm:hidden">{t("Gedronken")}</span>
                         </span>
                         <span className="text-red-400 font-black font-mono text-xs sm:text-sm md:text-base leading-tight drop-shadow-sm flex items-center gap-1 mt-0.5">
-                          <Beer size={12} className="shrink-0" />
+                          <CupSoda size={12} className="shrink-0" />
                           {currentPlayerObj.drinksTaken}
                         </span>
                       </div>
@@ -5220,7 +5220,7 @@ const initializeAdMob = useCallback(async () => {
             {renderDevMenu()}
             <div className="flex flex-col items-end px-2">
               <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">{t("Slokken gedronken")}</span>
-              <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><Beer size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
+              <span className="text-red-400 font-black font-mono text-lg leading-none drop-shadow-sm"><CupSoda size={12} className="inline mr-1 mb-0.5" />{activePlayer?.drinksTaken}</span>
             </div>
             {renderQuitButton()}
           </div>
@@ -6343,7 +6343,7 @@ const initializeAdMob = useCallback(async () => {
                           {Array(settings.pyramidRows - rowIndex).fill('✦').join(' ')}
                         </span>
                       ) : (
-                        Array(settings.pyramidRows - rowIndex).fill('🍺').join('')
+                        Array(settings.pyramidRows - rowIndex).fill('🥤').join('')
                       )}
                     </div>
                   )}

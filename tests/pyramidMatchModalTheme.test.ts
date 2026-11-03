@@ -46,7 +46,7 @@ describe('PyramidMatchModal Deep Theme Customization', () => {
     expect(modalContent).toContain('isBeer');
     expect(modalContent).toContain('text-amber-400');
     expect(modalContent).toContain('border-amber-500');
-    expect(modalContent).toContain('🍻');
+    expect(modalContent).toContain('🥤');
   });
 
   it('implements deep theme styling for UITheme.STARS', () => {

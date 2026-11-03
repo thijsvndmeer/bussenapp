@@ -560,7 +560,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 {/* Absolutely centered prompt slot that never moves when Kans width changes */}
                 {s.key === 'busLength' && (
                   <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center w-[calc(100%-170px)] h-5 overflow-hidden">
-                    {/* Alcoholic expansion prompt (disappears downwards into slider) */}
+                    {/* Max bus cards expansion prompt (disappears downwards into slider) */}
                     <div 
                       className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-out ${
                         Math.round(draftValues.busLength) === 12 && !isBusExpanded
@@ -569,7 +569,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       }`}
                     >
                       <span className="text-[10px] sm:text-xs text-slate-400 font-semibold text-center leading-tight flex items-center justify-center">
-                        <span className="hidden sm:inline mr-1">{t("Voor echte alcoholisten: wil je het maximum aantal buskaarten verhogen?")}</span>
+                        <span className="hidden sm:inline mr-1">{t("Voor echte durfals: wil je het maximum aantal buskaarten verhogen?")}</span>
                         <button 
                           type="button"
                           onClick={() => setIsBusExpanded(true)}

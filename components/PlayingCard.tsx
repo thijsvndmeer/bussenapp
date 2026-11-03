@@ -208,6 +208,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   const isClassic = style === CardStyle.CLASSIC;
   const isNeon = style === CardStyle.NEON;
   const isGalaxy = style === CardStyle.GALAXY;
+  const isModern = style === CardStyle.MODERN || (!isDark && !isClassic && !isNeon && !isGalaxy);
 
   const redColor = isGalaxy ? 'text-[#f43f5e]' : isNeon ? 'text-rose-400' : isDark ? 'text-red-500' : isClassic ? 'text-[#c21807]' : 'text-[#e11d48]';
   const blackColor = isGalaxy ? 'text-[#f1f5f9]' : isNeon ? 'text-cyan-400' : isDark ? 'text-slate-200' : isClassic ? 'text-[#000000]' : 'text-[#1e293b]';
@@ -216,6 +217,12 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   const glowClass = isGalaxy
     ? (isRed ? 'drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'drop-shadow-[0_0_8px_rgba(255,255,255,0.45)]')
     : isNeon ? (isRed ? 'drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]' : 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]') : isDark ? (isRed ? 'drop-shadow-[0_0_4px_rgba(239,68,68,0.4)]' : 'drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]') : '';
+
+  // Face card C5-C4 insignia colors (Modern / Dark / Neon)
+  const insigniaPrimary = isDark ? (isRed ? '#ef4444' : '#cbd5e1') : isNeon ? (isRed ? '#fb7185' : '#22d3ee') : (isRed ? '#e11d48' : '#0284c7');
+  const insigniaSecondary = isDark ? (isRed ? '#ef4444' : '#64748b') : isNeon ? (isRed ? '#fb7185' : '#67e8f9') : (isRed ? '#e11d48' : '#64748b');
+  const insigniaFillTop = isDark ? '0.18' : isNeon ? '0.25' : '0.22';
+  const insigniaFillBottom = isDark ? (isRed ? '0.10' : '0.12') : isNeon ? (isRed ? '0.15' : '0.18') : (isRed ? '0.12' : '0.14');
 
   const pipContent = useMemo(() => card ? renderPips(card, size as 'sm' | 'base' | 'md' | 'lg' | 'xl', isRed ? redColor : blackColor) : null, [card, size, style, isRed, redColor, blackColor]);
   const galaxyNebulaLayers = useMemo(() => createGalaxyNebulaLayers(), []);
@@ -296,7 +303,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
                 {/* FACE CARDS - Pure royal insignia without extra text or busy rings */}
                 {isFaceCard && (
-                  <div className="w-[70%] h-[78%] relative flex items-center justify-center overflow-visible">
+                  <div className="w-[63%] h-[71%] relative flex items-center justify-center overflow-visible">
                     {isGalaxy ? (
                       <div className="relative w-full h-full flex items-center justify-center">
                         <div className="absolute w-[68%] aspect-square rounded-full border border-white/15 animate-card-celestial-cw pointer-events-none" />
@@ -333,44 +340,138 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                           size={sizeConfig.classicSize} 
                         />
                       </div>
-                    ) : (
-                      <div className={`w-full h-full rounded-lg flex flex-col justify-between relative overflow-hidden shadow-inner ${
-                        isDark 
-                          ? 'border-2 border-slate-500/30 bg-[#1e293b]/40' 
-                          : isNeon 
-                          ? `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-white/5` 
-                          : `border-2 ${isRed ? 'border-red-500/30' : 'border-slate-500/30'} bg-gradient-to-br from-white via-white/80 to-slate-50`
+                    ) : (isModern || isDark || isNeon) ? (
+                      /* FACE CARD: C5-C4 STYLE (Modern / Dark / Neon) */
+                      <div className={`w-full h-full rounded-lg relative overflow-hidden shadow-inner border-2 ${
+                        isDark
+                          ? 'border-slate-500/30 bg-[#1e293b]/40'
+                          : isNeon
+                          ? `${isRed ? 'border-rose-400/30' : 'border-cyan-400/30'} bg-white/5`
+                          : isRed ? 'border-red-500/30 bg-gradient-to-br from-white via-white/80 to-rose-50/30' : 'border-slate-500/30 bg-gradient-to-br from-white via-white/80 to-slate-50'
                       }`}>
-                        {/* Damask Royal Pattern */}
-                        {!isClassic && !isNeon && (
-                          <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40l20-20 20 20H0z' fill='%23000' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
-                        )}
-                        {/* Top Elite Icon */}
-                        <div className="flex justify-start relative z-10 transition-transform p-1">
-                          <div>
-                            {card.rank === Rank.KING && <Crown size={sizeConfig.royalIcon} fill="currentColor" className="w-[25cqw] h-[25cqw] text-amber-500" />}
-                            {card.rank === Rank.QUEEN && <Crown size={sizeConfig.royalIcon} fill="currentColor" className="w-[25cqw] h-[25cqw] text-pink-500" />}
-                            {card.rank === Rank.JACK && <FarmerIcon size={sizeConfig.royalIcon} fill="currentColor" className="text-emerald-600" />}
-                          </div>
-                        </div>
+                        <svg viewBox="0 0 98 152" className="absolute inset-0 w-full h-full pointer-events-none">
+                          {/* Diagonal Split Tint */}
+                          <path 
+                            d="M0 0 L98 0 L98 96 L0 56 Z" 
+                            fill={insigniaPrimary} 
+                            fillOpacity={isDark ? "0.06" : isNeon ? "0.10" : "0.08"} 
+                          />
+                          {/* Diagonal Seam Line */}
+                          <line 
+                            x1="0" 
+                            y1="56" 
+                            x2="98" 
+                            y2="96" 
+                            stroke={insigniaPrimary} 
+                            strokeWidth="1.2" 
+                            strokeOpacity={isDark ? "0.25" : isNeon ? "0.45" : "0.35"} 
+                          />
+                          {/* Insignia: Rank-specific (J = Boerenhoed, Q = C5-C4 Pearl Tiara, K = C5-C4 Crown) */}
+                          {card.rank === Rank.JACK && (
+                            <>
+                              {/* Top Boerenhoed */}
+                              <g 
+                                stroke={insigniaPrimary} 
+                                strokeWidth="1.5" 
+                                strokeLinejoin="round" 
+                                strokeLinecap="round" 
+                                fill={insigniaPrimary} 
+                                fillOpacity={insigniaFillTop}
+                              >
+                                <path d="M42 28 L43 19 C45 18 53 18 55 19 L56 28 Z" />
+                                <path d="M35 29 C42 27 56 27 63 29 C58 33 40 33 35 29 Z" />
+                              </g>
+                              {/* Bottom Boerenhoed (180deg inverted) */}
+                              <g 
+                                transform="rotate(180 49 76)" 
+                                stroke={insigniaSecondary} 
+                                strokeWidth="1.5" 
+                                strokeLinejoin="round" 
+                                strokeLinecap="round" 
+                                fill={insigniaSecondary} 
+                                fillOpacity={insigniaFillBottom}
+                              >
+                                <path d="M42 28 L43 19 C45 18 53 18 55 19 L56 28 Z" />
+                                <path d="M35 29 C42 27 56 27 63 29 C58 33 40 33 35 29 Z" />
+                              </g>
+                            </>
+                          )}
 
-                        {/* Background Letter */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-transform">
-                          <span className={`font-serif font-black ${sizeConfig.giantLetter} ${isDark || isNeon ? 'opacity-20' : 'opacity-10'} ${isRed ? 'text-red-900' : 'text-slate-900'} leading-none`}>
-                            {rankLabel}
-                          </span>
-                        </div>
+                          {card.rank === Rank.QUEEN && (
+                            <>
+                              {/* Top C5-C4 Pearl Tiara */}
+                              <g 
+                                stroke={insigniaPrimary} 
+                                strokeWidth="1.5" 
+                                strokeLinejoin="round" 
+                                strokeLinecap="round" 
+                                fill={insigniaPrimary} 
+                                fillOpacity={insigniaFillTop}
+                              >
+                                <path d="M38 25.5 L44 29.5 L49 21.5 L54 29.5 L60 25.5 L58.5 33 C53.5 35 44.5 35 39.5 33 Z" />
+                                <circle cx="49" cy="18" r="1.8" fill={insigniaPrimary} strokeWidth="1" />
+                              </g>
+                              {/* Bottom C5-C4 Pearl Tiara (180deg inverted) */}
+                              <g 
+                                transform="rotate(180 49 76)" 
+                                stroke={insigniaSecondary} 
+                                strokeWidth="1.5" 
+                                strokeLinejoin="round" 
+                                strokeLinecap="round" 
+                                fill={insigniaSecondary} 
+                                fillOpacity={insigniaFillBottom}
+                              >
+                                <path d="M38 25.5 L44 29.5 L49 21.5 L54 29.5 L60 25.5 L58.5 33 C53.5 35 44.5 35 39.5 33 Z" />
+                                <circle cx="49" cy="18" r="1.8" fill={insigniaSecondary} strokeWidth="1" />
+                              </g>
+                            </>
+                          )}
 
-                        {/* Bottom Elite Icon */}
-                        <div className="flex justify-end rotate-180 relative z-10 transition-transform p-1">
-                          <div>
-                            {card.rank === Rank.KING && <Crown size={sizeConfig.royalIcon} fill="currentColor" className="w-[25cqw] h-[25cqw] text-amber-500" />}
-                            {card.rank === Rank.QUEEN && <Crown size={sizeConfig.royalIcon} fill="currentColor" className="w-[25cqw] h-[25cqw] text-pink-500" />}
-                            {card.rank === Rank.JACK && <FarmerIcon size={sizeConfig.royalIcon} fill="currentColor" className="text-emerald-600" />}
+                          {card.rank === Rank.KING && (
+                            <>
+                              {/* Top Crown: Original C5-C4 exact geometry */}
+                              <g 
+                                stroke={insigniaPrimary} 
+                                strokeWidth="1.5" 
+                                strokeLinejoin="round" 
+                                strokeLinecap="round" 
+                                fill={insigniaPrimary} 
+                                fillOpacity={insigniaFillTop}
+                              >
+                                <path d="M35 22 L41.5 28 L49 18 L56.5 28 L63 22 L61 32 C54 34 44 34 37 32 Z" />
+                              </g>
+                              {/* Bottom Crown (180deg inverted): Original C5-C4 exact geometry */}
+                              <g 
+                                transform="rotate(180 49 76)" 
+                                stroke={insigniaSecondary} 
+                                strokeWidth="1.5" 
+                                strokeLinejoin="round" 
+                                strokeLinecap="round" 
+                                fill={insigniaSecondary} 
+                                fillOpacity={insigniaFillBottom}
+                              >
+                                <path d="M35 22 L41.5 28 L49 18 L56.5 28 L63 22 L61 32 C54 34 44 34 37 32 Z" />
+                              </g>
+                            </>
+                          )}
+                        </svg>
+
+                        {/* Central Cameo Disc with Monogram */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className={`w-[45%] aspect-square rounded-full backdrop-blur-md border-[1.5px] flex items-center justify-center shadow-sm ${
+                            isDark
+                              ? `bg-slate-900/90 ${isRed ? 'border-red-500/35 text-red-400' : 'border-slate-500/35 text-slate-200'}`
+                              : isNeon
+                              ? `bg-white/10 ${isRed ? 'border-rose-400/50 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.6)]' : 'border-cyan-400/50 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]'}`
+                              : `bg-white/95 ${isRed ? 'border-rose-500/35 text-rose-700' : 'border-sky-500/35 text-slate-900'}`
+                          }`}>
+                            <span className="font-sans font-black text-[14.5cqw] leading-none select-none tracking-tight">
+                              {rankLabel}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
 

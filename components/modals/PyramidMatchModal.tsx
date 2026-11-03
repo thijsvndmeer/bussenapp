@@ -425,7 +425,7 @@ export const PyramidMatchModal: React.FC<PyramidMatchModalProps> = ({
     if (isBeer) {
       return (
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 drop-shadow-[0_2px_10px_rgba(245,158,11,0.6)]">
-          🍻 {t("MATCH!")}
+          🥤 {t("MATCH!")}
         </h2>
       );
     }
