@@ -723,7 +723,7 @@ const App: React.FC = () => {
       sharedBus: false,
       busLength: 6,
       busDecks: 1,
-      cardStyle: CardStyle.DARK,
+      cardStyle: CardStyle.MODERN,
       doublePyramidCards: true,
       theme: UITheme.CALM,
       calmAccentColor: '#fb7185',
