@@ -35,12 +35,9 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
         alt={`${rank} of ${suit}`}
         className="w-full h-full object-cover pointer-events-none mix-blend-multiply"
         style={{
-          filter: [
-            'drop-shadow(0.5px 0 0 #1a1a1a)',
-            'drop-shadow(-0.5px 0 0 #1a1a1a)',
-            'drop-shadow(0 0.5px 0 #1a1a1a)',
-            'drop-shadow(0 -0.5px 0 #1a1a1a)',
-          ].join(' '),
+          border: '2px solid #1a1a1a',
+          borderRadius: '22% / 16%',
+          boxSizing: 'border-box',
         }}
         onError={(e) => {
           console.error(`Failed to load local asset: ${localPath}`);
