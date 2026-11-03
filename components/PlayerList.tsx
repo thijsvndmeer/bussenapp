@@ -30,13 +30,20 @@ export const PlayerList: React.FC<PlayerListProps> = ({
   immunePlayerId,
   lastAddedPlayerId,
   theme = UITheme.CLASSIC,
-}) => (
+}) => players.length === 0 ? (
+  <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-3 text-slate-500 gap-3 opacity-70">
+    <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
+      <Users size={24} />
+    </div>
+    <span className="font-bold text-sm uppercase tracking-widest">{t("Start met toevoegen")}</span>
+  </div>
+) : (
   <ScrollIndicatorContainer
     orientation="vertical"
     theme={theme}
     scrollRef={listRef}
     className="flex-1 min-h-0"
-    scrollClassName={`p-3 space-y-2 scroll-smooth${players.length === 0 ? ' flex flex-col' : ''}`}
+    scrollClassName="p-3 space-y-2 scroll-smooth"
   >
     {players.map((player, index) => (
       <PlayerCard
@@ -53,13 +60,5 @@ export const PlayerList: React.FC<PlayerListProps> = ({
         isNewlyAdded={!!lastAddedPlayerId && player.id === lastAddedPlayerId}
       />
     ))}
-    {players.length === 0 && (
-      <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
-        <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
-          <Users size={24} />
-        </div>
-        <span className="font-bold text-sm uppercase tracking-widest">{t("Start met toevoegen")}</span>
-      </div>
-    )}
   </ScrollIndicatorContainer>
 );
