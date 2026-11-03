@@ -36,7 +36,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
     theme={theme}
     scrollRef={listRef}
     className="flex-1 min-h-0"
-    scrollClassName="p-3 space-y-2 scroll-smooth"
+    scrollClassName={`p-3 space-y-2 scroll-smooth${players.length === 0 ? ' flex flex-col' : ''}`}
   >
     {players.map((player, index) => (
       <PlayerCard
@@ -54,7 +54,7 @@ export const PlayerList: React.FC<PlayerListProps> = ({
       />
     ))}
     {players.length === 0 && (
-      <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
+      <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 opacity-70">
         <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center">
           <Users size={24} />
         </div>
