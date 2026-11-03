@@ -35,7 +35,7 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
         alt={`${rank} of ${suit}`}
         className="w-full h-full object-cover pointer-events-none mix-blend-multiply"
         style={{
-          border: '1px solid rgba(26, 26, 26, 0.45)',
+          border: '2px solid rgba(26, 26, 26, 0.45)',
           borderRadius: '22% / 16%',
           boxSizing: 'border-box',
         }}
