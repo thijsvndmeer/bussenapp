@@ -28,17 +28,16 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
 
   return (
     <div 
-      className={`absolute inset-0 overflow-hidden flex items-center justify-center ${className}`}
+      className={`absolute inset-0 overflow-hidden flex items-center justify-center rounded-lg shadow-inner border-2 ${
+        suit === Suit.HEARTS || suit === Suit.DIAMONDS
+          ? 'border-red-500/30'
+          : 'border-slate-500/30'
+      } ${className || ''}`}
     >
       <img 
         src={localPath} 
         alt={`${rank} of ${suit}`}
         className="w-full h-full object-cover pointer-events-none mix-blend-multiply"
-        style={{
-          border: '2px solid rgba(26, 26, 26, 0.45)',
-          borderRadius: '22% / 16%',
-          boxSizing: 'border-box',
-        }}
         onError={(e) => {
           console.error(`Failed to load local asset: ${localPath}`);
           e.currentTarget.style.display = 'none';
