@@ -36,7 +36,7 @@ const ClassicFaceCard: React.FC<ClassicFaceCardProps> = ({ suit, rank, size, cla
         className="w-full h-full object-cover pointer-events-none mix-blend-multiply"
         style={{
           border: '2px solid #1a1a1a',
-          borderRadius: '22% / 16%',
+          borderRadius: '6%',
           boxSizing: 'border-box',
         }}
         onError={(e) => {
