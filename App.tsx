@@ -152,6 +152,7 @@ const AVATAR_COLORS = [
 ] as const;
 const PATCH_NOTES_VERSION = CURRENT_APP_VERSION;
 const storageAvailable = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+const isDeviceOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
 const queueStorageWrite = (key: string, value: string, label: string) => {
   if (!storageAvailable) return;
   const write = () => {
@@ -1251,7 +1252,7 @@ const App: React.FC = () => {
     setIsBusEntrance(false);
     }, []);
 const initializeAdMob = useCallback(async () => {
-    if (!Capacitor.isNativePlatform() || adMobReadyRef.current) return;
+    if (isDeviceOffline() || !Capacitor.isNativePlatform() || adMobReadyRef.current) return;
     try {
       await AdMob.initialize({
         initializeForTesting: false,
@@ -1262,7 +1263,7 @@ const initializeAdMob = useCallback(async () => {
   }, []);
   // Pre-load an interstitial ad in background
   const prepareAdInterstitial = useCallback(async (adId: string) => {
-    if (!Capacitor.isNativePlatform() || players.some(p => p.isDev)) return;
+    if (isDeviceOffline() || !Capacitor.isNativePlatform() || players.some(p => p.isDev)) return;
     try {
       if (!adMobReadyRef.current) {
         await AdMob.initialize({
@@ -1275,7 +1276,7 @@ const initializeAdMob = useCallback(async () => {
     }
   }, [players]);
   const prepareRewardedAd = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (isDeviceOffline() || !Capacitor.isNativePlatform()) return;
     if (players.some(p => p.isDev)) return;
     try {
       await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_UNIT_ID });
@@ -1284,6 +1285,7 @@ const initializeAdMob = useCallback(async () => {
   }, [players]);
   const showRewardedAd = useCallback(async () => {
     if (players.some(p => p.isDev)) return true; // Always success for dev player
+    if (isDeviceOffline()) return false;
     setIsAdLoading(true);
     if (!Capacitor.isNativePlatform()) {
       // Simulate ad playback delay on web/dev to show loading popup
@@ -1303,7 +1305,7 @@ const initializeAdMob = useCallback(async () => {
   }, [players]);
   // Interstitial ad
   const showInterstitialAd = useCallback(async (type: 'QUIT' | 'LEADERBOARD') => {
-    if (players.some(p => p.isDev)) return;
+    if (isDeviceOffline() || players.some(p => p.isDev)) return;
     setIsAdLoading(true);
     if (!Capacitor.isNativePlatform()) {
       // Simulate ad playback delay on web/dev to show loading popup
