@@ -48,19 +48,24 @@ export const PlayerAvatar: React.FC<{
 
   return (
     <div 
-      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center relative shrink-0 ${sizeClasses[size]} ${borderClass} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
+      className={`rounded-full bg-gradient-to-br ${bgGradient} flex items-center justify-center relative shrink-0 ${sizeClasses[size]} ${shadowEffect} ${animationEffect} ${className} ${onPointerDown ? 'cursor-pointer' : ''}`}
       style={glowStyle}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}
       onContextMenu={(e) => { if (onPointerDown) e.preventDefault(); }}
     >
-      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center pointer-events-none">
+      <div className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center pointer-events-none">
         {player?.image ? (
           <img src={player.image} className="w-full h-full object-cover" alt={player?.name || 'player'} />
         ) : (
           <span className="font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{player?.name?.charAt(0).toUpperCase() || '?'}</span>
         )}
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 rounded-full ${borderClass} pointer-events-none`}
+          style={{ borderColor: glowStyle.borderColor }}
+        />
       </div>
       {glow && (
         <div 
