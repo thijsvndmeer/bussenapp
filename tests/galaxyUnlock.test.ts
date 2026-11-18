@@ -42,21 +42,20 @@ describe('Galaxy Theme and Card Style Unlock System', () => {
     expect(checkFirstTry20Win(20, 1, 2)).toBe(false);
   });
 
-  it('ensures App.tsx triggers celebration and rewards galaxy cards on 20-card win, never unlocks stars theme, and hides both in settings by default', () => {
+  it('ensures App.tsx triggers celebration and rewards both Stars theme and Galaxy cards on 20-card win, and hides both in settings by default', () => {
     const fs = require('fs');
     const path = require('path');
     const appContent = fs.readFileSync(path.resolve(__dirname, '../App.tsx'), 'utf-8');
 
-    // handleBusGuess triggers celebration modal and unlocks galaxy cards
+    // handleBusGuess triggers celebration modal and unlocks galaxy/stars
     expect(appContent).toMatch(/if\s*\(settings\.busLength\s*>=\s*20\s*&&\s*isFirstTry\)[\s\S]*?setIsGalaxyCelebrationOpen\(true\)/);
     expect(appContent).toMatch(/if\s*\(settings\.busLength\s*>=\s*20\s*&&\s*isFirstTry\)[\s\S]*?setIsGalaxyUnlocked\(true\)/);
 
-    // Equip callback in App.tsx equips ONLY galaxy cards, never unlocks/equips stars theme
-    expect(appContent).toMatch(/<GalaxyCelebrationModal[\s\S]*?onEquipBoth=\{\(\)\s*=>\s*\{[\s\S]*?cardStyle:\s*CardStyle\.GALAXY/);
-    expect(appContent).not.toMatch(/<GalaxyCelebrationModal[\s\S]*?onEquipBoth=\{\(\)\s*=>\s*\{[\s\S]*?theme:\s*UITheme\.STARS/);
+    // Equip callback in App.tsx equips BOTH stars theme and galaxy cards
+    expect(appContent).toMatch(/<GalaxyCelebrationModal[\s\S]*?onEquipBoth=\{\(\)\s*=>\s*\{[\s\S]*?theme:\s*UITheme\.STARS[\s\S]*?cardStyle:\s*CardStyle\.GALAXY/);
 
-    // Stars theme only shows if player already had it (hasStarsLegacyTheme), not shown by default
-    expect(appContent).toContain('hasStarsLegacyTheme && (() => {');
+    // Stars theme only shows if unlocked or legacy active, not shown by default
+    expect(appContent).toContain('(isGalaxyUnlocked || hasStarsLegacyTheme || settings.theme === UITheme.STARS) && (() => {');
 
     // Galaxy card style only shows if unlocked, not shown by default
     expect(appContent).toMatch(/\(isGalaxyUnlocked\s*\|\|\s*settings\.cardStyle\s*===\s*CardStyle\.GALAXY\)\s*&&\s*\(\(\)\s*=>\s*\{/);

@@ -303,6 +303,81 @@ const BusTransitionOverlay: React.FC<{
     </div>
   );
 };
+const BusWinOverlay: React.FC<{
+  busPassengers: Player[];
+  busCardsLength: number;
+  busLengthSetting: number;
+  busAttempts: number;
+  busSipsTaken: number;
+  theme: UITheme;
+  lang: string;
+  t: (key: string) => string;
+}> = ({ busPassengers, busCardsLength, busLengthSetting, busAttempts, busSipsTaken, theme, lang, t }) => {
+  const busCardTotal = busCardsLength > 0 ? busCardsLength : (busLengthSetting || 5);
+  const firstTryChance = Math.round(Math.pow(0.71, Math.max(1, busCardTotal - 1)) * 100);
+  const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
+  const isDuo = busPassengers.length >= 2;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
+      {/* Top Text - Above Bus */}
+      <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_2.2s_forwards] opacity-0 shrink-0">
+        <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
+          {isDuo ? t("Jullie mogen uit de bus! 🎉") : t("Je mag uit de bus! 🎉")}
+        </h2>
+      </div>
+
+      {/* Center Stage: Bus drives in, players dismount & stay, bus drives away */}
+      <div className="relative w-full shrink-0 flex items-center justify-center py-1">
+        <AnimatedPartyBus
+          passengers={busPassengers}
+          destinationText={busPassengers[0]?.name || t("DE BUS")}
+          isWinExit={true}
+          theme={theme}
+        />
+        {busPassengers.length > 0 && (
+          <div className="absolute inset-0 flex items-center justify-center gap-5 sm:gap-7 z-30 pointer-events-none">
+            {busPassengers.slice(0, 2).map((p, idx) => (
+              <div key={p.id || idx} className="animate-bus-player-dismount flex flex-col items-center gap-2">
+                <PlayerAvatar
+                  player={p}
+                  size="custom"
+                  glow={true}
+                  theme={theme}
+                  className={isDuo ? 'w-20 h-20 sm:w-24 sm:h-24 text-3xl sm:text-4xl shadow-2xl' : 'w-24 h-24 sm:w-28 sm:h-28 text-4xl sm:text-5xl shadow-2xl'}
+                />
+                <span className="text-sm sm:text-base font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                  {p.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Text - Below Bus */}
+      {busPassengers.length > 0 && (
+        <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_3.6s_forwards] opacity-0 shrink-0 px-2 sm:px-4">
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-slate-100 font-bold drop-shadow-xl mx-auto max-w-2xl sm:max-w-3xl leading-snug tracking-tight">
+            {isFirstTry ? (
+              lang === 'en' ? (
+                <>Well done, you got out on the first try! The chance of that happening is approximately <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+              ) : (
+                <>Goed gedaan, {isDuo ? 'jullie zijn' : 'je bent'} er in één keer uitgekomen! De kans dat dit gebeurt is ongeveer <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+              )
+            ) : (
+              lang === 'en' ? (
+                <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+              ) : (
+                <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
+              )
+            )}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
 const PersistentBackground: React.FC<{ 
   theme: UITheme; 
   style?: React.CSSProperties; 
@@ -490,14 +565,14 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
   t
 }) => {
   const presets = [
-    { name: t('Lichtrood'), value: '#fb7185' },
-    { name: t('Goud'), value: '#fbcd53' },
-    { name: t('Periwinkle'), value: '#818cf8' },
-    { name: t('Munt'), value: '#2dd4bf' },
+    { name: t('Lichtrood'), value: hslToHex(352, 80, 75) },
+    { name: t('Goud'), value: hslToHex(43, 80, 75) },
+    { name: t('Periwinkle'), value: hslToHex(235, 80, 75) },
+    { name: t('Munt'), value: hslToHex(172, 80, 75) },
   ];
 
-  const presetValues = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
-  const isCustomActive = !presetValues.includes((accentColor || '#fb7185').toLowerCase());
+  const presetValues = presets.map(p => p.value.toLowerCase());
+  const isCustomActive = !presetValues.includes((accentColor || presets[0].value).toLowerCase());
   const isPickerSelected = isCustomActive || isOpen;
 
   const lastCustomHue = useRef<number>(
@@ -521,14 +596,11 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
   const [shouldAnimateEntry, setShouldAnimateEntry] = useState(false);
 
   useEffect(() => {
-    const col = accentColor || '#fb7185';
-    const isCustom = !presetValues.includes(col.toLowerCase());
-    if (isCustom) {
-      const h = hexToHsl(col).h;
-      lastCustomHue.current = h;
-      setHue(h);
-      setThumbHue(h);
-    }
+    const col = accentColor || presets[0].value;
+    const h = hexToHsl(col).h;
+    lastCustomHue.current = h;
+    setHue(h);
+    setThumbHue(h);
     setCommittedColor(col);
     lastCommittedColor.current = col;
   }, [accentColor]);
@@ -613,15 +685,10 @@ const CalmAccentColorPicker: React.FC<CalmAccentColorPickerProps> = React.memo((
     } else {
       setShouldAnimateEntry(true);
       onToggleOpen();
-      if (!isCustomActive) {
-        const customHex = hslToHex(lastCustomHue.current, 80, 75);
-        setHue(lastCustomHue.current);
-        setThumbHue(lastCustomHue.current);
-        setCommittedColor(customHex);
-        lastCommittedColor.current = customHex;
-        applyColorDirect(customHex);
-        onColorChange(customHex);
-      }
+      const currentHue = hexToHsl(accentColor || presets[0].value).h;
+      lastCustomHue.current = currentHue;
+      setHue(currentHue);
+      setThumbHue(currentHue);
       triggerHaptic('subtle');
     }
   };
@@ -727,7 +794,7 @@ const App: React.FC = () => {
       cardStyle: CardStyle.MODERN,
       doublePyramidCards: true,
       theme: UITheme.CALM,
-      calmAccentColor: '#fb7185',
+      calmAccentColor: hslToHex(352, 80, 75),
     };
     if (!storageAvailable) return defaultSettings;
     try {
@@ -890,8 +957,8 @@ const App: React.FC = () => {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(() => {
-    const presets = ['#fb7185', '#fbcd53', '#818cf8', '#2dd4bf'];
-    return !presets.includes((settings.calmAccentColor || '#fb7185').toLowerCase());
+    const presets = [352, 43, 235, 172].map(h => hslToHex(h, 80, 75).toLowerCase());
+    return !presets.includes((settings.calmAccentColor || hslToHex(352, 80, 75)).toLowerCase());
   });
   const [tempColor, setTempColor] = useState('#fb7185');
   // Physical mode info popup state
@@ -1362,6 +1429,32 @@ const initializeAdMob = useCallback(async () => {
     const root = document.documentElement;
     root.classList.remove('theme-classic', 'theme-metro', 'theme-calm', 'theme-beer', 'theme-stars');
     root.classList.add(`theme-${settings.theme}`, 'theme-transition');
+
+    // Clear all theme inline overrides before applying the active theme so no tokens leak across switches
+    [
+      '--theme-bg-base',
+      '--theme-bg-void',
+      '--theme-bg',
+      '--theme-card-bg',
+      '--theme-card-border',
+      '--theme-card-border-glow',
+      '--theme-accent',
+      '--theme-accent-secondary',
+      '--theme-accent-gradient',
+      '--theme-accent-glow',
+      '--theme-tertiary',
+      '--theme-accent-tertiary',
+      '--theme-starlight-gold',
+      '--theme-cosmic-cyan',
+      '--theme-btn-bg',
+      '--theme-btn-text',
+      '--theme-btn-sec-bg',
+      '--theme-btn-sec-text',
+      '--theme-surface-glass',
+      '--theme-surface-border',
+      '--theme-border-radius',
+    ].forEach((prop) => root.style.removeProperty(prop));
+
     if (settings.theme === UITheme.CALM) {
       const accentHex = settings.calmAccentColor || '#fb7185'; // Default light red
       
@@ -1394,12 +1487,12 @@ const initializeAdMob = useCallback(async () => {
       root.style.setProperty('--theme-bg-void', 'radial-gradient(circle at 50% 0%, #0c101c 0%, #04060c 45%, #010005 100%)');
       root.style.setProperty('--theme-bg', '#010005');
       root.style.setProperty('--theme-card-bg', 'rgba(8, 11, 20, 0.82)');
-      root.style.setProperty('--theme-card-border', '1px solid rgba(226, 232, 240, 0.16)');
-      root.style.setProperty('--theme-card-border-glow', '0 0 20px rgba(226, 232, 240, 0.08), inset 0 0 12px rgba(255, 255, 255, 0.04)');
-      root.style.setProperty('--theme-accent', '#e2e8f0');
-      root.style.setProperty('--theme-accent-secondary', '#f8fafc');
-      root.style.setProperty('--theme-accent-gradient', 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 45%, #cbd5e1 100%)');
-      root.style.setProperty('--theme-accent-glow', 'rgba(226, 232, 240, 0.28)');
+      root.style.setProperty('--theme-card-border', '1px solid rgba(167, 139, 250, 0.22)');
+      root.style.setProperty('--theme-card-border-glow', '0 0 20px rgba(167, 139, 250, 0.14), inset 0 0 12px rgba(255, 255, 255, 0.04)');
+      root.style.setProperty('--theme-accent', '#a78bfa');
+      root.style.setProperty('--theme-accent-secondary', '#38bdf8');
+      root.style.setProperty('--theme-accent-gradient', 'linear-gradient(135deg, #e0e7ff 0%, #a78bfa 50%, #38bdf8 100%)');
+      root.style.setProperty('--theme-accent-glow', 'rgba(167, 139, 250, 0.35)');
       root.style.setProperty('--theme-starlight-gold', '#fef08a');
       root.style.setProperty('--theme-cosmic-cyan', '#38bdf8');
       root.style.setProperty('--theme-btn-bg', 'linear-gradient(180deg, #181d2c 0%, #070911 100%)');
@@ -4358,8 +4451,8 @@ const initializeAdMob = useCallback(async () => {
                       );
                     })}
                   </div>
-                  {/* Full-width Stars Theme Button (only visible if player already had it active) */}
-                  {hasStarsLegacyTheme && (() => {
+                  {/* Full-width Stars Theme Button (unlocked via 20-card bus or legacy active) */}
+                  {(isGalaxyUnlocked || hasStarsLegacyTheme || settings.theme === UITheme.STARS) && (() => {
                     const isStarsActive = settings.theme === UITheme.STARS;
                     return (
                       <div className="bg-slate-800/70 p-1 rounded-2xl border border-slate-700/50 mt-1">
@@ -4889,7 +4982,7 @@ const initializeAdMob = useCallback(async () => {
           isOpen={isGalaxyCelebrationOpen}
           onClose={() => setIsGalaxyCelebrationOpen(false)}
           onEquipBoth={() => {
-            const n = { ...settings, cardStyle: CardStyle.GALAXY };
+            const n = { ...settings, theme: UITheme.STARS, cardStyle: CardStyle.GALAXY };
             setSettings(n);
             queueStorageWrite(GAME_SETTINGS_KEY, JSON.stringify(n), 'instellingen');
             setIsGalaxyCelebrationOpen(false);
@@ -6178,21 +6271,26 @@ const initializeAdMob = useCallback(async () => {
 
                   {/* Candidate profile picture(s) - max 6 per row, 2 rows max, like match modal */}
                   <div className="flex flex-wrap justify-center gap-3 sm:gap-4 py-1 max-w-[420px] sm:max-w-[500px]">
-                    {players.filter(p => !busPassengers.some(bp => bp.id === p.id) && !p.isImmune).slice(0, 12).map(candidate => {
+                    {players.filter(p => !busPassengers.some(bp => bp.id === p.id)).slice(0, 12).map(candidate => {
+                      const isImmune = !!candidate.isImmune;
                       const isThisDragged = draggedSharedBusPartnerId === candidate.id;
 
                       return (
                         <div
                           key={candidate.id}
-                          onPointerDown={(e) => handlePartnerPointerDown(e, candidate.id)}
-                          className={`group relative flex flex-col items-center gap-1.5 p-1 rounded-2xl select-none touch-none cursor-grab active:cursor-grabbing shrink-0 transition-all ${
-                            isThisDragged ? 'opacity-20 scale-95' : ''
+                          onPointerDown={isImmune ? undefined : (e) => handlePartnerPointerDown(e, candidate.id)}
+                          className={`group relative flex flex-col items-center gap-1.5 p-1 rounded-2xl select-none touch-none shrink-0 transition-all ${
+                            isImmune
+                              ? 'cursor-not-allowed opacity-50'
+                              : `cursor-grab active:cursor-grabbing ${isThisDragged ? 'opacity-20 scale-95' : ''}`
                           }`}
                           style={{ width: '64px' }}
                         >
                           <div className="relative">
                             <div
-                              className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center overflow-hidden shadow-lg group-hover:scale-105 group-active:scale-95 transition-all pointer-events-none ${getMatcherAvatarFrameClasses()}`}
+                              className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center overflow-hidden shadow-lg transition-all pointer-events-none ${
+                                isImmune ? 'grayscale opacity-75' : 'group-hover:scale-105 group-active:scale-95'
+                              } ${getMatcherAvatarFrameClasses()}`}
                             >
                               <PlayerAvatar
                                 player={candidate}
@@ -6201,9 +6299,16 @@ const initializeAdMob = useCallback(async () => {
                                 theme={settings.theme}
                               />
                             </div>
+                            {isImmune && (
+                              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-900/95 border border-amber-400/60 flex items-center justify-center shadow-md pointer-events-none">
+                                <Shield size={13} className="text-amber-400" />
+                              </div>
+                            )}
                           </div>
 
-                          <span className="text-xs sm:text-sm font-bold text-slate-300 group-hover:text-white drop-shadow pointer-events-none transition-colors truncate max-w-[60px]">
+                          <span className={`text-xs sm:text-sm font-bold drop-shadow pointer-events-none transition-colors truncate max-w-[60px] ${
+                            isImmune ? 'text-slate-500' : 'text-slate-300 group-hover:text-white'
+                          }`}>
                             {candidate.name}
                           </span>
                         </div>
@@ -6496,51 +6601,16 @@ const initializeAdMob = useCallback(async () => {
           <RootContainer className="animate-in fade-in duration-500" theme={settings.theme}>
           {isBusWon && <Confetti />}
           {isBusWon && (
-            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
-              {/* Top Text - Above Bus */}
-              <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_2.5s_forwards] opacity-0 shrink-0">
-                <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
-                  {t("Je mag uit de bus! 🎉")}
-                </h2>
-              </div>
-              
-              {/* Center Animated Bus SVG - Perfectly Centered Between Texts */}
-              <div className="w-full animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
-                <AnimatedPartyBus
-                  passengers={busPassengers}
-                  destinationText={busPassengers[0]?.name || t("DE BUS")}
-                  isCrash={true}
-                  theme={settings.theme}
-                />
-              </div>
-              
-              {/* Bottom Text - Below Bus */}
-              {busPassengers.length > 0 && (() => {
-                const busCardTotal = busCards.length > 0 ? busCards.length : (settings.busLength || 5);
-                const firstTryChance = Math.round(Math.pow(0.71, Math.max(1, busCardTotal - 1)) * 100);
-                const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
-                
-                return (
-                  <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_3.8s_forwards] opacity-0 shrink-0 px-2 sm:px-4">
-                    <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-slate-100 font-bold drop-shadow-xl mx-auto max-w-2xl sm:max-w-3xl leading-snug tracking-tight">
-                      {isFirstTry ? (
-                        lang === 'en' ? (
-                          <>Well done, you got out on the first try! The chance of that happening is approximately <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                        ) : (
-                          <>Goed gedaan, je bent er in één keer uitgekomen! De kans dat dit gebeurt is ongeveer <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                        )
-                      ) : (
-                        lang === 'en' ? (
-                          <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                        ) : (
-                          <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                        )
-                      )}
-                    </p>
-                  </div>
-                );
-              })()}
-            </div>
+            <BusWinOverlay
+              busPassengers={busPassengers}
+              busCardsLength={busCards.length}
+              busLengthSetting={settings.busLength}
+              busAttempts={busAttempts}
+              busSipsTaken={busSipsTaken}
+              theme={settings.theme}
+              lang={lang}
+              t={t}
+            />
           )}
           <div className="flex-1 w-full h-full overflow-y-auto px-4 sm:px-6 pb-28 pb-safe relative" style={{ paddingTop: 'calc(1rem + var(--safe-top, 0px))' }}>
             <div
@@ -6648,7 +6718,7 @@ const initializeAdMob = useCallback(async () => {
                       <p>3.  {t("Raad hoger of lager dan de vorige kaart, de eerste kaart is altijd omgedraaid.")}</p>
                       <p>4.  {t("Fout? Drink het kaartnummer aan slokken en start opnieuw bij kaart één.")}</p>
                       <p>5.  {t("Goed? Ga door naar de volgende kaart.")}</p>
-                      <p>6.  {t("Hele rij gehaald? Je mag uit de bus!")}</p>
+                      <p>6.  {busPassengers.length > 1 ? t("Hele rij gehaald? Jullie mogen uit de bus!") : t("Hele rij gehaald? Je mag uit de bus!")}</p>
                     </div>
                   </div>
                 </div>
@@ -6718,51 +6788,16 @@ const initializeAdMob = useCallback(async () => {
         >
         {isBusWon && <Confetti />}
         {isBusWon && (
-          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-6 pb-28 pt-8 z-[90] gap-5 sm:gap-7 max-w-2xl mx-auto">
-            {/* Top Text - Above Bus */}
-            <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_2.5s_forwards] opacity-0 shrink-0">
-              <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
-                {t("Je mag uit de bus! 🎉")}
-              </h2>
-            </div>
-            
-            {/* Center Animated Bus SVG - Perfectly Centered Between Texts */}
-            <div className="w-full animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
-              <AnimatedPartyBus
-                passengers={busPassengers}
-                destinationText={busPassengers[0]?.name || t("DE BUS")}
-                isCrash={true}
-                theme={settings.theme}
-              />
-            </div>
-            
-            {/* Bottom Text - Below Bus */}
-            {busPassengers.length > 0 && (() => {
-              const busCardTotal = busCards.length > 0 ? busCards.length : (settings.busLength || 5);
-              const firstTryChance = Math.round(Math.pow(0.71, Math.max(1, busCardTotal - 1)) * 100);
-              const isFirstTry = busAttempts <= 1 && busSipsTaken === 0;
-              
-              return (
-                <div className="w-full text-center animate-[fadeInText_1.5s_ease-out_3.8s_forwards] opacity-0 shrink-0 px-2 sm:px-4">
-                  <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-slate-100 font-bold drop-shadow-xl mx-auto max-w-2xl sm:max-w-3xl leading-snug tracking-tight">
-                    {isFirstTry ? (
-                      lang === 'en' ? (
-                        <>Well done, you got out on the first try! The chance of that happening is approximately <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                      ) : (
-                        <>Goed gedaan, je bent er in één keer uitgekomen! De kans dat dit gebeurt is ongeveer <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{firstTryChance}%</span> <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                      )
-                    ) : (
-                      lang === 'en' ? (
-                        <>Double check if <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> really drank <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'sip' : 'sips'} <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                      ) : (
-                        <>Controleer nog even of <span className="text-white font-black mx-1 underline decoration-emerald-500 underline-offset-4 decoration-2 sm:decoration-4">{busPassengers.map(p => p.name).join(' & ')}</span> echt <span className="text-emerald-400 font-black text-3xl sm:text-4xl md:text-5xl mx-1.5 inline-block">{busSipsTaken}</span> {busSipsTaken === 1 ? 'slok' : 'slokken'} {busPassengers.length > 1 ? 'hebben' : 'heeft'} gedronken <span className="text-emerald-400 font-bold text-2xl sm:text-3xl md:text-4xl ml-1">;)</span></>
-                      )
-                    )}
-                  </p>
-                </div>
-              );
-            })()}
-          </div>
+          <BusWinOverlay
+            busPassengers={busPassengers}
+            busCardsLength={busCards.length}
+            busLengthSetting={settings.busLength}
+            busAttempts={busAttempts}
+            busSipsTaken={busSipsTaken}
+            theme={settings.theme}
+            lang={lang}
+            t={t}
+          />
         )}
         {showReshuffleBanner && (
           <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none animate-in fade-in zoom-in duration-300">
@@ -6854,7 +6889,7 @@ const initializeAdMob = useCallback(async () => {
           >
             {busCardStates.map(({ card, index, isBase, isHistory, isReference, isFocused, isRevealed, containerClass, isWrong }) => (
               <div
-                key={`${card.id}-${index}`}
+                key={`${busAttempts}-${index}`}
                 className="animate-bus-card-deal flex-none flex flex-col items-center justify-center snap-center relative"
                 style={{ animationDelay: `${index * 0.08}s` }}
               >

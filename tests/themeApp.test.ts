@@ -8,9 +8,9 @@ describe('App Theme Synchronization', () => {
 
   it('sets root variables for STARS theme in theme effect', () => {
     expect(appContent).toContain("settings.theme === UITheme.STARS");
-    expect(appContent).toMatch(/setProperty\('--theme-accent',\s*'#e2e8f0'\)/);
-    expect(appContent).toMatch(/setProperty\('--theme-accent-secondary',\s*'#f8fafc'\)/);
-    expect(appContent).toMatch(/setProperty\('--theme-accent-gradient',\s*'linear-gradient\(135deg,\s*#ffffff/);
+    expect(appContent).toMatch(/setProperty\('--theme-accent',\s*'#a78bfa'\)/);
+    expect(appContent).toMatch(/setProperty\('--theme-accent-secondary',\s*'#38bdf8'\)/);
+    expect(appContent).toMatch(/setProperty\('--theme-accent-gradient',\s*'linear-gradient\(135deg,\s*#e0e7ff/);
   });
 
   it('sets light heineken red accent and beer color tertiary for BEER theme in theme effect', () => {

@@ -10,9 +10,9 @@ describe('Theme Engine CSS', () => {
     expect(cssContent).toContain('.theme-stars');
     expect(cssContent).toMatch(/--theme-bg-base:\s*#010005/);
     expect(cssContent).toMatch(/--theme-card-bg:\s*rgba\(8,\s*11,\s*20,\s*0\.82\)/);
-    expect(cssContent).toMatch(/--theme-accent:\s*#e2e8f0/);
-    expect(cssContent).toMatch(/--theme-accent-gradient:\s*linear-gradient\(135deg,\s*#ffffff/);
-    expect(cssContent).toMatch(/--theme-accent-glow:\s*rgba\(226,\s*232,\s*240,\s*0\.28\)/);
+    expect(cssContent).toMatch(/--theme-accent:\s*#a78bfa/);
+    expect(cssContent).toMatch(/--theme-accent-gradient:\s*linear-gradient\(135deg,\s*#e0e7ff/);
+    expect(cssContent).toMatch(/--theme-accent-glow:\s*rgba\(167,\s*139,\s*250,\s*0\.35\)/);
   });
 
   it('uses purple/light-white gradient for .theme-stars slider fill', () => {

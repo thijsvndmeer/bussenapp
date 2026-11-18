@@ -195,6 +195,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
     busLength: settings.busLength,
   };
   const [draftValues, setDraftValues] = useState<Record<SliderSettingKey, number>>(currentSliderValues);
+  const draftValuesRef = useRef<Record<SliderSettingKey, number>>(currentSliderValues);
   const committedValuesRef = useRef<Record<SliderSettingKey, number>>(currentSliderValues);
   const prevPlayerCountRef = useRef(playerCount);
   const isMountedRef = useRef(false);
@@ -205,6 +206,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         Math.round(prev.pyramidRows) !== settings.pyramidRows ||
         Math.round(prev.busLength) !== settings.busLength;
       if (!needsUpdate) return prev;
+      draftValuesRef.current = currentSliderValues;
       return currentSliderValues;
     });
     committedValuesRef.current = currentSliderValues;
@@ -292,15 +294,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       lastRoundedRef.current[key] = newRounded;
       triggerHaptic('subtle');
     }
+    draftValuesRef.current = { ...draftValuesRef.current, [key]: val };
     setDraftValues(prev => ({ ...prev, [key]: val }));
   };
 
   const handleSliderCommit = () => {
     if (disabled) return;
     setIsDragging({ pyramidRows: false, busLength: false });
+    const latestDraft = draftValuesRef.current;
     const rounded: Record<SliderSettingKey, number> = {
-      pyramidRows: Math.round(draftValues.pyramidRows),
-      busLength: Math.round(draftValues.busLength),
+      pyramidRows: Math.round(latestDraft.pyramidRows),
+      busLength: Math.round(latestDraft.busLength),
     };
     
     // Check if values actually changed to avoid redundant saves/renders
@@ -569,7 +573,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                       }`}
                     >
                       <span className="text-[10px] sm:text-xs text-slate-400 font-semibold text-center leading-tight flex items-center justify-center">
-                        <span className="hidden sm:inline mr-1">{t("Voor echte durfals: wil je het maximum aantal buskaarten verhogen?")}</span>
+                        <span className="hidden sm:inline mr-1">{t("Wil je het maximum aantal buskaarten verhogen?")}</span>
                         <button 
                           type="button"
                           onClick={() => setIsBusExpanded(true)}
@@ -735,6 +739,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   onInput={(e) => handleSliderChange(s.key, parseFloat((e.target as HTMLInputElement).value))}
                   onMouseUp={handleSliderCommit}
                   onTouchEnd={handleSliderCommit}
+                  onPointerUp={handleSliderCommit}
+                  onPointerCancel={handleSliderCommit}
+                  onBlur={handleSliderCommit}
                   className="custom-slider-invisible absolute inset-0 z-40 cursor-grab active:cursor-grabbing"
                 />
               </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardStyle, Rank, Suit } from '../../types';
 import PlayingCard from '../PlayingCard';
-import { Check } from 'lucide-react';
+import { Check, Sparkles, Stars } from 'lucide-react';
 import { triggerHaptic } from '../../services/haptics';
 
 interface GalaxyCelebrationModalProps {
@@ -44,19 +44,19 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
     const singularityTimer = setTimeout(() => {
       setPhase('singularity');
       triggerHaptic('medium');
-    }, 150);
+    }, 100);
 
     // Step 2: Celestial Supernova Detonation
     const supernovaTimer = setTimeout(() => {
       setPhase('supernova');
       triggerHaptic('heavy');
-    }, 900);
+    }, 650);
 
     // Step 3: Sovereign Reveal
     const revealTimer = setTimeout(() => {
       setPhase('reveal');
       triggerHaptic('success');
-    }, 1850);
+    }, 1250);
 
     return () => {
       clearTimeout(singularityTimer);
@@ -170,56 +170,74 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
         </div>
       )}
 
-      {/* 5. Epic Dark Stars Dialogue (Awwwards-Tier Double-Bezel Architecture) */}
+      {/* 5. Epic Dark Stars Dialogue (Cosmic Violet & Cyan Double-Bezel) */}
       {phase === 'reveal' && (
-        <div className="relative z-10 w-full max-w-sm sm:max-w-md mx-4 p-1.5 rounded-[2.5rem] bg-gradient-to-b from-white/20 via-white/5 to-slate-900/40 border border-white/15 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(255,255,255,0.08)] animate-in fade-in zoom-in-95 duration-700 ease-out max-h-[92vh] flex flex-col">
-          <div className="w-full h-full rounded-[calc(2.5rem-0.375rem)] bg-[#05070e]/95 p-6 sm:p-7 flex flex-col items-center text-center overflow-y-auto border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]">
+        <div className="relative z-10 w-full max-w-sm sm:max-w-md mx-4 p-[2px] rounded-[2.25rem] bg-gradient-to-b from-violet-400/50 via-sky-400/25 to-slate-900/50 shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_70px_rgba(167,139,250,0.22)] animate-in fade-in zoom-in-95 duration-500 ease-out max-h-[92vh] flex flex-col">
+          <div className="w-full h-full rounded-[calc(2.25rem-2px)] bg-gradient-to-b from-[#0b0f1e]/95 via-[#060913]/95 to-[#020308]/98 p-6 sm:p-7 flex flex-col items-center text-center overflow-y-auto shadow-[inset_0_1px_1px_rgba(255,255,255,0.16)]">
             
+            {/* Eyebrow Achievement Pill */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-violet-500/15 border border-violet-300/30 text-[10px] font-black tracking-[0.22em] uppercase text-violet-200 mb-3 shadow-[0_0_20px_rgba(167,139,250,0.2)]">
+              <Sparkles size={11} className="text-amber-300" />
+              <span>{lang === 'en' ? '20-Card Bus Conquered' : '20-Kaarten Bus Overleefd'}</span>
+            </div>
+
             {/* Main Editorial Title */}
-            <h2 className="text-2xl sm:text-3xl font-medium tracking-[0.18em] uppercase text-white mt-1 mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-[0.14em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-sky-200 mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {lang === 'en' ? 'Cosmic Mastery' : 'Kosmische Meester'}
             </h2>
 
             {/* Subtitle description */}
-            <p className="text-slate-300/85 text-xs sm:text-sm leading-relaxed mb-6 max-w-xs font-light" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <p className="text-slate-300/90 text-xs sm:text-sm leading-relaxed mb-4 max-w-xs font-normal" style={{ fontFamily: "'Outfit', sans-serif" }}>
               {lang === 'en' ? (
-                <>You overcame impossible odds. Unlocked the animated <strong className="font-medium text-slate-100">Galaxy Cards</strong>.</>
+                <>You overcame impossible odds and unlocked both the <strong className="font-bold text-violet-200">Stars Theme</strong> & <strong className="font-bold text-sky-200">Galaxy Cards</strong>.</>
               ) : (
-                <>Je hebt het onmogelijke overleefd. Ontgrendeld: geanimeerde <strong className="font-medium text-slate-100">Galaxy Kaarten</strong>.</>
+                <>Je hebt het onmogelijke overleefd! Ontgrendeld: het <strong className="font-bold text-violet-200">Stars Thema</strong> & de <strong className="font-bold text-sky-200">Galaxy Kaarten</strong>.</>
               )}
             </p>
 
+            {/* Reward Pills */}
+            <div className="flex items-center justify-center gap-2 mb-5 flex-wrap">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-violet-400/25 text-xs font-bold text-violet-100">
+                <Stars size={13} className="text-violet-300" />
+                <span>{t('Stars Thema')}</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-sky-400/25 text-xs font-bold text-sky-100">
+                <Sparkles size={13} className="text-sky-300" />
+                <span>{t('Galaxy Kaartstijl')}</span>
+              </div>
+            </div>
+
             {/* Exhibition Floating Pedestal */}
-            <div className="relative mb-7 flex items-center justify-center gap-4 sm:gap-6 py-4 w-full">
+            <div className="relative mb-6 flex items-center justify-center gap-4 sm:gap-6 py-3 w-full">
               {/* Plinth Ambient Light & Shadow */}
-              <div className="absolute bottom-1 w-52 h-6 bg-slate-300/15 blur-xl rounded-full pointer-events-none" />
-              <div className="absolute inset-0 bg-radial from-slate-400/10 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-1 w-56 h-7 bg-violet-400/20 blur-xl rounded-full pointer-events-none" />
+              <div className="absolute inset-0 bg-radial from-violet-400/10 via-transparent to-transparent pointer-events-none" />
 
               {/* Floating Ace */}
-              <div className="animate-card-pedestal-1 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
+              <div className="animate-card-pedestal-1 -rotate-6 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
                 <PlayingCard card={SAMPLE_GALAXY_ACE} size="md" style={CardStyle.GALAXY} highlight />
               </div>
 
-              {/* Floating King (Backside Astrolabe) */}
-              <div className="animate-card-pedestal-2 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
+              {/* Floating King (Backside) */}
+              <div className="animate-card-pedestal-2 rotate-6 scale-90 sm:scale-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)]">
                 <PlayingCard card={SAMPLE_GALAXY_KING} size="md" style={CardStyle.GALAXY} isFaceDown />
               </div>
             </div>
 
             {/* Nested Island Buttons */}
             <div className="flex flex-col w-full gap-2.5">
-              {/* Primary Action Button: Button-in-Button */}
+              {/* Primary Action Button: Cosmic Gradient Button-in-Button */}
               <button
                 onClick={() => {
                   triggerHaptic('heavy');
                   onEquipBoth();
                 }}
-                className="w-full py-2.5 pl-6 pr-2 rounded-full bg-[#f1f5f9] text-[#070911] font-medium text-xs tracking-[0.15em] uppercase shadow-[0_8px_30px_rgba(241,245,249,0.25),0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-white/40 no-calm-override"
+                className="w-full py-2.5 pl-6 pr-2 rounded-full bg-gradient-to-r from-violet-400 via-indigo-400 to-sky-400 text-[#05070e] font-black text-xs tracking-[0.14em] uppercase shadow-[0_8px_30px_rgba(167,139,250,0.35),0_0_20px_rgba(56,189,248,0.2)] active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer border border-white/40 no-calm-override"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
-                <span>{lang === 'en' ? 'Equip Galaxy Cards' : 'Activeer Galaxy Kaarten'}</span>
-                <div className="w-8 h-8 rounded-full bg-[#070911]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#070911]/15 transition-all">
-                  <Check size={16} className="text-[#070911]" />
+                <span>{lang === 'en' ? 'Equip Theme & Cards' : 'Activeer Thema & Kaarten'}</span>
+                <div className="w-8 h-8 rounded-full bg-[#05070e]/15 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#05070e]/25 transition-all">
+                  <Check size={16} className="text-[#05070e]" strokeWidth={3} />
                 </div>
               </button>
 
@@ -229,7 +247,7 @@ export const GalaxyCelebrationModal: React.FC<GalaxyCelebrationModalProps> = Rea
                   triggerHaptic('light');
                   onClose();
                 }}
-                className="w-full py-2.5 px-4 rounded-full text-slate-400 hover:text-white font-light text-xs tracking-wider transition-colors hover:bg-white/5 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-full text-slate-400 hover:text-white font-medium text-xs tracking-wider transition-colors hover:bg-white/5 cursor-pointer"
                 style={{ fontFamily: "'Outfit', sans-serif" }}
               >
                 {lang === 'en' ? 'Keep Current Setup' : 'Later Instellen'}

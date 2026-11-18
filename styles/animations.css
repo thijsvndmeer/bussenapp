@@ -645,8 +645,6 @@
 .galaxy-nebula-gas {
   position: absolute;
   border-radius: 48%;
-  filter: blur(22px);
-  mix-blend-mode: screen;
   will-change: transform;
 }
 
@@ -1396,5 +1394,138 @@
 
 .animate-partner-bus-drop {
   animation: partnerDropIntoBus 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* --- BUS WIN EXIT CHOREOGRAPHY: DRIVE IN -> PARK -> PLAYERS DISMOUNT -> BUS DRIVES AWAY --- */
+@keyframes busWinDriveSequence {
+  0% {
+    transform: translate3d(-125vw, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  26% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  62% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  68% {
+    transform: translate3d(18px, 0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(135vw, 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes busWinSuspensionTilt {
+  0%, 18% {
+    transform: rotate(-1deg) translateY(-2px);
+  }
+  26% {
+    transform: rotate(-3.5deg) translateY(6px);
+  }
+  31% {
+    transform: rotate(2deg) translateY(-4px);
+  }
+  36% {
+    transform: rotate(-0.5deg) translateY(2px);
+  }
+  40% {
+    transform: rotate(0deg) translateY(0);
+  }
+  45% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+  55%, 60% {
+    transform: translateY(0);
+  }
+  66% {
+    transform: rotate(3deg) translateY(4px);
+  }
+  76%, 100% {
+    transform: rotate(0.5deg) translateY(-2px);
+  }
+}
+
+@keyframes busWinWheelRoll {
+  0% {
+    transform: rotate(0deg);
+  }
+  26%, 62% {
+    transform: rotate(1080deg);
+  }
+  100% {
+    transform: rotate(2520deg);
+  }
+}
+
+@keyframes busWinWindowPassengerExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.8);
+  }
+}
+
+@keyframes busPlayerDismount {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0) scale(0.55);
+  }
+  15% {
+    opacity: 1;
+    transform: translate3d(0, -44px, 0) scale(0.95);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(0, 6px, 0) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate3d(0, -3px, 0) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-bus-win-drive {
+  animation: busWinDriveSequence 3.6s cubic-bezier(0.2, 0.9, 0.3, 1) 1.0s both;
+  will-change: transform, opacity;
+}
+
+.animate-bus-win-suspension {
+  animation: busWinSuspensionTilt 3.6s ease-in-out 1.0s both;
+  will-change: transform;
+}
+
+.animate-bus-win-wheel {
+  animation: busWinWheelRoll 3.6s cubic-bezier(0.2, 0.9, 0.3, 1) 1.0s both;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.animate-bus-win-passenger-exit {
+  animation: busWinWindowPassengerExit 0.22s ease-out 2.05s forwards;
+  will-change: transform, opacity;
+}
+
+.animate-bus-player-dismount {
+  opacity: 0;
+  animation: busPlayerDismount 0.85s cubic-bezier(0.22, 1, 0.36, 1) 2.05s forwards;
   will-change: transform, opacity;
 }

@@ -6,6 +6,7 @@ interface AnimatedPartyBusProps {
   passengers: Player[];
   destinationText?: string;
   isCrash?: boolean;
+  isWinExit?: boolean;
   isBraking?: boolean;
   isReversing?: boolean;
   passengerBoarded?: boolean;
@@ -27,6 +28,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
   passengers,
   destinationText = 'DE BUS',
   isCrash = false,
+  isWinExit = false,
   isBraking = false,
   isReversing = false,
   passengerBoarded = true,
@@ -35,16 +37,32 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
 }) => {
   const isDuo = passengers.length >= 2;
   const showPassenger = !isCrash || passengerBoarded;
+  const driveAnimClass = isWinExit
+    ? 'animate-bus-win-drive'
+    : isCrash
+      ? ''
+      : 'animate-bus-drive';
+  const suspensionAnimClass = isWinExit
+    ? 'animate-bus-win-suspension'
+    : isCrash
+      ? (isChassisBouncing ? 'animate-bus-chassis-bounce' : 'animate-bus-crash-suspension')
+      : 'animate-bus-suspension';
+  const wheelAnimClass = isWinExit
+    ? 'animate-bus-win-wheel'
+    : isCrash
+      ? 'animate-bus-crash-wheel'
+      : 'animate-bus-wheel';
+  const windowPassengerAnimClass = isWinExit ? 'animate-bus-win-passenger-exit' : '';
 
   return (
     <div className="relative w-full max-w-[500px] sm:max-w-[560px] px-2 select-none">
       {/* 1. Entire vehicle traveling across screen */}
-      <div className={`${isCrash ? '' : 'animate-bus-drive'} relative w-full flex flex-col items-center`}>
+      <div className={`${driveAnimClass} relative w-full flex flex-col items-center`}>
         {/* Hidden marker elements for test compatibility without floating light particles on screen */}
         <div className="hidden animate-bus-exhaust-1 animate-bus-hazard" aria-hidden="true" />
 
         {/* 2. Chassis with Suspension Physics */}
-        <div className={`${isCrash ? (isChassisBouncing ? 'animate-bus-chassis-bounce' : 'animate-bus-crash-suspension') : 'animate-bus-suspension'} relative w-full aspect-[2.45/1] z-20`}>
+        <div className={`${suspensionAnimClass} relative w-full aspect-[2.45/1] z-20`}>
           
           {/* Main Bus Vector SVG */}
           <svg
@@ -246,7 +264,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
               />
 
               {showPassenger && passengers[0] && (
-                <div className="relative z-20 flex items-center justify-center">
+                <div className={`relative z-20 flex items-center justify-center ${windowPassengerAnimClass}`}>
                   <PlayerAvatar
                     player={passengers[0]}
                     size="custom"
@@ -281,7 +299,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
                       background: 'linear-gradient(125deg, transparent 30%, rgba(255,255,255,0.15) 45%, transparent 60%)',
                     }}
                   />
-                  <div className="relative z-20 flex items-center justify-center">
+                  <div className={`relative z-20 flex items-center justify-center ${windowPassengerAnimClass}`}>
                     <PlayerAvatar
                       player={p}
                       size="custom"
@@ -297,7 +315,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
           {/* --- MOVING WHEELS: FIRMLY MOUNTED ON GROUND & ARCHES --- */}
           {/* Rear Wheel (Left) */}
           <div className="absolute -bottom-[2%] left-[22.22%] -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 z-40">
-            <svg viewBox="0 0 100 100" className={`w-full h-full ${isCrash ? 'animate-bus-crash-wheel' : 'animate-bus-wheel'} drop-shadow-[0_8px_10px_rgba(0,0,0,0.95)]`}>
+            <svg viewBox="0 0 100 100" className={`w-full h-full ${wheelAnimClass} drop-shadow-[0_8px_10px_rgba(0,0,0,0.95)]`}>
               {/* Outer Rubber Tire */}
               <circle cx="50" cy="50" r="46" fill="#090d16" stroke="#1e293b" strokeWidth="5" />
               {/* Sidewall Radial Ticks */}
@@ -340,7 +358,7 @@ export const AnimatedPartyBus: React.FC<AnimatedPartyBusProps> = ({
 
           {/* Front Wheel (Right) */}
           <div className="absolute -bottom-[2%] left-[76.85%] -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 z-40">
-            <svg viewBox="0 0 100 100" className={`w-full h-full ${isCrash ? 'animate-bus-crash-wheel' : 'animate-bus-wheel'} drop-shadow-[0_8px_10px_rgba(0,0,0,0.95)]`}>
+            <svg viewBox="0 0 100 100" className={`w-full h-full ${wheelAnimClass} drop-shadow-[0_8px_10px_rgba(0,0,0,0.95)]`}>
               <circle cx="50" cy="50" r="46" fill="#090d16" stroke="#1e293b" strokeWidth="5" />
               {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => (
                 <line

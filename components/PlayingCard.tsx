@@ -81,28 +81,28 @@ type GalaxyNebulaLayer = React.CSSProperties & { key: string };
 const createGalaxyNebulaLayers = (): GalaxyNebulaLayer[] => {
   const random = (min: number, max: number) => Math.random() * (max - min) + min;
 
-  return Array.from({ length: Math.floor(random(3, 6)) }, (_, index) => {
+  return Array.from({ length: 2 }, (_, index) => {
     const hue = Math.round(random(185, 335));
     const saturation = Math.round(random(45, 72));
     const lightness = Math.round(random(34, 57));
 
     return {
       key: `galaxy-nebula-${index}-${Math.random().toString(36).slice(2, 8)}`,
-      width: `${random(80, 165)}%`,
-      height: `${random(110, 235)}%`,
-      left: `${random(-75, 45)}%`,
-      top: `${random(-80, 55)}%`,
-      opacity: random(0.45, 0.8),
-      background: `radial-gradient(ellipse, hsla(${hue}, ${saturation}%, ${lightness}%, ${random(0.28, 0.5)}) 0%, hsla(${hue}, ${saturation}%, ${lightness - 12}%, ${random(0.12, 0.28)}) 43%, transparent 74%)`,
-      '--nebula-duration': `${random(16, 34).toFixed(1)}s`,
-      '--nebula-x-start': `${random(-18, 18).toFixed(0)}%`,
-      '--nebula-y-start': `${random(-18, 18).toFixed(0)}%`,
-      '--nebula-x-end': `${random(-45, 45).toFixed(0)}%`,
-      '--nebula-y-end': `${random(-45, 45).toFixed(0)}%`,
-      '--nebula-rotate-start': `${random(-55, 55).toFixed(0)}deg`,
-      '--nebula-rotate-end': `${random(-55, 55).toFixed(0)}deg`,
-      '--nebula-scale-start': random(0.72, 1.12).toFixed(2),
-      '--nebula-scale-end': random(0.82, 1.36).toFixed(2),
+      width: `${random(95, 165)}%`,
+      height: `${random(120, 220)}%`,
+      left: `${random(-65, 35)}%`,
+      top: `${random(-70, 45)}%`,
+      opacity: random(0.45, 0.72),
+      background: `radial-gradient(ellipse, hsla(${hue}, ${saturation}%, ${lightness}%, ${random(0.28, 0.48)}) 0%, hsla(${hue}, ${saturation}%, ${lightness - 12}%, ${random(0.12, 0.25)}) 45%, transparent 72%)`,
+      '--nebula-duration': `${random(20, 34).toFixed(1)}s`,
+      '--nebula-x-start': `${random(-14, 14).toFixed(0)}%`,
+      '--nebula-y-start': `${random(-14, 14).toFixed(0)}%`,
+      '--nebula-x-end': `${random(-30, 30).toFixed(0)}%`,
+      '--nebula-y-end': `${random(-30, 30).toFixed(0)}%`,
+      '--nebula-rotate-start': `${random(-40, 40).toFixed(0)}deg`,
+      '--nebula-rotate-end': `${random(-40, 40).toFixed(0)}deg`,
+      '--nebula-scale-start': random(0.8, 1.1).toFixed(2),
+      '--nebula-scale-end': random(0.88, 1.25).toFixed(2),
     } as GalaxyNebulaLayer;
   });
 };
@@ -218,14 +218,14 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
     ? (isRed ? 'drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'drop-shadow-[0_0_8px_rgba(255,255,255,0.45)]')
     : isNeon ? (isRed ? 'drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]' : 'drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]') : isDark ? (isRed ? 'drop-shadow-[0_0_4px_rgba(239,68,68,0.4)]' : 'drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]') : '';
 
-  // Face card C5-C4 insignia colors (Modern / Dark / Neon)
-  const insigniaPrimary = isDark ? (isRed ? '#ef4444' : '#cbd5e1') : isNeon ? (isRed ? '#fb7185' : '#22d3ee') : (isRed ? '#e11d48' : '#0284c7');
-  const insigniaSecondary = isDark ? (isRed ? '#ef4444' : '#64748b') : isNeon ? (isRed ? '#fb7185' : '#67e8f9') : (isRed ? '#e11d48' : '#64748b');
-  const insigniaFillTop = isDark ? '0.18' : isNeon ? '0.25' : '0.22';
-  const insigniaFillBottom = isDark ? (isRed ? '0.10' : '0.12') : isNeon ? (isRed ? '0.15' : '0.18') : (isRed ? '0.12' : '0.14');
+  // Face card C5-C4 insignia colors (Modern / Dark / Neon / Galaxy)
+  const insigniaPrimary = isGalaxy ? (isRed ? '#f43f5e' : '#e2e8f0') : isDark ? (isRed ? '#ef4444' : '#cbd5e1') : isNeon ? (isRed ? '#fb7185' : '#22d3ee') : (isRed ? '#e11d48' : '#0284c7');
+  const insigniaSecondary = isGalaxy ? (isRed ? '#f43f5e' : '#94a3b8') : isDark ? (isRed ? '#ef4444' : '#64748b') : isNeon ? (isRed ? '#fb7185' : '#67e8f9') : (isRed ? '#e11d48' : '#64748b');
+  const insigniaFillTop = isGalaxy ? '0.22' : isDark ? '0.18' : isNeon ? '0.25' : '0.22';
+  const insigniaFillBottom = isGalaxy ? (isRed ? '0.14' : '0.16') : isDark ? (isRed ? '0.10' : '0.12') : isNeon ? (isRed ? '0.15' : '0.18') : (isRed ? '0.12' : '0.14');
 
   const pipContent = useMemo(() => card ? renderPips(card, size as 'sm' | 'base' | 'md' | 'lg' | 'xl', isRed ? redColor : blackColor) : null, [card, size, style, isRed, redColor, blackColor]);
-  const galaxyNebulaLayers = useMemo(() => createGalaxyNebulaLayers(), []);
+  const galaxyNebulaLayers = useMemo(() => isGalaxy ? createGalaxyNebulaLayers() : [], [isGalaxy]);
 
   return (
     <div
@@ -250,17 +250,14 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           ${!isNeon && !isGalaxy ? 'ring-1 ring-black/5 shadow-[0_16px_40px_-14px_rgba(0,0,0,0.65)]' : isNeon ? 'shadow-[0_8px_32px_rgba(0,0,0,0.3)]' : ''}
           overflow-hidden
         `}>
-          {/* Galaxy Nebula + Stardust Overlay */}
+          {/* Galaxy Nebula Overlay (static radial gradients for 60fps performance) */}
           {isGalaxy && (
-            <>
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-40" 
-                style={{ 
-                  background: 'radial-gradient(ellipse at 50% 15%, rgba(226, 232, 240, 0.08) 0%, transparent 65%), radial-gradient(ellipse at 50% 85%, rgba(14, 18, 30, 0.4) 0%, transparent 65%)' 
-                }} 
-              />
-              <div className="absolute inset-[-60%] w-[220%] h-[220%] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent animate-card-starlight-sweep pointer-events-none" />
-            </>
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-45" 
+              style={{ 
+                background: 'radial-gradient(ellipse at 50% 15%, rgba(226, 232, 240, 0.1) 0%, transparent 65%), radial-gradient(ellipse at 50% 85%, rgba(14, 18, 30, 0.45) 0%, transparent 65%)' 
+              }} 
+            />
           )}
 
           {/* Texture Overlay - Only for Dark now, modern is clean */}
@@ -289,12 +286,9 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
               {/* --- Central Face Content --- */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-visible">
 
-                {/* ACE - Refined minimal celestial orbit */}
+                {/* ACE - Refined minimal suit */}
                 {isAce && (
                   <div className={`w-[45%] aspect-square flex items-center justify-center relative ${!isClassic ? 'drop-shadow-md' : ''} ${glowClass} transition-transform`}>
-                    {isGalaxy && (
-                      <div className="absolute -inset-2 rounded-full border border-white/15 animate-card-celestial-cw pointer-events-none" />
-                    )}
                     <div className="w-full h-full flex items-center justify-center relative z-10">
                       {getSuitIcon(card.suit, sizeConfig.centerIcon, true, textColor, 'w-[46.875cqw] h-[46.875cqw]')}
                     </div>
@@ -304,34 +298,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                 {/* FACE CARDS - Pure royal insignia without extra text or busy rings */}
                 {isFaceCard && (
                   <div className="w-[63%] h-[71%] relative flex items-center justify-center overflow-visible">
-                    {isGalaxy ? (
-                      <div className="relative w-full h-full flex items-center justify-center">
-                        <div className="absolute w-[68%] aspect-square rounded-full border border-white/15 animate-card-celestial-cw pointer-events-none" />
-                        <div className="relative z-10 flex items-center justify-center">
-                          {card.rank === Rank.KING && (
-                            <Crown 
-                              size={sizeConfig.royalIcon} 
-                              fill="currentColor" 
-                              className="w-[25cqw] h-[25cqw] text-amber-200/95 drop-shadow-[0_0_12px_rgba(254,240,138,0.6)]" 
-                            />
-                          )}
-                          {card.rank === Rank.QUEEN && (
-                            <Crown 
-                              size={sizeConfig.royalIcon} 
-                              fill="currentColor" 
-                              className="w-[25cqw] h-[25cqw] text-slate-100 drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]" 
-                            />
-                          )}
-                          {card.rank === Rank.JACK && (
-                            <FarmerIcon 
-                              size={sizeConfig.royalIcon} 
-                              fill="currentColor" 
-                              className="w-[25cqw] h-[25cqw] text-slate-200 drop-shadow-[0_0_10px_rgba(226,232,240,0.5)]" 
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ) : isClassic ? (
+                    {isClassic ? (
                       /* AUTHENTIC CLASSIC ILLUSTRATION */
                       <div className="absolute inset-0 flex items-center justify-center -z-0">
                         <ClassicFaceCard 
@@ -340,16 +307,18 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                           size={sizeConfig.classicSize} 
                         />
                       </div>
-                    ) : (isModern || isDark || isNeon) ? (
-                      /* FACE CARD: C5-C4 STYLE (Modern / Dark / Neon) */
+                    ) : (isModern || isDark || isNeon || isGalaxy) ? (
+                      /* FACE CARD: C5-C4 STYLE (Modern / Dark / Neon / Galaxy) */
                       <div className={`w-full h-full rounded-lg relative overflow-hidden shadow-inner border-2 ${
-                        isDark
+                        isGalaxy
+                          ? `${isRed ? 'border-rose-400/30' : 'border-white/20'} bg-white/[0.03]`
+                          : isDark
                           ? 'border-slate-500/30 bg-[#1e293b]/40'
                           : isNeon
                           ? `${isRed ? 'border-rose-400/30' : 'border-cyan-400/30'} bg-white/5`
                           : isRed ? 'border-red-500/30 bg-gradient-to-br from-white via-white/80 to-rose-50/30' : 'border-slate-500/30 bg-gradient-to-br from-white via-white/80 to-slate-50'
                       }`}>
-                        <svg viewBox="0 0 98 152" className="absolute inset-0 w-full h-full pointer-events-none">
+                        <svg viewBox="0 0 98 152" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
                           {/* Diagonal Split Tint */}
                           <path 
                             d="M0 0 L98 0 L98 96 L0 56 Z" 
@@ -366,6 +335,8 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
                             strokeWidth="1.2" 
                             strokeOpacity={isDark ? "0.25" : isNeon ? "0.45" : "0.35"} 
                           />
+                        </svg>
+                        <svg viewBox="0 0 98 152" className="absolute inset-0 w-full h-full pointer-events-none">
                           {/* Insignia: Rank-specific (J = Boerenhoed, Q = C5-C4 Pearl Tiara, K = C5-C4 Crown) */}
                           {card.rank === Rank.JACK && (
                             <>
@@ -458,8 +429,10 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
 
                         {/* Central Cameo Disc with Monogram */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className={`w-[45%] aspect-square rounded-full backdrop-blur-md border-[1.5px] flex items-center justify-center shadow-sm ${
-                            isDark
+                          <div className={`w-[45%] aspect-square rounded-full border-[1.5px] flex items-center justify-center shadow-sm ${
+                            isGalaxy
+                              ? `bg-[#080b14]/90 ${isRed ? 'border-rose-400/45 text-[#f43f5e]' : 'border-white/30 text-slate-100'}`
+                              : isDark
                               ? `bg-slate-900/90 ${isRed ? 'border-red-500/35 text-red-400' : 'border-slate-500/35 text-slate-200'}`
                               : isNeon
                               ? `bg-white/10 ${isRed ? 'border-rose-400/50 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.6)]' : 'border-cyan-400/50 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]'}`
