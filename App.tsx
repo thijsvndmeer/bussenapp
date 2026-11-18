@@ -6505,8 +6505,13 @@ const initializeAdMob = useCallback(async () => {
               </div>
               
               {/* Center Animated Bus SVG - Perfectly Centered Between Texts */}
-              <div className="animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
-                <Bus size={175} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_15px_35px_rgba(52,211,153,0.5)] opacity-95" />
+              <div className="w-full animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
+                <AnimatedPartyBus
+                  passengers={busPassengers}
+                  destinationText={busPassengers[0]?.name || t("DE BUS")}
+                  isCrash={true}
+                  theme={settings.theme}
+                />
               </div>
               
               {/* Bottom Text - Below Bus */}
@@ -6722,8 +6727,13 @@ const initializeAdMob = useCallback(async () => {
             </div>
             
             {/* Center Animated Bus SVG - Perfectly Centered Between Texts */}
-            <div className="animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
-              <Bus size={175} strokeWidth={1.5} className="text-emerald-400 drop-shadow-[0_15px_35px_rgba(52,211,153,0.5)] opacity-95" />
+            <div className="w-full animate-[driveIn_2.5s_cubic-bezier(0.34,1.56,0.64,1)_1.2s_forwards] opacity-0 shrink-0 flex items-center justify-center py-1">
+              <AnimatedPartyBus
+                passengers={busPassengers}
+                destinationText={busPassengers[0]?.name || t("DE BUS")}
+                isCrash={true}
+                theme={settings.theme}
+              />
             </div>
             
             {/* Bottom Text - Below Bus */}
